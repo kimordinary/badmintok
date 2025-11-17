@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}배드민톡{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <meta name="theme-color" content="#31AA60">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="logo" href="{% url 'home' %}" aria-label="Badmintok Home">Badmintok</a>
+            <nav class="main-nav" aria-label="주요 카테고리">
+                <ul>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'home' %}active{% endif %}" href="{% url 'home' %}">홈</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.namespace == 'contests' %}active{% endif %}" href="{% url 'contests:list' %}">배드민턴 대회</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'news' %}active{% endif %}" href="{% url 'news' %}">배드민톡 뉴스</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'reviews' %}active{% endif %}" href="{% url 'reviews' %}">배드민톡 리뷰</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'community' %}active{% endif %}" href="{% url 'community' %}">커뮤니티</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'shop' %}active{% endif %}" href="{% url 'shop' %}">배드민톡 할인몰</a></li>
+                </ul>
+            </nav>
+            <div class="auth-actions">
+                {% if user.is_authenticated %}
+                    <div class="profile-preview">
+                        <img src="{{ user.profile_image_url }}" alt="{{ user.activity_name }} 프로필" class="profile-avatar" width="36" height="36">
+                        <span class="welcome">{{ user.activity_name }} 님</span>
+                    </div>
+                    <form action="{% url 'accounts:logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost">로그아웃</button>
+                    </form>
+                {% else %}
+                    <a class="btn btn-ghost" href="{% url 'accounts:login' %}">로그인</a>
+                    <a class="btn btn-primary" href="{% url 'accounts:signup' %}">회원가입</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer" aria-labelledby="footer-title">
+        <div class="container footer-grid">
+            <div>
+                <h3 id="footer-title">배드민톡</h3>
+                <p class="muted">온라인 배드민턴장, 동호인 No.1 커뮤니티</p>
+            </div>
+            <div>
+                <h4>서비스</h4>
+                <ul>
+                    <li><a href="{% url 'contests:list' %}">배드민턴 대회</a></li>
+                    <li><a href="{% url 'community' %}">커뮤니티</a></li>
+                    <li><a href="{% url 'reviews' %}">배드민톡 리뷰</a></li>
+                    <li><a href="{% url 'news' %}">배드민톡 뉴스</a></li>
+                    <li><a href="{% url 'shop' %}">배드민톡 할인몰</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>고객지원</h4>
+                <ul>
+                    <li><a href="#">공지사항</a></li>
+                    <li><a href="#">문의하기</a></li>
+                    <li><a href="#">이용약관</a></li>
+                    <li><a href="#">개인정보처리방침</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>팔로우</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">YouTube</a></li>
+                    <li><a href="#">Facebook</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <small>© 2025 Badmintok. All rights reserved.</small>
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+    
+    <script>
+        (function() {
+            const scrollProgress = document.getElementById('scrollProgress');
+            const siteHeader = document.querySelector('.site-header');
+            
+            function setProgressBarPosition() {
+                if (siteHeader) {
+                    const headerHeight = siteHeader.offsetHeight;
+                    scrollProgress.style.top = headerHeight + 'px';
+                }
+            }
+            
+            function updateScrollProgress() {
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollableHeight = documentHeight - windowHeight;
+                const scrollPercentage = (scrollTop / scrollableHeight) * 100;
+                
+                scrollProgress.style.width = Math.min(scrollPercentage, 100) + '%';
+            }
+            
+            // 헤더 높이에 맞춰 진행바 위치 설정
+            setProgressBarPosition();
+            
+            // 스크롤 이벤트 리스너 추가
+            window.addEventListener('scroll', updateScrollProgress);
+            window.addEventListener('resize', function() {
+                setProgressBarPosition();
+                updateScrollProgress();
+            });
+            
+            // 초기 로드 시 실행
+            updateScrollProgress();
+        })();
+    </script>
+</body>
+</html>

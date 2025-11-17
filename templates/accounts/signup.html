@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}회원가입 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="auth-hero" aria-labelledby="signup-title" style="background-image: url('{% static 'images/badmintok.png' %}');">
+    <div class="auth-hero__overlay"></div>
+    <div class="auth-hero__content">
+        <h1 id="signup-title">배드민톡 회원가입</h1>
+        <p>동호인 1등 커뮤니티에서 라켓 라이프를 시작하세요.</p>
+    </div>
+</section>
+
+<section class="auth-section">
+    <div class="container auth-grid">
+        <div class="auth-intro">
+            <h2>회원 전용 혜택</h2>
+            <ul>
+                <li>전국 배드민턴 대회 일정 & 참가신청 관리</li>
+                <li>코트 메이트 찾기, 장비 토론 등 실시간 커뮤니티</li>
+                <li>장비 리뷰, 할인몰 소식, 동호인 뉴스 맞춤 제공</li>
+            </ul>
+            <p class="auth-note">이미 계정이 있으신가요? <a href="{% url 'accounts:login' %}">로그인하기</a></p>
+        </div>
+
+        <div class="auth-card" role="form">
+            <h3>회원가입</h3>
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="form-field{% if field.errors %} has-error{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <small class="help-text">{{ field.help_text|safe }}</small>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <small class="error-text">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary btn-full">가입하기</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

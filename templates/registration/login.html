@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}로그인 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="auth-hero" aria-labelledby="login-title" style="background-image: url('{% static 'images/badmintok.png' %}');">
+    <div class="auth-hero__overlay"></div>
+    <div class="auth-hero__content">
+        <h1 id="login-title">배드민톡 로그인</h1>
+        <p>나의 배드민턴 커뮤니티, 지금 바로 이어서 즐겨보세요.</p>
+    </div>
+</section>
+
+<section class="auth-section">
+    <div class="container auth-grid">
+        <div class="auth-intro">
+            <h2>다시 돌아오셨군요!</h2>
+            <ul>
+                <li>찜해둔 대회와 할인 상품을 한 번에 확인</li>
+                <li>배드민턴 번개, 장비 토론 등 커뮤니티 참여</li>
+                <li>활동 기록과 맞춤형 뉴스 받아보기</li>
+            </ul>
+            <p class="auth-note">계정이 없으신가요? <a href="{% url 'accounts:signup' %}">회원가입하기</a></p>
+        </div>
+
+        <div class="auth-card" role="form">
+            <h3>로그인</h3>
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="form-field{% if field.errors %} has-error{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                            <small class="error-text">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary btn-full">로그인</button>
+            </form>
+
+            <div class="social-logins">
+                <span class="social-divider">또는</span>
+                <a href="{% url 'accounts:kakao_login' %}" class="btn btn-kakao btn-full">카카오로 로그인</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

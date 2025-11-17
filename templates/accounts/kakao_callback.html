@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}카카오 로그인 연동 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="container auth-success">
+        <div class="auth-card auth-success-card">
+            <h2>카카오 로그인 연동 정보가 없습니다.</h2>
+            <p>카카오 로그인 요청이 확인되지 않았습니다. 아래 버튼을 눌러 다시 시도해주세요.</p>
+            <div class="success-actions">
+                <a href="{% url 'accounts:login' %}" class="btn btn-primary">로그인 페이지로 이동</a>
+                <a href="{% url 'home' %}" class="btn btn-ghost">홈으로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

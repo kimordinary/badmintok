@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}{{ contest.title }} - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" aria-labelledby="contest-title">
+    <div class="container contest-detail">
+        <a href="{% url 'contests:list' %}" class="btn btn-ghost" style="margin-bottom: 20px;">← 전체 대회 일정으로 돌아가기</a>
+
+        <div class="contest-detail__content">
+            <div class="contest-detail__image">
+                {% if contest.image %}
+                    <img src="{{ contest.image.url }}" alt="{{ contest.title }}" />
+                {% else %}
+                    <div class="contest-thumb-placeholder" style="width:100%; height:260px;">이미지 없음</div>
+                {% endif %}
+            </div>
+            <div class="contest-detail__side">
+                <h1 id="contest-title">{{ contest.title }}</h1>
+
+                <table class="contest-detail__info-table">
+                    <tbody>
+                        {% if contest.category %}
+                            <tr>
+                                <th scope="row">분류</th>
+                                <td><span class="category-badge" style="--badge-color: {{ contest.category.color }}">{{ contest.category.name }}</span></td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <th scope="row">일정</th>
+                            <td>{{ contest.get_period_display }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">장소</th>
+                            <td>{{ contest.location }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">접수기간</th>
+                            <td>{{ contest.get_registration_period_display }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">접수비</th>
+                            <td>{{ contest.entry_fee|default:'-' }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">대회구</th>
+                            <td>{{ contest.competition_type|default:'-' }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">참가상품</th>
+                            <td>{{ contest.participant_reward|default:'-' }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">스폰서</th>
+                            <td>{{ contest.sponsor|default:'-' }}</td>
+                        </tr>
+                        {% if contest.registration_link %}
+                            <tr>
+                                <th scope="row">접수처</th>
+                                <td>{{ contest.registration_link }}</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+
+                {% if contest.registration_link %}
+                    <a href="{{ contest.registration_link }}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top: 12px; display: inline-block;">대회 신청하기</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="contest-detail__accordions">
+            <div class="contest-accordion">
+                <button class="contest-accordion__header" type="button" aria-expanded="false">
+                    <span>참가 대상 (종목 / 연령 / 급수)</span>
+                    <span class="contest-accordion__icon">▼</span>
+                </button>
+                <div class="contest-accordion__content">
+                    <div class="contest-accordion__body">
+                        {{ contest.event_division }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="contest-accordion">
+                <button class="contest-accordion__header" type="button" aria-expanded="false">
+                    <span>입상상품</span>
+                    <span class="contest-accordion__icon">▼</span>
+                </button>
+                <div class="contest-accordion__content">
+                    <div class="contest-accordion__body">
+                        {% if contest.award_reward %}
+                            <div class="contest-award-list">
+                                {% for award in contest.award_reward %}
+                                    <div class="contest-award-group">
+                                        <strong>{{ award.division }}</strong>
+                                        <ul>
+                                            {% for prize in award.prizes %}
+                                                <li>{{ prize.rank }} : {{ prize.prize }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if contest.description %}
+            <article class="contest-detail__description">
+                <h2>🤖 대회 요강 AI 요약</h2>
+                <p class="contest-detail__description-subtitle">보기 힘든 대회 요강을 배드민톡이 필요한 정보만 골라 정리했어요!</p>
+                <p>{{ contest.description|linebreaksbr }}</p>
+            </article>
+        {% endif %}
+
+        {% if contest_month and week_number %}
+            <article class="contest-detail__same-week">
+                <h2>{{ contest_month }}월 {{ week_number }}주차 다른 대회도 있어요</h2>
+                {% if same_week_contests %}
+                    <div class="contest-same-week__list">
+                        {% for other_contest in same_week_contests %}
+                            <div class="contest-same-week__item">
+                                <a href="{% url 'contests:detail' other_contest.slug %}" class="contest-same-week__link">
+                                    <div class="contest-same-week__image-wrapper">
+                                        {% if other_contest.image %}
+                                            <img src="{{ other_contest.image.url }}" alt="{{ other_contest.title }}" class="contest-same-week__image">
+                                        {% else %}
+                                            <div class="contest-same-week__placeholder">이미지 없음</div>
+                                        {% endif %}
+                                        {% if other_contest.category %}
+                                            <span class="contest-same-week__category-overlay" style="--badge-color: {{ other_contest.category.color }}">{{ other_contest.category.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="contest-same-week__info">
+                                        <h3 class="contest-same-week__title">{{ other_contest.title }}</h3>
+                                        <div class="contest-same-week__details">
+                                            <div class="contest-same-week__detail-item">
+                                                <span class="contest-same-week__detail-label">일정</span>
+                                                <span class="contest-same-week__detail-value">{{ other_contest.get_period_display }}</span>
+                                            </div>
+                                            <div class="contest-same-week__detail-item">
+                                                <span class="contest-same-week__detail-label">장소</span>
+                                                <span class="contest-same-week__detail-value">{{ other_contest.location }}</span>
+                                            </div>
+                                            <div class="contest-same-week__detail-item">
+                                                <span class="contest-same-week__detail-label">접수기간</span>
+                                                <span class="contest-same-week__detail-value">{{ other_contest.get_registration_period_display }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); margin-top: 16px;">이번 주에는 다른 대회가 없습니다.</p>
+                {% endif %}
+            </article>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const accordionHeaders = document.querySelectorAll(".contest-accordion__header");
+        
+        accordionHeaders.forEach(header => {
+            header.addEventListener("click", function() {
+                const isExpanded = this.getAttribute("aria-expanded") === "true";
+                const content = this.nextElementSibling;
+                
+                // 현재 아코디언 닫기/열기
+                this.setAttribute("aria-expanded", !isExpanded);
+                content.setAttribute("aria-hidden", isExpanded);
+            });
+        });
+        
+        // 초기 상태 설정
+        document.querySelectorAll(".contest-accordion__content").forEach(content => {
+            content.setAttribute("aria-hidden", "true");
+        });
+    });
+</script>
+{% endblock %}

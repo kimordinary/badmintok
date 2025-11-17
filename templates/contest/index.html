@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block title %}배드민톡 - 배드민턴 대회{% endblock %}
+
+{% block content %}
+<section class="section" aria-labelledby="contest-title">
+    <div class="container">
+        <h1 id="contest-title">전체 대회 일정</h1>
+        <div class="contest-tabs" role="tablist" aria-label="대회 분류">
+            <button class="contest-tab active" role="tab" aria-selected="true" data-target="all">전체</button>
+            {% for category in categories %}
+                <button class="contest-tab" role="tab" aria-selected="false" data-target="category-{{ category.id }}">{{ category.name }}</button>
+            {% endfor %}
+        </div>
+        <div class="contest-panels">
+            <div class="contest-panel active" id="contest-panel-all" role="tabpanel" aria-labelledby="tab-all">
+                <div class="calendar-controls">
+                    <span class="calendar-title" id="calendarTitle">2025년 1월</span>
+                    <div>
+                        <select class="calendar-select" id="calendarYear" aria-label="년도 선택">
+                            <option value="2025">2025년</option>
+                            <option value="2026">2026년</option>
+                        </select>
+                        <select class="calendar-select" id="calendarMonth" aria-label="월 선택">
+                            <option value="1">1월</option>
+                            <option value="2">2월</option>
+                            <option value="3">3월</option>
+                            <option value="4">4월</option>
+                            <option value="5">5월</option>
+                            <option value="6">6월</option>
+                            <option value="7">7월</option>
+                            <option value="8">8월</option>
+                            <option value="9">9월</option>
+                            <option value="10">10월</option>
+                            <option value="11">11월</option>
+                            <option value="12">12월</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="calendar" id="calendarContainer">
+                    <table aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th scope="col">월</th>
+                                <th scope="col">화</th>
+                                <th scope="col">수</th>
+                                <th scope="col">목</th>
+                                <th scope="col">금</th>
+                                <th scope="col">토</th>
+                                <th scope="col">일</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendarGrid"></tbody>
+                    </table>
+                    <div class="calendar-banner-layer"></div>
+                </div>
+                <div class="contest-table-wrapper" aria-labelledby="contestTitle">
+                    <table class="contest-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">분류</th>
+                                <th scope="col">포스터</th>
+                                <th scope="col">대회명</th>
+                                <th scope="col">일정</th>
+                                <th scope="col">장소</th>
+                                <th scope="col">참가상품</th>
+                                <th scope="col">스폰서</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if contests %}
+                                {% for contest in contests %}
+                                    <tr>
+                                        <td>
+                                            {% if contest.category %}
+                                                <span class="category-badge" style="--badge-color: {{ contest.category.color }}">{{ contest.category.name }}</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if contest.image %}
+                                                <img src="{{ contest.image.url }}" alt="{{ contest.title }}">
+                                            {% else %}
+                                                <div class="contest-thumb-placeholder">이미지 없음</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'contests:detail' contest.slug %}" class="contest-title-link"><strong>{{ contest.title }}</strong></a>
+                                        </td>
+                                        <td>{{ contest.get_period_display }}</td>
+                                        <td>{{ contest.location }}</td>
+                                        <td>{{ contest.participant_reward|default:'-' }}</td>
+                                        <td>{{ contest.sponsor|default:'-' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="empty-state">등록된 대회 정보가 없습니다. 달력을 통해 원하는 월을 선택하세요.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% for category in categories %}
+                <div class="contest-panel" id="contest-panel-category-{{ category.id }}" role="tabpanel" aria-labelledby="tab-category-{{ category.id }}">
+                    <div class="calendar-controls">
+                        <span class="calendar-title" id="calendarTitle-category-{{ category.id }}">2025년 1월</span>
+                        <div>
+                            <select class="calendar-select" id="calendarYear-category-{{ category.id }}" aria-label="년도 선택">
+                                <option value="2025">2025년</option>
+                                <option value="2026">2026년</option>
+                            </select>
+                            <select class="calendar-select" id="calendarMonth-category-{{ category.id }}" aria-label="월 선택">
+                                <option value="1">1월</option>
+                                <option value="2">2월</option>
+                                <option value="3">3월</option>
+                                <option value="4">4월</option>
+                                <option value="5">5월</option>
+                                <option value="6">6월</option>
+                                <option value="7">7월</option>
+                                <option value="8">8월</option>
+                                <option value="9">9월</option>
+                                <option value="10">10월</option>
+                                <option value="11">11월</option>
+                                <option value="12">12월</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="calendar" id="calendarContainer-category-{{ category.id }}">
+                        <table aria-live="polite">
+                            <thead>
+                                <tr>
+                                    <th scope="col">월</th>
+                                    <th scope="col">화</th>
+                                    <th scope="col">수</th>
+                                    <th scope="col">목</th>
+                                    <th scope="col">금</th>
+                                    <th scope="col">토</th>
+                                    <th scope="col">일</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarGrid-category-{{ category.id }}"></tbody>
+                        </table>
+                        <div class="calendar-banner-layer"></div>
+                    </div>
+                    <div class="contest-table-wrapper" aria-labelledby="contestTitle">
+                        <table class="contest-table" id="contestTable-category-{{ category.id }}">
+                            <thead>
+                                <tr>
+                                    <th scope="col">분류</th>
+                                    <th scope="col">포스터</th>
+                                    <th scope="col">대회명</th>
+                                    <th scope="col">일정</th>
+                                    <th scope="col">장소</th>
+                                    <th scope="col">참가상품</th>
+                                    <th scope="col">스폰서</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contestTableBody-category-{{ category.id }}">
+                                <tr>
+                                    <td colspan="7" class="empty-state">해당 카테고리의 대회 정보가 없습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tabButtons = document.querySelectorAll(".contest-tab");
+        const panels = document.querySelectorAll(".contest-panel");
+
+        // 모든 대회 데이터 로드 및 준비
+        const contestData = JSON.parse("{{ contest_data|default:'[]'|escapejs }}");
+
+        const parseLocalDate = (value) => {
+            if (!value) return null;
+            const parts = value.split('-').map(Number);
+            if (parts.length !== 3) return null;
+            const [y, m, d] = parts;
+            return new Date(y, m - 1, d);
+        };
+
+        const allContestData = contestData
+            .map((contest) => {
+                const start = parseLocalDate(contest.schedule_start);
+                const end = parseLocalDate(contest.schedule_end) || start;
+                if (!start || !end || end < start) {
+                    return null;
+                }
+                return {
+                    ...contest,
+                    schedule_start: start,
+                    schedule_end: end,
+                };
+            })
+            .filter(Boolean);
+
+        // 카테고리 ID로 필터링하는 함수
+        function filterContestsByCategory(contests, categoryId) {
+            if (!categoryId || categoryId === 'all') {
+                return contests;
+            }
+            const categoryIdNum = parseInt(categoryId.replace('category-', ''), 10);
+            return contests.filter((contest) => {
+                return contest.category && contest.category.id === categoryIdNum;
+            });
+        }
+
+        // 범용 달력 렌더링 함수
+        function renderCalendar(panelId, year, month, filteredContests) {
+            const calendarTitle = panelId === 'all' 
+                ? document.getElementById("calendarTitle")
+                : document.getElementById(`calendarTitle-${panelId}`);
+            const calendarGrid = panelId === 'all'
+                ? document.getElementById("calendarGrid")
+                : document.getElementById(`calendarGrid-${panelId}`);
+            const calendarContainer = panelId === 'all'
+                ? document.getElementById("calendarContainer")
+                : document.getElementById(`calendarContainer-${panelId}`);
+            const bannerLayer = calendarContainer 
+                ? calendarContainer.querySelector(".calendar-banner-layer")
+                : null;
+
+            if (!calendarTitle || !calendarGrid || !calendarContainer) {
+                return;
+            }
+
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDate = new Date(year, month, 0).getDate();
+            const startIndex = (firstDay.getDay() + 6) % 7; // 월요일 시작
+            const totalCells = Math.ceil((startIndex + lastDate) / 7) * 7;
+
+            const startOfMonth = new Date(year, month - 1, 1);
+            const endOfMonth = new Date(year, month - 1, lastDate);
+
+            calendarTitle.textContent = `${year}년 ${month}월`;
+            calendarGrid.innerHTML = "";
+
+            const rowsMeta = [];
+            let row = document.createElement("tr");
+            let cellsInRow = [];
+
+            const pushRow = () => {
+                calendarGrid.appendChild(row);
+                rowsMeta.push({ row, cells: cellsInRow });
+                row = document.createElement("tr");
+                cellsInRow = [];
+            };
+
+            for (let i = 0; i < startIndex; i++) {
+                const emptyCell = document.createElement("td");
+                emptyCell.className = "empty";
+                row.appendChild(emptyCell);
+                cellsInRow.push({ cell: emptyCell });
+            }
+
+            for (let day = 1; day <= lastDate; day++) {
+                const cell = document.createElement("td");
+                cell.classList.add("calendar-day-cell");
+
+                const label = document.createElement("span");
+                label.className = "calendar-day-label";
+                label.textContent = day;
+                cell.appendChild(label);
+
+                const content = document.createElement("div");
+                content.className = "calendar-day-content";
+                cell.appendChild(content);
+
+                row.appendChild(cell);
+                cellsInRow.push({ cell, day, content });
+
+                if ((startIndex + day) % 7 === 0) {
+                    pushRow();
+                }
+            }
+
+            const filled = startIndex + lastDate;
+            for (let i = filled; i < totalCells; i++) {
+                const emptyCell = document.createElement("td");
+                emptyCell.className = "empty";
+                row.appendChild(emptyCell);
+                cellsInRow.push({ cell: emptyCell });
+                if ((i + 1) % 7 === 0) {
+                    pushRow();
+                }
+            }
+
+            if (cellsInRow.length) {
+                pushRow();
+            }
+
+            if (!bannerLayer) {
+                return;
+            }
+
+            bannerLayer.innerHTML = "";
+
+            const normalizeCategoryName = (name) => {
+                if (!name) return "";
+                return name.replace(/\s+/g, "").toLowerCase();
+            };
+
+            const categoryPriorityMap = new Map([
+                ["전국대회", 0],
+                ["전국", 0],
+                ["지역대회", 1],
+                ["지역", 1],
+                ["이벤트대회", 2],
+                ["이벤트", 2],
+                ["평일대회", 3],
+                ["평일", 3],
+            ]);
+
+            const getCategoryPriority = (category) => {
+                if (!category || !category.name) return 999;
+                const normalized = normalizeCategoryName(category.name);
+                return categoryPriorityMap.get(normalized) ?? 999;
+            };
+
+            const sortedContests = [...filteredContests].sort((a, b) => {
+                const priorityA = getCategoryPriority(a.category);
+                const priorityB = getCategoryPriority(b.category);
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                const timeA = a.schedule_start ? a.schedule_start.getTime() : 0;
+                const timeB = b.schedule_start ? b.schedule_start.getTime() : 0;
+                return timeA - timeB;
+            });
+
+            const slotAssignments = rowsMeta.map(() => Array(7).fill(0));
+
+            sortedContests.forEach((contest) => {
+                const effectiveStart = contest.schedule_start < startOfMonth ? startOfMonth : contest.schedule_start;
+                const effectiveEnd = contest.schedule_end > endOfMonth ? endOfMonth : contest.schedule_end;
+
+                if (effectiveStart > effectiveEnd) {
+                    return;
+                }
+
+                const startOffset = startIndex + (effectiveStart.getDate() - 1);
+                const endOffset = startIndex + (effectiveEnd.getDate() - 1);
+
+                const startWeek = Math.floor(startOffset / 7);
+                const endWeek = Math.floor(endOffset / 7);
+
+                let currentWeek = startWeek;
+                let currentStart = startOffset;
+
+                while (currentWeek <= endWeek) {
+                    const rowInfo = rowsMeta[currentWeek];
+                    if (!rowInfo) {
+                        break;
+                    }
+
+                    const weekStartOffset = currentWeek * 7;
+                    const weekEndOffset = weekStartOffset + 6;
+                    const weekStartCol = Math.max(currentStart - weekStartOffset, 0);
+                    const weekEndCol = Math.min(endOffset - weekStartOffset, 6);
+                    const spanCols = weekEndCol - weekStartCol + 1;
+
+                    const startCellInfo = rowInfo.cells[weekStartCol];
+                    const endCellInfo = rowInfo.cells[weekStartCol + spanCols - 1];
+                    if (!startCellInfo || !endCellInfo) {
+                        currentWeek += 1;
+                        currentStart = weekStartOffset + 7;
+                        continue;
+                    }
+
+                    const startCell = startCellInfo.cell;
+                    const endCell = endCellInfo.cell;
+                    
+                    // 배너를 배치하기 직전에 컨테이너와 셀의 위치를 다시 계산
+                    // 다른 카테고리 패널이 활성화될 때 정확한 위치를 얻기 위해 필요
+                    // 패널이 숨겨져 있으면 (display: none) getBoundingClientRect()가 0을 반환할 수 있음
+                    const containerRect = calendarContainer.getBoundingClientRect();
+                    const startRect = startCell.getBoundingClientRect();
+                    const endRect = endCell.getBoundingClientRect();
+                    
+                    // 패널이 아직 렌더링되지 않았거나 숨겨진 경우 스킵
+                    if (containerRect.width === 0 || containerRect.height === 0) {
+                        continue;
+                    }
+                    
+                    const labelEl = startCell.querySelector(".calendar-day-label");
+                    const labelHeight = labelEl ? labelEl.getBoundingClientRect().height : 0;
+
+                    let slotIndex = 0;
+                    for (let col = weekStartCol; col <= weekEndCol; col++) {
+                        slotIndex = Math.max(slotIndex, slotAssignments[currentWeek][col]);
+                    }
+
+                    for (let col = weekStartCol; col <= weekEndCol; col++) {
+                        slotAssignments[currentWeek][col] = slotIndex + 1;
+                    }
+
+                    const color = contest.category && contest.category.color ? contest.category.color : "#31AA60";
+                    const banner = document.createElement("a");
+                    banner.className = "calendar-event-banner";
+                    banner.href = `/contest/${contest.slug}/`;
+                    banner.textContent = contest.title;
+                    banner.style.backgroundColor = color;
+                    banner.style.color = "#ffffff";
+                    banner.title = `${contest.title} (${contest.period_display || ""})`;
+
+                    // 정확한 위치 및 너비 계산 (브라우저 확대/줌 시에도 정확하게 동작)
+                    const topOffset = startRect.top - containerRect.top + labelHeight + 12 + slotIndex * 24;
+                    
+                    // left 위치 계산: 시작 셀의 left에서 컨테이너의 left를 뺀 값
+                    const leftOffset = startRect.left - containerRect.left;
+                    
+                    // width 계산: 끝 셀의 right에서 시작 셀의 left를 뺀 값 (더 정확한 계산)
+                    // 브라우저 확대/줌 시에도 정확한 너비를 보장하기 위해
+                    const actualWidth = endRect.right - startRect.left;
+                    
+                    // 컨테이너 경계를 넘지 않도록 제한 (오른쪽 끝이 컨테이너를 넘지 않도록)
+                    const containerRight = containerRect.right - containerRect.left;
+                    const maxWidth = Math.max(0, containerRight - leftOffset);
+                    const finalWidth = Math.min(Math.max(0, actualWidth), maxWidth);
+
+                    banner.style.top = `${topOffset}px`;
+                    banner.style.left = `${leftOffset}px`;
+                    banner.style.width = `${finalWidth}px`;
+
+                    bannerLayer.appendChild(banner);
+
+                    currentWeek += 1;
+                    currentStart = weekStartOffset + 7;
+                }
+            });
+        }
+
+        // 테이블 렌더링 함수
+        function renderTable(panelId, filteredContests) {
+            // 전체 패널은 서버 사이드 렌더링을 사용하므로 스킵
+            if (panelId === 'all') {
+                return;
+            }
+
+            const tableBody = document.getElementById(`contestTableBody-${panelId}`);
+            
+            if (!tableBody) {
+                return;
+            }
+
+            tableBody.innerHTML = "";
+
+            if (filteredContests.length === 0) {
+                const emptyRow = document.createElement("tr");
+                emptyRow.innerHTML = `<td colspan="7" class="empty-state">해당 카테고리의 대회 정보가 없습니다.</td>`;
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+
+            filteredContests.forEach((contest) => {
+                const row = document.createElement("tr");
+                const categoryBadge = contest.category
+                    ? `<span class="category-badge" style="--badge-color: ${contest.category.color}">${contest.category.name}</span>`
+                    : "-";
+                const image = contest.image_url
+                    ? `<img src="${contest.image_url}" alt="${contest.title}">`
+                    : `<div class="contest-thumb-placeholder">이미지 없음</div>`;
+                
+                row.innerHTML = `
+                    <td>${categoryBadge}</td>
+                    <td>${image}</td>
+                    <td><a href="/contest/${contest.slug}/" class="contest-title-link"><strong>${contest.title}</strong></a></td>
+                    <td>${contest.period_display || "-"}</td>
+                    <td>${contest.location || "-"}</td>
+                    <td>${contest.participant_reward || "-"}</td>
+                    <td>${contest.sponsor || "-"}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 패널 업데이트 함수
+        function updatePanel(panelId, categoryId) {
+            // 패널이 활성화되어 있는지 확인 (무한 루프 방지)
+            const panel = document.getElementById(`contest-panel-${panelId}`);
+            if (!panel || !panel.classList.contains("active")) {
+                return;
+            }
+
+            const filteredContests = filterContestsByCategory(allContestData, categoryId);
+            
+            const yearSelect = panelId === 'all'
+                ? document.getElementById("calendarYear")
+                : document.getElementById(`calendarYear-${panelId}`);
+            const monthSelect = panelId === 'all'
+                ? document.getElementById("calendarMonth")
+                : document.getElementById(`calendarMonth-${panelId}`);
+
+            if (!yearSelect || !monthSelect) {
+                return;
+            }
+
+            const year = parseInt(yearSelect.value, 10);
+            const month = parseInt(monthSelect.value, 10);
+
+            // 해당 월의 대회만 필터링
+            const monthContests = filteredContests.filter((contest) => {
+                const contestYear = contest.schedule_start ? contest.schedule_start.getFullYear() : null;
+                const contestMonth = contest.schedule_start ? contest.schedule_start.getMonth() + 1 : null;
+                return contestYear === year && contestMonth === month;
+            });
+
+            renderCalendar(panelId, year, month, monthContests);
+            renderTable(panelId, filteredContests);
+        }
+
+        // 탭 클릭 이벤트 처리
+        tabButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                const target = button.dataset.target;
+
+                tabButtons.forEach((btn) => {
+                    btn.classList.toggle("active", btn === button);
+                    btn.setAttribute("aria-selected", btn === button ? "true" : "false");
+                });
+
+                panels.forEach((panel) => {
+                    const isActive = panel.id === `contest-panel-${target}`;
+                    panel.classList.toggle("active", isActive);
+                    if (isActive) {
+                        // 패널이 활성화되고 레이아웃이 업데이트된 후에 렌더링
+                        // 짧은 지연 후 렌더링하여 DOM 업데이트를 보장
+                        setTimeout(() => {
+                            updatePanel(target, target);
+                        }, 10);
+                    }
+                });
+            });
+        });
+
+        // 전체 패널의 년/월 선택 이벤트
+        const yearSelect = document.getElementById("calendarYear");
+        const monthSelect = document.getElementById("calendarMonth");
+        
+        if (yearSelect && monthSelect) {
+            const updateAllCalendar = () => {
+                updatePanel('all', 'all');
+            };
+            yearSelect.addEventListener("change", updateAllCalendar);
+            monthSelect.addEventListener("change", updateAllCalendar);
+            window.addEventListener("resize", () => {
+                updateAllCalendar();
+            });
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            if ([2025, 2026].includes(currentYear)) {
+                yearSelect.value = currentYear.toString();
+                monthSelect.value = currentMonth.toString();
+            }
+
+            updateAllCalendar();
+        }
+
+        // 각 카테고리 패널의 년/월 선택 이벤트
+        {% for category in categories %}
+        (function() {
+            const categoryId = 'category-{{ category.id }}';
+            const yearSelect = document.getElementById(`calendarYear-${categoryId}`);
+            const monthSelect = document.getElementById(`calendarMonth-${categoryId}`);
+            
+            if (yearSelect && monthSelect) {
+                const updateCategoryCalendar = () => {
+                    // 패널이 활성화되어 있을 때만 업데이트
+                    updatePanel(categoryId, categoryId);
+                };
+                yearSelect.addEventListener("change", updateCategoryCalendar);
+                monthSelect.addEventListener("change", updateCategoryCalendar);
+                
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1;
+                if ([2025, 2026].includes(currentYear)) {
+                    yearSelect.value = currentYear.toString();
+                    monthSelect.value = currentMonth.toString();
+                }
+            }
+        })();
+        {% endfor %}
+    });
+</script>
+{% endblock %}

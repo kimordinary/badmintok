@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}배드민톡 - 온라인 배드민턴 커뮤니티{% endblock %}
+
+{% block content %}
+    <section class="hero" aria-labelledby="hero-title" style="background-image: url('{% static 'images/landing/badmintok.png' %}');">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 id="hero-title">온라인 배드민턴장 배드민톡</h1>
+            <p class="hero-sub">동호인 1등 커뮤니티</p>
+        </div>
+    </section>
+
+    <section class="features" aria-labelledby="feature-title">
+        <div class="container">
+            <h2 id="feature-title">배드민톡은 동호인을 위해 만들어졌습니다</h2>
+            <p class="feature-lead">전국 배드민턴 대회 일정, 배드민턴 커뮤니티, 동호인 배드민턴 뉴스를 한 곳에서.</p>
+            <div class="feature-extra">
+                <h3>배드민톡 리뷰</h3>
+                <p>어디에도 없는 리뷰를 볼 수 있습니다.</p>
+                <div class="review-grid">
+                    <a href="#" class="review-card" aria-label="배드민턴 라켓 리뷰">
+                        <span class="emoji">🏸</span>
+                        <strong>배드민턴 라켓</strong>
+                    </a>
+                    <a href="#" class="review-card" aria-label="신발 리뷰">
+                        <span class="emoji">👟</span>
+                        <strong>신발</strong>
+                    </a>
+                    <a href="#" class="review-card" aria-label="보호대 리뷰">
+                        <span class="emoji">🛡️</span>
+                        <strong>보호대</strong>
+                    </a>
+                    <a href="#" class="review-card" aria-label="의류 리뷰">
+                        <span class="emoji">👕</span>
+                        <strong>의류</strong>
+                    </a>
+                    <a href="#" class="review-card" aria-label="셔틀콕 리뷰">
+                        <span class="emoji">🥎</span>
+                        <strong>셔틀콕</strong>
+                    </a>
+                </div>
+            </div>
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3>전국 대회 일정</h3>
+                    <p>지역별·급수별 공식·아마추어 대회를 한 눈에 확인하고, 참가 신청과 결과까지 간편하게 확인하세요.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>배드민톡 커뮤니티</h3>
+                    <p>코트 메이트 찾기, 팀 매칭, 장비 토론 등 동호인들이 활발히 소통하는 커뮤니티에서 함께 성장하세요.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>동호인 뉴스</h3>
+                    <p>전국 대회 소식, 선수 인터뷰, 동호인 트렌드를 빠르게 전달합니다. 관심 카테고리를 팔로우해보세요.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="mall-popular" aria-labelledby="mall-popular-title">
+        <div class="container">
+            <div class="section-head">
+                <h2 id="mall-popular-title">배드민톡 할인몰 인기 상품 TOP 5</h2>
+                <a class="section-more" href="#">더보기</a>
+            </div>
+            <p class="section-sub">배드민톡이 엄선한 최고의 추천 제품</p>
+            <div class="product-scroller" aria-label="인기 상품">
+                <div class="product-track">
+                    <a class="product-card" href="#">
+                        <div class="p-thumb"></div>
+                        <div class="p-title">아스트록스 88S PRO (3세대)</div>
+                    </a>
+                    <a class="product-card" href="#">
+                        <div class="p-thumb"></div>
+                        <div class="p-title">빅터 P9200 배드민턴화</div>
+                    </a>
+                    <a class="product-card" href="#">
+                        <div class="p-thumb"></div>
+                        <div class="p-title">요넥스 AC1100 손목 보호대</div>
+                    </a>
+                    <a class="product-card" href="#">
+                        <div class="p-thumb"></div>
+                        <div class="p-title">리닝 경기용 반팔 저지 2025</div>
+                    </a>
+                    <a class="product-card" href="#">
+                        <div class="p-thumb"></div>
+                        <div class="p-title">요넥스 에어로센사 50 셔틀콕</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="guide" aria-labelledby="guide-title">
+        <div class="container">
+            <h2 id="guide-title">배드민톡 구매 가이드</h2>
+            <ul class="guide-list">
+                <li>
+                    <a href="#">
+                        <div class="g-thumb"></div>
+                        <div class="g-body">
+                            <div class="g-title">라켓 구매가이드</div>
+                            <div class="g-meta">2025-06-01</div>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <div class="g-thumb"></div>
+                        <div class="g-body">
+                            <div class="g-title">나에게 맞는 라켓 선택법</div>
+                            <div class="g-meta">2025-06-02</div>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <div class="g-thumb"></div>
+                        <div class="g-body">
+                            <div class="g-title">배드민턴화의 차이점</div>
+                            <div class="g-meta">2025-06-03</div>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <div class="g-thumb"></div>
+                        <div class="g-body">
+                            <div class="g-title">보호대가 필요한 이유</div>
+                            <div class="g-meta">2025-06-04</div>
+                        </div>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="videos" aria-labelledby="videos-title">
+        <div class="container">
+            <h2 id="videos-title">최신 유튜브 영상</h2>
+            <div class="videos-grid">
+                <a class="video-card" href="#" aria-label="아스트록스 88리뷰">
+                    <div class="thumb minimal"></div>
+                    <h3>아스트록스 88리뷰</h3>
+                </a>
+                <a class="video-card" href="#" aria-label="리닝 하버텍 리뷰">
+                    <div class="thumb minimal"></div>
+                    <h3>리닝 하버텍 리뷰</h3>
+                </a>
+                <a class="video-card" href="#" aria-label="빅터 kfc 라켓 리뷰">
+                    <div class="thumb minimal"></div>
+                    <h3>빅터 kfc 라켓 리뷰</h3>
+                </a>
+                <a class="video-card" href="#" aria-label="스트로커스 옵티머스 리뷰">
+                    <div class="thumb minimal"></div>
+                    <h3>스트로커스 옵티머스 리뷰</h3>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="board board-list" aria-labelledby="board-title-tournaments">
+        <div class="container">
+            <h2 id="board-title-tournaments">전국 대회 일정</h2>
+            <ul class="posts">
+                <li>
+                    <a href="#" class="post-link">[대전] 2025 대전광역시 배드민턴 생활체육대회 참가 모집</a>
+                    <span class="meta">접수 D-7 · 남복/여복/혼복 · 초급~상급</span>
+                </li>
+                <li>
+                    <a href="#" class="post-link">[서울] 제12회 한강배 전국배드민턴대회 공지</a>
+                    <span class="meta">6/15(일) · 잠실실내체육관 · 참가선물 제공</span>
+                </li>
+                <li>
+                    <a href="#" class="post-link">[부산] 부산 시민배 2025 일정 및 신청 안내</a>
+                    <span class="meta">예선 리그 · 본선 토너먼트 · 상금 300만원</span>
+                </li>
+                <li>
+                    <a href="#" class="post-link">[광주] 빛고을 오픈 배드민턴 대회</a>
+                    <span class="meta">혼합복식 특화 · 초중급 대상 · 7/6(일)</span>
+                </li>
+                <li>
+                    <a href="#" class="post-link">[온라인] 전국 래더 리그 3분기 참가자 모집</a>
+                    <span class="meta">지역 제한 없음 · 개인전 · 랭킹 반영</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="board board-grid" aria-labelledby="board-title-community">
+        <div class="container">
+            <h2 id="board-title-community">사람들이 사용하고 있는 게시판</h2>
+            <div class="board-columns">
+                <aside class="board-cats" aria-label="게시판 카테고리">
+                    <h3>카테고리</h3>
+                    <ul>
+                        <li><a href="#" class="active">자유게시판</a></li>
+                        <li><a href="#">일기</a></li>
+                        <li><a href="#">배드민턴 번개</a></li>
+                        <li><a href="#">중고장터</a></li>
+                        <li><a href="#">코치/레슨</a></li>
+                        <li><a href="#">장비 리뷰</a></li>
+                    </ul>
+                </aside>
+                <div class="board-posts">
+                    <ul class="posts">
+                        <li>
+                            <a href="#" class="post-link">오늘 처음 드롭샷이 제대로 들어갔어요! 팁 공유합니다</a>
+                            <span class="meta">자유게시판 · 5분 전 · 23댓글</span>
+                        </li>
+                        <li>
+                            <a href="#" class="post-link">[번개/강남] 오늘 20시 역삼 문화센터 2자리</a>
+                            <span class="meta">배드민턴 번개 · 1시간 전 · 12신청</span>
+                        </li>
+                        <li>
+                            <a href="#" class="post-link">초급에서 중급 넘어갈 때 꼭 연습했던 루틴</a>
+                            <span class="meta">일기 · 3시간 전 · 17공감</span>
+                        </li>
+                        <li>
+                            <a href="#" class="post-link">아스트록스 77 매물 올립니다 (거의 새것)</a>
+                            <span class="meta">중고장터 · 1일 전 · 4관심</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
