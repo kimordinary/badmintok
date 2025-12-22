@@ -216,7 +216,7 @@ class ContestSchedule(models.Model):
         ("70대", "70대"),
         ("전연령", "전연령"),
     )
-
+    
     contest = models.ForeignKey(
         Contest,
         on_delete=models.CASCADE,
