@@ -1,0 +1,53 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="admin-dashboard">
+  <div class="admin-dashboard-header">
+    <div>
+      <h1>관리자 대시보드</h1>
+      <p class="admin-dashboard-subtitle">배드민톡 콘텐츠와 데이터를 한 곳에서 관리하세요.</p>
+    </div>
+  </div>
+
+  {% if app_list %}
+    <div class="admin-dashboard-grid">
+      {% for app in app_list %}
+        <section class="admin-dashboard-app">
+          <header class="admin-dashboard-app__header">
+            <h2>{{ app.name }}</h2>
+            {% if app.app_url %}
+              <a href="{{ app.app_url }}" class="admin-dashboard-app__more">전체 보기</a>
+            {% endif %}
+          </header>
+          <ul class="admin-dashboard-model-list">
+            {% for model in app.models %}
+              <li class="admin-dashboard-model{% if not model.admin_url %} admin-dashboard-model--disabled{% endif %}">
+                <div class="admin-dashboard-model__main">
+                  {% if model.admin_url %}
+                    <a href="{{ model.admin_url }}" class="admin-dashboard-model__name">{{ model.name }}</a>
+                  {% else %}
+                    <span class="admin-dashboard-model__name">{{ model.name }}</span>
+                  {% endif %}
+                  {% if model.add_url %}
+                    <a href="{{ model.add_url }}" class="admin-dashboard-tag">새로 추가</a>
+                  {% endif %}
+                </div>
+                {% if model.view_only %}
+                  <span class="admin-dashboard-model__meta">읽기 전용</span>
+                {% else %}
+                  {% if model.admin_url %}
+                    <span class="admin-dashboard-model__meta">데이터 관리</span>
+                  {% endif %}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>관리할 수 있는 앱이 없습니다.</p>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}프로필 편집 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" style="margin-top: 20px;">
+    <div class="container" style="max-width: 800px;">
+        <div style="margin-bottom: 32px;">
+            <a href="{% url 'accounts:mypage' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--brand); text-decoration: none; font-weight: 600; margin-bottom: 24px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                마이페이지로 돌아가기
+            </a>
+            <h1 style="font-size: 28px; font-weight: 700; margin: 0; color: var(--brand-800);">프로필 편집</h1>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px;">
+            {% if form.errors %}
+                <div class="form-errors">
+                    <strong>다음 오류를 수정해주세요:</strong>
+                    <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ field }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- 활동명 -->
+                <div class="form-field">
+                    <label for="{{ form.activity_name.id_for_label }}">
+                        활동명 <span class="required">*</span>
+                    </label>
+                    {{ form.activity_name }}
+                    {% if form.activity_name.help_text %}
+                        <p class="help-text">{{ form.activity_name.help_text }}</p>
+                    {% endif %}
+                    {% if form.activity_name.errors %}
+                        <p class="error-text">{{ form.activity_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 프로필 이미지 -->
+                <div class="form-field">
+                    <label for="{{ form.profile_image.id_for_label }}">프로필 사진</label>
+                    {% if profile.profile_image and profile.profile_image.name != "images/userprofile/user.png" %}
+                        <div style="margin-bottom: 12px;">
+                            <img src="{{ profile.profile_image.url }}" alt="현재 프로필 사진" 
+                                 style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
+                        </div>
+                    {% endif %}
+                    {{ form.profile_image }}
+                    {% if form.profile_image.help_text %}
+                        <p class="help-text">{{ form.profile_image.help_text }}</p>
+                    {% endif %}
+                    {% if form.profile_image.errors %}
+                        <p class="error-text">{{ form.profile_image.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 이름 -->
+                <div class="form-field">
+                    <label for="{{ form.name.id_for_label }}">이름</label>
+                    {{ form.name }}
+                    {% if form.name.help_text %}
+                        <p class="help-text">{{ form.name.help_text }}</p>
+                    {% endif %}
+                    {% if form.name.errors %}
+                        <p class="error-text">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 성별 -->
+                <div class="form-field">
+                    <label for="{{ form.gender.id_for_label }}">성별</label>
+                    {{ form.gender }}
+                    {% if form.gender.help_text %}
+                        <p class="help-text">{{ form.gender.help_text }}</p>
+                    {% endif %}
+                    {% if form.gender.errors %}
+                        <p class="error-text">{{ form.gender.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 연령대 -->
+                <div class="form-field">
+                    <label for="{{ form.age_range.id_for_label }}">연령대</label>
+                    {{ form.age_range }}
+                    {% if form.age_range.help_text %}
+                        <p class="help-text">{{ form.age_range.help_text }}</p>
+                    {% endif %}
+                    {% if form.age_range.errors %}
+                        <p class="error-text">{{ form.age_range.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 생일 -->
+                <div class="form-field">
+                    <label for="{{ form.birthday.id_for_label }}">생일</label>
+                    {{ form.birthday }}
+                    {% if form.birthday.help_text %}
+                        <p class="help-text">{{ form.birthday.help_text }}</p>
+                    {% endif %}
+                    {% if form.birthday.errors %}
+                        <p class="error-text">{{ form.birthday.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 출생연도 -->
+                <div class="form-field">
+                    <label for="{{ form.birth_year.id_for_label }}">출생연도</label>
+                    {{ form.birth_year }}
+                    {% if form.birth_year.help_text %}
+                        <p class="help-text">{{ form.birth_year.help_text }}</p>
+                    {% endif %}
+                    {% if form.birth_year.errors %}
+                        <p class="error-text">{{ form.birth_year.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 전화번호 -->
+                <div class="form-field">
+                    <label for="{{ form.phone_number.id_for_label }}">전화번호</label>
+                    {{ form.phone_number }}
+                    {% if form.phone_number.help_text %}
+                        <p class="help-text">{{ form.phone_number.help_text }}</p>
+                    {% endif %}
+                    {% if form.phone_number.errors %}
+                        <p class="error-text">{{ form.phone_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- 배송지 정보 섹션 -->
+                <div style="margin-top: 40px; padding-top: 32px; border-top: 2px solid #e2e8f0;">
+                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 24px; color: var(--brand-800);">배송지 정보</h2>
+                    
+                    <!-- 수령인명 -->
+                    <div class="form-field">
+                        <label for="{{ form.shipping_receiver.id_for_label }}">수령인명</label>
+                        {{ form.shipping_receiver }}
+                        {% if form.shipping_receiver.help_text %}
+                            <p class="help-text">{{ form.shipping_receiver.help_text }}</p>
+                        {% endif %}
+                        {% if form.shipping_receiver.errors %}
+                            <p class="error-text">{{ form.shipping_receiver.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- 배송지 전화번호 -->
+                    <div class="form-field">
+                        <label for="{{ form.shipping_phone_number.id_for_label }}">배송지 전화번호</label>
+                        {{ form.shipping_phone_number }}
+                        {% if form.shipping_phone_number.help_text %}
+                            <p class="help-text">{{ form.shipping_phone_number.help_text }}</p>
+                        {% endif %}
+                        {% if form.shipping_phone_number.errors %}
+                            <p class="error-text">{{ form.shipping_phone_number.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- 배송지 주소 -->
+                    <div class="form-field">
+                        <label for="{{ form.shipping_address.id_for_label }}">배송지 주소</label>
+                        {{ form.shipping_address }}
+                        {% if form.shipping_address.help_text %}
+                            <p class="help-text">{{ form.shipping_address.help_text }}</p>
+                        {% endif %}
+                        {% if form.shipping_address.errors %}
+                            <p class="error-text">{{ form.shipping_address.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 계정 관리 섹션 -->
+                <div style="margin-top: 40px; padding-top: 32px; border-top: 2px solid #e2e8f0;">
+                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 24px; color: var(--brand-800);">계정 관리</h2>
+                    
+                    <div style="display: grid; gap: 12px;">
+                        <a href="{% url 'accounts:password_change' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--surface-2); border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: inherit; transition: all 0.2s ease;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 20px;">🔑</span>
+                                <span style="font-size: 16px; font-weight: 500; color: #1e293b;">비밀번호 변경</span>
+                            </div>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
+                                <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                        </a>
+                        <a href="{% url 'accounts:account_delete' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; text-decoration: none; color: #dc2626; transition: all 0.2s ease;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 20px;">⚠️</span>
+                                <span style="font-size: 16px; font-weight: 500;">계정 탈퇴</span>
+                            </div>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 버튼 -->
+                <div style="display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1; min-width: 120px;">
+                        저장하기
+                    </button>
+                    <a href="{% url 'accounts:mypage' %}" class="btn btn-ghost" style="flex: 1; min-width: 120px; text-align: center;">
+                        취소
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+@media (max-width: 768px) {
+    .section > .container {
+        padding: 16px;
+    }
+    
+    .section > .container > div:last-child {
+        padding: 24px 20px !important;
+    }
+    
+    .form-field {
+        margin-bottom: 24px;
+    }
+    
+    .section > .container > div:last-child > form > div:last-child {
+        flex-direction: column;
+    }
+    
+    .section > .container > div:last-child > form > div:last-child .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

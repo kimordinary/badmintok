@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}일정 신청 - {{ schedule.title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 600px;">
+        <div style="margin-bottom: 16px;">
+            <a href="{% url 'band:schedule_detail' band.id schedule.id %}" style="color: var(--brand); text-decoration: none;">← 일정 상세</a>
+        </div>
+        
+        <h1>일정 신청</h1>
+        <p style="color: #64748b; margin-bottom: 24px;">{{ schedule.title }}</p>
+        
+        <div style="padding: 16px; background: #f8fafc; border-radius: 8px; margin-bottom: 24px;">
+            <div style="font-size: 14px; color: #1e293b; line-height: 1.8;">
+                <div><strong>일정:</strong> {{ schedule.start_datetime|date:"Y년 m월 d일 H:i" }}</div>
+                {% if schedule.location %}
+                    <div><strong>장소:</strong> {{ schedule.location }}</div>
+                {% endif %}
+                {% if schedule.max_participants %}
+                    <div><strong>인원:</strong> {{ schedule.current_participants }} / {{ schedule.max_participants }}명</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="form-errors" style="margin-bottom: 20px;">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="form-field">
+                <label for="{{ form.notes.id_for_label }}">신청 메모 (선택사항)</label>
+                {{ form.notes }}
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button type="submit" class="btn btn-primary">신청하기</button>
+                <a href="{% url 'band:schedule_detail' band.id schedule.id %}" class="btn btn-ghost">취소</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+

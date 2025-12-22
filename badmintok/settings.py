@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +26,12 @@ SECRET_KEY = 'django-insecure-sspxl=1jonty09c+iave54)vi=uis7yv!r%7f0kd1+cw4bq@sr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+# Nginx 프록시를 통한 요청 처리
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+SECURE_PROXY_SSL_HEADER = None  # HTTPS 사용 시 설정
 
 
 # Application definition
@@ -37,8 +43,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 프로젝트 앱
+    'badmintok',
+    # 도메인 앱
     'accounts',
     'contests',
+    'community',
+    'band',
 ]
 
 MIDDLEWARE = [
@@ -63,6 +74,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'badmintok.context_processors.community_categories',
             ],
         },
     },
@@ -77,11 +89,12 @@ WSGI_APPLICATION = 'badmintok.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',   # MYSQL을 사용함
-        'NAME': 'badmintok',                  # 데이터베이스(스키마) 이름
-        'USER': 'root',                       # 데이터베이스(접속명) 사용자 이름
-        'PASSWORD': '1234',                   # 데이터베이스 비밀번호
-        'HOST': '127.0.0.1',                  # 데이터베이스 호스트
-        'PORT': '3306',                       # 데이터베이스 포트
+        'NAME': os.environ.get('DB_NAME', 'badmintok'),        # 데이터베이스(스키마) 이름
+        'USER': os.environ.get('DB_USER', 'root'),             # 데이터베이스(접속명) 사용자 이름
+        'PASSWORD': os.environ.get('DB_PASSWORD', '1234'),     # 데이터베이스 비밀번호
+        # Docker 환경에서는 서비스 이름(예: db)을 호스트로 사용
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),        # 데이터베이스 호스트
+        'PORT': os.environ.get('DB_PORT', '3306'),             # 데이터베이스 포트
         'OPTIONS': {
             'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -124,14 +137,24 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# 정적 파일 URL
+STATIC_URL = '/static/'
+
+# collectstatic이 모으는 최종 위치 (Docker/Nginx 등에서 서빙)
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# 개발 환경에서만 추가로 읽어올 정적 파일 경로
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
-    Path(r"C:\Users\home\Documents\python\web"),
 ]
 
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# File upload settings
+# 전체 요청 크기 제한 (이미지 + 폼 데이터 포함)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB (이미지 + 폼 데이터를 고려하여 여유있게 설정)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 3145728  # 3MB (개별 파일 크기 제한)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -142,6 +165,19 @@ AUTH_USER_MODEL = 'accounts.User'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
+# 세션 설정
+SESSION_COOKIE_SECURE = False  # 개발 환경에서는 False (HTTPS 사용 시 True)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'  # 'Lax'로 설정하여 외부 리다이렉트에서도 쿠키 전달
+SESSION_SAVE_EVERY_REQUEST = True
+# 프로덕션 환경에서 Nginx 프록시를 통한 세션 유지
+# localhost와 127.0.0.1은 다른 도메인으로 취급되므로 None으로 설정
+SESSION_COOKIE_DOMAIN = None  # None으로 설정하여 모든 도메인에서 쿠키 전달
+SESSION_COOKIE_PATH = '/'  # 모든 경로에서 쿠키 전달
+# 세션 쿠키 이름 (기본값 사용)
+SESSION_COOKIE_NAME = 'sessionid'
+
 KAKAO_CLIENT_ID = '90b3d0426d0273b8e9d1113e6184ba6a'
 KAKAO_CLIENT_SECRET = ''
-KAKAO_REDIRECT_URI = 'http://127.0.0.1:8000/accounts/kakao'
+# 개발 환경: 8000 포트 사용
+KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI', 'http://127.0.0.1:8000/accounts/kakao')

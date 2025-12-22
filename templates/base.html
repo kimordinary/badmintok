@@ -10,23 +10,35 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <meta name="theme-color" content="#31AA60">
     {% block extra_head %}{% endblock %}
+    <!-- 모바일 오버레이 클릭 차단 방지 유틸리티 (가장 먼저 로드) -->
+    <script src="{% static 'js/mobile-overlay-fix.js' %}"></script>
 </head>
 <body>
     <header class="site-header">
         <div class="header-inner">
+            <!-- 모바일 햄버거 메뉴 버튼 -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="메뉴 열기" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
             <a class="logo" href="{% url 'home' %}" aria-label="Badmintok Home">Badmintok</a>
+
             <nav class="main-nav" aria-label="주요 카테고리">
                 <ul>
-                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'home' %}active{% endif %}" href="{% url 'home' %}">홈</a></li>
-                    <li><a class="{% if request.resolver_match and request.resolver_match.namespace == 'contests' %}active{% endif %}" href="{% url 'contests:list' %}">배드민턴 대회</a></li>
-                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'news' %}active{% endif %}" href="{% url 'news' %}">배드민톡 뉴스</a></li>
-                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'reviews' %}active{% endif %}" href="{% url 'reviews' %}">배드민톡 리뷰</a></li>
-                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'community' %}active{% endif %}" href="{% url 'community' %}">커뮤니티</a></li>
-                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'shop' %}active{% endif %}" href="{% url 'shop' %}">배드민톡 할인몰</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.namespace == 'contests' %}active{% endif %}" href="{% url 'contests:list' %}">전국 배드민턴 대회</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.view_name == 'badmintok' or request.resolver_match.view_name == 'news' or request.resolver_match.view_name == 'reviews' %}active{% endif %}" href="{% url 'badmintok' %}">배드민톡</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.namespace == 'community' %}active{% endif %}" href="{% url 'community:list' %}">동호인톡</a></li>
+                    <li><a class="{% if request.resolver_match and request.resolver_match.namespace == 'band' %}active{% endif %}" href="{% url 'band:list' %}">웹민턴</a></li>
                 </ul>
             </nav>
+
             <div class="auth-actions">
                 {% if user.is_authenticated %}
+                    <a href="{% url 'accounts:mypage' %}" class="mobile-profile-btn" aria-label="마이페이지">
+                        <img src="{{ user.profile_image_url }}" alt="{{ user.activity_name }} 프로필" class="profile-avatar-mobile" width="32" height="32">
+                    </a>
                     <div class="profile-preview">
                         <img src="{{ user.profile_image_url }}" alt="{{ user.activity_name }} 프로필" class="profile-avatar" width="36" height="36">
                         <span class="welcome">{{ user.activity_name }} 님</span>
@@ -36,12 +48,94 @@
                         <button type="submit" class="btn btn-ghost">로그아웃</button>
                     </form>
                 {% else %}
+                    <a class="btn btn-ghost mobile-login-btn" href="{% url 'accounts:login' %}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </a>
                     <a class="btn btn-ghost" href="{% url 'accounts:login' %}">로그인</a>
                     <a class="btn btn-primary" href="{% url 'accounts:signup' %}">회원가입</a>
                 {% endif %}
             </div>
         </div>
     </header>
+
+    <!-- 모바일 메뉴 오버레이 -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+    <!-- 모바일 사이드 메뉴 -->
+    <nav class="mobile-menu" id="mobileMenu" aria-label="모바일 메뉴">
+        <div class="mobile-menu-header">
+            <span class="mobile-menu-title">메뉴</span>
+            <button class="mobile-menu-close" id="mobileMenuClose" aria-label="메뉴 닫기">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="mobile-menu-user">
+            {% if user.is_authenticated %}
+                <div class="mobile-user-info">
+                    <img src="{{ user.profile_image_url }}" alt="{{ user.activity_name }} 프로필" class="mobile-user-avatar" width="48" height="48">
+                    <div class="mobile-user-details">
+                        <span class="mobile-user-name">{{ user.activity_name }} 님</span>
+                        <a href="{% url 'accounts:mypage' %}" class="mobile-user-mypage">마이페이지</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="mobile-auth-buttons">
+                    <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-block">로그인</a>
+                    <a href="{% url 'accounts:signup' %}" class="btn btn-outline btn-block">회원가입</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <ul class="mobile-menu-list">
+            <li>
+                <a href="{% url 'home' %}" class="mobile-menu-item {% if request.resolver_match.view_name == 'home' %}active{% endif %}">
+                    <span class="mobile-menu-icon">🏠</span>
+                    <span class="mobile-menu-text">홈</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'contests:list' %}" class="mobile-menu-item {% if request.resolver_match and request.resolver_match.namespace == 'contests' %}active{% endif %}">
+                    <span class="mobile-menu-icon">🏆</span>
+                    <span class="mobile-menu-text">전국 배드민턴 대회</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'badmintok' %}" class="mobile-menu-item {% if request.resolver_match and request.resolver_match.view_name == 'badmintok' or request.resolver_match.view_name == 'news' or request.resolver_match.view_name == 'reviews' %}active{% endif %}">
+                    <span class="mobile-menu-icon">📰</span>
+                    <span class="mobile-menu-text">배드민톡</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'community:list' %}" class="mobile-menu-item {% if request.resolver_match and request.resolver_match.namespace == 'community' %}active{% endif %}">
+                    <span class="mobile-menu-icon">💬</span>
+                    <span class="mobile-menu-text">동호인톡</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'band:list' %}" class="mobile-menu-item {% if request.resolver_match and request.resolver_match.namespace == 'band' %}active{% endif %}">
+                    <span class="mobile-menu-icon">👥</span>
+                    <span class="mobile-menu-text">웹민턴</span>
+                </a>
+            </li>
+        </ul>
+
+        {% if user.is_authenticated %}
+        <div class="mobile-menu-footer">
+            <form action="{% url 'accounts:logout' %}" method="post" style="width: 100%;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-block">로그아웃</button>
+            </form>
+        </div>
+        {% endif %}
+    </nav>
+
     <div class="scroll-progress" id="scrollProgress"></div>
 
     {% if messages %}
@@ -61,78 +155,162 @@
             <div>
                 <h3 id="footer-title">배드민톡</h3>
                 <p class="muted">온라인 배드민턴장, 동호인 No.1 커뮤니티</p>
+                <p style="margin-top: 12px; font-size: 12px; color: #94a3b8; line-height: 1.5; width: 80%;">※ 본 사이트에는 일부 제휴 링크 및 유료 광고가 포함될 수 있으며, 운영을 위한 수익이 발생할 수 있습니다.</p>
             </div>
             <div>
                 <h4>서비스</h4>
                 <ul>
-                    <li><a href="{% url 'contests:list' %}">배드민턴 대회</a></li>
-                    <li><a href="{% url 'community' %}">커뮤니티</a></li>
-                    <li><a href="{% url 'reviews' %}">배드민톡 리뷰</a></li>
-                    <li><a href="{% url 'news' %}">배드민톡 뉴스</a></li>
-                    <li><a href="{% url 'shop' %}">배드민톡 할인몰</a></li>
+                    <li><a href="{% url 'contests:list' %}">전국 배드민턴 대회</a></li>
+                    <li><a href="{% url 'community:list' %}">동호인톡</a></li>
+                    <li><a href="{% url 'band:list' %}">웹민턴</a></li>
+                    <li><a href="{% url 'badmintok' %}">배드민톡</a></li>
                 </ul>
             </div>
             <div>
                 <h4>고객지원</h4>
                 <ul>
-                    <li><a href="#">공지사항</a></li>
+                    <li><a href="{% url 'notice_list' %}">공지사항</a></li>
                     <li><a href="#">문의하기</a></li>
-                    <li><a href="#">이용약관</a></li>
-                    <li><a href="#">개인정보처리방침</a></li>
+                    <li><a href="{% url 'terms' %}">이용약관</a></li>
+                    <li><a href="{% url 'privacy' %}">개인정보처리방침</a></li>
                 </ul>
             </div>
             <div>
                 <h4>팔로우</h4>
                 <ul>
-                    <li><a href="#">Instagram</a></li>
-                    <li><a href="#">YouTube</a></li>
-                    <li><a href="#">Facebook</a></li>
+                    <li><a href="https://www.instagram.com/badmintok_korea/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                    <li><a href="https://www.youtube.com/@badmintok_korea" target="_blank" rel="noopener noreferrer">YouTube</a></li>
+                    <li><a href="https://www.facebook.com/people/%EB%B0%B0%EB%93%9C%EB%AF%BC%ED%86%A1/61579067079012/?mibextid=wwXIfr&rdid=dbGY14DJNgHZaD5I&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1Agj9vy59q%2F%3Fmibextid%3DwwXIfr" target="_blank" rel="noopener noreferrer">Facebook</a></li>
                 </ul>
             </div>
         </div>
         <div class="footer-bottom">
             <div class="container">
                 <small>© 2025 Badmintok. All rights reserved.</small>
+                <br>
+                <small>(주) 평범한 : 638-09-02602</small>
             </div>
         </div>
     </footer>
 
     {% block extra_scripts %}{% endblock %}
-    
+
     <script>
         (function() {
             const scrollProgress = document.getElementById('scrollProgress');
             const siteHeader = document.querySelector('.site-header');
-            
+            const main = document.querySelector('main');
+
             function setProgressBarPosition() {
                 if (siteHeader) {
                     const headerHeight = siteHeader.offsetHeight;
                     scrollProgress.style.top = headerHeight + 'px';
+                    // main에 헤더 높이만큼 padding-top 추가
+                    if (main) {
+                        main.style.paddingTop = headerHeight + 'px';
+                    }
                 }
             }
-            
+
             function updateScrollProgress() {
                 const windowHeight = window.innerHeight;
                 const documentHeight = document.documentElement.scrollHeight;
                 const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
                 const scrollableHeight = documentHeight - windowHeight;
                 const scrollPercentage = (scrollTop / scrollableHeight) * 100;
-                
+
                 scrollProgress.style.width = Math.min(scrollPercentage, 100) + '%';
             }
-            
-            // 헤더 높이에 맞춰 진행바 위치 설정
+
+            // 헤더 높이에 맞춰 진행바 위치 및 main padding 설정
             setProgressBarPosition();
-            
+
             // 스크롤 이벤트 리스너 추가
             window.addEventListener('scroll', updateScrollProgress);
             window.addEventListener('resize', function() {
                 setProgressBarPosition();
                 updateScrollProgress();
             });
-            
+
             // 초기 로드 시 실행
             updateScrollProgress();
+        })();
+
+        // 모바일 메뉴 토글
+        (function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenuClose = document.getElementById('mobileMenuClose');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+            const body = document.body;
+
+            function openMobileMenu() {
+                mobileMenu.classList.add('active');
+                mobileMenuOverlay.classList.add('active');
+                mobileMenuToggle.setAttribute('aria-expanded', 'true');
+                body.style.overflow = 'hidden';
+            }
+
+            function closeMobileMenu() {
+                if (mobileMenu) {
+                    mobileMenu.classList.remove('active');
+                }
+                if (mobileMenuOverlay) {
+                    mobileMenuOverlay.classList.remove('active');
+                }
+                if (mobileMenuToggle) {
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                }
+                if (body) {
+                    body.style.overflow = '';
+                }
+            }
+
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Mobile menu toggle clicked');
+                    if (mobileMenu && mobileMenu.classList.contains('active')) {
+                        closeMobileMenu();
+                    } else {
+                        openMobileMenu();
+                    }
+                });
+            } else {
+                console.error('mobileMenuToggle not found');
+            }
+            
+            if (!mobileMenu) {
+                console.error('mobileMenu not found');
+            }
+            
+            if (!mobileMenuOverlay) {
+                console.error('mobileMenuOverlay not found');
+            }
+
+            if (mobileMenuClose) {
+                mobileMenuClose.addEventListener('click', closeMobileMenu);
+            }
+
+            if (mobileMenuOverlay) {
+                mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+            }
+
+            // ESC 키로 메뉴 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
+                    closeMobileMenu();
+                }
+            });
+
+            // 메뉴 아이템 클릭 시 메뉴 닫기
+            const mobileMenuItems = document.querySelectorAll('.mobile-menu-item');
+            mobileMenuItems.forEach(function(item) {
+                item.addEventListener('click', function() {
+                    closeMobileMenu();
+                });
+            });
         })();
     </script>
 </body>

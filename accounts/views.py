@@ -13,8 +13,19 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, TemplateView
 
-from .forms import UserSignupForm
-from .models import User, UserProfile
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
+from django.db.models import Count, Q
+from django.core.paginator import Paginator
+
+from .forms import UserSignupForm, UserProfileForm, PasswordChangeFormCustom, InquiryForm
+from .models import User, UserProfile, UserBlock, Report, Inquiry
+from band.models import (
+    Band, BandPost, BandComment, BandPostLike,
+    BandScheduleApplication, BandVoteChoice
+)
+from community.models import Post, Comment, PostShare
+from contests.models import Contest
 
 
 class SignupView(CreateView):
@@ -27,22 +38,328 @@ class SignupSuccessView(TemplateView):
     template_name = "accounts/signup_success.html"
 
 
+@login_required
+def mypage(request):
+    """마이페이지 - 요약 대시보드"""
+    user = request.user
+    
+    # 프로필 정보
+    try:
+        profile = user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=user)
+    
+    # 각 섹션별 카운트만 조회 (요약 정보)
+    my_bands_count = Band.objects.filter(
+        members__user=user,
+        members__status="active"
+    ).count()
+    
+    created_bands_count = Band.objects.filter(created_by=user).count()
+    band_posts_count = BandPost.objects.filter(author=user).count()
+    band_comments_count = BandComment.objects.filter(author=user).count()
+    liked_band_posts_count = BandPost.objects.filter(likes__user=user).distinct().count()
+    schedule_applications_count = BandScheduleApplication.objects.filter(user=user).count()
+    vote_choices_count = BandVoteChoice.objects.filter(user=user).count()
+    community_posts_count = Post.objects.filter(author=user).count()
+    liked_posts_count = Post.objects.filter(likes=user).distinct().count()
+    comments_count = Comment.objects.filter(author=user).count()
+    shared_posts_count = Post.objects.filter(shares__user=user).distinct().count()
+    liked_contests_count = Contest.objects.filter(likes=user).distinct().count()
+    
+    return render(request, "accounts/mypage.html", {
+        "profile": profile,
+        "my_bands_count": my_bands_count,
+        "created_bands_count": created_bands_count,
+        "band_posts_count": band_posts_count,
+        "band_comments_count": band_comments_count,
+        "liked_band_posts_count": liked_band_posts_count,
+        "schedule_applications_count": schedule_applications_count,
+        "vote_choices_count": vote_choices_count,
+        "community_posts_count": community_posts_count,
+        "liked_posts_count": liked_posts_count,
+        "comments_count": comments_count,
+        "shared_posts_count": shared_posts_count,
+        "liked_contests_count": liked_contests_count,
+    })
+
+
+@login_required
+def profile_edit(request):
+    """프로필 편집"""
+    user = request.user
+    try:
+        profile = user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=user)
+    
+    if request.method == "POST":
+        form = UserProfileForm(request.POST, request.FILES, instance=profile, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "프로필이 성공적으로 수정되었습니다.")
+            return redirect("accounts:mypage")
+    else:
+        form = UserProfileForm(instance=profile, user=user)
+    
+    return render(request, "accounts/profile_edit.html", {
+        "form": form,
+        "profile": profile,
+    })
+
+
+# 각 섹션별 상세 페이지 뷰들
+@login_required
+def mypage_bands(request):
+    """내 모임 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    my_bands = Band.objects.filter(
+        members__user=user,
+        members__status="active"
+    ).annotate(
+        total_members=Count("members", filter=Q(members__status="active")),
+        total_posts=Count("posts")
+    ).order_by("-members__joined_at")
+    
+    paginator = Paginator(my_bands, per_page)
+    bands_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_bands.html", {
+        "bands_page": bands_page,
+        "title": "내 모임",
+    })
+
+
+@login_required
+def mypage_created_bands(request):
+    """내가 만든 모임 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    created_bands = Band.objects.filter(created_by=user).order_by("-created_at")
+    paginator = Paginator(created_bands, per_page)
+    bands_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_bands.html", {
+        "bands_page": bands_page,
+        "title": "내가 만든 모임",
+    })
+
+
+@login_required
+def mypage_band_posts(request):
+    """작성한 모임 게시글 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    band_posts = BandPost.objects.filter(author=user).order_by("-created_at")
+    paginator = Paginator(band_posts, per_page)
+    posts_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_band_posts.html", {
+        "posts_page": posts_page,
+        "title": "작성한 모임 게시글",
+    })
+
+
+@login_required
+def mypage_band_comments(request):
+    """작성한 모임 댓글 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    band_comments = BandComment.objects.filter(author=user).order_by("-created_at")
+    paginator = Paginator(band_comments, per_page)
+    comments_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_band_comments.html", {
+        "comments_page": comments_page,
+        "title": "작성한 모임 댓글",
+    })
+
+
+@login_required
+def mypage_liked_band_posts(request):
+    """좋아요한 모임 게시글 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    liked_band_posts = BandPost.objects.filter(likes__user=user).order_by("-created_at").distinct()
+    paginator = Paginator(liked_band_posts, per_page)
+    posts_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_band_posts.html", {
+        "posts_page": posts_page,
+        "title": "좋아요한 모임 게시글",
+    })
+
+
+@login_required
+def mypage_schedule_applications(request):
+    """참여한 일정 신청 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    schedule_applications = BandScheduleApplication.objects.filter(user=user).order_by("-applied_at")
+    paginator = Paginator(schedule_applications, per_page)
+    applications_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_schedule_applications.html", {
+        "applications_page": applications_page,
+        "title": "참여한 일정 신청",
+    })
+
+
+@login_required
+def mypage_vote_choices(request):
+    """참여한 투표 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    vote_choices = BandVoteChoice.objects.filter(user=user).order_by("-created_at")
+    paginator = Paginator(vote_choices, per_page)
+    choices_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_vote_choices.html", {
+        "choices_page": choices_page,
+        "title": "참여한 투표",
+    })
+
+
+@login_required
+def mypage_community_posts(request):
+    """작성한 커뮤니티 게시글 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    community_posts = Post.objects.filter(author=user).order_by("-created_at")
+    paginator = Paginator(community_posts, per_page)
+    posts_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_community_posts.html", {
+        "posts_page": posts_page,
+        "title": "작성한 게시글",
+    })
+
+
+@login_required
+def mypage_liked_posts(request):
+    """좋아요한 커뮤니티 게시글 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    liked_posts = Post.objects.filter(likes=user).order_by("-created_at").distinct()
+    paginator = Paginator(liked_posts, per_page)
+    posts_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_community_posts.html", {
+        "posts_page": posts_page,
+        "title": "좋아요한 게시글",
+    })
+
+
+@login_required
+def mypage_comments(request):
+    """작성한 커뮤니티 댓글 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    comments = Comment.objects.filter(author=user).order_by("-created_at")
+    paginator = Paginator(comments, per_page)
+    comments_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_comments.html", {
+        "comments_page": comments_page,
+        "title": "작성한 댓글",
+    })
+
+
+@login_required
+def mypage_shared_posts(request):
+    """공유한 게시글 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    shared_posts = Post.objects.filter(shares__user=user).order_by("-created_at").distinct()
+    paginator = Paginator(shared_posts, per_page)
+    posts_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_community_posts.html", {
+        "posts_page": posts_page,
+        "title": "공유한 게시글",
+    })
+
+
+@login_required
+def mypage_liked_contests(request):
+    """좋아요한 대회 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    liked_contests = Contest.objects.filter(likes=user).order_by("-created_at").distinct()
+    paginator = Paginator(liked_contests, per_page)
+    contests_page = paginator.get_page(page)
+    
+    return render(request, "accounts/mypage_contests.html", {
+        "contests_page": contests_page,
+        "title": "좋아요한 대회",
+    })
+
+
 class KakaoLoginView(View):
     def get(self, request):
-        client_id = settings.KAKAO_CLIENT_ID
-        redirect_uri = settings.KAKAO_REDIRECT_URI
-        state = uuid.uuid4().hex
-        request.session["kakao_oauth_state"] = state
-        scope = "account_email profile_nickname"
-        kakao_authorize_url = (
-            "https://kauth.kakao.com/oauth/authorize"
-            f"?client_id={client_id}"
-            f"&redirect_uri={redirect_uri}"
-            f"&response_type=code"
-            f"&state={state}"
-            f"&scope={scope}"
-        )
-        return redirect(kakao_authorize_url)
+        try:
+            client_id = settings.KAKAO_CLIENT_ID
+            redirect_uri = settings.KAKAO_REDIRECT_URI
+            
+            if not client_id:
+                messages.error(request, "카카오 로그인 설정이 올바르지 않습니다. 관리자에게 문의하세요.")
+                return redirect("accounts:login")
+            
+            if not redirect_uri:
+                messages.error(request, "카카오 리다이렉트 URI가 설정되지 않았습니다. 관리자에게 문의하세요.")
+                return redirect("accounts:login")
+            
+            state = uuid.uuid4().hex
+            request.session["kakao_oauth_state"] = state
+            request.session.save()  # 세션을 명시적으로 저장
+            # 디버깅: 세션 저장 확인
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"카카오 로그인 시작 - state: {state}, session_key: {request.session.session_key}, get_host: {request.get_host()}")
+            scope = "account_email profile_nickname"
+            
+            # URL 인코딩 - urlencode를 사용하여 안전하게 인코딩
+            from urllib.parse import urlencode
+            params = {
+                'client_id': client_id,
+                'redirect_uri': redirect_uri,
+                'response_type': 'code',
+                'state': state,
+                'scope': scope
+            }
+            kakao_authorize_url = f"https://kauth.kakao.com/oauth/authorize?{urlencode(params)}"
+            return redirect(kakao_authorize_url)
+        except Exception as e:
+            import traceback
+            print(f"카카오 로그인 오류: {e}")
+            print(traceback.format_exc())
+            messages.error(request, f"카카오 로그인 중 오류가 발생했습니다: {str(e)}")
+            return redirect("accounts:login")
 
 
 class KakaoCallbackView(View):
@@ -53,11 +370,42 @@ class KakaoCallbackView(View):
 
         session_state = request.session.pop("kakao_oauth_state", None)
 
+        # 디버깅 로그
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"카카오 콜백 - state: {state}, code: {code}, error: {error}, session_state: {session_state}")
+
         if not any([state, code, error]):
+            logger.error("카카오 콜백: state, code, error 모두 없음")
             return render(request, "accounts/kakao_callback.html")
 
-        if error or not code or session_state != state:
-            messages.error(request, "카카오 로그인에 실패했습니다. 다시 시도해주세요.")
+        if error:
+            logger.error(f"카카오 콜백 에러: {error}")
+            messages.error(request, f"카카오 로그인에 실패했습니다: {error}")
+            return redirect("accounts:login")
+        
+        if not code:
+            logger.error("카카오 콜백: code가 없음")
+            messages.error(request, "카카오 로그인에 실패했습니다. 인증 코드를 받지 못했습니다.")
+            return redirect("accounts:login")
+        
+        if session_state != state:
+            logger.error(f"카카오 콜백: state 불일치 - session_state: {session_state}, state: {state}")
+            logger.error(f"카카오 콜백: request.get_host()={request.get_host()}, request.META.get('HTTP_HOST')={request.META.get('HTTP_HOST')}")
+            logger.error(f"카카오 콜백: request.META.get('HTTP_X_FORWARDED_HOST')={request.META.get('HTTP_X_FORWARDED_HOST')}")
+            logger.error(f"카카오 콜백: 세션 키={request.session.session_key}, 세션 전체={dict(request.session)}")
+            # 세션 쿠키 정보 로깅
+            if hasattr(request, 'COOKIES'):
+                logger.error(f"카카오 콜백: 쿠키={dict(request.COOKIES)}")
+            
+            # 세션이 없을 경우: 카카오 콜백이 Nginx를 거치지 않고 직접 127.0.0.1:8080으로 들어온 경우
+            # 이 경우 state만으로 검증하거나, 세션을 재생성해야 함
+            # 보안상 state만으로는 충분하지 않으므로, 사용자에게 안내
+            if session_state is None and state:
+                logger.error("카카오 콜백: 세션이 없음 - 카카오 개발자 콘솔의 Redirect URI가 Nginx를 거치도록 설정되어야 함")
+                messages.error(request, "카카오 로그인에 실패했습니다. 세션이 만료되었습니다. 카카오 개발자 콘솔의 Redirect URI를 'http://localhost/accounts/kakao'로 설정해주세요.")
+            else:
+                messages.error(request, "카카오 로그인에 실패했습니다. 세션이 만료되었거나 보안 검증에 실패했습니다.")
             return redirect("accounts:login")
 
         token_data = {
@@ -72,12 +420,16 @@ class KakaoCallbackView(View):
             token_data["client_secret"] = client_secret
 
         try:
+            logger.error(f"카카오 토큰 요청 - redirect_uri: {settings.KAKAO_REDIRECT_URI}")
             token_response = requests.post(
                 "https://kauth.kakao.com/oauth/token", data=token_data, timeout=5
             )
+            logger.error(f"카카오 토큰 응답 상태: {token_response.status_code}")
             token_response.raise_for_status()
             token_json = token_response.json()
-        except requests.RequestException:
+            logger.error(f"카카오 토큰 응답: {token_json}")
+        except requests.RequestException as e:
+            logger.error(f"카카오 토큰 요청 실패: {str(e)}, 응답: {token_response.text if 'token_response' in locals() else 'N/A'}")
             messages.error(request, "카카오 로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
             return redirect("accounts:login")
 
@@ -114,14 +466,25 @@ class KakaoCallbackView(View):
             messages.error(request, "카카오 계정에서 이메일 정보를 제공하지 않았습니다. 카카오 설정을 확인해주세요.")
             return redirect("accounts:login")
 
-        defaults = {"activity_name": nickname or email.split("@")[0]}
+        defaults = {
+            "activity_name": nickname or email.split("@")[0],
+            "auth_provider": "kakao"  # 카카오 로그인 사용자 표시
+        }
         user, created = User.objects.get_or_create(email=email, defaults=defaults)
         if created:
             user.set_unusable_password()
             user.save()
-        elif nickname and user.activity_name != nickname:
-            user.activity_name = nickname
-            user.save(update_fields=["activity_name"])
+        else:
+            # 기존 사용자도 카카오 로그인으로 업데이트
+            update_fields = []
+            if not user.auth_provider:
+                user.auth_provider = "kakao"
+                update_fields.append("auth_provider")
+            if nickname and user.activity_name != nickname:
+                user.activity_name = nickname
+                update_fields.append("activity_name")
+            if update_fields:
+                user.save(update_fields=update_fields)
 
         profile_defaults = {}
         if nickname:
@@ -194,3 +557,132 @@ class KakaoCallbackView(View):
         messages.success(request, "카카오 계정으로 로그인되었습니다.")
         redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
         return redirect(redirect_to)
+
+
+# 설정 및 기타 페이지 뷰들
+@login_required
+def notification_settings(request):
+    """알림 설정 (준비중)"""
+    return render(request, "accounts/notification_settings.html")
+
+
+def privacy_policy(request):
+    """개인정보 처리방침 (비회원도 접근 가능)"""
+    return render(request, "accounts/privacy_policy.html")
+
+
+def terms_of_service(request):
+    """이용약관 (비회원도 접근 가능)"""
+    return render(request, "accounts/terms_of_service.html")
+
+
+@login_required
+def inquiry_create(request):
+    """문의하기"""
+    if request.method == "POST":
+        form = InquiryForm(request.POST)
+        if form.is_valid():
+            inquiry = form.save(commit=False)
+            inquiry.user = request.user
+            inquiry.save()
+            messages.success(request, "문의가 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.")
+            return redirect("accounts:inquiry_list")
+    else:
+        form = InquiryForm()
+    
+    return render(request, "accounts/inquiry_create.html", {
+        "form": form,
+    })
+
+
+@login_required
+def inquiry_list(request):
+    """문의 내역"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    inquiries = Inquiry.objects.filter(user=user).order_by("-created_at")
+    paginator = Paginator(inquiries, per_page)
+    inquiries_page = paginator.get_page(page)
+    
+    return render(request, "accounts/inquiry_list.html", {
+        "inquiries_page": inquiries_page,
+    })
+
+
+@login_required
+def blocked_users(request):
+    """차단한 사용자 목록"""
+    user = request.user
+    
+    # 차단 해제 처리
+    if request.method == "POST" and "block_id" in request.POST:
+        try:
+            block_id = int(request.POST.get("block_id"))
+            block = UserBlock.objects.get(id=block_id, blocker=user)
+            block.delete()
+            messages.success(request, "차단이 해제되었습니다.")
+            return redirect("accounts:blocked_users")
+        except (ValueError, UserBlock.DoesNotExist):
+            messages.error(request, "차단 해제에 실패했습니다.")
+    
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    blocked_users_list = UserBlock.objects.filter(blocker=user).select_related('blocked').order_by("-created_at")
+    paginator = Paginator(blocked_users_list, per_page)
+    blocked_page = paginator.get_page(page)
+    
+    return render(request, "accounts/blocked_users.html", {
+        "blocked_page": blocked_page,
+    })
+
+
+@login_required
+def report_list(request):
+    """신고 내역"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+    
+    reports = Report.objects.filter(reporter=user).order_by("-created_at")
+    paginator = Paginator(reports, per_page)
+    reports_page = paginator.get_page(page)
+    
+    return render(request, "accounts/report_list.html", {
+        "reports_page": reports_page,
+    })
+
+
+@login_required
+def password_change(request):
+    """비밀번호 변경"""
+    if request.method == "POST":
+        form = PasswordChangeFormCustom(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "비밀번호가 성공적으로 변경되었습니다.")
+            return redirect("accounts:profile_edit")
+    else:
+        form = PasswordChangeFormCustom(request.user)
+    
+    return render(request, "accounts/password_change.html", {
+        "form": form,
+    })
+
+
+@login_required
+def account_delete(request):
+    """계정 탈퇴"""
+    if request.method == "POST":
+        user = request.user
+        user.is_active = False
+        user.save()
+        messages.success(request, "계정이 탈퇴 처리되었습니다.")
+        from django.contrib.auth import logout
+        logout(request)
+        return redirect("home")
+    
+    return render(request, "accounts/account_delete.html")

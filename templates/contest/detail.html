@@ -1,15 +1,52 @@
 {% extends "base.html" %}
+{% load contest_filters %}
 
 {% block title %}{{ contest.title }} - 배드민톡{% endblock %}
 
 {% block content %}
-<section class="section" aria-labelledby="contest-title">
+<section class="section" aria-labelledby="contest-title" style="position: relative;">
     <div class="container contest-detail">
         <a href="{% url 'contests:list' %}" class="btn btn-ghost" style="margin-bottom: 20px;">← 전체 대회 일정으로 돌아가기</a>
 
+        <!-- 메인 콘텐츠 (비로그인 시 블러 처리) -->
+        <div class="{% if not user.is_authenticated %}content-blur{% endif %}">
+
         <div class="contest-detail__content">
             <div class="contest-detail__image">
-                {% if contest.image %}
+                {% if contest_images %}
+                    <!-- 이미지 슬라이더 -->
+                    <div class="contest-image-slider">
+                        <div class="slider-container">
+                            {% for image in contest_images %}
+                                <div class="slider-item {% if forloop.first %}active{% endif %}">
+                                    <img src="{{ image.image.url }}" alt="{{ contest.title }} - 이미지 {{ forloop.counter }}" />
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if contest_images|length > 1 %}
+                            <!-- 이전/다음 버튼 -->
+                            <button type="button" class="slider-btn slider-btn-prev" onclick="changeSlide(-1)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="slider-btn slider-btn-next" onclick="changeSlide(1)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </button>
+
+                            <!-- 인디케이터 -->
+                            <div class="slider-indicators">
+                                {% for image in contest_images %}
+                                    <button type="button" class="slider-indicator {% if forloop.first %}active{% endif %}" onclick="goToSlide({{ forloop.counter0 }})"></button>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% elif contest.image %}
+                    <!-- 기존 단일 이미지 (fallback) -->
                     <img src="{{ contest.image.url }}" alt="{{ contest.title }}" />
                 {% else %}
                     <div class="contest-thumb-placeholder" style="width:100%; height:260px;">이미지 없음</div>
@@ -23,16 +60,54 @@
                         {% if contest.category %}
                             <tr>
                                 <th scope="row">분류</th>
-                                <td><span class="category-badge" style="--badge-color: {{ contest.category.color }}">{{ contest.category.name }}</span></td>
+                                <td>
+                                    <span class="category-badge" style="--badge-color: {{ contest.category.color }}">{{ contest.category.name }}</span>
+                                    {% if contest.is_qualifying %}
+                                        <span class="category-badge category-badge-qualifying" style="margin-left: 8px;">승급</span>
+                                    {% else %}
+                                        <span class="category-badge category-badge-non-qualifying" style="margin-left: 8px;">비승급</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <th scope="row">분류</th>
+                                <td>
+                                    {% if contest.is_qualifying %}
+                                        <span class="category-badge category-badge-qualifying">승급</span>
+                                    {% else %}
+                                        <span class="category-badge category-badge-non-qualifying">비승급</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endif %}
                         <tr>
                             <th scope="row">일정</th>
-                            <td>{{ contest.get_period_display }}</td>
+                            <td>
+                                {% if schedule_entries %}
+                                    <ul class="contest-schedule-list" style="list-style: none; padding: 0; margin: 0;">
+                                        {% for entry in schedule_entries %}
+                                            <li class="contest-schedule-item" style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;{% if forloop.first %} margin-bottom: 5px;{% endif %}">
+                                                <span style="min-width: 120px;">{{ entry.date|date:"n월 j일 (D)" }}</span>
+                                                {% for event in entry.get_events_display %}
+                                                    <span class="contest-event-badge
+                                                        {% if event == '여복' %}event-badge-female{% elif event == '혼복' %}event-badge-mixed{% elif event == '남복' %}event-badge-male{% else %}event-badge-default{% endif %}
+                                                    ">{{ event }}</span>
+                                                {% endfor %}
+                                                {% if entry.get_age_display %}
+                                                    <span style="color: #64748b; font-size: 14px;">{{ entry.get_age_display }}</span>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <th scope="row">장소</th>
-                            <td>{{ contest.location }}</td>
+                            <td>{{ contest.get_location_display|bold_region }}</td>
                         </tr>
                         <tr>
                             <th scope="row">접수기간</th>
@@ -47,25 +122,56 @@
                             <td>{{ contest.competition_type|default:'-' }}</td>
                         </tr>
                         <tr>
-                            <th scope="row">참가상품</th>
-                            <td>{{ contest.participant_reward|default:'-' }}</td>
-                        </tr>
-                        <tr>
                             <th scope="row">스폰서</th>
-                            <td>{{ contest.sponsor|default:'-' }}</td>
+                            <td>{% if contest.sponsor %}{{ contest.sponsor.name }}{% else %}-{% endif %}</td>
                         </tr>
-                        {% if contest.registration_link %}
+                        {% if contest.registration_link or contest.registration_name %}
                             <tr>
                                 <th scope="row">접수처</th>
-                                <td>{{ contest.registration_link }}</td>
+                                <td>
+                                    {% if contest.registration_name %}
+                                        {{ contest.registration_name }}
+                                    {% elif contest.registration_link %}
+                                        {{ contest.registration_link }}
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endif %}
                     </tbody>
                 </table>
 
-                {% if contest.registration_link %}
-                    <a href="{{ contest.registration_link }}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top: 12px; display: inline-block;">대회 신청하기</a>
-                {% endif %}
+                <div class="contest-action-buttons">
+                    {% if contest.registration_link %}
+                        <a href="{{ contest.registration_link }}" target="_blank" rel="noopener" class="btn btn-primary">대회 신청하기</a>
+                    {% endif %}
+
+                    {% if user.is_authenticated %}
+                        <form action="{% url 'contests:like' contest.slug %}" method="post" style="display: inline-flex; margin: 0;" id="contest-like-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon-action" id="like-button">
+                                {% if user in contest.likes.all %}
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                                {% else %}
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                                {% endif %}
+                                <span id="like-count">{{ contest.like_count }}</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <button type="button" class="btn-icon-action" id="share-button" onclick="copyContestLink()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        <span>공유</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -77,7 +183,11 @@
                 </button>
                 <div class="contest-accordion__content">
                     <div class="contest-accordion__body">
-                        {{ contest.event_division }}
+                        {% if contest.participant_target %}
+                            {{ contest.participant_target|linebreaksbr }}
+                        {% else %}
+                            {{ contest.event_division|default:'-' }}
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -89,7 +199,9 @@
                 </button>
                 <div class="contest-accordion__content">
                     <div class="contest-accordion__body">
-                        {% if contest.award_reward %}
+                        {% if contest.award_reward_text %}
+                            {{ contest.award_reward_text|linebreaksbr }}
+                        {% elif contest.award_reward %}
                             <div class="contest-award-list">
                                 {% for award in contest.award_reward %}
                                     <div class="contest-award-group">
@@ -122,39 +234,39 @@
             <article class="contest-detail__same-week">
                 <h2>{{ contest_month }}월 {{ week_number }}주차 다른 대회도 있어요</h2>
                 {% if same_week_contests %}
-                    <div class="contest-same-week__list">
+                    <div class="contest-post-list">
                         {% for other_contest in same_week_contests %}
-                            <div class="contest-same-week__item">
-                                <a href="{% url 'contests:detail' other_contest.slug %}" class="contest-same-week__link">
-                                    <div class="contest-same-week__image-wrapper">
-                                        {% if other_contest.image %}
-                                            <img src="{{ other_contest.image.url }}" alt="{{ other_contest.title }}" class="contest-same-week__image">
+                            <a href="{% url 'contests:detail' other_contest.slug %}" class="contest-post-item">
+                                <div class="contest-post-image">
+                                    {% with first_image=other_contest.images.first %}
+                                        {% if first_image %}
+                                            <img src="{{ first_image.image.url }}" alt="{{ other_contest.title }}" class="contest-post-thumbnail">
+                                        {% elif other_contest.image %}
+                                            <img src="{{ other_contest.image.url }}" alt="{{ other_contest.title }}" class="contest-post-thumbnail">
                                         {% else %}
-                                            <div class="contest-same-week__placeholder">이미지 없음</div>
+                                            <div class="contest-post-no-image">이미지 없음</div>
                                         {% endif %}
+                                    {% endwith %}
+                                </div>
+                                <div class="contest-post-content">
+                                    <div class="contest-post-header">
                                         {% if other_contest.category %}
-                                            <span class="contest-same-week__category-overlay" style="--badge-color: {{ other_contest.category.color }}">{{ other_contest.category.name }}</span>
+                                            <span class="contest-post-category" style="--badge-color: {{ other_contest.category.color }}">{{ other_contest.category.name }}</span>
+                                        {% endif %}
+                                        {% if other_contest.is_qualifying %}
+                                            <span class="contest-post-category contest-post-category-qualifying">승급</span>
+                                        {% else %}
+                                            <span class="contest-post-category contest-post-category-non-qualifying">비승급</span>
                                         {% endif %}
                                     </div>
-                                    <div class="contest-same-week__info">
-                                        <h3 class="contest-same-week__title">{{ other_contest.title }}</h3>
-                                        <div class="contest-same-week__details">
-                                            <div class="contest-same-week__detail-item">
-                                                <span class="contest-same-week__detail-label">일정</span>
-                                                <span class="contest-same-week__detail-value">{{ other_contest.get_period_display }}</span>
-                                            </div>
-                                            <div class="contest-same-week__detail-item">
-                                                <span class="contest-same-week__detail-label">장소</span>
-                                                <span class="contest-same-week__detail-value">{{ other_contest.location }}</span>
-                                            </div>
-                                            <div class="contest-same-week__detail-item">
-                                                <span class="contest-same-week__detail-label">접수기간</span>
-                                                <span class="contest-same-week__detail-value">{{ other_contest.get_registration_period_display }}</span>
-                                            </div>
-                                        </div>
+                                    <h3 class="contest-post-title">{{ other_contest.title }}</h3>
+                                    <div class="contest-post-meta">
+                                        <div class="contest-post-info">일정 : {{ other_contest.get_period_display }}</div>
+                                        <div class="contest-post-info">장소 : {{ other_contest.get_location_display|default:"-"|bold_region }}</div>
+                                        <div class="contest-post-info">접수 마감 : {{ other_contest.registration_end|date:"Y.m.d" }}</div>
                                     </div>
-                                </a>
-                            </div>
+                                </div>
+                            </a>
                         {% endfor %}
                     </div>
                 {% else %}
@@ -162,30 +274,804 @@
                 {% endif %}
             </article>
         {% endif %}
+
+        </div>
+        <!-- 메인 콘텐츠 끝 -->
+
+        <!-- 비로그인 사용자용 회원가입 유도 모달 -->
+        {% if not user.is_authenticated %}
+        <div class="signup-modal">
+            <div class="signup-modal-content">
+                <div class="signup-modal-icon">🏸</div>
+                <h2 class="signup-modal-title">전체 내용을 보려면<br>회원가입이 필요해요</h2>
+                <p class="signup-modal-desc">배드민톡에 가입하고<br>다양한 배드민턴 정보를 확인하세요!</p>
+                <div class="signup-modal-buttons">
+                    <a href="{% url 'accounts:signup' %}" class="signup-modal-btn-primary">회원가입하기</a>
+                    <a href="{% url 'accounts:login' %}" class="signup-modal-btn-secondary">로그인</a>
+                </div>
+            </div>
+        </div>
+        <style>
+            /* 콘텐츠 블러 효과 */
+            .content-blur {
+                filter: blur(8px);
+                pointer-events: none;
+                user-select: none;
+            }
+
+            /* 회원가입 유도 모달 */
+            .signup-modal {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 1000;
+                background: #fff;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                padding: 48px 40px;
+                max-width: 440px;
+                width: 90%;
+                text-align: center;
+                animation: modalFadeIn 0.3s ease;
+            }
+
+            @keyframes modalFadeIn {
+                from {
+                    opacity: 0;
+                    transform: translate(-50%, -45%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate(-50%, -50%);
+                }
+            }
+
+            .signup-modal-icon {
+                font-size: 64px;
+                margin-bottom: 24px;
+                animation: bounce 2s ease-in-out infinite;
+            }
+
+            @keyframes bounce {
+                0%, 100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+
+            .signup-modal-title {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1e293b;
+                margin: 0 0 16px 0;
+                line-height: 1.4;
+            }
+
+            .signup-modal-desc {
+                font-size: 16px;
+                color: #64748b;
+                margin: 0 0 32px 0;
+                line-height: 1.6;
+            }
+
+            .signup-modal-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .signup-modal-btn-primary {
+                display: block;
+                padding: 16px 32px;
+                background: var(--brand);
+                color: #fff;
+                text-decoration: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 12px rgba(49, 170, 96, 0.3);
+            }
+
+            .signup-modal-btn-primary:hover {
+                background: #2d9c5a;
+                box-shadow: 0 6px 20px rgba(49, 170, 96, 0.4);
+                transform: translateY(-2px);
+            }
+
+            .signup-modal-btn-secondary {
+                display: block;
+                padding: 16px 32px;
+                background: #f8fafc;
+                color: #64748b;
+                text-decoration: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                border: 1px solid #e2e8f0;
+            }
+
+            .signup-modal-btn-secondary:hover {
+                background: #f1f5f9;
+                color: #475569;
+                border-color: #cbd5e1;
+            }
+
+            /* 모바일 최적화 */
+            @media (max-width: 768px) {
+                .signup-modal {
+                    padding: 36px 24px;
+                    border-radius: 16px;
+                    max-width: 90%;
+                }
+
+                .signup-modal-icon {
+                    font-size: 56px;
+                    margin-bottom: 20px;
+                }
+
+                .signup-modal-title {
+                    font-size: 20px;
+                    margin-bottom: 12px;
+                }
+
+                .signup-modal-desc {
+                    font-size: 14px;
+                    margin-bottom: 24px;
+                }
+
+                .signup-modal-btn-primary,
+                .signup-modal-btn-secondary {
+                    padding: 14px 24px;
+                    font-size: 15px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .signup-modal {
+                    padding: 28px 20px;
+                    width: 85%;
+                }
+
+                .signup-modal-icon {
+                    font-size: 48px;
+                    margin-bottom: 16px;
+                }
+
+                .signup-modal-title {
+                    font-size: 18px;
+                }
+
+                .signup-modal-desc {
+                    font-size: 13px;
+                }
+
+                .signup-modal-btn-primary,
+                .signup-modal-btn-secondary {
+                    padding: 12px 20px;
+                    font-size: 14px;
+                }
+            }
+        </style>
+        {% endif %}
     </div>
 </section>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
+    // 이미지 슬라이더 관련 변수
+    let currentSlideIndex = 0;
+    let autoSlideInterval = null;
+
+    // 슬라이드 변경 함수
+    function changeSlide(direction) {
+        const slides = document.querySelectorAll('.slider-item');
+        const indicators = document.querySelectorAll('.slider-indicator');
+
+        if (slides.length === 0) return;
+
+        // 현재 슬라이드 숨기기
+        slides[currentSlideIndex].classList.remove('active');
+        indicators[currentSlideIndex].classList.remove('active');
+
+        // 다음 슬라이드 인덱스 계산
+        currentSlideIndex = (currentSlideIndex + direction + slides.length) % slides.length;
+
+        // 새 슬라이드 표시
+        slides[currentSlideIndex].classList.add('active');
+        indicators[currentSlideIndex].classList.add('active');
+
+        // 자동 재생 타이머 리셋
+        resetAutoSlide();
+    }
+
+    // 특정 슬라이드로 이동
+    function goToSlide(index) {
+        const slides = document.querySelectorAll('.slider-item');
+        const indicators = document.querySelectorAll('.slider-indicator');
+
+        if (slides.length === 0 || index < 0 || index >= slides.length) return;
+
+        // 현재 슬라이드 숨기기
+        slides[currentSlideIndex].classList.remove('active');
+        indicators[currentSlideIndex].classList.remove('active');
+
+        // 새 슬라이드 표시
+        currentSlideIndex = index;
+        slides[currentSlideIndex].classList.add('active');
+        indicators[currentSlideIndex].classList.add('active');
+
+        // 자동 재생 타이머 리셋
+        resetAutoSlide();
+    }
+
+    // 자동 슬라이드 시작
+    function startAutoSlide() {
+        const slides = document.querySelectorAll('.slider-item');
+        if (slides.length > 1) {
+            autoSlideInterval = setInterval(() => {
+                changeSlide(1);
+            }, 5000); // 5초마다 자동 전환
+        }
+    }
+
+    // 자동 슬라이드 중지
+    function stopAutoSlide() {
+        if (autoSlideInterval) {
+            clearInterval(autoSlideInterval);
+            autoSlideInterval = null;
+        }
+    }
+
+    // 자동 슬라이드 리셋
+    function resetAutoSlide() {
+        stopAutoSlide();
+        startAutoSlide();
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
+        // 슬라이더 자동 재생 시작
+        startAutoSlide();
+
+        // 슬라이더에 마우스 호버 시 자동 재생 중지
+        const slider = document.querySelector('.contest-image-slider');
+        if (slider) {
+            slider.addEventListener('mouseenter', stopAutoSlide);
+            slider.addEventListener('mouseleave', startAutoSlide);
+        }
         const accordionHeaders = document.querySelectorAll(".contest-accordion__header");
-        
+
+        // 아코디언 클릭 이벤트 - passive 옵션으로 스크롤 성능 개선
         accordionHeaders.forEach(header => {
             header.addEventListener("click", function() {
                 const isExpanded = this.getAttribute("aria-expanded") === "true";
                 const content = this.nextElementSibling;
-                
+
                 // 현재 아코디언 닫기/열기
                 this.setAttribute("aria-expanded", !isExpanded);
                 content.setAttribute("aria-hidden", isExpanded);
-            });
+            }, { passive: true });
         });
-        
+
         // 초기 상태 설정
         document.querySelectorAll(".contest-accordion__content").forEach(content => {
             content.setAttribute("aria-hidden", "true");
         });
+
+        // 좋아요 AJAX 처리
+        const likeForm = document.getElementById('contest-like-form');
+        if (likeForm) {
+            likeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const csrftoken = formData.get('csrfmiddlewaretoken');
+
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const likeButton = document.getElementById('like-button');
+                        const svg = likeButton.querySelector('svg');
+                        const likeCount = document.getElementById('like-count');
+
+                        likeCount.textContent = data.like_count;
+
+                        if (data.liked) {
+                            svg.setAttribute('fill', '#ef4444');
+                            svg.setAttribute('stroke', '#ef4444');
+                        } else {
+                            svg.setAttribute('fill', 'none');
+                            svg.setAttribute('stroke', 'currentColor');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('좋아요 처리 중 오류가 발생했습니다.');
+                });
+            });
+        }
     });
+
+    // 공유 버튼 클릭 이벤트
+    function copyContestLink() {
+        const contestUrl = window.location.href;
+
+        navigator.clipboard.writeText(contestUrl).then(function() {
+            const shareButton = document.getElementById('share-button');
+            const originalHTML = shareButton.innerHTML;
+            shareButton.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>복사됨</span>';
+            shareButton.style.background = 'var(--brand)';
+            shareButton.style.color = '#fff';
+            shareButton.style.borderColor = 'var(--brand)';
+
+            setTimeout(function() {
+                shareButton.innerHTML = originalHTML;
+                shareButton.style.background = '#fff';
+                shareButton.style.color = '#64748b';
+                shareButton.style.borderColor = '#e2e8f0';
+            }, 2000);
+        }).catch(function(err) {
+            const textarea = document.createElement('textarea');
+            textarea.value = contestUrl;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                const shareButton = document.getElementById('share-button');
+                const originalHTML = shareButton.innerHTML;
+                shareButton.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>복사됨</span>';
+                shareButton.style.background = 'var(--brand)';
+                shareButton.style.color = '#fff';
+                shareButton.style.borderColor = 'var(--brand)';
+                setTimeout(function() {
+                    shareButton.innerHTML = originalHTML;
+                    shareButton.style.background = '#fff';
+                    shareButton.style.color = '#64748b';
+                    shareButton.style.borderColor = '#e2e8f0';
+                }, 2000);
+            } catch (err) {
+                alert('링크 복사에 실패했습니다: ' + err);
+            }
+            document.body.removeChild(textarea);
+        });
+    }
 </script>
+
+<style>
+    /* 이미지 슬라이더 스타일 */
+    .contest-image-slider {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #f8fafc;
+    }
+
+    .slider-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 400px;
+    }
+
+    .slider-item {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .slider-item.active {
+        opacity: 1;
+        z-index: 1;
+    }
+
+    .slider-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    /* 슬라이더 버튼 */
+    .slider-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        color: white;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        z-index: 2;
+    }
+
+    .slider-btn:hover {
+        background: rgba(0, 0, 0, 0.7);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .slider-btn:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
+    .slider-btn-prev {
+        left: 16px;
+    }
+
+    .slider-btn-next {
+        right: 16px;
+    }
+
+    /* 슬라이더 인디케이터 */
+    .slider-indicators {
+        position: absolute;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 2;
+    }
+
+    .slider-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    .slider-indicator:hover {
+        background: rgba(255, 255, 255, 0.8);
+        transform: scale(1.2);
+    }
+
+    .slider-indicator.active {
+        background: white;
+        width: 24px;
+        border-radius: 5px;
+    }
+
+    /* 버튼 컨테이너 - 우측 정렬 */
+    .contest-action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    /* 좋아요/공유 버튼 스타일 */
+    .btn-icon-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: #fff;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.5;
+        height: 44px;
+        box-sizing: border-box;
+        transition: all 0.2s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn-icon-action:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
+
+    .btn-icon-action:active {
+        transform: scale(0.98);
+    }
+
+    /* 버튼 높이 완전히 일치시키기 */
+    .contest-action-buttons .btn-primary {
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.5;
+        height: 44px;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    /* 대회 리스트 스타일 */
+    .contest-post-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 24px;
+    }
+
+    .contest-post-item {
+        display: flex;
+        gap: 24px;
+        padding: 16px;
+        background: #fff;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .contest-post-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .contest-post-item:active {
+        transform: scale(0.98);
+    }
+
+    .contest-post-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        min-width: 0;
+    }
+
+    .contest-post-header {
+        margin-bottom: 5px;
+    }
+
+    .contest-post-category {
+        display: inline-block;
+        padding: 4px 10px;
+        background: var(--badge-color, var(--brand));
+        color: #ffffff;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .contest-post-category-qualifying {
+        background: #3b82f6 !important;
+        color: #ffffff;
+    }
+
+    .contest-post-category-non-qualifying {
+        background: #64748b !important;
+        color: #ffffff;
+    }
+
+    .contest-post-title {
+        margin: 0 !important;
+        padding-top: 5px !important;
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.1;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .contest-post-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 0;
+    }
+
+    .contest-post-info {
+        font-size: 14px;
+        color: #64748b;
+        line-height: 1.4;
+    }
+
+    .contest-post-image {
+        width: 100px;
+        height: 120px;
+        min-width: 100px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f1f5f9;
+        flex-shrink: 0;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .contest-post-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center center;
+        display: block;
+        background: white;
+    }
+
+    .contest-post-no-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 12px;
+        background: #f8fafc;
+    }
+
+    /* 모바일 최적화 */
+    @media (max-width: 768px) {
+        /* 슬라이더 모바일 스타일 */
+        .slider-container {
+            min-height: 300px;
+        }
+
+        .slider-btn {
+            width: 36px;
+            height: 36px;
+        }
+
+        .slider-btn-prev {
+            left: 8px;
+        }
+
+        .slider-btn-next {
+            right: 8px;
+        }
+
+        .slider-indicators {
+            bottom: 12px;
+        }
+
+        .contest-post-item {
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .contest-post-image {
+            width: 100%;
+            height: 180px;
+            min-width: unset;
+        }
+
+        .contest-post-title {
+            padding-top: 5px !important;
+            font-size: 17px;
+            -webkit-line-clamp: 2;
+        }
+
+        .contest-post-meta {
+            font-size: 13px;
+        }
+
+        .contest-post-info {
+            font-size: 13px;
+        }
+
+        .contest-detail__content {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .contest-detail__image {
+            max-width: 100%;
+        }
+
+        .contest-detail__side h1 {
+            font-size: 22px;
+        }
+
+        .contest-detail__info-table th,
+        .contest-detail__info-table td {
+            font-size: 16px;
+            padding: 6px 8px;
+        }
+
+        .contest-detail__info-table th {
+            width: 90px;
+        }
+
+        .contest-schedule-item {
+            flex-direction: row;
+            align-items: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+        
+        .contest-schedule-item span:first-child {
+            flex-shrink: 0;
+        }
+
+        .contest-accordion__header {
+            font-size: 17px;
+            padding: 14px 16px;
+        }
+
+        .contest-accordion__body {
+            font-size: 16px;
+            padding: 16px;
+        }
+
+        .contest-detail__description h2,
+        .contest-detail__same-week h2 {
+            font-size: 20px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .contest-post-title {
+            padding-top: 5px !important;
+            font-size: 16px;
+        }
+
+        .contest-post-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .contest-detail__side h1 {
+            font-size: 20px;
+        }
+
+        .contest-detail__info-table th,
+        .contest-detail__info-table td {
+            font-size: 15px;
+        }
+
+        .contest-event-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+        }
+
+        .category-badge {
+            font-size: 12px;
+            padding: 5px 9px;
+        }
+    }
+</style>
 {% endblock %}

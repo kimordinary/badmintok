@@ -59,81 +59,41 @@
         </div>
     </section>
 
-    <section class="mall-popular" aria-labelledby="mall-popular-title">
+    <section class="mall-popular" aria-labelledby="band-popular-title">
         <div class="container">
             <div class="section-head">
-                <h2 id="mall-popular-title">배드민톡 할인몰 인기 상품 TOP 5</h2>
-                <a class="section-more" href="#">더보기</a>
+                <h2 id="band-popular-title">인기 모임</h2>
+                <a class="section-more" href="{% url 'band:list' %}">더보기</a>
             </div>
-            <p class="section-sub">배드민톡이 엄선한 최고의 추천 제품</p>
-            <div class="product-scroller" aria-label="인기 상품">
+            <p class="section-sub">배드민턴 동호인들이 함께하는 소모임을 만나보세요</p>
+            <div class="product-scroller" aria-label="인기 모임">
                 <div class="product-track">
-                    <a class="product-card" href="#">
-                        <div class="p-thumb"></div>
-                        <div class="p-title">아스트록스 88S PRO (3세대)</div>
-                    </a>
-                    <a class="product-card" href="#">
-                        <div class="p-thumb"></div>
-                        <div class="p-title">빅터 P9200 배드민턴화</div>
-                    </a>
-                    <a class="product-card" href="#">
-                        <div class="p-thumb"></div>
-                        <div class="p-title">요넥스 AC1100 손목 보호대</div>
-                    </a>
-                    <a class="product-card" href="#">
-                        <div class="p-thumb"></div>
-                        <div class="p-title">리닝 경기용 반팔 저지 2025</div>
-                    </a>
-                    <a class="product-card" href="#">
-                        <div class="p-thumb"></div>
-                        <div class="p-title">요넥스 에어로센사 50 셔틀콕</div>
-                    </a>
+                    {% if popular_bands %}
+                        {% for band in popular_bands %}
+                            <a class="product-card" href="{% url 'band:detail' band.id %}">
+                                {% if band.profile_image %}
+                                    <div class="p-thumb" style="background-image: url('{{ band.profile_image.url }}'); background-size: cover; background-position: center;"></div>
+                                {% else %}
+                                    <div class="p-thumb" style="background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700;">{{ band.name|first }}</div>
+                                {% endif %}
+                                <div class="p-title">{{ band.name }}</div>
+                                <div class="p-meta" style="font-size: 12px; color: #64748b; margin-top: 4px;">멤버 {{ band.total_members|default:band.member_count }}명</div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <a class="product-card" href="{% url 'band:list' %}">
+                            <div class="p-thumb" style="background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">🏸</div>
+                            <div class="p-title">모임 둘러보기</div>
+                        </a>
+                        {% if user.is_authenticated %}
+                            <a class="product-card" href="{% url 'band:create' %}">
+                                <div class="p-thumb" style="background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">👥</div>
+                                <div class="p-title">새 모임 만들기</div>
+                            </a>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
-        </div>
-    </section>
-
-    <section class="guide" aria-labelledby="guide-title">
-        <div class="container">
-            <h2 id="guide-title">배드민톡 구매 가이드</h2>
-            <ul class="guide-list">
-                <li>
-                    <a href="#">
-                        <div class="g-thumb"></div>
-                        <div class="g-body">
-                            <div class="g-title">라켓 구매가이드</div>
-                            <div class="g-meta">2025-06-01</div>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <div class="g-thumb"></div>
-                        <div class="g-body">
-                            <div class="g-title">나에게 맞는 라켓 선택법</div>
-                            <div class="g-meta">2025-06-02</div>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <div class="g-thumb"></div>
-                        <div class="g-body">
-                            <div class="g-title">배드민턴화의 차이점</div>
-                            <div class="g-meta">2025-06-03</div>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <div class="g-thumb"></div>
-                        <div class="g-body">
-                            <div class="g-title">보호대가 필요한 이유</div>
-                            <div class="g-meta">2025-06-04</div>
-                        </div>
-                    </a>
-                </li>
-            </ul>
         </div>
     </section>
 

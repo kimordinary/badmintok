@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0.43
+    container_name: badmintok-mysql-dev
+    restart: always
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - badmintok-net
+
+  web:
+    build: .
+    container_name: badmintok-web-dev
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: "${DB_HOST}"
+      DB_PORT: "${DB_PORT}"
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+    depends_on:
+      - db
+    volumes:
+      # 코드 전체를 마운트해서 자동 리로드
+      - .:/app
+      # 업로드 파일 보존
+      - ./media:/app/media
+    networks:
+      - badmintok-net
+    # 개발 환경: runserver 사용 (마이그레이션 후 실행)
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8080 --insecure"
+
+volumes:
+  db_data:
+
+networks:
+  badmintok-net:
+    driver: bridge
+
+

@@ -1,0 +1,1340 @@
+{% extends "base.html" %}
+
+{% block title %}웹민턴 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0;">
+        
+        <!-- 배너 영역 (탭 위에 위치) -->
+        {% if banner_images %}
+        <div class="banner-wrapper" style="margin-top: 24px; margin-bottom: 24px;">
+            <div class="badmintok-banners" aria-label="배드민톡 배너" data-banner-container>
+                {% for banner in banner_images %}
+                    <div class="badmintok-banner-item">
+                        <span class="banner-sponsored-label">Sponsored</span>
+                        {% if banner.link_url %}
+                            <a href="{{ banner.link_url }}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; height: 100%;">
+                                <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy" style="cursor: pointer;">
+                            </a>
+                        {% else %}
+                            <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy">
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <button class="banner-nav banner-nav-prev" data-banner-prev aria-label="이전 배너">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <button class="banner-nav banner-nav-next" data-banner-next aria-label="다음 배너">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+        {% endif %}
+        
+        <!-- 탭 -->
+        <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+            <a href="{% url 'band:list' %}?type=flash{% if current_region != 'all' %}&region={{ current_region }}{% endif %}" 
+               class="community-tab {% if current_type == 'flash' %}active{% endif %}" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                번개
+            </a>
+            <a href="{% url 'band:list' %}?type=group{% if current_region != 'all' %}&region={{ current_region }}{% endif %}" 
+               class="community-tab {% if current_type == 'group' %}active{% endif %}" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                모임
+            </a>
+            <a href="{% url 'band:list' %}?type=club{% if current_region != 'all' %}&region={{ current_region }}{% endif %}" 
+               class="community-tab {% if current_type == 'club' %}active{% endif %}" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                동호회
+            </a>
+        </div>
+        
+        <style>
+            .community-tab.active {
+                color: var(--brand) !important;
+                border-bottom: 2px solid var(--brand) !important;
+            }
+            .band-card {
+                transition: all 0.2s ease;
+            }
+            .band-card:hover {
+                border-color: var(--brand) !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            .region-link:hover {
+                background: #f8fafc !important;
+            }
+            .band-type-badge {
+                display: inline-block;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #fff;
+            }
+            .band-type-badge.flash {
+                background: #fbbf24;
+            }
+            .band-type-badge.group {
+                background: var(--brand);
+            }
+            .band-type-badge.club {
+                background: #3b82f6;
+            }
+            a:hover > div {
+                background: #f8fafc;
+            }
+            
+            .community-post-list {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .community-post-item {
+                display: flex;
+                gap: 16px;
+                padding: 16px;
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                text-decoration: none;
+                color: inherit;
+                transition: all 0.2s ease;
+            }
+            .community-post-item:hover {
+                border-color: var(--brand);
+                box-shadow: 0 2px 8px rgba(49, 170, 96, 0.1);
+            }
+            .community-post-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .community-post-header {
+                margin-bottom: 4px;
+            }
+            .community-post-title {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 700;
+                color: #1e293b;
+                line-height: 1.4;
+            }
+            .community-post-excerpt {
+                margin: 4px 0;
+                font-size: 14px;
+                color: #64748b;
+                line-height: 1.5;
+                display: -webkit-box;
+                -webkit-line-clamp: 1;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+            .community-post-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            .community-post-action {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            .community-post-action-icon {
+                font-size: 14px;
+            }
+            .community-post-action-count {
+                font-size: 13px;
+            }
+            .community-post-separator {
+                color: #cbd5e1;
+            }
+            .community-post-time {
+                color: #94a3b8;
+            }
+            .community-post-image {
+                width: 120px;
+                height: 120px;
+                min-width: 120px;
+                flex-shrink: 0;
+                border-radius: 8px;
+                overflow: hidden;
+                background: #f1f5f9;
+            }
+            .community-post-thumbnail {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+            .community-post-no-image {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #cbd5e1;
+                font-size: 12px;
+                background: #f8fafc;
+            }
+            
+            .banner-wrapper {
+                position: relative;
+                margin-bottom: 24px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .badmintok-banners {
+                display: flex;
+                gap: 16px;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scroll-behavior: smooth;
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE/Edge */
+                align-items: center;
+            }
+
+            .badmintok-banners::-webkit-scrollbar {
+                display: none; /* Chrome/Safari/Opera */
+            }
+
+            .badmintok-banner-item {
+                position: relative;
+                min-width: 100%;
+                max-width: 100%;
+                aspect-ratio: 4 / 1;
+                scroll-snap-align: center;
+                border-radius: 12px;
+                overflow: hidden;
+                background: #e2e8f0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .notice-banner-text {
+                display: inline;
+            }
+
+            .notice-banner-arrow {
+                display: none;
+            }
+            
+
+            .badmintok-banner-item img {
+                max-width: 100%;
+                max-height: 100%;
+                width: auto;
+                height: auto;
+                object-fit: contain;
+                display: block;
+                margin: 0 auto;
+                align-self: center;
+            }
+
+            .banner-nav {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 24px;
+                height: 24px;
+                border: none;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.5);
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s ease;
+                z-index: 10;
+            }
+
+            .banner-nav:hover {
+                background: rgba(0, 0, 0, 0.7);
+            }
+
+            .banner-nav:active {
+                transform: translateY(-50%) scale(0.95);
+            }
+
+            .banner-nav-prev {
+                left: 8px;
+            }
+
+            .banner-nav-next {
+                right: 8px;
+            }
+            
+            /* 플로팅 액션 버튼 (FAB) */
+            .fab-container {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                z-index: 1000;
+            }
+            .fab-button {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: var(--brand);
+                color: #fff;
+                border: none;
+                box-shadow: 0 4px 12px rgba(49, 170, 96, 0.4);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                transition: all 0.3s ease;
+                position: relative;
+            }
+            .fab-button:hover {
+                background: var(--brand-700);
+                box-shadow: 0 6px 16px rgba(49, 170, 96, 0.5);
+                transform: scale(1.05);
+            }
+            .fab-button.active {
+                transform: rotate(45deg);
+            }
+            .fab-menu {
+                position: absolute;
+                bottom: 70px;
+                right: 0;
+                display: none;
+                flex-direction: column;
+                gap: 12px;
+                min-width: 160px;
+            }
+            .fab-menu.active {
+                display: flex;
+            }
+            .fab-menu-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                text-decoration: none;
+                color: #1e293b;
+                font-size: 14px;
+                font-weight: 500;
+                white-space: nowrap;
+                transition: all 0.2s ease;
+            }
+            .fab-menu-item:hover {
+                background: #f8fafc;
+                transform: translateX(-4px);
+            }
+            .fab-menu-item-icon {
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+            }
+            
+            /* 모바일 반응형 스타일 (max-width: 767px) */
+            @media (max-width: 767px) {
+                .section {
+                    padding: 0;
+                    width: 100%;
+                    overflow-x: hidden;
+                }
+                .container {
+                    padding: 0 16px !important;
+                    margin: 0 auto !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+
+                /* 탭 스타일 모바일 */
+                .community-tabs {
+                    margin-bottom: 20px !important;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                    scrollbar-width: none;
+                    border-bottom: 1px solid #e2e8f0 !important;
+                }
+                .community-tabs::-webkit-scrollbar {
+                    display: none;
+                }
+                .community-tab {
+                    padding: 12px 18px !important;
+                    font-size: 15px !important;
+                    white-space: nowrap;
+                    flex-shrink: 0;
+                }
+                
+                /* 그리드 레이아웃 모바일: 단일 열 */
+                .bottom-grid-layout {
+                    display: block !important;
+                    grid-template-columns: 1fr !important;
+                    gap: 0 !important;
+                    margin-bottom: 20px !important;
+                    width: 100% !important;
+                    padding: 0 !important;
+                }
+
+                /* 내 모임 섹션 모바일 */
+                .my-bands-section {
+                    display: none !important;
+                }
+
+                .bottom-grid-layout > * {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                
+                /* 공지 배너 모바일 */
+                .notice-banner {
+                    padding: 14px 16px !important;
+                    margin-bottom: 20px !important;
+                    border-radius: 10px !important;
+                }
+                .notice-banner > div {
+                    gap: 10px !important;
+                }
+                .notice-banner > div > span {
+                    font-size: 22px !important;
+                }
+                .notice-banner > div > div {
+                    gap: 6px !important;
+                }
+                .notice-banner > div > div > span:first-child {
+                    font-size: 14px !important;
+                }
+                .notice-banner > div > div > span:last-child {
+                    font-size: 13px !important;
+                }
+                .notice-banner > a {
+                    padding: 9px 14px !important;
+                    font-size: 13px !important;
+                    min-width: auto !important;
+                    width: auto !important;
+                }
+
+                .notice-banner-text {
+                    display: none !important;
+                }
+
+                .notice-banner-arrow {
+                    display: inline !important;
+                    font-size: 16px !important;
+                }
+
+                /* 인기 모임 배너 모바일 */
+                .banner-section {
+                    padding: 16px !important;
+                    margin-bottom: 20px !important;
+                }
+                .banner-section h3 {
+                    font-size: 17px !important;
+                    margin-bottom: 12px !important;
+                }
+                .popular-bands-slider {
+                    gap: 10px !important;
+                }
+                .popular-bands-slider > a > div {
+                    width: 240px !important;
+                    padding: 14px !important;
+                }
+                .popular-bands-slider h4 {
+                    font-size: 15px !important;
+                }
+                .popular-bands-slider > a > div > div:first-child {
+                    margin-bottom: 8px !important;
+                }
+                .popular-bands-slider > a > div > div:last-child {
+                    font-size: 13px !important;
+                }
+                
+                /* 지역 선택 섹션 모바일 */
+                .region-section {
+                    display: none !important;
+                }
+                .region-banner-mobile {
+                    display: block !important;
+                    margin-bottom: 20px;
+                }
+                .region-banner-scroll {
+                    padding: 0 !important;
+                    gap: 10px !important;
+                }
+                .region-banner-scroll::-webkit-scrollbar {
+                    display: none;
+                }
+                .region-banner-item {
+                    min-height: 38px !important;
+                    padding: 10px 16px !important;
+                    font-size: 15px !important;
+                    border-radius: 20px !important;
+                }
+                .region-banner-item.active {
+                    box-shadow: 0 2px 6px rgba(49, 170, 96, 0.25) !important;
+                }
+                
+                /* 모임 리스트 헤더 모바일 */
+                .band-list-header {
+                    flex-direction: column !important;
+                    align-items: flex-start !important;
+                    gap: 14px !important;
+                    margin-bottom: 20px !important;
+                    width: 100% !important;
+                    padding: 0 !important;
+                }
+                .band-list-header h2 {
+                    font-size: 20px !important;
+                    font-weight: 700 !important;
+                    margin: 0 !important;
+                }
+                .band-list-header > div {
+                    width: 100% !important;
+                    flex-direction: column !important;
+                    gap: 10px !important;
+                }
+                .band-list-header form {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    display: flex !important;
+                    gap: 8px !important;
+                }
+                .band-list-header input[type="text"] {
+                    width: 100% !important;
+                    font-size: 15px !important;
+                    padding: 12px 14px !important;
+                    border: 1px solid #e2e8f0 !important;
+                    border-radius: 8px !important;
+                    box-sizing: border-box !important;
+                }
+                .band-list-header button[type="submit"] {
+                    font-size: 15px !important;
+                    padding: 12px 20px !important;
+                    white-space: nowrap !important;
+                    flex-shrink: 0 !important;
+                }
+                /* 모임 만들기 버튼 모바일에서 숨기기 */
+                .band-list-header a[href*="create"] {
+                    display: none !important;
+                }
+                
+                /* 모임 카드 모바일 */
+                .band-card {
+                    padding: clamp(12px, 3vw, 14px) !important;
+                    gap: clamp(10px, 2.5vw, 14px) !important;
+                    flex-direction: row !important;
+                    border: 1px solid #e2e8f0 !important;
+                    border-radius: 12px !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                    margin-bottom: 12px !important;
+                }
+                .band-card > div:first-child {
+                    width: clamp(60px, 15vw, 90px) !important;
+                    height: clamp(60px, 15vw, 90px) !important;
+                    min-width: 60px !important;
+                    max-width: 90px !important;
+                    flex-shrink: 0 !important;
+                }
+                .band-card h3 {
+                    font-size: clamp(16px, 4vw, 17px) !important;
+                    font-weight: 700 !important;
+                    line-height: 1.3 !important;
+                    margin-bottom: 6px !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    white-space: nowrap !important;
+                    width: 100% !important;
+                }
+                .band-card > div:last-child {
+                    flex: 1 !important;
+                    min-width: 0 !important;
+                    overflow: hidden !important;
+                }
+                .band-card > div:last-child > div:first-child {
+                    gap: clamp(3px, 1vw, 6px) !important;
+                }
+                .band-card > div:last-child > div:first-child span {
+                    font-size: clamp(10px, 2.5vw, 12px) !important;
+                    padding: 2px 6px !important;
+                    white-space: nowrap !important;
+                }
+                .band-card > div:last-child > div:last-child p {
+                    font-size: clamp(12px, 3vw, 14px) !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    display: -webkit-box !important;
+                    -webkit-line-clamp: 2 !important;
+                    -webkit-box-orient: vertical !important;
+                }
+                .band-card > div:last-child > div:last-child > div:last-child {
+                    font-size: clamp(11px, 2.8vw, 13px) !important;
+                    white-space: nowrap !important;
+                }
+                .band-card > div:last-child > div:nth-child(2) {
+                    margin-bottom: 8px !important;
+                    flex-wrap: wrap !important;
+                }
+                .band-card > div:last-child > div:last-child {
+                    padding-top: 0 !important;
+                    width: 100% !important;
+                }
+                .band-card > div:last-child > div:last-child p {
+                    font-size: 14px !important;
+                    line-height: 1.5 !important;
+                    word-wrap: break-word !important;
+                    overflow-wrap: break-word !important;
+                }
+                /* 게시판 스타일 모바일 */
+                .community-post-list {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+                .community-post-item {
+                    flex-direction: row !important;
+                    gap: 14px !important;
+                    padding: 14px !important;
+                    border-radius: 12px !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+                .community-post-content {
+                    flex: 1 !important;
+                    min-width: 0 !important;
+                    overflow: hidden !important;
+                }
+                .community-post-image {
+                    width: 100px !important;
+                    height: 100px !important;
+                    min-width: 100px !important;
+                    max-width: 100px !important;
+                    flex-shrink: 0 !important;
+                    border-radius: 10px !important;
+                }
+                .community-post-title {
+                    font-size: 16px !important;
+                    font-weight: 700 !important;
+                    line-height: 1.4 !important;
+                    word-wrap: break-word !important;
+                    overflow-wrap: break-word !important;
+                }
+                .community-post-excerpt {
+                    font-size: 14px !important;
+                    -webkit-line-clamp: 2 !important;
+                    line-height: 1.5 !important;
+                    word-wrap: break-word !important;
+                    overflow-wrap: break-word !important;
+                }
+                .community-post-meta {
+                    margin-top: 6px !important;
+                    font-size: 13px !important;
+                    flex-wrap: wrap !important;
+                }
+                
+                /* 번개 리스트 모바일 */
+                .flash-list-item {
+                    border-bottom: 1px solid #e2e8f0 !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+                .flash-list-item > div {
+                    padding: 14px 0 !important;
+                    gap: 0 !important;
+                    width: 100% !important;
+                }
+                .flash-list-item > div > div:first-child {
+                    flex-wrap: wrap !important;
+                    gap: 8px !important;
+                    align-items: center !important;
+                    min-width: 0 !important;
+                }
+                .flash-list-item > div > div:first-child > span {
+                    font-size: 13px !important;
+                }
+                .flash-list-item h3 {
+                    font-size: 15px !important;
+                    font-weight: 600 !important;
+                    line-height: 1.4 !important;
+                    word-wrap: break-word !important;
+                    overflow-wrap: break-word !important;
+                }
+                .flash-list-item > div > div:last-child {
+                    padding: 8px 12px !important;
+                    font-size: 14px !important;
+                    flex-shrink: 0 !important;
+                }
+                
+                /* 페이지네이션 모바일 */
+                .pagination {
+                    flex-wrap: wrap !important;
+                    gap: 6px !important;
+                    justify-content: center !important;
+                    width: 100% !important;
+                    padding: 0 !important;
+                }
+                .pagination .btn {
+                    padding: 10px 14px !important;
+                    font-size: 14px !important;
+                    min-width: 60px !important;
+                    box-sizing: border-box !important;
+                }
+                .pagination span {
+                    padding: 10px 14px !important;
+                    font-size: 14px !important;
+                }
+
+                /* FAB 모바일 */
+                .fab-container {
+                    bottom: 20px;
+                    right: 20px;
+                }
+                .fab-button {
+                    width: 56px;
+                    height: 56px;
+                }
+                .fab-menu {
+                    bottom: 70px;
+                    min-width: 150px;
+                }
+                .fab-menu-item {
+                    padding: 12px 16px !important;
+                    font-size: 14px !important;
+                }
+
+                /* 전체 래퍼 섹션 */
+                .container > div[style*="margin-top"] {
+                    margin-top: 20px !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+
+                .container > div[style*="margin-top"] > div {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+            }
+
+            /* 작은 모바일 (max-width: 480px) */
+            @media (max-width: 480px) {
+                .section {
+                    padding: 0;
+                }
+
+                .container {
+                    padding: 0 12px !important;
+                }
+
+                .community-tab {
+                    padding: 10px 14px !important;
+                    font-size: 14px !important;
+                }
+
+                .band-list-header h2 {
+                    font-size: 18px !important;
+                }
+
+                .band-list-header input[type="text"] {
+                    font-size: 14px !important;
+                    padding: 11px 12px !important;
+                }
+
+                .band-list-header button[type="submit"] {
+                    padding: 11px 16px !important;
+                }
+
+                .band-card {
+                    padding: 12px !important;
+                    gap: 12px !important;
+                }
+
+                .band-card > div:first-child {
+                    width: 80px !important;
+                    height: 80px !important;
+                    min-width: 80px !important;
+                    max-width: 80px !important;
+                }
+
+                .band-card h3 {
+                    font-size: 16px !important;
+                }
+
+                .community-post-item {
+                    padding: 12px !important;
+                    gap: 12px !important;
+                }
+
+                .community-post-image {
+                    width: 90px !important;
+                    height: 90px !important;
+                    min-width: 90px !important;
+                    max-width: 90px !important;
+                }
+
+                .community-post-title {
+                    font-size: 15px !important;
+                }
+
+                .community-post-excerpt {
+                    font-size: 13px !important;
+                }
+
+                .flash-list-item h3 {
+                    font-size: 14px !important;
+                }
+
+                .flash-list-item > div > div:first-child > span {
+                    font-size: 12px !important;
+                }
+
+                .region-banner-item {
+                    padding: 8px 14px !important;
+                    font-size: 14px !important;
+                }
+
+                .pagination .btn {
+                    padding: 9px 12px !important;
+                    font-size: 13px !important;
+                    min-width: 55px !important;
+                }
+
+                .pagination span {
+                    padding: 9px 12px !important;
+                    font-size: 13px !important;
+                }
+            }
+
+            
+            /* 태블릿 스타일 (768px ~ 1023px) */
+            @media (min-width: 768px) and (max-width: 1023px) {
+                div[style*="grid-template-columns: 250px 1fr"] {
+                    grid-template-columns: 200px 1fr !important;
+                    gap: 16px !important;
+                }
+                .community-tab {
+                    padding: 10px 16px !important;
+                }
+            }
+            
+            /* 데스크톱 스타일 (min-width: 1024px) */
+            @media (min-width: 1024px) {
+                .fab-container {
+                    display: none !important;
+                }
+            }
+        </style>
+        
+        
+        <!-- 전체 모임 섹션: 카테고리와 모임 리스트 그리드 -->
+        <div style="margin-top: 32px;">
+            <!-- 공지 배너 -->
+            {% if pinned_notice %}
+            <div class="notice-banner" style="padding: 20px 24px; background: #f8fafc; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                    <span style="font-size: 32px; line-height: 1;">📣</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
+                        <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'notice_list' %}" style="padding: 12px 24px; background: var(--brand); color: #fff; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 600; white-space: nowrap;">
+                    <span class="notice-banner-text">전체 보기</span>
+                    <span class="notice-banner-arrow">→</span>
+                </a>
+            </div>
+            {% endif %}
+            
+            <!-- 모바일: 지역 선택 배너 (가로 스크롤) -->
+            <div class="region-banner-mobile" style="display: none; margin-bottom: 16px;">
+                <div class="region-banner-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch;">
+                    <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region=all{% if search %}&search={{ search }}{% endif %}" 
+                       class="region-banner-item {% if current_region == 'all' %}active{% endif %}"
+                       style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; text-decoration: none; color: {% if current_region == 'all' %}#fff{% else %}#64748b{% endif %}; background: {% if current_region == 'all' %}var(--brand){% else %}#f1f5f9{% endif %}; border-radius: 20px; font-size: 14px; font-weight: {% if current_region == 'all' %}600{% else %}500{% endif %}; white-space: nowrap; flex-shrink: 0; transition: all 0.2s ease;">
+                        전체
+                    </a>
+                    {% for region_value, region_name in regions %}
+                        {% if region_value != 'all' %}
+                            <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region={{ region_value }}{% if search %}&search={{ search }}{% endif %}" 
+                               class="region-banner-item {% if current_region == region_value %}active{% endif %}"
+                               style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; text-decoration: none; color: {% if current_region == region_value %}#fff{% else %}#64748b{% endif %}; background: {% if current_region == region_value %}var(--brand){% else %}#f1f5f9{% endif %}; border-radius: 20px; font-size: 14px; font-weight: {% if current_region == region_value %}600{% else %}500{% endif %}; white-space: nowrap; flex-shrink: 0; transition: all 0.2s ease;">
+                                {{ region_name }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="bottom-grid-layout" style="display: grid; grid-template-columns: 250px 1fr; gap: 24px;">
+                <!-- 좌측: 내 모임/동호회 + 지역 선택 -->
+                <aside class="region-section" style="position: sticky; top: 20px; height: fit-content; display: flex; flex-direction: column; gap: 16px;">
+                    <!-- 내 모임/동호회 -->
+                    {% if user.is_authenticated and my_bands %}
+                    <div class="my-bands-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="font-size: 16px; font-weight: 700; margin: 0; color: #1e293b;">내 모임/동호회</h3>
+                            <a href="{% url 'accounts:mypage' %}" style="font-size: 13px; color: var(--brand); text-decoration: none;">더보기</a>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 300px;">
+                            {% for band in my_bands %}
+                                <a href="{% url 'band:detail' band.id %}" style="text-decoration: none; color: inherit;">
+                                    <div style="padding: 12px; background: #f8fafc; border-radius: 6px; transition: all 0.2s ease;">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            {% if band.profile_image %}
+                                                <img src="{{ band.profile_image.url }}" alt="{{ band.name }}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
+                                            {% else %}
+                                                <div style="width: 40px; height: 40px; border-radius: 6px; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">
+                                                    {{ band.name|first }}
+                                                </div>
+                                            {% endif %}
+                                            <div style="flex: 1; min-width: 0;">
+                                                <h3 style="margin: 0 0 4px 0; font-size: 15px; font-weight: 700; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ band.name }}</h3>
+                                                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                                    <!-- 지역 텍스트 (맨 앞) -->
+                                                    {% if band.flash_region_detail %}
+                                                        <span style="font-size: 12px; color: #64748b;">
+                                                            {{ band.flash_region_detail }}
+                                                        </span>
+                                                    {% elif band.region and band.region != 'all' %}
+                                                        <span style="font-size: 12px; color: #64748b;">
+                                                            {{ band.get_region_display }}
+                                                        </span>
+                                                    {% endif %}
+                                                    <!-- 분류 뱃지들 -->
+                                                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                                    {% if band.category_items %}
+                                                        {% for code, label in band.category_items %}
+                                                            <span class="band-type-badge {{ code }}" style="font-size: 10px; padding: 2px 5px;">
+                                                                {{ label }}
+                                                            </span>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <span class="band-type-badge {{ band.band_type }}" style="font-size: 10px; padding: 2px 5px;">
+                                                            {{ band.get_band_type_display }}
+                                                        </span>
+                                                    {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 지역 선택 -->
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                        <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 16px 0; color: #1e293b;">지역 선택</h3>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region=all{% if search %}&search={{ search }}{% endif %}" 
+                               class="region-link"
+                               style="display: block; padding: 10px 12px; text-decoration: none; color: {% if current_region == 'all' %}var(--brand){% else %}#64748b{% endif %}; background: {% if current_region == 'all' %}#f0f9ff{% else %}transparent{% endif %}; border-radius: 6px; font-size: 14px; transition: all 0.2s ease; {% if current_region == 'all' %}font-weight: 600;{% endif %}">
+                                전체
+                            </a>
+                            {% for region_value, region_name in regions %}
+                                {% if region_value != 'all' %}
+                                    <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region={{ region_value }}{% if search %}&search={{ search }}{% endif %}" 
+                                       class="region-link"
+                                       style="display: block; padding: 10px 12px; text-decoration: none; color: {% if current_region == region_value %}var(--brand){% else %}#64748b{% endif %}; background: {% if current_region == region_value %}#f0f9ff{% else %}transparent{% endif %}; border-radius: 6px; font-size: 14px; transition: all 0.2s ease; {% if current_region == region_value %}font-weight: 600;{% endif %}">
+                                        {{ region_name }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </aside>
+                
+                <!-- 우측: 모임/게시물 리스트 -->
+                <div>
+                    <div class="band-list-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="font-size: 18px; margin: 0; color: var(--brand-800);">
+                            {% if current_type == 'flash' %}번개 목록
+                            {% elif current_type == 'club' %}전체 동호회
+                            {% else %}전체 모임{% endif %}
+                        </h2>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <form method="get" style="position: relative; flex: 1; max-width: 400px;">
+                                {% if current_type %}
+                                    <input type="hidden" name="type" value="{{ current_type }}">
+                                {% endif %}
+                                {% if current_region != 'all' %}
+                                    <input type="hidden" name="region" value="{{ current_region }}">
+                                {% endif %}
+                                <input type="text" name="search" value="{{ search }}" 
+                                       placeholder="{% if current_type == 'flash' %}번개 검색...{% elif current_type == 'club' %}동호회 검색...{% else %}모임 검색...{% endif %}" 
+                                       style="width: 100%; padding: 12px 60px 12px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; font-family: inherit;">
+                                <button type="submit" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0 !important; margin: 0 !important; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; background: var(--brand); z-index: 10;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;">
+                                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                                        <polyline points="5 12 12 5 19 12"></polyline>
+                                    </svg>
+                                </button>
+                            </form>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'band:create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="btn btn-primary">
+                                    {% if current_type == 'flash' %}번개 만들기
+                                    {% elif current_type == 'club' %}동호회 만들기
+                                    {% else %}모임 만들기{% endif %}
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if current_type == 'flash' %}
+                        <!-- 번개 탭: 번개 밴드 리스트 (이미지와 동일한 형태) -->
+                        {% if bands %}
+                            <div style="display: flex; flex-direction: column; gap: 0;">
+                                {% for band in bands %}
+                                    <a href="{% url 'band:detail' band.id %}{% if band.band_type != 'flash' %}?tab=flash{% endif %}" style="text-decoration: none; color: inherit; display: block; border-bottom: 1px solid #e2e8f0;">
+                                        <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: #fff; transition: all 0.2s ease;">
+                                            <div style="flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0;">
+                                                <span style="display: inline-block; padding: 4px 10px; background: #fbbf24; color: white; border-radius: 4px; font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; max-width: 80px; overflow: hidden; text-overflow: ellipsis;">{% if band.parent_band_region %}{{ band.parent_band_region }}{% elif band.flash_region_detail %}{{ band.flash_region_detail }}{% else %}{{ band.get_region_display }}{% endif %}</span>
+                                                <span style="width: 1px; height: 16px; background: #e2e8f0; flex-shrink: 0;"></span>
+                                                {% if band.d_day_text %}
+                                                    <span style="font-size: 15px; font-weight: 700; color: {% if band.d_day_is_past %}#1e293b{% else %}var(--brand){% endif %}; white-space: nowrap; flex-shrink: 0;">[{{ band.d_day_text }}]</span>
+                                                {% endif %}
+                                                <h3 style="margin: 0; font-size: 15px; font-weight: 500; color: #1e293b; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">
+                                                    {% if band.first_schedule %}{{ band.first_schedule.title }}{% else %}{{ band.name }}{% endif %}
+                                                </h3>
+                                                <span class="band-parent-name" style="font-size: 13px; color: #64748b; white-space: nowrap; flex-shrink: 0;" 
+                                                      data-band-name="{{ band.name|escapejs }}"
+                                                      data-parent-name="{% if band.parent_band_name %}{{ band.parent_band_name|escapejs }}{% endif %}"
+                                                      data-schedule-date="{% if band.first_schedule %}{{ band.first_schedule.start_datetime|date:'Y.m.d' }}{% else %}{{ band.created_at|date:'Y.m.d' }}{% endif %}">
+                                                    {% if band.parent_band_name and band.parent_band_name|length > 0 %}
+                                                        {{ band.parent_band_name }}
+                                                    {% elif band.first_schedule %}
+                                                        {{ band.first_schedule.start_datetime|date:"Y.m.d" }}
+                                                    {% else %}
+                                                        {{ band.created_at|date:"Y.m.d" }}
+                                                    {% endif %}
+                                                </span>
+                                                <span style="font-size: 13px; color: #64748b; white-space: nowrap; flex-shrink: 0;">참가 {% if band.first_schedule %}{{ band.first_schedule.current_participants }}{% if band.first_schedule.max_participants %}/{{ band.first_schedule.max_participants }}{% endif %}{% else %}{{ band.total_members|default:band.member_count }}{% endif %}</span>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; color: #64748b; font-size: 13px; white-space: nowrap; flex-shrink: 0;">
+                                                더보기 <span style="font-size: 16px; line-height: 1;">+</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- 페이지네이션 -->
+                            {% if bands.has_other_pages %}
+                                <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                                    {% if bands.has_previous %}
+                                        <a href="?page=1{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">처음</a>
+                                        <a href="?page={{ bands.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">이전</a>
+                                    {% endif %}
+                                    <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
+                                        {{ bands.number }} / {{ bands.paginator.num_pages }}
+                                    </span>
+                                    {% if bands.has_next %}
+                                        <a href="?page={{ bands.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">다음</a>
+                                        <a href="?page={{ bands.paginator.num_pages }}{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">마지막</a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div style="padding: 48px; text-align: center; color: #64748b;">
+                                <p>게시글이 없습니다.</p>
+                                {% if user.is_authenticated %}
+                                    <a href="{% url 'band:create' %}?type=flash" class="btn btn-primary" style="margin-top: 16px;">첫 번개 만들기</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% elif bands %}
+                        <!-- 모임/동호회 탭: 밴드 리스트 (이미지와 동일한 형태) -->
+                        <div style="display: flex; flex-direction: column; gap: 0;">
+                            {% for band in bands %}
+                                <a href="{% url 'band:detail' band.id %}" style="text-decoration: none; color: inherit; display: block;">
+                                    <div class="band-card" style="display: flex; align-items: center; gap: clamp(8px, 3vw, 16px); padding: clamp(12px, 3vw, 16px); background: #fff; transition: all 0.2s ease; border-bottom: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
+                                        <!-- 왼쪽: 프로필 이미지 (프로필 사진 크기와 동일, 세로 중앙 정렬) -->
+                                        <div style="width: clamp(60px, 15vw, 80px); height: clamp(60px, 15vw, 80px); flex-shrink: 0; border-radius: 8px; overflow: hidden; min-width: 60px;">
+                                            {% if band.profile_image %}
+                                                <img src="{{ band.profile_image.url }}" alt="{{ band.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% elif band.cover_image %}
+                                                <img src="{{ band.cover_image.url }}" alt="{{ band.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% else %}
+                                                <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #c44569 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: 700;">
+                                                    {{ band.name|first }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- 오른쪽: 정보 영역 -->
+                                        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; margin-left: 16px; align-items: flex-start; min-width: 0;">
+                                            <!-- 제목 (팀 명) -->
+                                            <h3 style="margin: 0; font-size: clamp(16px, 4vw, 24px); font-weight: 700; color: #1e293b; line-height: 1.3; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;">
+                                                {{ band.name }}
+                                            </h3>
+
+                                            <!-- 지역 + 분류 뱃지 -->
+                                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; justify-content: flex-start; width: 100%;">
+                                                <!-- 지역 배지 -->
+                                                {% if band.flash_region_detail %}
+                                                    <span style="display: inline-block; padding: 2px 6px; background: #d1fae5; color: #065f46; border-radius: 4px; font-size: clamp(10px, 2.5vw, 12px); font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                                        {{ band.flash_region_detail }}
+                                                    </span>
+                                                {% elif band.region and band.region != 'all' %}
+                                                    <span style="display: inline-block; padding: 2px 6px; background: #d1fae5; color: #065f46; border-radius: 4px; font-size: clamp(10px, 2.5vw, 12px); font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                                        {{ band.get_region_display }}
+                                                    </span>
+                                                {% endif %}
+                                                <!-- 분류 뱃지들 -->
+                                                <div style="display: flex; flex-wrap: wrap; gap: 3px; flex-shrink: 0;">
+                                                    {% if band.category_items %}
+                                                        {% for code, label in band.category_items %}
+                                                            <span class="band-type-badge {{ code }}" style="white-space: nowrap; flex-shrink: 0;">
+                                                                {{ label }}
+                                                            </span>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <span class="band-type-badge {{ band.band_type }}" style="white-space: nowrap; flex-shrink: 0;">
+                                                            {{ band.get_band_type_display }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 모임/동호회 한 줄 소개 + 참가자 수(좌측 정렬) -->
+                                            <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-start; width: 100%; min-width: 0;">
+                                                {% if band.description %}
+                                                    <p style="margin: 0; font-size: clamp(12px, 3vw, 14px); color: #64748b; line-height: 1.5; text-align: left; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; width: 100%;">
+                                                        {{ band.description|truncatewords:20 }}
+                                                    </p>
+                                                {% elif band.base_description %}
+                                                    <p style="margin: 0; font-size: clamp(12px, 3vw, 14px); color: #64748b; line-height: 1.5; text-align: left; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; width: 100%;">
+                                                        {{ band.base_description|truncatewords:20 }}
+                                                    </p>
+                                                {% else %}
+                                                    <p style="margin: 0; font-size: clamp(12px, 3vw, 14px); color: #64748b; line-height: 1.5; text-align: left; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; width: 100%;">
+                                                        {{ band.name }}
+                                                    </p>
+                                                {% endif %}
+                                                <!-- 참가자 수 (좌측 하단) -->
+                                                <div style="font-size: clamp(11px, 2.8vw, 13px); color: #64748b; display: flex; align-items: center; gap: 3px; white-space: nowrap; flex-shrink: 0;">
+                                                    <span style="position: relative; top: -1px; font-size: clamp(12px, 3vw, 14px);">👥</span>
+                                                    <span>{{ band.total_members|default:band.member_count }}명</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- 페이지네이션 -->
+                        {% if bands.has_other_pages %}
+                            <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                                {% if bands.has_previous %}
+                                    <a href="?page=1{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">처음</a>
+                                    <a href="?page={{ bands.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">이전</a>
+                                {% endif %}
+                                <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
+                                    {{ bands.number }} / {{ bands.paginator.num_pages }}
+                                </span>
+                                {% if bands.has_next %}
+                                    <a href="?page={{ bands.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">다음</a>
+                                    <a href="?page={{ bands.paginator.num_pages }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">마지막</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div style="padding: 48px; text-align: center; color: #64748b;">
+                            <p>
+                                {% if current_type == 'flash' %}번개가 없습니다.
+                                {% elif current_type == 'club' %}동호회가 없습니다.
+                                {% else %}모임이 없습니다.{% endif %}
+                            </p>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'band:create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="btn btn-primary" style="margin-top: 16px;">
+                                    {% if current_type == 'flash' %}첫 번개 만들기
+                                    {% elif current_type == 'club' %}첫 동호회 만들기
+                                    {% else %}첫 모임 만들기{% endif %}
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+(function() {
+    // 번개 이름에서 모임 이름 추출하여 표시
+    function updateParentNames() {
+        const parentNameElements = document.querySelectorAll('.band-parent-name');
+        parentNameElements.forEach(function(element) {
+            const parentName = element.getAttribute('data-parent-name');
+            
+            // parent_band_name이 없거나 빈 문자열이면 번개 이름에서 추출
+            if (!parentName || parentName.trim() === '') {
+                // h3 태그에서 번개 이름 가져오기 (더 확실함)
+                const h3Element = element.closest('a')?.querySelector('h3');
+                let bandName = element.getAttribute('data-band-name');
+                
+                // h3에서 번개 이름 가져오기 시도
+                if (h3Element && h3Element.textContent) {
+                    bandName = h3Element.textContent.trim();
+                }
+                
+                if (bandName) {
+                    // " - " 또는 " -" 또는 "- " 패턴으로 분리
+                    const separatorPattern = /\s*-\s*/;
+                    if (separatorPattern.test(bandName)) {
+                        const parts = bandName.split(separatorPattern);
+                        if (parts.length > 0 && parts[0].trim()) {
+                            element.textContent = parts[0].trim();
+                            return;
+                        }
+                    }
+                }
+            } else {
+                // parent_band_name이 있으면 그것을 사용
+                element.textContent = parentName;
+            }
+        });
+    }
+    
+    // DOMContentLoaded와 즉시 실행 모두 지원
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateParentNames);
+    } else {
+        updateParentNames();
+    }
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bannerWrappers = document.querySelectorAll('.banner-wrapper');
+
+    bannerWrappers.forEach(function(wrapper) {
+        const container = wrapper.querySelector('[data-banner-container]');
+        const items = container.querySelectorAll('.badmintok-banner-item');
+        const prevBtn = wrapper.querySelector('[data-banner-prev]');
+        const nextBtn = wrapper.querySelector('[data-banner-next]');
+
+        if (items.length <= 1) {
+            // 배너가 1개 이하면 버튼 숨기기
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+            return;
+        }
+
+        let currentIndex = 0;
+
+        function slideToBanner(index) {
+            const item = items[index];
+            if (item) {
+                // scrollIntoView 대신 컨테이너의 scrollLeft를 직접 조작
+                const scrollPosition = item.offsetLeft;
+                container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+            }
+        }
+
+        function nextBanner() {
+            currentIndex = (currentIndex + 1) % items.length;
+            slideToBanner(currentIndex);
+        }
+
+        function prevBanner() {
+            currentIndex = (currentIndex - 1 + items.length) % items.length;
+            slideToBanner(currentIndex);
+        }
+
+        // 버튼 클릭 이벤트
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function() {
+                prevBanner();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function() {
+                nextBanner();
+            });
+        }
+
+        // 5초마다 자동 슬라이드
+        const autoSlideInterval = setInterval(nextBanner, 5000);
+
+        // 사용자가 수동으로 스크롤하면 인터벌 초기화
+        let scrollTimeout;
+        container.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(function() {
+                // 현재 보이는 배너의 인덱스를 업데이트
+                const containerRect = container.getBoundingClientRect();
+                items.forEach(function(item, index) {
+                    const itemRect = item.getBoundingClientRect();
+                    if (Math.abs(itemRect.left - containerRect.left) < 10) {
+                        currentIndex = index;
+                    }
+                });
+            }, 150);
+        });
+    });
+});
+
+// 플로팅 액션 버튼 (FAB)
+document.addEventListener('DOMContentLoaded', function() {
+    const fabButton = document.getElementById('fab-button');
+    const fabMenu = document.getElementById('fab-menu');
+    
+    if (fabButton && fabMenu) {
+        fabButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fabButton.classList.toggle('active');
+            fabMenu.classList.toggle('active');
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!fabButton.contains(e.target) && !fabMenu.contains(e.target)) {
+                fabButton.classList.remove('active');
+                fabMenu.classList.remove('active');
+            }
+        });
+    }
+});
+</script>
+
+<!-- 플로팅 액션 버튼 (FAB) -->
+<div class="fab-container">
+    <button id="fab-button" class="fab-button" aria-label="메뉴 열기">
+        +
+    </button>
+    <div id="fab-menu" class="fab-menu">
+        {% if user.is_authenticated %}
+            <a href="{% url 'accounts:mypage' %}" class="fab-menu-item">
+                <span class="fab-menu-item-icon">👥</span>
+                <span>내 모임/동호회</span>
+            </a>
+        {% endif %}
+        <a href="{% url 'band:create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="fab-menu-item">
+            <span class="fab-menu-item-icon">➕</span>
+            <span>모임 만들기</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,2157 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if is_update %}글 수정{% else %}글쓰기{% endif %} - 배드민톡</title>
+
+    <!-- Quill Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 워드프레스 스타일 레이아웃 */
+        .wp-editor-wrapper {
+            display: flex;
+            min-height: 100vh;
+            padding-top: 60px;
+        }
+
+        .wp-editor-main {
+            flex: 1;
+            max-width: 100%;
+            background: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .wp-editor-sidebar {
+            width: 320px;
+            background: #fff;
+            border-left: 1px solid #e2e8f0;
+            padding: 24px;
+            overflow-y: auto;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            transition: all 0.3s ease;
+        }
+
+        /* 전체 화면 모드 */
+        .fullscreen-mode .wp-editor-sidebar {
+            transform: translateX(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .fullscreen-mode .wp-editor-main {
+            max-width: 100%;
+        }
+
+        /* 상단 툴바 */
+        .wp-top-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+        }
+
+        .wp-top-toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .wp-top-toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .wp-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .wp-back-btn:hover {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .wp-fullscreen-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: #fff;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .wp-fullscreen-btn:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        .wp-save-status {
+            font-size: 13px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .wp-save-status.saving {
+            color: #f59e0b;
+        }
+
+        .wp-save-status.saved {
+            color: #10b981;
+        }
+
+        /* 에디터 영역 */
+        .wp-editor-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        .fullscreen-mode .wp-editor-content {
+            max-width: 900px;
+        }
+
+        /* 제목 입력 */
+        .wp-title-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 40px;
+            font-weight: 700;
+            color: #1e293b;
+            padding: 12px 0;
+            margin-bottom: 24px;
+            background: transparent;
+            resize: none;
+            overflow: hidden;
+            line-height: 1.2;
+        }
+
+        .wp-title-input::placeholder {
+            color: #cbd5e1;
+        }
+
+        /* Quill 에디터 커스터마이징 */
+        .wp-quill-wrapper {
+            border: none;
+        }
+
+        #editor {
+            min-height: 500px;
+            background: #fff;
+            border: none;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .ql-container {
+            border: none !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 16px;
+        }
+
+        .ql-editor {
+            min-height: 500px;
+            padding: 0;
+            color: #334155;
+        }
+
+        .ql-editor::before {
+            color: #cbd5e1;
+            font-style: normal;
+            left: 0;
+        }
+
+        .ql-editor p {
+            margin-bottom: 16px;
+        }
+
+        .ql-editor h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 32px 0 16px;
+            color: #1e293b;
+        }
+
+        .ql-editor h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 28px 0 14px;
+            color: #1e293b;
+        }
+
+        .ql-editor h3 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 24px 0 12px;
+            color: #1e293b;
+        }
+
+        /* 툴바 스타일 */
+        .ql-toolbar {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px;
+            background: #f8fafc;
+            padding: 12px;
+            margin-bottom: 24px;
+            position: sticky;
+            top: 80px;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .ql-toolbar button {
+            width: 32px !important;
+            height: 32px !important;
+            margin: 0 2px;
+            border-radius: 4px;
+        }
+
+        .ql-toolbar button:hover {
+            background: #e2e8f0 !important;
+        }
+
+        .ql-toolbar button.ql-active {
+            background: #dbeafe !important;
+            color: #2563eb !important;
+        }
+
+        .ql-toolbar .ql-stroke {
+            stroke: #475569;
+        }
+
+        .ql-toolbar .ql-fill {
+            fill: #475569;
+        }
+
+        .ql-toolbar button:hover .ql-stroke {
+            stroke: #1e293b;
+        }
+
+        .ql-toolbar button:hover .ql-fill {
+            fill: #1e293b;
+        }
+
+        /* 사이드바 스타일 */
+        .wp-sidebar-section {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .wp-sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .wp-sidebar-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .wp-form-group {
+            margin-bottom: 16px;
+        }
+
+        .wp-form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .wp-form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #334155;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .wp-form-select:hover {
+            border-color: #cbd5e1;
+        }
+
+        .wp-form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .wp-checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .wp-checkbox-wrapper:hover {
+            background: #f8fafc;
+        }
+
+        .wp-checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+
+        .wp-checkbox-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #334155;
+            cursor: pointer;
+        }
+
+        /* 버튼 스타일 */
+        .wp-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .wp-btn-primary {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .wp-btn-primary:hover {
+            background: #2563eb;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .wp-btn-primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .wp-btn-secondary {
+            background: #fff;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .wp-btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        /* 드래그 앤 드롭 오버레이 */
+        .wp-drag-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(59, 130, 246, 0.1);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .wp-drag-overlay.active {
+            display: flex;
+        }
+
+        .wp-drag-content {
+            background: #fff;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .wp-drag-icon {
+            font-size: 64px;
+            color: #3b82f6;
+            margin-bottom: 16px;
+        }
+
+        .wp-drag-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        /* 반응형 */
+        @media (max-width: 1024px) {
+            .wp-editor-sidebar {
+                position: fixed;
+                right: -320px;
+                top: 60px;
+                box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+                z-index: 999;
+            }
+
+            .wp-editor-sidebar.mobile-visible {
+                right: 0;
+            }
+
+            .wp-editor-main {
+                max-width: 100%;
+            }
+
+            .wp-title-input {
+                font-size: 32px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .wp-editor-content {
+                padding: 24px 16px;
+            }
+
+            .wp-title-input {
+                font-size: 28px;
+            }
+
+            .ql-toolbar {
+                top: 60px;
+            }
+        }
+
+        /* 숨김 필드 */
+        #hidden_content {
+            display: none;
+        }
+
+        /* Material Icons 스타일 */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* 로딩 스피너 */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        /* 메시지 알림 */
+        .messages {
+            position: fixed;
+            top: 70px;
+            right: 24px;
+            z-index: 10000;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .alert-error {
+            background: #ef4444;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* SEO 체크리스트 스타일 */
+        .seo-check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 0;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .seo-check-item.passed {
+            color: #10b981;
+        }
+
+        .seo-check-item.failed {
+            color: #ef4444;
+        }
+
+        .seo-check-icon {
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .seo-check-item.passed .seo-check-icon {
+            color: #10b981;
+        }
+
+        .seo-check-item.failed .seo-check-icon {
+            color: #ef4444;
+        }
+
+        /* 이미지 Alt 텍스트 모달 */
+        .alt-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alt-modal.active {
+            display: flex;
+        }
+
+        .alt-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .alt-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .alt-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .alt-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .alt-modal-close:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .alt-modal-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .alt-modal-form-group {
+            margin-bottom: 16px;
+        }
+
+        .alt-modal-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .alt-modal-label .required {
+            color: #ef4444;
+        }
+
+        .alt-modal-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .alt-modal-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .alt-modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 메시지 알림 -->
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="wp-editor-wrapper" id="wpEditorWrapper">
+        <!-- 상단 툴바 -->
+        <div class="wp-top-toolbar">
+            <div class="wp-top-toolbar-left">
+                <a href="{% url 'admin:community_badmintokpost_changelist' %}" class="wp-back-btn">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">arrow_back</span>
+                    관리자 페이지로
+                </a>
+                <div class="wp-save-status" id="saveStatus">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                    <span id="saveStatusText">저장됨</span>
+                </div>
+            </div>
+            <div class="wp-top-toolbar-right">
+                <button type="button" class="wp-fullscreen-btn" id="fullscreenBtn" title="전체 화면 모드">
+                    <span class="material-symbols-outlined">fullscreen</span>
+                </button>
+                <button type="button" class="wp-btn wp-btn-secondary" id="previewBtn">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                    미리보기
+                </button>
+                <button type="button" class="wp-btn" id="saveDraftBtn" style="background: #64748b; color: white;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                    임시저장
+                </button>
+                <button type="submit" form="postForm" class="wp-btn wp-btn-primary" id="publishBtn">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
+                    {% if is_update %}수정 완료{% else %}게시하기{% endif %}
+                </button>
+            </div>
+        </div>
+
+        <!-- 메인 에디터 영역 -->
+        <div class="wp-editor-main">
+            <div class="wp-editor-content">
+                <form method="post" enctype="multipart/form-data" id="postForm">
+                    {% csrf_token %}
+
+                    <!-- 제목 입력 -->
+                    <textarea
+                        name="title"
+                        id="wpTitleInput"
+                        class="wp-title-input"
+                        placeholder="제목을 입력하세요"
+                        rows="1"
+                        maxlength="200">{% if post %}{{ post.title }}{% endif %}</textarea>
+
+                    <!-- Quill 에디터 -->
+                    <div class="wp-quill-wrapper">
+                        <div id="editor"></div>
+                        <textarea name="content" id="hidden_content" style="display: none;">{% if post %}{{ post.content }}{% endif %}</textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 사이드바 설정 패널 -->
+        <div class="wp-editor-sidebar" id="wpSidebar">
+            <!-- 게시글 설정 -->
+            <div class="wp-sidebar-section">
+                <h3 class="wp-sidebar-title">게시글 설정</h3>
+
+                <div class="wp-form-group">
+                    <label for="id_category" class="wp-form-label">카테고리</label>
+                    <select name="category" id="id_category" class="wp-form-select" form="postForm" style="font-family: inherit;">
+                        <option value="">선택하세요</option>
+                        {% for category in categories %}
+                            {% if category.parent %}
+                                {# 하위 카테고리 - 선택 가능, 들여쓰기 #}
+                                <option value="{{ category.id }}" {% if post and post.category_id == category.id %}selected{% endif %} style="padding-left: 20px;">
+                                    &nbsp;&nbsp;&nbsp;{{ category.name }}
+                                </option>
+                            {% else %}
+                                {# 상위 카테고리 - 비활성화, 굵게 #}
+                                <option value="" disabled style="font-weight: 700; color: #1e293b; background: #f8fafc;">
+                                    {{ category.name }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        굵은 글씨는 상위 카테고리입니다
+                    </p>
+                </div>
+            </div>
+
+            <!-- 썸네일 -->
+            <div class="wp-sidebar-section">
+                <h3 class="wp-sidebar-title">썸네일</h3>
+
+                <div class="wp-form-group">
+                    <div id="thumbnail-preview" style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8fafc;">
+                        {% if post and post.thumbnail %}
+                        <img src="{{ post.thumbnail.url }}" alt="썸네일" style="width: 100%; height: auto; display: block;">
+                        {% else %}
+                        <div style="padding: 48px 24px; text-align: center; color: #94a3b8;">
+                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 8px;">image</span>
+                            <span style="font-size: 13px;">썸네일 없음</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <input type="file" name="thumbnail" id="id_thumbnail" accept="image/*" style="display: none;" form="postForm">
+                    <button type="button" class="wp-btn wp-btn-secondary" id="uploadThumbnailBtn" style="width: 100%; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">upload</span>
+                        썸네일 업로드
+                    </button>
+                    {% if post and post.thumbnail %}
+                    <button type="button" class="wp-btn" id="removeThumbnailBtn" style="width: 100%; margin-top: 8px; background: #ef4444; color: white; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                        썸네일 제거
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="wp-form-group" style="margin-top: 16px;">
+                    <label for="id_thumbnail_alt" class="wp-form-label">
+                        썸네일 대체 텍스트
+                        <span style="color: #64748b; font-weight: 400; font-size: 12px;">(SEO 권장)</span>
+                    </label>
+                    <input type="text"
+                           name="thumbnail_alt"
+                           id="id_thumbnail_alt"
+                           value="{% if post %}{{ post.thumbnail_alt }}{% endif %}"
+                           placeholder="썸네일 이미지를 설명하는 텍스트..."
+                           class="wp-form-select"
+                           style="font-family: inherit;"
+                           form="postForm">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">info</span>
+                        검색 엔진과 접근성을 위한 이미지 설명
+                    </p>
+                </div>
+            </div>
+
+            <!-- 발행 설정 -->
+            <div class="wp-sidebar-section">
+                <h3 class="wp-sidebar-title">발행 설정</h3>
+
+                <div class="wp-form-group">
+                    <label for="id_published_at" class="wp-form-label">발행 일시</label>
+                    <input type="datetime-local"
+                           name="published_at"
+                           id="id_published_at"
+                           value="{% if post and post.published_at %}{{ post.published_at|date:'Y-m-d\TH:i' }}{% endif %}"
+                           class="wp-form-select"
+                           style="font-family: inherit;"
+                           form="postForm">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">비어있으면 즉시 발행됩니다</p>
+                </div>
+            </div>
+
+            <!-- SEO 설정 -->
+            <div class="wp-sidebar-section">
+                <h3 class="wp-sidebar-title">SEO 설정</h3>
+
+                <!-- SEO 점수 -->
+                <div class="wp-form-group" style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 13px; font-weight: 600; color: #475569;">SEO 점수</span>
+                        <span id="seoScore" style="font-size: 20px; font-weight: 700; color: #64748b;">0</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                        <div id="seoScoreBar" style="width: 0%; height: 100%; background: #64748b; transition: all 0.3s ease;"></div>
+                    </div>
+                    <p style="font-size: 11px; color: #94a3b8; margin-top: 6px; text-align: center;" id="seoScoreLabel">분석 대기 중</p>
+                </div>
+
+                <div class="wp-form-group">
+                    <label for="id_focus_keyword" class="wp-form-label">포커스 키워드</label>
+                    <input type="text"
+                           name="focus_keyword"
+                           id="id_focus_keyword"
+                           value="{% if post %}{{ post.focus_keyword }}{% endif %}"
+                           placeholder="예: 배드민턴 라켓"
+                           class="wp-form-select"
+                           style="font-family: inherit;"
+                           form="postForm">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        <span id="keywordDensity" style="font-weight: 600; color: #3b82f6;">0회</span> 사용됨
+                        <span id="keywordDensityPercent" style="margin-left: 8px; color: #64748b;">(0%)</span>
+                    </p>
+                </div>
+
+                <div class="wp-form-group">
+                    <label for="id_meta_description" class="wp-form-label">메타 설명</label>
+                    <textarea name="meta_description"
+                              id="id_meta_description"
+                              rows="3"
+                              maxlength="160"
+                              placeholder="검색 엔진에 표시될 설명을 입력하세요..."
+                              class="wp-form-select"
+                              style="font-family: inherit; resize: vertical;"
+                              form="postForm">{% if post %}{{ post.meta_description }}{% endif %}</textarea>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        <span id="metaDescLength">0</span> / 160자
+                    </p>
+                </div>
+
+                <div class="wp-form-group">
+                    <label for="id_slug" class="wp-form-label">슬러그 (URL)</label>
+                    <input type="text"
+                           name="slug"
+                           id="id_slug"
+                           value="{% if post %}{{ post.slug }}{% endif %}"
+                           placeholder="제목에서 자동 생성"
+                           maxlength="45"
+                           class="wp-form-select"
+                           style="font-family: 'Courier New', monospace; font-size: 13px;"
+                           form="postForm">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">info</span>
+                        한글 사용 가능 (최대 45자)
+                    </p>
+                </div>
+
+                <!-- SEO 체크리스트 -->
+                <div style="margin-top: 20px;">
+                    <button type="button" id="seoChecklistToggle" style="width: 100%; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px; font-weight: 600; color: #475569;">
+                        <span>SEO 체크리스트 (<span id="seoCheckCount">0</span>/28)</span>
+                        <span class="material-symbols-outlined" id="seoChecklistIcon">expand_more</span>
+                    </button>
+                    <div id="seoChecklist" style="display: none; margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 6px; font-size: 12px;">
+                        <!-- 기본 SEO -->
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px;">기본 SEO (0/11)</div>
+                            <div class="seo-check-item" data-check="keyword-in-title">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목에 포커스 키워드 포함</span>
+                            </div>
+                            <div class="seo-check-item" data-check="keyword-in-meta">
+                                <span class="seo-check-icon">○</span>
+                                <span>메타 설명에 포커스 키워드 포함</span>
+                            </div>
+                            <div class="seo-check-item" data-check="keyword-in-url">
+                                <span class="seo-check-icon">○</span>
+                                <span>URL에 포커스 키워드 포함</span>
+                            </div>
+                            <div class="seo-check-item" data-check="keyword-in-content">
+                                <span class="seo-check-icon">○</span>
+                                <span>본문에 포커스 키워드 사용 (1회 이상)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="keyword-density">
+                                <span class="seo-check-icon">○</span>
+                                <span>키워드 밀도 적정 (0.5-2.5%)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="content-length">
+                                <span class="seo-check-icon">○</span>
+                                <span>본문 길이 충분 (600자 이상)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="title-length">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목 길이 적정 (15-60자)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="meta-length">
+                                <span class="seo-check-icon">○</span>
+                                <span>메타 설명 길이 적정 (120-160자)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="url-length">
+                                <span class="seo-check-icon">○</span>
+                                <span>URL 길이 적정 (75자 이하)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="keyword-beginning">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목 앞부분에 키워드 배치</span>
+                            </div>
+                            <div class="seo-check-item" data-check="keyword-in-first-paragraph">
+                                <span class="seo-check-icon">○</span>
+                                <span>첫 문단에 포커스 키워드 포함</span>
+                            </div>
+                        </div>
+
+                        <!-- 고급 SEO -->
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px;">고급 SEO (0/8)</div>
+                            <div class="seo-check-item" data-check="has-images">
+                                <span class="seo-check-icon">○</span>
+                                <span>이미지 포함 (1개 이상)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="images-have-alt">
+                                <span class="seo-check-icon">○</span>
+                                <span>모든 이미지에 Alt 텍스트</span>
+                            </div>
+                            <div class="seo-check-item" data-check="has-internal-links">
+                                <span class="seo-check-icon">○</span>
+                                <span>내부 링크 포함 (2개 이상)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="has-external-links">
+                                <span class="seo-check-icon">○</span>
+                                <span>외부 링크 포함 (1개 이상)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="has-headings">
+                                <span class="seo-check-icon">○</span>
+                                <span>소제목 사용 (H2/H3)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="keyword-in-headings">
+                                <span class="seo-check-icon">○</span>
+                                <span>소제목에 키워드 포함</span>
+                            </div>
+                            <div class="seo-check-item" data-check="has-thumbnail">
+                                <span class="seo-check-icon">○</span>
+                                <span>썸네일 이미지 설정</span>
+                            </div>
+                            <div class="seo-check-item" data-check="links-open-new-tab">
+                                <span class="seo-check-icon">○</span>
+                                <span>외부 링크 새 탭으로 열기</span>
+                            </div>
+                        </div>
+
+                        <!-- 제목 분석 -->
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px;">제목 분석 (0/5)</div>
+                            <div class="seo-check-item" data-check="title-has-number">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목에 숫자 포함</span>
+                            </div>
+                            <div class="seo-check-item" data-check="title-has-power-word">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목에 파워 워드 사용</span>
+                            </div>
+                            <div class="seo-check-item" data-check="title-has-emotional-word">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목에 감정 단어 사용</span>
+                            </div>
+                            <div class="seo-check-item" data-check="title-not-too-long">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목 단어 수 적정 (6-13개)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="title-sentiment-positive">
+                                <span class="seo-check-icon">○</span>
+                                <span>제목 긍정적 표현</span>
+                            </div>
+                        </div>
+
+                        <!-- 가독성 -->
+                        <div>
+                            <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px;">가독성 (0/4)</div>
+                            <div class="seo-check-item" data-check="sentence-length">
+                                <span class="seo-check-icon">○</span>
+                                <span>문장 길이 적정 (25자 이하)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="paragraph-length">
+                                <span class="seo-check-icon">○</span>
+                                <span>문단 길이 적정 (150자 이하)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="has-lists">
+                                <span class="seo-check-icon">○</span>
+                                <span>목록 사용 (불릿 포인트/번호)</span>
+                            </div>
+                            <div class="seo-check-item" data-check="passive-voice-low">
+                                <span class="seo-check-icon">○</span>
+                                <span>수동태 사용 최소화</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 관리자 옵션 -->
+            <div class="wp-sidebar-section">
+                <h3 class="wp-sidebar-title">관리자 옵션</h3>
+
+                <div class="wp-checkbox-wrapper">
+                    <input type="checkbox"
+                           name="is_pinned"
+                           id="id_is_pinned"
+                           {% if post and post.is_pinned %}checked{% endif %}
+                           form="postForm">
+                    <label for="id_is_pinned" class="wp-checkbox-label">상단 고정</label>
+                </div>
+            </div>
+
+            <!-- 게시글 정보 -->
+            <div class="wp-sidebar-section">
+                <h3 class="wp-sidebar-title">문서 정보</h3>
+
+                <div style="font-size: 13px; color: #64748b; line-height: 1.6;">
+                    <p style="margin-bottom: 8px;">
+                        <strong style="color: #475569;">작성자:</strong> {{ user.activity_name }}
+                    </p>
+                    {% if is_update %}
+                    <p style="margin-bottom: 8px;">
+                        <strong style="color: #475569;">작성일:</strong> {{ post.created_at|date:"Y.m.d H:i" }}
+                    </p>
+                    <p>
+                        <strong style="color: #475569;">수정일:</strong> {{ post.updated_at|date:"Y.m.d H:i" }}
+                    </p>
+                    {% else %}
+                    <p>
+                        <strong style="color: #475569;">상태:</strong> 초안
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 드래그 앤 드롭 오버레이 -->
+        <div class="wp-drag-overlay" id="dragOverlay">
+            <div class="wp-drag-content">
+                <div class="wp-drag-icon">
+                    <span class="material-symbols-outlined" style="font-size: 64px;">upload_file</span>
+                </div>
+                <div class="wp-drag-text">이미지를 놓아주세요</div>
+            </div>
+        </div>
+
+        <!-- 이미지 Alt 텍스트 모달 -->
+        <div class="alt-modal" id="altModal">
+            <div class="alt-modal-content">
+                <div class="alt-modal-header">
+                    <h3 class="alt-modal-title">이미지 정보 입력</h3>
+                    <button type="button" class="alt-modal-close" id="altModalClose">
+                        <span class="material-symbols-outlined" style="font-size: 24px;">close</span>
+                    </button>
+                </div>
+
+                <img id="altModalImage" class="alt-modal-image" src="" alt="미리보기">
+
+                <div class="alt-modal-form-group">
+                    <label class="alt-modal-label">
+                        Alt 텍스트 <span class="required">*</span>
+                    </label>
+                    <input type="text" id="altModalAltText" class="alt-modal-input" placeholder="이미지를 설명하는 텍스트를 입력하세요..." required>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        시각 장애인과 검색 엔진을 위한 이미지 설명
+                    </p>
+                </div>
+
+                <div class="alt-modal-form-group">
+                    <label class="alt-modal-label">
+                        Title (제목)
+                    </label>
+                    <input type="text" id="altModalTitle" class="alt-modal-input" placeholder="이미지 제목 (선택사항)">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        마우스 오버 시 표시되는 텍스트
+                    </p>
+                </div>
+
+                <div class="alt-modal-form-group">
+                    <label class="alt-modal-label">
+                        Caption (캡션)
+                    </label>
+                    <input type="text" id="altModalCaption" class="alt-modal-input" placeholder="이미지 캡션 (선택사항)">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        이미지 하단에 표시될 설명
+                    </p>
+                </div>
+
+                <div class="alt-modal-footer">
+                    <button type="button" class="wp-btn wp-btn-secondary" id="altModalCancel">
+                        취소
+                    </button>
+                    <button type="button" class="wp-btn wp-btn-primary" id="altModalSave">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                        저장
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quill Editor -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        // 이미지 업로드 핸들러 (Quill 초기화 전에 정의)
+        async function imageHandler() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+
+            input.onchange = async function() {
+                const file = input.files[0];
+                if (!file) return;
+
+                await uploadImage(file);
+            };
+        }
+
+        // 이미지 업로드 함수
+        async function uploadImage(file) {
+            // 파일 크기 제한 (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('이미지 크기는 10MB 이하여야 합니다.');
+                return;
+            }
+
+            // FormData 생성
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // CSRF 토큰 추가
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // 로딩 상태 표시
+            updateSaveStatus('saving', '이미지 업로드 중...');
+
+            try {
+                // 서버에 이미지 업로드
+                const response = await fetch('{% url "community:badmintok_image_upload" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.url) {
+                    // 이미지 업로드 성공 - Alt 텍스트 모달 표시
+                    showAltModal(data.url);
+                    updateSaveStatus('saved', '이미지 업로드 완료');
+                } else {
+                    alert(data.error || '이미지 업로드에 실패했습니다.');
+                    updateSaveStatus('saved', '저장됨');
+                }
+            } catch (error) {
+                console.error('이미지 업로드 오류:', error);
+                alert('이미지 업로드 중 오류가 발생했습니다.');
+                updateSaveStatus('saved', '저장됨');
+            }
+        }
+
+        // Quill Editor 초기화
+        const quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: {
+                    container: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'align': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['blockquote', 'code-block'],
+                        ['link', 'image', 'video'],
+                        ['clean']
+                    ],
+                    handlers: {
+                        'image': imageHandler
+                    }
+                }
+            },
+            placeholder: '이야기를 시작하세요...',
+        });
+
+        // 기존 내용이 있으면 에디터에 로드
+        const hiddenContent = document.getElementById('hidden_content');
+        if (hiddenContent && hiddenContent.value) {
+            quill.root.innerHTML = hiddenContent.value;
+        }
+
+        // 드래그 앤 드롭 이미지 업로드
+        const editorWrapper = document.getElementById('wpEditorWrapper');
+        const dragOverlay = document.getElementById('dragOverlay');
+        let dragCounter = 0;
+
+        editorWrapper.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            if (e.dataTransfer.types.includes('Files')) {
+                dragOverlay.classList.add('active');
+            }
+        });
+
+        editorWrapper.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter === 0) {
+                dragOverlay.classList.remove('active');
+            }
+        });
+
+        editorWrapper.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        editorWrapper.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            dragOverlay.classList.remove('active');
+
+            const files = Array.from(e.dataTransfer.files);
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+            if (imageFiles.length > 0) {
+                for (const file of imageFiles) {
+                    await uploadImage(file);
+                }
+            }
+        });
+
+        // 제목 입력 자동 높이 조절
+        const titleInput = document.getElementById('wpTitleInput');
+
+        if (titleInput) {
+            titleInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+                autoSave();
+            });
+        }
+
+        // 에디터 내용 변경 시 자동 저장
+        let autoSaveTimeout;
+        if (quill) {
+            quill.on('text-change', function() {
+                autoSave();
+            });
+        }
+
+        // 자동 저장 함수
+        function autoSave() {
+            if (!titleInput || !quill) return;
+
+            clearTimeout(autoSaveTimeout);
+            updateSaveStatus('saving', '저장 중...');
+
+            autoSaveTimeout = setTimeout(() => {
+                const title = titleInput.value;
+                const content = quill.root.innerHTML;
+
+                // localStorage에 임시 저장
+                const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
+                localStorage.setItem(draftKey, JSON.stringify({
+                    title: title,
+                    content: content,
+                    timestamp: new Date().toISOString()
+                }));
+
+                updateSaveStatus('saved', '저장됨');
+            }, 1000);
+        }
+
+        // 저장 상태 업데이트
+        function updateSaveStatus(status, text) {
+            const saveStatus = document.getElementById('saveStatus');
+            const saveStatusText = document.getElementById('saveStatusText');
+            const icon = saveStatus.querySelector('.material-symbols-outlined');
+
+            saveStatus.className = 'wp-save-status ' + status;
+            saveStatusText.textContent = text;
+
+            if (status === 'saving') {
+                icon.textContent = 'sync';
+                icon.classList.add('spinning');
+            } else if (status === 'saved') {
+                icon.textContent = 'check_circle';
+                icon.classList.remove('spinning');
+            }
+        }
+
+        // 페이지 로드 시 임시 저장된 내용 복원
+        window.addEventListener('DOMContentLoaded', function() {
+            const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
+            const draft = localStorage.getItem(draftKey);
+
+            if (draft && !hiddenContent.value) {
+                try {
+                    const draftData = JSON.parse(draft);
+                    const draftTime = new Date(draftData.timestamp);
+                    const timeDiff = (new Date() - draftTime) / 1000 / 60; // 분 단위
+
+                    // 30분 이내의 임시 저장본이 있으면 복원 제안
+                    if (timeDiff < 30) {
+                        if (confirm(`${Math.round(timeDiff)}분 전에 저장된 임시 저장본이 있습니다. 복원하시겠습니까?`)) {
+                            titleInput.value = draftData.title || '';
+                            quill.root.innerHTML = draftData.content || '';
+                            titleInput.style.height = 'auto';
+                            titleInput.style.height = titleInput.scrollHeight + 'px';
+                        }
+                    }
+                } catch (e) {
+                    console.error('임시 저장본 복원 오류:', e);
+                }
+            }
+        });
+
+        // 폼 제출 시 에디터 내용을 textarea에 복사
+        const postForm = document.getElementById('postForm');
+        const publishBtn = document.getElementById('publishBtn');
+        const saveDraftBtn = document.getElementById('saveDraftBtn');
+
+        if (postForm && quill && hiddenContent) {
+            postForm.addEventListener('submit', function(e) {
+                // 에디터 내용을 가져옴
+                const editorContent = quill.root.innerHTML;
+                const editorText = quill.getText().trim();
+
+                // 빈 내용 체크
+                if (!editorText || editorContent === '<p><br></p>' || editorContent === '<p></p>') {
+                    e.preventDefault();
+                    alert('내용을 입력해주세요.');
+                    quill.focus();
+                    return false;
+                }
+
+                // 에디터 내용을 textarea에 저장
+                hiddenContent.value = editorContent;
+
+                // 제출 버튼 비활성화
+                if (publishBtn) {
+                    publishBtn.disabled = true;
+                    publishBtn.innerHTML = '<span class="material-symbols-outlined spinning" style="font-size: 18px;">sync</span> 게시 중...';
+                }
+
+                // 임시 저장본 삭제
+                const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
+                localStorage.removeItem(draftKey);
+            });
+        }
+
+        // 전체 화면 모드 토글
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const wpEditorWrapper = document.getElementById('wpEditorWrapper');
+        let isFullscreen = false;
+
+        if (fullscreenBtn && wpEditorWrapper) {
+            fullscreenBtn.addEventListener('click', function() {
+                isFullscreen = !isFullscreen;
+
+                if (isFullscreen) {
+                    wpEditorWrapper.classList.add('fullscreen-mode');
+                    const icon = fullscreenBtn.querySelector('.material-symbols-outlined');
+                    if (icon) icon.textContent = 'fullscreen_exit';
+                    fullscreenBtn.title = '전체 화면 종료';
+                } else {
+                    wpEditorWrapper.classList.remove('fullscreen-mode');
+                    const icon = fullscreenBtn.querySelector('.material-symbols-outlined');
+                    if (icon) icon.textContent = 'fullscreen';
+                    fullscreenBtn.title = '전체 화면 모드';
+                }
+            });
+
+            // ESC 키로 전체 화면 종료
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isFullscreen && fullscreenBtn) {
+                    fullscreenBtn.click();
+                }
+            });
+        }
+
+        // 미리보기 버튼
+        const previewBtn = document.getElementById('previewBtn');
+        if (previewBtn && titleInput && quill) {
+            previewBtn.addEventListener('click', function() {
+                const title = titleInput.value || '제목 없음';
+                const content = quill.root.innerHTML;
+
+            // 새 창으로 미리보기
+            const previewWindow = window.open('', 'preview', 'width=800,height=600');
+            previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>미리보기 - ${title}</title>
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                            max-width: 800px;
+                            margin: 0 auto;
+                            padding: 48px 24px;
+                            line-height: 1.8;
+                            color: #334155;
+                        }
+                        h1 {
+                            font-size: 40px;
+                            font-weight: 700;
+                            color: #1e293b;
+                            margin-bottom: 32px;
+                        }
+                        p {
+                            margin-bottom: 16px;
+                        }
+                        img {
+                            max-width: 100%;
+                            height: auto;
+                            border-radius: 8px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${title}</h1>
+                    <div>${content}</div>
+                </body>
+                </html>
+            `);
+            previewWindow.document.close();
+            });
+        }
+
+        // 썸네일 업로드 기능
+        const uploadThumbnailBtn = document.getElementById('uploadThumbnailBtn');
+        const thumbnailInput = document.getElementById('id_thumbnail');
+        const thumbnailPreview = document.getElementById('thumbnail-preview');
+
+        if (uploadThumbnailBtn && thumbnailInput) {
+            uploadThumbnailBtn.addEventListener('click', function() {
+                thumbnailInput.click();
+            });
+        }
+
+        if (thumbnailInput) {
+            thumbnailInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // 파일 크기 체크 (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('썸네일 이미지 크기는 5MB 이하여야 합니다.');
+                    thumbnailInput.value = '';
+                    return;
+                }
+
+                // 이미지 파일 체크
+                if (!file.type.startsWith('image/')) {
+                    alert('이미지 파일만 업로드 가능합니다.');
+                    thumbnailInput.value = '';
+                    return;
+                }
+
+                // 미리보기 표시
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    thumbnailPreview.innerHTML = `
+                        <img src="${e.target.result}" alt="썸네일 미리보기" style="width: 100%; height: auto; display: block;">
+                    `;
+                };
+                reader.readAsDataURL(file);
+
+                // 썸네일 Alt 텍스트가 비어있고 포커스 키워드가 있으면 자동 입력
+                const thumbnailAltInput = document.getElementById('id_thumbnail_alt');
+                if (thumbnailAltInput && !thumbnailAltInput.value.trim() && focusKeywordInput) {
+                    const focusKeyword = focusKeywordInput.value.trim();
+                    if (focusKeyword) {
+                        thumbnailAltInput.value = focusKeyword;
+                        thumbnailAltInput.style.borderColor = '#10b981';
+                        setTimeout(() => {
+                            thumbnailAltInput.style.borderColor = '';
+                        }, 1000);
+                    }
+                }
+
+                // SEO 분석 업데이트
+                performSEOAnalysis();
+            });
+        }
+
+        // 썸네일 제거 기능
+        const removeThumbnailBtn = document.getElementById('removeThumbnailBtn');
+        if (removeThumbnailBtn) {
+            removeThumbnailBtn.addEventListener('click', function() {
+                if (confirm('썸네일을 제거하시겠습니까?')) {
+                    thumbnailPreview.innerHTML = `
+                        <div style="padding: 48px 24px; text-align: center; color: #94a3b8;">
+                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 8px;">image</span>
+                            <span style="font-size: 13px;">썸네일 없음</span>
+                        </div>
+                    `;
+                    // 썸네일 제거를 위한 hidden input 추가
+                    const form = document.getElementById('postForm');
+                    const removeInput = document.createElement('input');
+                    removeInput.type = 'hidden';
+                    removeInput.name = 'remove_thumbnail';
+                    removeInput.value = 'true';
+                    form.appendChild(removeInput);
+                    removeThumbnailBtn.remove();
+                }
+            });
+        }
+
+        // 제목에서 슬러그 자동 생성 (한글 지원)
+        const slugInput = document.getElementById('id_slug');
+        let slugManuallyEdited = false;
+
+        if (slugInput) {
+            // 슬러그가 이미 있으면 수동 편집으로 간주
+            if (slugInput.value) {
+                slugManuallyEdited = true;
+            }
+
+            slugInput.addEventListener('input', function() {
+                slugManuallyEdited = true;
+            });
+
+            // 슬러그 입력 시 유효성 검사
+            slugInput.addEventListener('blur', function() {
+                let slug = this.value.trim();
+                if (slug) {
+                    // 한글, 영문, 숫자, - 만 허용
+                    slug = slug.replace(/[^\w가-힣-]/g, '');
+                    slug = slug.replace(/[-]+/g, '-').trim().toLowerCase();
+                    this.value = slug;
+                }
+            });
+        }
+
+        if (titleInput) {
+            titleInput.addEventListener('input', function() {
+                // 슬러그가 수동으로 편집되지 않았으면 자동 생성
+                if (slugInput && !slugManuallyEdited) {
+                    const title = this.value;
+                    if (title) {
+                        // 한글, 영문, 숫자만 남기고 공백을 -로 변환
+                        let slug = title.replace(/[^\w\s가-힣-]/g, '');
+                        slug = slug.replace(/[-\s]+/g, '-').trim().toLowerCase();
+
+                        // 200자 제한
+                        if (slug.length > 200) {
+                            slug = slug.substring(0, 200);
+                            // 마지막 - 제거
+                            slug = slug.replace(/-+$/, '');
+                        }
+
+                        slugInput.value = slug;
+                    }
+                }
+            });
+        }
+
+        // 메시지 자동 숨김
+        setTimeout(() => {
+            const messages = document.querySelector('.messages');
+            if (messages) {
+                messages.style.transition = 'opacity 0.3s';
+                messages.style.opacity = '0';
+                setTimeout(() => messages.remove(), 300);
+            }
+        }, 3000);
+
+        // ========== SEO 분석 기능 ==========
+
+        // 모든 필요한 요소 참조 (slugInput은 위에서 이미 선언됨)
+        const metaDescInput = document.getElementById('id_meta_description');
+        const metaDescLength = document.getElementById('metaDescLength');
+        const checklistToggle = document.getElementById('seoChecklistToggle');
+        const checklist = document.getElementById('seoChecklist');
+        const checklistIcon = document.getElementById('seoChecklistIcon');
+        const focusKeywordInput = document.getElementById('id_focus_keyword');
+
+        // 메타 설명 길이 카운터
+        function updateMetaDescLength() {
+            if (!metaDescInput || !metaDescLength) return;
+
+            const length = metaDescInput.value.length;
+            metaDescLength.textContent = length;
+            if (length >= 120 && length <= 160) {
+                metaDescLength.style.color = '#10b981';
+            } else {
+                metaDescLength.style.color = '#64748b';
+            }
+        }
+
+        // SEO 체크리스트 토글
+        if (checklistToggle && checklist && checklistIcon) {
+            checklistToggle.addEventListener('click', () => {
+                if (checklist.style.display === 'none' || !checklist.style.display) {
+                    checklist.style.display = 'block';
+                    checklistIcon.textContent = 'expand_less';
+                } else {
+                    checklist.style.display = 'none';
+                    checklistIcon.textContent = 'expand_more';
+                }
+            });
+        }
+
+        // 파워 워드 목록 (한국어)
+        const powerWords = [
+            '최고', '최신', '완벽', '놀라운', '비밀', '확실한', '검증된', '전문가', '프로',
+            '꿀팁', '필수', '추천', '인기', '화제', '효과', '실전', '가이드', '완전',
+            '무료', '특별', '한정', '독점', '공개', '강력', '혁신', '획기적', '절대'
+        ];
+
+        // 감정 단어 목록 (한국어)
+        const emotionalWords = [
+            '놀라운', '멋진', '행복', '기쁨', '슬픈', '무서운', '신나는', '흥미로운',
+            '재미있는', '감동', '사랑', '열정', '희망', '꿈', '환상', '즐거운', '경이로운'
+        ];
+
+        // SEO 분석 함수
+        function performSEOAnalysis() {
+            // 필수 요소들이 없으면 분석 건너뛰기
+            if (!titleInput || !quill || !focusKeywordInput || !metaDescInput || !slugInput) {
+                return;
+            }
+
+            const title = titleInput.value.trim();
+            const content = quill.getText().trim();
+            const contentHTML = quill.root.innerHTML;
+            const focusKeyword = focusKeywordInput.value.trim().toLowerCase();
+            const metaDescription = metaDescInput.value.trim();
+            const slug = slugInput.value.trim();
+            const thumbnailPreview = document.querySelector('#thumbnail-preview img');
+
+            let passedChecks = 0;
+            const totalChecks = 28;
+
+            // 키워드 밀도 계산
+            let keywordCount = 0;
+            let keywordDensity = 0;
+
+            if (focusKeyword) {
+                const contentLower = content.toLowerCase();
+                const titleLower = title.toLowerCase();
+                const metaLower = metaDescription.toLowerCase();
+                const slugLower = slug.toLowerCase();
+
+                // 키워드 출현 횟수 계산
+                const regex = new RegExp(focusKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const matches = contentLower.match(regex);
+                keywordCount = matches ? matches.length : 0;
+
+                // 총 단어 수 계산 (공백 기준)
+                const words = content.split(/\s+/).filter(w => w.length > 0);
+                const wordCount = words.length;
+
+                if (wordCount > 0) {
+                    keywordDensity = (keywordCount / wordCount) * 100;
+                }
+
+                // 키워드 밀도 표시 업데이트
+                document.getElementById('keywordDensity').textContent = keywordCount + '회';
+                document.getElementById('keywordDensityPercent').textContent = '(' + keywordDensity.toFixed(2) + '%)';
+
+                // 기본 SEO 체크
+                passedChecks += checkSEO('keyword-in-title', titleLower.includes(focusKeyword), '제목에 포커스 키워드 포함');
+                passedChecks += checkSEO('keyword-in-meta', metaLower.includes(focusKeyword), '메타 설명에 포커스 키워드 포함');
+                passedChecks += checkSEO('keyword-in-url', slugLower.includes(focusKeyword), 'URL에 포커스 키워드 포함');
+                passedChecks += checkSEO('keyword-in-content', keywordCount >= 1, '본문에 포커스 키워드 사용 (1회 이상)');
+                passedChecks += checkSEO('keyword-density', keywordDensity >= 0.5 && keywordDensity <= 2.5, '키워드 밀도 적정 (0.5-2.5%)');
+
+                // 키워드가 제목 앞부분에 있는지 (첫 60% 이내)
+                const titleFirstPart = titleLower.substring(0, Math.ceil(titleLower.length * 0.6));
+                passedChecks += checkSEO('keyword-beginning', titleFirstPart.includes(focusKeyword), '제목 앞부분에 키워드 배치');
+
+                // 첫 문단에 키워드 포함 (처음 150자)
+                const firstParagraph = contentLower.substring(0, 150);
+                passedChecks += checkSEO('keyword-in-first-paragraph', firstParagraph.includes(focusKeyword), '첫 문단에 포커스 키워드 포함');
+            } else {
+                // 키워드가 없을 때
+                document.getElementById('keywordDensity').textContent = '0회';
+                document.getElementById('keywordDensityPercent').textContent = '(0%)';
+
+                checkSEO('keyword-in-title', false, '제목에 포커스 키워드 포함');
+                checkSEO('keyword-in-meta', false, '메타 설명에 포커스 키워드 포함');
+                checkSEO('keyword-in-url', false, 'URL에 포커스 키워드 포함');
+                checkSEO('keyword-in-content', false, '본문에 포커스 키워드 사용 (1회 이상)');
+                checkSEO('keyword-density', false, '키워드 밀도 적정 (0.5-2.5%)');
+                checkSEO('keyword-beginning', false, '제목 앞부분에 키워드 배치');
+                checkSEO('keyword-in-first-paragraph', false, '첫 문단에 포커스 키워드 포함');
+            }
+
+            // 컨텐츠 길이
+            passedChecks += checkSEO('content-length', content.length >= 600, '본문 길이 충분 (600자 이상)');
+
+            // 제목 길이
+            passedChecks += checkSEO('title-length', title.length >= 15 && title.length <= 60, '제목 길이 적정 (15-60자)');
+
+            // 메타 설명 길이
+            passedChecks += checkSEO('meta-length', metaDescription.length >= 120 && metaDescription.length <= 160, '메타 설명 길이 적정 (120-160자)');
+
+            // URL 길이
+            passedChecks += checkSEO('url-length', slug.length <= 75, 'URL 길이 적정 (75자 이하)');
+
+            // 고급 SEO
+            // 이미지 개수 체크
+            const images = contentHTML.match(/<img/g);
+            const imageCount = images ? images.length : 0;
+            passedChecks += checkSEO('has-images', imageCount >= 1, '이미지 포함 (1개 이상)');
+
+            // 모든 이미지에 Alt 텍스트 (간단한 체크)
+            const imagesWithAlt = contentHTML.match(/<img[^>]+alt="[^"]+"/g);
+            const imagesWithAltCount = imagesWithAlt ? imagesWithAlt.length : 0;
+            passedChecks += checkSEO('images-have-alt', imageCount > 0 && imagesWithAltCount === imageCount, '모든 이미지에 Alt 텍스트');
+
+            // 링크 개수 체크
+            const internalLinks = contentHTML.match(/<a[^>]+href="\/[^"]*"/g);
+            const internalLinkCount = internalLinks ? internalLinks.length : 0;
+            passedChecks += checkSEO('has-internal-links', internalLinkCount >= 2, '내부 링크 포함 (2개 이상)');
+
+            const externalLinks = contentHTML.match(/<a[^>]+href="http/g);
+            const externalLinkCount = externalLinks ? externalLinks.length : 0;
+            passedChecks += checkSEO('has-external-links', externalLinkCount >= 1, '외부 링크 포함 (1개 이상)');
+
+            // 소제목 사용
+            const headings = contentHTML.match(/<h[23]/g);
+            const headingCount = headings ? headings.length : 0;
+            passedChecks += checkSEO('has-headings', headingCount >= 1, '소제목 사용 (H2/H3)');
+
+            // 소제목에 키워드
+            if (focusKeyword && headingCount > 0) {
+                const h2h3 = contentHTML.match(/<h[23][^>]*>.*?<\/h[23]>/gi);
+                let keywordInHeading = false;
+                if (h2h3) {
+                    keywordInHeading = h2h3.some(h => h.toLowerCase().includes(focusKeyword));
+                }
+                passedChecks += checkSEO('keyword-in-headings', keywordInHeading, '소제목에 키워드 포함');
+            } else {
+                checkSEO('keyword-in-headings', false, '소제목에 키워드 포함');
+            }
+
+            // 썸네일
+            passedChecks += checkSEO('has-thumbnail', thumbnailPreview !== null, '썸네일 이미지 설정');
+
+            // 외부 링크 새 탭 (간단한 체크)
+            const externalLinksNewTab = contentHTML.match(/<a[^>]+href="http[^>]+target="_blank"/g);
+            const externalLinksNewTabCount = externalLinksNewTab ? externalLinksNewTab.length : 0;
+            passedChecks += checkSEO('links-open-new-tab', externalLinkCount === 0 || externalLinksNewTabCount === externalLinkCount, '외부 링크 새 탭으로 열기');
+
+            // 제목 분석
+            // 숫자 포함
+            passedChecks += checkSEO('title-has-number', /\d/.test(title), '제목에 숫자 포함');
+
+            // 파워 워드
+            const hasPowerWord = powerWords.some(word => title.includes(word));
+            passedChecks += checkSEO('title-has-power-word', hasPowerWord, '제목에 파워 워드 사용');
+
+            // 감정 단어
+            const hasEmotionalWord = emotionalWords.some(word => title.includes(word));
+            passedChecks += checkSEO('title-has-emotional-word', hasEmotionalWord, '제목에 감정 단어 사용');
+
+            // 제목 단어 수
+            const titleWords = title.split(/\s+/).filter(w => w.length > 0);
+            passedChecks += checkSEO('title-not-too-long', titleWords.length >= 6 && titleWords.length <= 13, '제목 단어 수 적정 (6-13개)');
+
+            // 제목 긍정적 표현 (부정어 체크)
+            const negativeWords = ['안됨', '못함', '나쁜', '최악', '실패', '위험'];
+            const hasNegative = negativeWords.some(word => title.includes(word));
+            passedChecks += checkSEO('title-sentiment-positive', !hasNegative, '제목 긍정적 표현');
+
+            // 가독성
+            // 문장 길이 (평균 25자 이하)
+            const sentences = content.split(/[.!?]\s+/).filter(s => s.length > 0);
+            const avgSentenceLength = sentences.length > 0
+                ? sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length
+                : 0;
+            passedChecks += checkSEO('sentence-length', avgSentenceLength <= 25 || sentences.length === 0, '문장 길이 적정 (25자 이하)');
+
+            // 문단 길이 (150자 이하)
+            const paragraphs = content.split(/\n\n/).filter(p => p.trim().length > 0);
+            let longParagraphs = 0;
+            paragraphs.forEach(p => {
+                if (p.length > 150) longParagraphs++;
+            });
+            passedChecks += checkSEO('paragraph-length', longParagraphs === 0 || paragraphs.length === 0, '문단 길이 적정 (150자 이하)');
+
+            // 목록 사용
+            const hasList = contentHTML.includes('<ul>') || contentHTML.includes('<ol>');
+            passedChecks += checkSEO('has-lists', hasList, '목록 사용 (불릿 포인트/번호)');
+
+            // 수동태 최소화 (한국어 수동태 표현 체크)
+            const passivePatterns = ['되어지', '되어진', '당하', '받는다', '받았다'];
+            const passiveCount = passivePatterns.reduce((count, pattern) => {
+                const matches = content.match(new RegExp(pattern, 'g'));
+                return count + (matches ? matches.length : 0);
+            }, 0);
+            passedChecks += checkSEO('passive-voice-low', passiveCount <= 2, '수동태 사용 최소화');
+
+            // SEO 점수 업데이트
+            const score = Math.round((passedChecks / totalChecks) * 100);
+            document.getElementById('seoScore').textContent = score;
+            document.getElementById('seoCheckCount').textContent = passedChecks;
+
+            // 점수 바 색상 및 너비
+            const scoreBar = document.getElementById('seoScoreBar');
+            const scoreLabel = document.getElementById('seoScoreLabel');
+            scoreBar.style.width = score + '%';
+
+            if (score >= 80) {
+                scoreBar.style.background = '#10b981';
+                document.getElementById('seoScore').style.color = '#10b981';
+                scoreLabel.textContent = '훌륭함';
+                scoreLabel.style.color = '#10b981';
+            } else if (score >= 60) {
+                scoreBar.style.background = '#f59e0b';
+                document.getElementById('seoScore').style.color = '#f59e0b';
+                scoreLabel.textContent = '양호';
+                scoreLabel.style.color = '#f59e0b';
+            } else if (score >= 40) {
+                scoreBar.style.background = '#ef4444';
+                document.getElementById('seoScore').style.color = '#ef4444';
+                scoreLabel.textContent = '개선 필요';
+                scoreLabel.style.color = '#ef4444';
+            } else {
+                scoreBar.style.background = '#64748b';
+                document.getElementById('seoScore').style.color = '#64748b';
+                scoreLabel.textContent = '미흡';
+                scoreLabel.style.color = '#64748b';
+            }
+
+            // 카테고리별 통과 개수 업데이트
+            updateCategoryCount('기본 SEO', [
+                'keyword-in-title', 'keyword-in-meta', 'keyword-in-url', 'keyword-in-content',
+                'keyword-density', 'content-length', 'title-length', 'meta-length', 'url-length',
+                'keyword-beginning', 'keyword-in-first-paragraph'
+            ]);
+
+            updateCategoryCount('고급 SEO', [
+                'has-images', 'images-have-alt', 'has-internal-links', 'has-external-links',
+                'has-headings', 'keyword-in-headings', 'has-thumbnail', 'links-open-new-tab'
+            ]);
+
+            updateCategoryCount('제목 분석', [
+                'title-has-number', 'title-has-power-word', 'title-has-emotional-word',
+                'title-not-too-long', 'title-sentiment-positive'
+            ]);
+
+            updateCategoryCount('가독성', [
+                'sentence-length', 'paragraph-length', 'has-lists', 'passive-voice-low'
+            ]);
+        }
+
+        // SEO 체크 항목 업데이트
+        function checkSEO(checkName, passed, label) {
+            const item = document.querySelector(`[data-check="${checkName}"]`);
+            if (item) {
+                if (passed) {
+                    item.classList.remove('failed');
+                    item.classList.add('passed');
+                    item.querySelector('.seo-check-icon').textContent = '✓';
+                } else {
+                    item.classList.remove('passed');
+                    item.classList.add('failed');
+                    item.querySelector('.seo-check-icon').textContent = '○';
+                }
+            }
+            return passed ? 1 : 0;
+        }
+
+        // 카테고리별 통과 개수 업데이트
+        function updateCategoryCount(categoryName, checkNames) {
+            const categoryDiv = Array.from(document.querySelectorAll('#seoChecklist > div')).find(
+                div => div.querySelector('div').textContent.includes(categoryName)
+            );
+
+            if (categoryDiv) {
+                let passedCount = 0;
+                checkNames.forEach(checkName => {
+                    const item = document.querySelector(`[data-check="${checkName}"]`);
+                    if (item && item.classList.contains('passed')) {
+                        passedCount++;
+                    }
+                });
+
+                const header = categoryDiv.querySelector('div:first-child');
+                header.textContent = `${categoryName} (${passedCount}/${checkNames.length})`;
+            }
+        }
+
+        // 이벤트 리스너 등록
+        if (metaDescInput) {
+            metaDescInput.addEventListener('input', () => {
+                updateMetaDescLength();
+                performSEOAnalysis();
+            });
+            updateMetaDescLength();
+        }
+
+        if (focusKeywordInput) {
+            focusKeywordInput.addEventListener('input', performSEOAnalysis);
+        }
+
+        if (slugInput) {
+            slugInput.addEventListener('input', performSEOAnalysis);
+        }
+
+        // Quill 에디터 내용 변경 시 SEO 분석
+        if (quill) {
+            quill.on('text-change', performSEOAnalysis);
+        }
+
+        // 제목 입력 시 SEO 분석 (기존 autoSave 외에 추가)
+        if (titleInput) {
+            const originalTitleHandler = titleInput.oninput;
+            titleInput.addEventListener('input', () => {
+                performSEOAnalysis();
+            });
+        }
+
+        // 초기 SEO 분석 실행 (모든 설정 후)
+        setTimeout(() => {
+            performSEOAnalysis();
+        }, 100);
+
+        // ========== 임시저장 기능 ==========
+        // postForm, saveDraftBtn, publishBtn은 위에서 이미 선언됨
+
+        if (saveDraftBtn && postForm) {
+            saveDraftBtn.addEventListener('click', () => {
+                // is_draft hidden input 추가
+                let isDraftInput = postForm.querySelector('input[name="is_draft"]');
+                if (!isDraftInput) {
+                    isDraftInput = document.createElement('input');
+                    isDraftInput.type = 'hidden';
+                    isDraftInput.name = 'is_draft';
+                    postForm.appendChild(isDraftInput);
+                }
+                isDraftInput.value = 'true';
+
+                // 폼 제출
+                postForm.submit();
+            });
+        }
+
+        // 게시하기 버튼은 is_draft를 false로
+        if (publishBtn && postForm) {
+            publishBtn.addEventListener('click', () => {
+                let isDraftInput = postForm.querySelector('input[name="is_draft"]');
+                if (!isDraftInput) {
+                    isDraftInput = document.createElement('input');
+                    isDraftInput.type = 'hidden';
+                    isDraftInput.name = 'is_draft';
+                    postForm.appendChild(isDraftInput);
+                }
+                isDraftInput.value = 'false';
+            });
+        }
+
+        // ========== 이미지 Alt 텍스트 모달 ==========
+        const altModal = document.getElementById('altModal');
+        const altModalImage = document.getElementById('altModalImage');
+        const altModalAltText = document.getElementById('altModalAltText');
+        const altModalTitle = document.getElementById('altModalTitle');
+        const altModalCaption = document.getElementById('altModalCaption');
+        const altModalClose = document.getElementById('altModalClose');
+        const altModalCancel = document.getElementById('altModalCancel');
+        const altModalSave = document.getElementById('altModalSave');
+
+        let currentImageUrl = '';
+        let currentImageRange = null;
+
+        // Alt 텍스트 모달 표시
+        function showAltModal(imageUrl) {
+            currentImageUrl = imageUrl;
+            currentImageRange = quill.getSelection(true);
+
+            // 모달 이미지 표시
+            altModalImage.src = imageUrl;
+
+            // 포커스 키워드가 있으면 자동 제안
+            const focusKeyword = focusKeywordInput.value.trim();
+            if (focusKeyword) {
+                altModalAltText.value = focusKeyword;
+                altModalAltText.placeholder = `예: ${focusKeyword} 관련 이미지`;
+            } else {
+                altModalAltText.value = '';
+                altModalAltText.placeholder = '이미지를 설명하는 텍스트를 입력하세요...';
+            }
+
+            // 다른 필드 초기화
+            altModalTitle.value = '';
+            altModalCaption.value = '';
+
+            // 모달 표시
+            altModal.classList.add('active');
+
+            // Alt 텍스트 입력 필드에 포커스
+            setTimeout(() => altModalAltText.focus(), 100);
+        }
+
+        // Alt 텍스트 모달 닫기
+        function closeAltModal() {
+            altModal.classList.remove('active');
+            currentImageUrl = '';
+            currentImageRange = null;
+        }
+
+        // Alt 텍스트 저장 및 이미지 삽입
+        function saveAltText() {
+            const altText = altModalAltText.value.trim();
+
+            if (!altText) {
+                alert('Alt 텍스트는 필수 입력 항목입니다.');
+                altModalAltText.focus();
+                return;
+            }
+
+            // 이미지를 에디터에 삽입
+            if (currentImageRange !== null) {
+                quill.insertEmbed(currentImageRange.index, 'image', currentImageUrl);
+
+                // 삽입된 이미지에 Alt, Title, Caption 속성 추가
+                setTimeout(() => {
+                    const images = quill.root.querySelectorAll('img');
+                    const lastImage = images[images.length - 1];
+
+                    if (lastImage && lastImage.src === currentImageUrl) {
+                        lastImage.setAttribute('alt', altText);
+
+                        const title = altModalTitle.value.trim();
+                        if (title) {
+                            lastImage.setAttribute('title', title);
+                        }
+
+                        const caption = altModalCaption.value.trim();
+                        if (caption) {
+                            // Caption은 이미지를 figure로 감싸서 figcaption 추가
+                            const figure = document.createElement('figure');
+                            figure.style.margin = '1em 0';
+                            figure.style.textAlign = 'center';
+
+                            const img = lastImage.cloneNode(true);
+                            img.style.maxWidth = '100%';
+                            img.style.height = 'auto';
+
+                            const figcaption = document.createElement('figcaption');
+                            figcaption.textContent = caption;
+                            figcaption.style.fontSize = '0.9em';
+                            figcaption.style.color = '#64748b';
+                            figcaption.style.marginTop = '0.5em';
+
+                            figure.appendChild(img);
+                            figure.appendChild(figcaption);
+
+                            lastImage.parentNode.replaceChild(figure, lastImage);
+                        }
+
+                        // SEO 분석 다시 실행
+                        performSEOAnalysis();
+                    }
+                }, 100);
+
+                quill.setSelection(currentImageRange.index + 1);
+            }
+
+            // 모달 닫기
+            closeAltModal();
+            updateSaveStatus('saved', '저장됨');
+        }
+
+        // 모달 닫기 버튼 이벤트
+        if (altModalClose) {
+            altModalClose.addEventListener('click', closeAltModal);
+        }
+
+        if (altModalCancel) {
+            altModalCancel.addEventListener('click', closeAltModal);
+        }
+
+        // 모달 저장 버튼 이벤트
+        if (altModalSave) {
+            altModalSave.addEventListener('click', saveAltText);
+        }
+
+        // Enter 키로 저장
+        if (altModalAltText) {
+            altModalAltText.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveAltText();
+                }
+            });
+        }
+
+        // 모달 배경 클릭 시 닫기
+        altModal.addEventListener('click', (e) => {
+            if (e.target === altModal) {
+                closeAltModal();
+            }
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && altModal.classList.contains('active')) {
+                closeAltModal();
+            }
+        });
+    </script>
+</body>
+</html>

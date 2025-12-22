@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}배드민톡 Admin | {% block extra_title %}{% endblock %}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+    <link rel="stylesheet" href="{% static 'css/admin-custom.css' %}">
+    <style>
+      /* 다크모드 강제 비활성화 */
+      html[data-theme="dark"],
+      html[data-theme="auto"] {
+        color-scheme: light !important;
+      }
+
+      /* 다크모드 CSS 무효화 */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: light !important;
+        }
+      }
+    </style>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="{% static 'js/admin-filter-compact.js' %}"></script>
+{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name" style="margin: 0;">
+    <a href="{% url 'admin:index' %}" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #ffffff; font-weight: 800; font-size: 20px; letter-spacing: 0.2px;">
+      <span>Badmintok</span>
+      <span style="padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,0.15); font-size: 11px; color: rgba(255,255,255,0.95); font-weight: 700;">ADMIN</span>
+    </a>
+  </h1>
+{% endblock %}
+
+{% block nav-global %}
+  <div class="admin-top-links">
+    <a href="{% url 'home' %}" class="admin-top-link">사이트 홈</a>
+    <a href="{% url 'contests:list' %}" class="admin-top-link">전국 대회</a>
+    <a href="{% url 'community:list' %}" class="admin-top-link">동호인톡</a>
+    <a href="{% url 'badmintok' %}" class="admin-top-link">배드민톡</a>
+  </div>
+{% endblock %}

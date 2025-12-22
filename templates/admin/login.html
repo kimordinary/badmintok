@@ -1,0 +1,183 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+  /* 로그인 페이지 전용 스타일 */
+  #content {
+    padding: 0 !important;
+    background: var(--admin-bg) !important;
+  }
+
+  .login-wrapper {
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 440px;
+    background: linear-gradient(180deg, #ffffff 0%, #f9fdfb 100%);
+    border-radius: 18px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+    padding: 32px 30px 28px 30px;
+  }
+
+  .login-card h1 {
+    margin: 0 0 8px 0;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--brand-800);
+    text-align: center;
+    letter-spacing: -0.5px;
+  }
+
+  .login-subtitle {
+    margin: 0 0 24px 0;
+    font-size: 14px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .login-field {
+    margin-bottom: 18px;
+  }
+
+  .login-field label {
+    display: block;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .login-field input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .login-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .login-actions input[type="submit"] {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+
+  .errorlist {
+    list-style: none;
+    margin: 0 0 16px 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    color: #b91c1c;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .errorlist li {
+    margin: 0;
+    padding: 0;
+  }
+
+  #header {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .password-reset-link {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .password-reset-link a {
+    color: var(--brand);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .password-reset-link a:hover {
+    text-decoration: underline;
+  }
+
+  /* 로그인 페이지에서는 사이드바 숨김 */
+  #nav-sidebar {
+    display: none;
+  }
+
+  #content-main {
+    margin-left: 0 !important;
+  }
+</style>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+
+{% block usertools %}{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+  <div class="login-card">
+    {% if form.errors and not form.non_field_errors %}
+      <ul class="errorlist">
+        <li>아이디 또는 비밀번호가 올바르지 않습니다. 다시 시도해주세요.</li>
+      </ul>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+      <ul class="errorlist">
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <h1>관리자 로그인</h1>
+    <p class="login-subtitle">배드민톡 관리자 페이지에 오신 것을 환영합니다</p>
+
+    <form action="{{ app_path }}" method="post" id="login-form">
+      {% csrf_token %}
+
+      <div class="login-field">
+        <label for="id_username">사용자 이름</label>
+        {{ form.username }}
+      </div>
+
+      <div class="login-field">
+        <label for="id_password">비밀번호</label>
+        {{ form.password }}
+      </div>
+
+      {{ form.this_is_the_login_form }}
+
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="login-actions">
+        <input type="submit" value="로그인" class="button default">
+      </div>
+    </form>
+
+    {% if user.is_authenticated %}
+      <p class="password-reset-link">
+        다른 계정으로 로그인하시려면 먼저 <a href="{% url 'admin:logout' %}">로그아웃</a>해주세요.
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

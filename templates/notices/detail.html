@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ notice.title }} - 공지사항{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative; margin-top: 20px;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0; max-width: 900px;">
+        <div style="margin-bottom: 24px;">
+            <a href="{% url 'notice_list' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--brand); text-decoration: none; font-weight: 600; margin-bottom: 16px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                공지사항 목록으로 돌아가기
+            </a>
+        </div>
+
+        <article style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px;">
+            <header style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                    {% if notice.is_pinned %}
+                        <span style="display: inline-block; padding: 6px 12px; background: var(--brand); color: white; border-radius: 6px; font-size: 13px; font-weight: 600;">고정</span>
+                    {% endif %}
+                </div>
+                <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #1e293b; line-height: 1.4;">{{ notice.title }}</h1>
+                <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted);">
+                    <span>{{ notice.author.activity_name }}</span>
+                    <span>·</span>
+                    <span>{{ notice.created_at|date:"Y년 m월 d일 H:i" }}</span>
+                    <span>·</span>
+                    <span>조회 {{ notice.view_count }}</span>
+                    {% if notice.updated_at != notice.created_at %}
+                        <span>·</span>
+                        <span>수정: {{ notice.updated_at|date:"Y년 m월 d일 H:i" }}</span>
+                    {% endif %}
+                </div>
+            </header>
+
+            <div style="font-size: 16px; line-height: 1.8; color: #1e293b; word-break: break-word;">
+                {{ notice.content|linebreaks }}
+            </div>
+        </article>
+    </div>
+</section>
+
+<style>
+@media (max-width: 768px) {
+    .section > .container {
+        padding: 16px;
+    }
+    
+    article {
+        padding: 24px 20px !important;
+    }
+    
+    article h1 {
+        font-size: 22px !important;
+    }
+}
+</style>
+{% endblock %}

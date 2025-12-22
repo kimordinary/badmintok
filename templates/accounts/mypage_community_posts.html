@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - 마이페이지{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative; margin-top: 20px;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0; max-width: 800px;">
+        <div style="margin-bottom: 24px;">
+            <a href="{% url 'accounts:mypage' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--brand); text-decoration: none; font-weight: 600; margin-bottom: 16px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                마이페이지로 돌아가기
+            </a>
+            <h1 style="font-size: 28px; font-weight: 700; margin: 0; color: var(--brand-800);">{{ title }}</h1>
+        </div>
+
+        {% if posts_page %}
+            <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+                {% for post in posts_page %}
+                    <a href="{% url 'community:detail' post.slug %}" style="text-decoration: none; color: inherit;">
+                        <div style="padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; transition: all 0.2s ease;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ post.title }}</h4>
+                                    <p style="margin: 0; font-size: 13px; color: #64748b;">
+                                        {% if post.category %}{{ post.category.name }} · {% endif %}
+                                        {{ post.get_source_display }} · 
+                                        {{ post.created_at|date:"Y.m.d" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+            {% if posts_page.has_other_pages %}
+                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px;">
+                    {% if posts_page.has_previous %}
+                        <a href="?page={{ posts_page.previous_page_number }}" class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                    {% endif %}
+                    <span style="color: var(--muted); font-weight: 600;">{{ posts_page.number }} / {{ posts_page.paginator.num_pages }}</span>
+                    {% if posts_page.has_next %}
+                        <a href="?page={{ posts_page.next_page_number }}" class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="padding: 48px; text-align: center; color: #64748b; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <p style="margin: 0;">내용이 없습니다.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

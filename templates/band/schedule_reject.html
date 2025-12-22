@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}신청 거부 - {{ schedule.title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 600px;">
+        <div style="margin-bottom: 16px;">
+            <a href="{% url 'band:schedule_detail' band.id schedule.id %}" style="color: var(--brand); text-decoration: none;">← 일정 상세</a>
+        </div>
+        
+        <h1>신청 거부</h1>
+        <p style="color: #64748b; margin-bottom: 24px;">{{ application.user.activity_name }}님의 신청을 거부하시겠습니까?</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-field">
+                <label for="rejection_reason">거부 사유 (선택사항)</label>
+                <textarea name="rejection_reason" rows="4" placeholder="거부 사유를 입력하세요..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button type="submit" class="btn btn-primary">거부하기</button>
+                <a href="{% url 'band:schedule_detail' band.id schedule.id %}" class="btn btn-ghost">취소</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+

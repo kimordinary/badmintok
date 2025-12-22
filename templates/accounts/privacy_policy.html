@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}개인정보 처리방침 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative; margin-top: 20px;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0; max-width: 900px;">
+        <div style="margin-bottom: 24px;">
+            {% if user.is_authenticated %}
+            <a href="{% url 'accounts:mypage' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--brand); text-decoration: none; font-weight: 600; margin-bottom: 16px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                마이페이지로 돌아가기
+            </a>
+            {% else %}
+            <a href="{% url 'home' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--brand); text-decoration: none; font-weight: 600; margin-bottom: 16px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                홈으로 돌아가기
+            </a>
+            {% endif %}
+            <h1 style="font-size: 28px; font-weight: 700; margin: 0; color: var(--brand-800);">개인정보 처리방침</h1>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px;">
+            <div style="font-size: 16px; line-height: 1.8; color: #1e293b;">
+                <p style="margin: 0 0 32px 0; font-size: 16px; color: #1e293b; line-height: 1.8;">
+                    <strong>배드민톡(<a href="https://badmintok.com" style="color: var(--brand);">https://badmintok.com</a>, 이하 "서비스")</strong>은 개인사업자 <strong>평범한</strong>(이하 "회사")이 운영하는 배드민턴 커뮤니티 및(추후) 쇼핑몰 플랫폼입니다. 회사는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고, 관련 고충을 신속하고 원활하게 처리하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
+                </p>
+                <p style="margin: 0 0 32px 0; font-size: 16px; color: #1e293b; font-weight: 600;">
+                    본 개인정보 처리방침은 <strong>배드민톡 서비스 전반</strong>에 적용됩니다.
+                </p>
+
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">1. 개인정보의 처리 목적</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 관련 법령에 따라 별도의 동의를 받는 등 필요한 조치를 이행합니다.
+                </p>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(1) 회원가입 및 관리</h3>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>회원 가입의사 확인 및 회원제 서비스 제공에 따른 본인 식별·인증</li>
+                    <li>회원자격 유지·관리, 부정 이용 방지</li>
+                    <li>만 14세 미만 아동 가입 시 법정대리인 동의 여부 확인</li>
+                    <li>각종 고지·통지 및 고객 문의·고충처리</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(2) 서비스 제공(커뮤니티/콘텐츠/쇼핑몰)</h3>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>커뮤니티 기능 제공(게시글/댓글/활동 기록 등)</li>
+                    <li>콘텐츠 제공 및 이용 이력 관리</li>
+                    <li>(추후) 쇼핑몰 기능 제공, 구매 및 요금 결제, 물품 배송 또는 청구서 발송</li>
+                    <li>맞춤형 서비스 제공 및 서비스 품질 개선</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(3) 마케팅 및 광고 활용(제휴 포함)</h3>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>이벤트 및 광고성 정보 제공, 참여기회 제공</li>
+                    <li>제휴 콘텐츠 제공 및 운영</li>
+                    <li>접속빈도 파악, 서비스 이용 통계 분석</li>
+                </ul>
+                <p style="margin: 0 0 24px 0; padding: 12px; background: var(--surface-2); border-radius: 8px; font-size: 14px;">
+                    ※ <strong>마케팅 정보 수신은 선택 동의 사항</strong>이며, 동의하지 않아도 서비스 이용에 제한이 없습니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">2. 개인정보의 처리 및 보유 기간</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 개인정보 수집 시 정보주체로부터 동의받은 보유·이용기간 또는 법령에 따른 보유기간 내에서 개인정보를 처리·보유합니다. 개인정보 처리 목적 달성 또는 회원 탈퇴 시에는 지체 없이 해당 개인정보를 파기합니다.
+                </p>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(1) 서비스별 보유 기간</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li><strong>회원가입 및 관리</strong>: 회원 탈퇴 시까지</li>
+                    <li><strong>서비스 제공(커뮤니티/콘텐츠/쇼핑몰)</strong>: 서비스 제공 완료 및 요금 결제·정산 완료 시까지
+                        <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                            <li>단, 커뮤니티 특성상 회원이 작성한 게시물·댓글 등은 서비스 운영·이용자 보호를 위해 <strong>탈퇴 후에도 삭제되지 않을 수 있으며</strong>, 회원이 삭제한 게시물은 별도 보관하지 않습니다(법령상 보존 의무가 있는 경우 예외).</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(2) 관계 법령에 따른 보존(필요 시)</h3>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>계약 또는 청약철회 등에 관한 기록: 5년</li>
+                    <li>대금결제 및 재화 등의 공급에 관한 기록: 5년</li>
+                    <li>소비자 불만 또는 분쟁처리에 관한 기록: 3년</li>
+                    <li>표시·광고에 관한 기록: 6개월</li>
+                    <li>서비스 방문 기록(접속로그, IP 등): 3개월</li>
+                </ul>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">3. 처리하는 개인정보의 항목 및 수집 방법</h2>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(1) 처리하는 개인정보 항목</h3>
+
+                <h4 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">1) 일반 회원가입 시</h4>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li><strong>필수항목</strong>: 아이디, 비밀번호, 이름, 닉네임, 이메일, 휴대전화</li>
+                    <li><strong>선택항목</strong>: 생년월일, 성별, 프로필 이미지</li>
+                </ul>
+
+                <h4 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">2) 만 14세 미만 가입 시(법정대리인 동의)</h4>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li><strong>필수항목</strong>: 법정대리인 성명, 법정대리인 연락처(휴대전화), 아동과의 관계</li>
+                </ul>
+
+                <h4 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">3) 간편 로그인(SNS) 이용 시</h4>
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: var(--muted);">
+                    간편 로그인 제공 사업자로부터 다음 정보가 제공될 수 있습니다(회원의 계정 연동 및 로그인 제공 목적).
+                </p>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li><strong>카카오 로그인</strong>: 이름, 이메일</li>
+                    <li><strong>네이버 로그인</strong>: 아이디, 이름, 이메일, 별명, 생일</li>
+                    <li><strong>구글 로그인</strong>: 이름, 이메일</li>
+                </ul>
+                <p style="margin: 0 0 24px 0; padding: 12px; background: var(--surface-2); border-radius: 8px; font-size: 14px;">
+                    ※ 실제 제공 항목은 회원이 각 SNS 사업자에서 동의한 범위 및 해당 사업자 정책에 따라 달라질 수 있습니다.
+                </p>
+
+                <h4 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">4) 서비스 이용 과정에서 자동으로 수집될 수 있는 정보</h4>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>서비스 이용기록, 접속 로그, 쿠키, 접속 IP, 기기정보(브라우저/OS 등), 이용정지 기록, 불량 이용 기록</li>
+                    <li>(추후 쇼핑몰 오픈 시) 결제기록, 배송 관련 처리기록(주문 처리에 필요한 범위)</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(2) 개인정보 수집 방법</h3>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>홈페이지 회원가입 및 서비스 이용 과정</li>
+                    <li>게시판 이용, 이벤트 응모</li>
+                    <li>SNS 간편 로그인 연동</li>
+                    <li>자동 생성 정보 수집 도구를 통한 수집(로그, 쿠키 등)</li>
+                </ul>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">4. 만 14세 미만 아동의 개인정보 처리에 관한 사항</h2>
+                <p style="margin: 0 0 24px 0;">
+                    회사는 만 14세 미만 아동의 개인정보를 수집하는 경우 법정대리인의 동의를 받아 서비스 수행에 필요한 최소한의 개인정보를 수집합니다.
+                </p>
+                <p style="margin: 0 0 24px 0;">
+                    회사는 법정대리인의 동의 여부를 전자적 방법 등을 통해 확인할 수 있으며, 법정대리인은 아동의 개인정보에 대해 열람·정정·삭제·처리정지를 요청할 수 있습니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">5. 개인정보의 제3자 제공에 관한 사항</h2>
+                <p style="margin: 0 0 24px 0;">
+                    회사는 정보주체의 개인정보를 원칙적으로 외부에 제공하지 않습니다.
+                </p>
+                <p style="margin: 0 0 24px 0;">
+                    다만, 법령에 따라 제공이 요구되는 경우에는 예외로 합니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">6. 개인정보 처리의 위탁에 관한 사항</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 원활한 서비스 제공을 위해 다음과 같이 개인정보 처리 업무를 위탁할 수 있습니다. 위탁 계약 체결 시 관련 법령에 따라 위탁업무 수행 목적 외 개인정보 처리금지, 기술적·관리적 보호조치, 재위탁 제한, 관리·감독, 손해배상 등 책임에 관한 사항을 문서로 명시하고, 수탁자가 개인정보를 안전하게 처리하는지 감독합니다. 또한 <strong>수탁자의 개인정보 처리 현황을 정기적으로 점검·관리</strong>합니다.
+                </p>
+                <div style="overflow-x: auto; margin: 16px 0 24px 0;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0;">
+                        <thead>
+                            <tr style="background: var(--surface-2);">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600;">수탁업체</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600;">위탁업무</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0;">Amazon Web Services(AWS)</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0;">웹 서버 운영 및 데이터 보관(호스팅)</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0;">택배사(추후 선정)</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0;">(추후 쇼핑몰 오픈 시) 상품 배송</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="margin: 0 0 24px 0; padding: 12px; background: var(--surface-2); border-radius: 8px; font-size: 14px;">
+                    ※ 위탁업체 및 위탁업무 내용이 변경될 경우 지체 없이 본 개인정보 처리방침을 통해 공개합니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">6-1. 개인정보의 국외 이전(해당 없음)</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 <strong>AWS 서울 리전(ap-northeast-2)</strong>을 사용하여 서비스를 운영하며, 회사가 통제하는 개인정보는 원칙적으로 <strong>국외로 이전되지 않습니다.</strong>
+                </p>
+                <p style="margin: 0 0 24px 0;">
+                    다만, 이용자의 인터넷 환경, 네트워크 경로, 외부 사업자(SNS 로그인 등)의 정책 및 기술적 사유로 인해 <strong>통신 과정에서 국외 경유가 발생할 수 있으며</strong>, 이 경우에도 회사는 개인정보가 안전하게 보호될 수 있도록 합리적인 보호조치를 이행합니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">7. 개인정보의 파기절차 및 파기방법</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체 없이 해당 개인정보를 파기합니다.
+                </p>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(1) 파기 절차</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>정보주체로부터 동의받은 보유기간이 경과하거나 처리목적이 달성된 개인정보는 내부 방침 및 관련 법령에 따라 파기합니다.</li>
+                    <li>다른 법령에 따라 계속 보존해야 하는 경우에는 별도의 DB로 옮기거나 보관 장소를 달리하여 보존하며, 법률에 의한 경우를 제외하고 다른 목적으로 이용하지 않습니다.</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(2) 파기 방법</h3>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>전자적 파일: 복구·재생이 불가능한 기술적 방법으로 삭제</li>
+                    <li>종이 문서: 분쇄 또는 소각</li>
+                </ul>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">8. 정보주체와 법정대리인의 권리·의무 및 행사방법</h2>
+                <p style="margin: 0 0 16px 0;">
+                    정보주체(만 14세 미만 아동의 경우 법정대리인 포함)는 회사에 대해 언제든지 다음 권리를 행사할 수 있습니다.
+                </p>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>개인정보 열람 요구</li>
+                    <li>개인정보 정정·삭제 요구</li>
+                    <li>개인정보 처리정지 요구</li>
+                </ul>
+                <p style="margin: 0 0 24px 0;">
+                    권리 행사는 서비스 내 회원정보 수정/회원탈퇴 기능을 통해 직접 가능하며, 또는 개인정보 보호책임자에게 이메일로 요청할 수 있습니다. 회사는 지체 없이 조치하겠습니다.
+                </p>
+                <p style="margin: 0 0 24px 0; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 14px; color: #991b1b;">
+                    단, 관련 법령에 따라 열람·처리정지 등이 제한되거나, 다른 법령에서 해당 개인정보의 보관을 명시한 경우 삭제 요구가 제한될 수 있습니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">9. 개인정보의 안전성 확보조치</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다.
+                </p>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li><strong>관리적 조치</strong>: 내부관리계획 수립·시행, 정기 교육, 접근 권한 관리</li>
+                    <li><strong>기술적 조치</strong>: 접근통제, 계정/권한 관리, 개인정보 암호화, 보안프로그램 설치 및 갱신</li>
+                    <li><strong>물리적 조치</strong>: 서버 및 자료 보관 장소에 대한 접근 통제</li>
+                </ul>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">10. 개인정보를 자동으로 수집하는 장치의 설치·운영 및 거부에 관한 사항</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 이용자에게 맞춤형 서비스를 제공하기 위해 '쿠키(cookie)'를 사용할 수 있습니다. 쿠키는 웹사이트 운영 서버가 이용자의 브라우저에 전송하는 소량의 정보이며, 이용자의 기기에 저장될 수 있습니다.
+                </p>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(1) 쿠키 사용 목적</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li>이용자의 방문 및 이용 형태, 보안 접속 여부, 서비스 이용 통계 등을 파악하여 최적화된 서비스 제공</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #1e293b;">(2) 쿠키 저장 거부 방법</h3>
+                <p style="margin: 0 0 24px 0;">
+                    이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있습니다.
+                </p>
+                <p style="margin: 0 0 24px 0; padding: 12px; background: var(--surface-2); border-radius: 8px; font-size: 14px;">
+                    다만, 쿠키 저장을 거부할 경우 일부 서비스 이용에 어려움이 발생할 수 있습니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">11. 개인정보 보호책임자에 관한 사항</h2>
+                <p style="margin: 0 0 16px 0;">
+                    회사는 개인정보 처리에 관한 업무를 총괄하여 책임지고, 개인정보 처리와 관련한 문의, 불만처리 및 피해구제를 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.
+                </p>
+                <div style="background: var(--surface-2); padding: 20px; border-radius: 8px; margin: 16px 0 24px 0;">
+                    <p style="margin: 0 0 8px 0; font-weight: 600;"><strong>개인정보 보호책임자</strong>: 김형규</p>
+                    <p style="margin: 0 0 8px 0;"><strong>상호(개인사업자)</strong>: 평범한</p>
+                    <p style="margin: 0;"><strong>문의 이메일</strong>: <a href="mailto:kimyukim99@naver.com" style="color: var(--brand);">kimyukim99@naver.com</a></p>
+                </div>
+                <p style="margin: 0 0 24px 0;">
+                    정보주체는 서비스 이용 중 발생한 개인정보 보호 관련 문의를 개인정보 보호책임자에게 할 수 있으며, 회사는 지체 없이 답변 및 처리하겠습니다.
+                </p>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">12. 정보주체의 권익침해에 대한 구제방법</h2>
+                <p style="margin: 0 0 16px 0;">
+                    개인정보 침해로 인한 구제를 받기 위하여 아래 기관에 분쟁해결 또는 상담을 신청할 수 있습니다.
+                </p>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li><strong>개인정보침해신고센터</strong>: (국번없이) 118</li>
+                    <li><strong>개인정보분쟁조정위원회</strong>: 1833-6972</li>
+                    <li><strong>경찰청</strong>: (국번없이) 182</li>
+                </ul>
+
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">13. 개인정보 처리방침 변경</h2>
+                <p style="margin: 0 0 16px 0;">
+                    본 개인정보 처리방침은 <strong>2025년 12월 21일</strong>부터 적용됩니다.
+                </p>
+                <p style="margin: 0 0 24px 0;">
+                    법령 또는 회사 정책에 따라 내용이 변경될 수 있으며, 변경 시 서비스 내 공지 등을 통해 안내합니다.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

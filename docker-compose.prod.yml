@@ -1,0 +1,134 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0.43
+    container_name: badmintok-mysql-prod
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      TZ: "Asia/Seoul"
+    # Production: 포트를 외부에 노출하지 않음 (보안)
+    # ports:
+    #   - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d:ro
+    networks:
+      - badmintok-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: badmintok-web-prod
+    restart: unless-stopped
+    # Production: 포트를 외부에 노출하지 않음 (nginx를 통해서만 접근)
+    expose:
+      - "8080"
+    env_file:
+      - .env.prod
+    environment:
+      # Django 설정
+      DJANGO_SETTINGS_MODULE: "badmintok.settings"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY}"
+      DJANGO_DEBUG: "${DJANGO_DEBUG:-False}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS}"
+
+      # Database 설정
+      DB_HOST: "db"
+      DB_PORT: "3306"
+      DB_NAME: "${MYSQL_DATABASE}"
+      DB_USER: "${MYSQL_USER}"
+      DB_PASSWORD: "${MYSQL_PASSWORD}"
+
+      # 외부 서비스
+      KAKAO_REST_API_KEY: "${KAKAO_REST_API_KEY}"
+      KAKAO_REDIRECT_URI: "${KAKAO_REDIRECT_URI}"
+
+      # 시간대
+      TZ: "Asia/Seoul"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # 정적 파일 및 업로드 파일 (Nginx와 공유)
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+      # Production에서는 코드를 마운트하지 않음 (이미지에 포함)
+    networks:
+      - badmintok-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/login/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: badmintok-nginx-prod
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      # HTTPS를 사용하는 경우 아래 주석 해제
+      # - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      # Nginx 설정
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # 정적/미디어 파일 (web 컨테이너와 공유된 볼륨)
+      - static_data:/usr/share/nginx/html/static:ro
+      - media_data:/usr/share/nginx/html/media:ro
+      # SSL 인증서 (HTTPS 사용 시)
+      # - ./nginx/ssl:/etc/nginx/ssl:ro
+      # Nginx 로그
+      - nginx_logs:/var/log/nginx
+    networks:
+      - badmintok-net
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  db_data:
+    driver: local
+  static_data:
+    driver: local
+  media_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  badmintok-net:
+    driver: bridge
+
+

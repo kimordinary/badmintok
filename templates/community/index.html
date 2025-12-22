@@ -1,12 +1,941 @@
 {% extends "base.html" %}
+{% load community_filters %}
 
-{% block title %}배드민톡 - 커뮤니티{% endblock %}
+{% block title %}배드민톡 - 동호인톡{% endblock %}
 
 {% block content %}
-<section class="section" aria-labelledby="community-title">
-    <div class="container">
-        <h1 id="community-title">커뮤니티</h1>
-        <p>커뮤니티 기능이 곧 오픈됩니다. 동호인들과 활발히 소통해 보세요.</p>
+<section class="section" aria-labelledby="community-title" style="position: relative;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0;">
+        <!-- 배너 영역 (헤더 바로 아래, 메인 탭 위) -->
+        {% if banner_images %}
+        <div class="banner-wrapper" style="margin-top: 24px; margin-bottom: 24px;">
+            <div class="badmintok-banners" aria-label="배드민톡 배너" data-banner-container>
+                {% for banner in banner_images %}
+                    <div class="badmintok-banner-item">
+                        <span class="banner-sponsored-label">Sponsored</span>
+                        {% if banner.link_url %}
+                            <a href="{{ banner.link_url }}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; height: 100%;">
+                                <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy" style="cursor: pointer;">
+                            </a>
+                        {% else %}
+                            <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy">
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <button class="banner-nav banner-nav-prev" data-banner-prev aria-label="이전 배너">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <button class="banner-nav banner-nav-next" data-banner-next aria-label="다음 배너">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- 메인 탭 (전체/리뷰/기타 카테고리) -->
+        <div class="community-tab-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; flex-wrap: wrap; gap: 12px;">
+            <div class="community-tabs" style="display: flex; align-items: center; flex: 1; min-width: 0; flex-wrap: wrap;">
+                <a href="{% url 'community:list' %}" 
+                   class="community-tab {% if not active_tab %}active{% endif %}" 
+                   style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500; white-space: nowrap;">
+                    전체
+                </a>
+                <a href="{% url 'community:list' %}?tab=reviews" 
+                   class="community-tab {% if active_tab == 'reviews' %}active{% endif %}" 
+                   style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500; white-space: nowrap;">
+                    리뷰
+                </a>
+                {% for category in category_choices %}
+                    <a href="{% url 'community:list' %}?category={{ category.slug }}" 
+                       class="community-tab {% if not active_tab and current_category == category.slug %}active{% endif %}" 
+                       style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500; white-space: nowrap;">
+                        {{ category.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 전체 탭 및 일반 카테고리 탭 컨텐츠 -->
+        {% if not active_tab or active_tab != 'reviews' %}
+        <div id="all-content" style="margin-top: 20px;">
+            <!-- 공지사항 배너 -->
+            {% if pinned_notice %}
+            <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                    <span style="font-size: 32px; line-height: 1;">📣</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
+                        <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'notice_list' %}" style="padding: 12px 24px; background: var(--brand); color: #fff; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 600; white-space: nowrap;">
+                    <span class="notice-banner-text">전체 보기</span>
+                    <span class="notice-banner-arrow">→</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- 모바일 인기글 배너 (가로 스크롤 카드형) -->
+            {% if hot_posts %}
+            <div class="mobile-hot-posts-banner" style="display: none; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">🔥 인기글</h3>
+                </div>
+                <div class="hot-posts-scroll" style="display: flex; gap: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 4px;">
+                    {% for post in hot_posts|slice:":3" %}
+                        {% if post.slug %}
+                        <a href="{% url 'community:detail' post.slug %}" class="hot-post-card" style="flex-shrink: 0; width: 280px; padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 8px;">
+                            <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ post.title }}</h4>
+                            <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #64748b; margin-top: auto;">
+                                <span>👀 {{ post.view_count }}</span>
+                                <span>❤️ {{ post.like_count }}</span>
+                            </div>
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <style>
+                    .hot-posts-scroll::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .hot-post-card:hover {
+                        border-color: var(--brand);
+                        box-shadow: 0 2px 8px rgba(49, 170, 96, 0.1);
+                    }
+                </style>
+            </div>
+            {% endif %}
+
+            <!-- 메인 콘텐츠 그리드 -->
+            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
+            <!-- 왼쪽 컬럼: 검색 및 게시글 목록 -->
+            <div class="community-left-column" style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- 검색 기능 및 글쓰기 버튼 -->
+                <div class="community-search-grid" style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;">
+                    <form method="get" action="{% url 'community:list' %}" style="position: relative; flex: 1;">
+                        <input type="text" 
+                               name="search" 
+                               value="{{ search_query }}" 
+                               placeholder="제목, 내용 검색..." 
+                               style="width: 100%; padding: 12px 48px 12px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; font-family: inherit; background: #fff;">
+                        {% if current_category %}
+                            <input type="hidden" name="category" value="{{ current_category }}">
+                        {% endif %}
+                        {% if active_tab %}
+                            <input type="hidden" name="tab" value="{{ active_tab }}">
+                        {% endif %}
+                        <button type="submit" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; background: var(--brand); border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <polyline points="19 12 12 5 5 12"></polyline>
+                            </svg>
+                        </button>
+                    </form>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'community:create' %}" class="btn btn-primary" style="white-space: nowrap;">글쓰기</a>
+                    {% endif %}
+                </div>
+
+                <!-- 게시글 목록 -->
+                <div class="community-list">
+                {% if posts %}
+                    <div class="community-post-list">
+                        {% for post in posts %}
+                            {% if post.slug %}
+                            <a href="{% url 'community:detail' post.slug %}" class="community-post-item">
+                                <div class="community-post-content">
+                                    <div class="community-post-header">
+                                        <span class="community-post-category">{{ post.get_category_display }}</span>
+                                    </div>
+                                    <h3 class="community-post-title">{{ post.title }}</h3>
+                                    <p class="community-post-excerpt">
+                                        {% if post.content|striptags|length > 80 %}
+                                            {{ post.content|striptags|truncatewords:15 }}
+                                        {% else %}
+                                            {{ post.content|striptags }}
+                                        {% endif %}
+                                    </p>
+                                    <div class="community-post-meta">
+                                        <span class="community-post-author">{{ post.author.activity_name }}</span>
+                                        <span class="community-post-separator">|</span>
+                                        <span class="community-post-time">
+                                            {% now "Y-m-d" as today %}
+                                            {% if post.created_at|date:"Y-m-d" == today %}
+                                                {{ post.created_at|timesince|timesince_simple }} 전
+                                            {% else %}
+                                                {{ post.created_at|date:"m.d" }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="community-post-separator">|</span>
+                                        <span class="community-post-action">
+                                            <span class="community-post-action-icon">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                </svg>
+                                            </span>
+                                            <span class="community-post-action-count">{{ post.like_count }}</span>
+                                        </span>
+                                        <span class="community-post-action">
+                                            <span class="community-post-action-icon">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                                </svg>
+                                            </span>
+                                            <span class="community-post-action-count">{{ post.comment_count }}</span>
+                                        </span>
+                                        <span class="community-post-action">
+                                            <span class="community-post-action-icon">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                            </span>
+                                            <span class="community-post-action-count">{{ post.view_count }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="community-post-image">
+                                    {% if post.images.all %}
+                                        {% with first_image=post.images.all.0 %}
+                                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                        {% endwith %}
+                                    {% elif post.content|extract_first_image %}
+                                        <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                    {% else %}
+                                        <div class="community-post-no-image">이미지 없음</div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- 페이지네이션 -->
+                    {% if is_paginated %}
+                        <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                            {% if page_obj.has_previous %}
+                                <a href="?page=1{% if active_tab %}&tab={{ active_tab }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
+                                <a href="?page={{ page_obj.previous_page_number }}{% if active_tab %}&tab={{ active_tab }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                            {% endif %}
+
+                            <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
+                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                            </span>
+
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}{% if active_tab %}&tab={{ active_tab }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                                <a href="?page={{ page_obj.paginator.num_pages }}{% if active_tab %}&tab={{ active_tab }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">마지막</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div style="padding: 48px; text-align: center; color: #64748b;">
+                        <p>게시글이 없습니다.</p>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'community:create' %}" class="btn btn-primary" style="margin-top: 16px;">첫 글 쓰기</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                </div>
+            </div>
+
+            <!-- 오른쪽 컬럼: 사이드바 -->
+            <div class="community-sidebar" style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- 커뮤니티 인기글 -->
+                <div class="sidebar-widget" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1e293b;">동호인톡 인기글</h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        {% if hot_posts %}
+                            {% for post in hot_posts %}
+                                {% if post.slug %}
+                                <a href="{% url 'community:detail' post.slug %}" style="display: block; padding: 12px; background: #f8fafc; border-radius: 6px; text-decoration: none; transition: all 0.2s ease; border: 1px solid transparent;">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                                        <div style="flex: 1; min-width: 0;">
+                                            <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1e293b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                                {{ post.title }}
+                                            </h4>
+                                            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
+                                                <span>👀 {{ post.view_count }}</span>
+                                                <span>❤️ {{ post.like_count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p style="margin: 0; color: #64748b; font-size: 14px;">인기글이 없습니다.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        {% endif %}
+
+        <!-- 리뷰 탭 컨텐츠 -->
+        {% if active_tab == 'reviews' %}
+        <div id="reviews-content">
+            <!-- 리뷰 카테고리 필터 탭 -->
+            <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+                <a href="{% url 'community:list' %}?tab=reviews"
+                   class="community-tab {% if not current_category or current_category == 'all' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    전체
+                </a>
+                <a href="{% url 'community:list' %}?tab=reviews&category=racket"
+                   class="community-tab {% if current_category == 'racket' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    라켓
+                </a>
+                <a href="{% url 'community:list' %}?tab=reviews&category=shoes"
+                   class="community-tab {% if current_category == 'shoes' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    신발/가방
+                </a>
+                <a href="{% url 'community:list' %}?tab=reviews&category=apparel"
+                   class="community-tab {% if current_category == 'apparel' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    의류
+                </a>
+                <a href="{% url 'community:list' %}?tab=reviews&category=shuttlecock"
+                   class="community-tab {% if current_category == 'shuttlecock' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    셔틀콕
+                </a>
+                <a href="{% url 'community:list' %}?tab=reviews&category=protective"
+                   class="community-tab {% if current_category == 'protective' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    보호대
+                </a>
+                <a href="{% url 'community:list' %}?tab=reviews&category=accessories"
+                   class="community-tab {% if current_category == 'accessories' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    기타/용품
+                </a>
+            </div>
+
+            <!-- 공지사항 배너 -->
+            {% if pinned_notice %}
+            <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                    <span style="font-size: 32px; line-height: 1;">📣</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
+                        <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'notice_list' %}" style="padding: 12px 24px; background: var(--brand); color: #fff; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 600; white-space: nowrap;">
+                    <span class="notice-banner-text">전체 보기</span>
+                    <span class="notice-banner-arrow">→</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- 메인 콘텐츠 그리드 -->
+            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
+                <!-- 왼쪽 컬럼: 검색 및 게시글 목록 -->
+                <div class="community-left-column" style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- 검색 기능 및 글쓰기 버튼 -->
+                    <div class="community-search-grid" style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;">
+                        <form method="get" action="{% url 'community:list' %}" style="position: relative; flex: 1;">
+                            <input type="text" 
+                                   name="search" 
+                                   value="{{ search_query }}" 
+                                   placeholder="제목, 내용 검색..." 
+                                   style="width: 100%; padding: 12px 48px 12px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; font-family: inherit; background: #fff;">
+                            <input type="hidden" name="tab" value="reviews">
+                            {% if current_category %}
+                                <input type="hidden" name="category" value="{{ current_category }}">
+                            {% endif %}
+                            <button type="submit" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; background: var(--brand); border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <polyline points="19 12 12 5 5 12"></polyline>
+                                </svg>
+                            </button>
+                        </form>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'community:create' %}" class="btn btn-primary" style="white-space: nowrap;">글쓰기</a>
+                        {% endif %}
+                    </div>
+
+                    <!-- 게시글 목록 -->
+                    <div class="community-list">
+                    {% if posts %}
+                        <div class="community-post-list">
+                            {% for post in posts %}
+                                {% if post.slug %}
+                                <a href="{% url 'community:detail' post.slug %}" class="community-post-item">
+                                    <div class="community-post-content">
+                                        <div class="community-post-header">
+                                            <span class="community-post-category">{{ post.get_category_display }}</span>
+                                        </div>
+                                        <h3 class="community-post-title">{{ post.title }}</h3>
+                                        <p class="community-post-excerpt">
+                                            {% if post.content|striptags|length > 80 %}
+                                                {{ post.content|striptags|truncatewords:15 }}
+                                            {% else %}
+                                                {{ post.content|striptags }}
+                                            {% endif %}
+                                        </p>
+                                        <div class="community-post-meta">
+                                            <span class="community-post-author">{{ post.author.activity_name }}</span>
+                                            <span class="community-post-separator">|</span>
+                                            <span class="community-post-time">
+                                                {% now "Y-m-d" as today %}
+                                                {% if post.created_at|date:"Y-m-d" == today %}
+                                                    {{ post.created_at|timesince|timesince_simple }} 전
+                                                {% else %}
+                                                    {{ post.created_at|date:"m.d" }}
+                                                {% endif %}
+                                            </span>
+                                            <span class="community-post-separator">|</span>
+                                            <span class="community-post-action">
+                                                <span class="community-post-action-icon">❤️</span>
+                                                <span class="community-post-action-count">{{ post.like_count }}</span>
+                                            </span>
+                                            <span class="community-post-action">
+                                                <span class="community-post-action-icon">💬</span>
+                                                <span class="community-post-action-count">{{ post.comment_count }}</span>
+                                            </span>
+                                            <span class="community-post-action">
+                                                <span class="community-post-action-icon">👀</span>
+                                                <span class="community-post-action-count">{{ post.view_count }}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="community-post-image">
+                                        {% if post.images.all %}
+                                            {% with first_image=post.images.all.0 %}
+                                                <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                            {% endwith %}
+                                        {% elif post.content|extract_first_image %}
+                                            <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                        {% else %}
+                                            <div class="community-post-no-image">이미지 없음</div>
+                                        {% endif %}
+                                    </div>
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- 페이지네이션 -->
+                        {% if is_paginated %}
+                            <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                                {% if page_obj.has_previous %}
+                                    <a href="?tab=reviews&page=1{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                       class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
+                                    <a href="?tab=reviews&page={{ page_obj.previous_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                       class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                                {% endif %}
+
+                                <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
+                                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                                </span>
+
+                                {% if page_obj.has_next %}
+                                    <a href="?tab=reviews&page={{ page_obj.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                       class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                                    <a href="?tab=reviews&page={{ page_obj.paginator.num_pages }}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                       class="btn btn-ghost" style="padding: 8px 12px;">마지막</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div style="padding: 48px; text-align: center; color: #64748b;">
+                            <p>게시글이 없습니다.</p>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'community:create' %}" class="btn btn-primary" style="margin-top: 16px;">첫 글 쓰기</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    </div>
+                </div>
+
+                <!-- 오른쪽 컬럼: 사이드바 -->
+                <div class="community-sidebar" style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- 커뮤니티 인기글 -->
+                    <div class="sidebar-widget" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1e293b;">동호인톡 인기글</h3>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            {% if hot_posts %}
+                                {% for post in hot_posts %}
+                                    {% if post.slug %}
+                                    <a href="{% url 'community:detail' post.slug %}" style="display: block; padding: 12px; background: #f8fafc; border-radius: 6px; text-decoration: none; transition: all 0.2s ease; border: 1px solid transparent;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                                            <div style="flex: 1; min-width: 0;">
+                                                <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1e293b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                                    {{ post.title }}
+                                                </h4>
+                                                <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
+                                                    <span>👀 {{ post.view_count }}</span>
+                                                    <span>❤️ {{ post.like_count }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p style="margin: 0; color: #64748b; font-size: 14px;">인기글이 없습니다.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 미정 컨테이너 -->
+                    <div class="sidebar-widget" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1e293b;">미정</h3>
+                        <p style="margin: 0; color: #64748b; font-size: 14px;">내용 미정입니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </section>
+
+<style>
+    .banner-wrapper {
+        position: relative;
+        margin-top: 24px;
+        margin-bottom: 24px;
+    }
+
+    .badmintok-banners {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+    }
+
+    .badmintok-banners::-webkit-scrollbar {
+        display: none; /* Chrome/Safari/Opera */
+    }
+
+    .badmintok-banner-item {
+        position: relative;
+        min-width: 100%;
+        max-width: 100%;
+        aspect-ratio: 4 / 1;
+        scroll-snap-align: center;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .badmintok-banner-item img {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .banner-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease;
+        z-index: 10;
+    }
+
+    .banner-nav:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
+
+    .banner-nav:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
+    .banner-nav-prev {
+        left: 8px;
+    }
+
+    .banner-nav-next {
+        right: 8px;
+    }
+
+    .community-tab.active {
+        color: var(--brand) !important;
+        border-bottom-color: var(--brand) !important;
+        font-weight: 600;
+    }
+    
+    /* 게시글 카드 리스트 */
+    .community-post-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .community-post-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        background: #fff;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        align-items: flex-start;
+    }
+    
+    .community-post-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .community-post-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+    
+    .community-post-header {
+        margin-bottom: 4px;
+    }
+    
+    .community-post-category {
+        display: inline-block;
+        padding: 4px 10px;
+        background: #EFEFEF;
+        color: var(--brand);
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .community-post-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .community-post-excerpt {
+        margin: 4px 0;
+        font-size: 14px;
+        color: #1e293b;
+        line-height: 1.6;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+    }
+    
+    .community-post-image {
+        width: 120px;
+        height: 120px;
+        min-width: 120px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f1f5f9;
+        flex-shrink: 0;
+        position: relative;
+    }
+    
+    .community-post-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    
+    .community-post-no-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 12px;
+        background: #f8fafc;
+    }
+    
+    .community-post-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+        flex-wrap: wrap;
+    }
+    
+    .community-post-separator {
+        color: #cbd5e1;
+    }
+    
+    .community-post-action {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .community-post-action-icon {
+        font-size: 14px;
+    }
+    
+    .community-post-action-count {
+        font-size: 13px;
+    }
+    
+    /* 공지사항 배너 */
+    .notice-banner-text {
+        display: inline;
+    }
+
+    .notice-banner-arrow {
+        display: none;
+    }
+
+    /* 데스크톱에서 모바일 인기글 배너 숨기기 */
+    .mobile-hot-posts-banner {
+        display: none;
+    }
+
+    /* 사이드바 반응형 */
+    @media (max-width: 1024px) {
+        .community-main-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .community-sidebar {
+            order: -1;
+        }
+    }
+
+    /* 모바일 반응형 (768px 이하) */
+    @media (max-width: 768px) {
+        /* 탭 슬라이드 스타일 */
+        .community-tab-wrapper > .community-tabs,
+        .community-tabs {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none !important; /* Firefox */
+            -ms-overflow-style: none !important; /* IE/Edge */
+        }
+
+        .community-tabs::-webkit-scrollbar {
+            display: none !important; /* Chrome/Safari/Opera */
+        }
+
+        .community-tab {
+            flex-shrink: 0 !important;
+        }
+
+        /* 모바일 인기글 배너 표시 */
+        .mobile-hot-posts-banner {
+            display: block !important;
+        }
+
+        /* 모바일에서 사이드바 숨기기 */
+        .community-sidebar {
+            display: none !important;
+        }
+
+        /* 공지사항 배너 모바일 최적화 */
+        .notice-banner {
+            padding: 14px 16px !important;
+            margin-bottom: 20px !important;
+            border-radius: 10px !important;
+        }
+        .notice-banner > div {
+            gap: 10px !important;
+        }
+        .notice-banner > div > span {
+            font-size: 22px !important;
+        }
+        .notice-banner > div > div {
+            gap: 6px !important;
+        }
+        .notice-banner > div > div > span:first-child {
+            font-size: 14px !important;
+        }
+        .notice-banner > div > div > span:last-child {
+            font-size: 13px !important;
+        }
+        .notice-banner > a {
+            padding: 9px 14px !important;
+            font-size: 13px !important;
+            min-width: auto !important;
+            width: auto !important;
+        }
+
+        .notice-banner-text {
+            display: none !important;
+        }
+
+        .notice-banner-arrow {
+            display: inline !important;
+            font-size: 16px !important;
+        }
+
+        /* 모바일 인기글 카드 크기 조정 */
+        .hot-post-card {
+            width: 260px !important;
+            padding: 14px !important;
+        }
+
+        .hot-post-card h4 {
+            font-size: 14px !important;
+        }
+
+        .hot-post-card > div {
+            font-size: 12px !important;
+        }
+    }
+
+    /* 더 작은 모바일 화면 최적화 (480px 이하) */
+    @media (max-width: 480px) {
+        .notice-banner {
+            padding: 12px 14px !important;
+        }
+
+        .notice-banner > div > span {
+            font-size: 20px !important;
+        }
+
+        .notice-banner > div > div > span:first-child {
+            font-size: 13px !important;
+        }
+
+        .notice-banner > div > div > span:last-child {
+            font-size: 12px !important;
+        }
+
+        .notice-banner > a {
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+        }
+
+        .notice-banner-arrow {
+            font-size: 14px !important;
+        }
+
+        /* 작은 모바일 인기글 카드 크기 조정 */
+        .hot-post-card {
+            width: 240px !important;
+            padding: 12px !important;
+        }
+
+        .hot-post-card h4 {
+            font-size: 13px !important;
+        }
+
+        .hot-post-card > div {
+            font-size: 11px !important;
+        }
+    }
+    
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bannerWrappers = document.querySelectorAll('.banner-wrapper');
+
+    bannerWrappers.forEach(function(wrapper) {
+        const container = wrapper.querySelector('[data-banner-container]');
+        const items = container.querySelectorAll('.badmintok-banner-item');
+        const prevBtn = wrapper.querySelector('[data-banner-prev]');
+        const nextBtn = wrapper.querySelector('[data-banner-next]');
+
+        if (items.length <= 1) {
+            // 배너가 1개 이하면 버튼 숨기기
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+            return;
+        }
+
+        let currentIndex = 0;
+
+        function slideToBanner(index) {
+            const item = items[index];
+            if (item) {
+                // scrollIntoView 대신 컨테이너의 scrollLeft를 직접 조작
+                const scrollPosition = item.offsetLeft;
+                container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+            }
+        }
+
+        function nextBanner() {
+            currentIndex = (currentIndex + 1) % items.length;
+            slideToBanner(currentIndex);
+        }
+
+        function prevBanner() {
+            currentIndex = (currentIndex - 1 + items.length) % items.length;
+            slideToBanner(currentIndex);
+        }
+
+        // 버튼 클릭 이벤트
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function() {
+                prevBanner();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function() {
+                nextBanner();
+            });
+        }
+
+        // 5초마다 자동 슬라이드
+        const autoSlideInterval = setInterval(nextBanner, 5000);
+
+        // 사용자가 수동으로 스크롤하면 인터벌 초기화
+        let scrollTimeout;
+        container.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(function() {
+                // 현재 보이는 배너의 인덱스를 업데이트
+                const containerRect = container.getBoundingClientRect();
+                items.forEach(function(item, index) {
+                    const itemRect = item.getBoundingClientRect();
+                    if (Math.abs(itemRect.left - containerRect.left) < 10) {
+                        currentIndex = index;
+                    }
+                });
+            }, 150);
+        });
+    });
+});
+</script>
 {% endblock %}

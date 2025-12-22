@@ -1,0 +1,2718 @@
+/* ===== 메인 사이트와 동일한 컬러 변수 ===== */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+  /* 우리 브랜드 컬러 */
+  --brand: #31AA60 !important;
+  --brand-700: #279254 !important;
+  --brand-800: #1f7c47 !important;
+  --text: #0f172a !important;
+  --muted: #64748b !important;
+  --surface: #ffffff !important;
+  --surface-2: #f6f9f7 !important;
+
+  --admin-bg: #f6f9f7 !important;
+  --admin-surface: #ffffff !important;
+  --admin-border: #e2e8f0 !important;
+  --admin-text: #0f172a !important;
+
+  /* Django admin 기본 변수 오버라이드 */
+  --primary: #31AA60 !important;
+  --secondary: #279254 !important;
+  --accent: #31AA60 !important;
+  --primary-fg: #fff !important;
+
+  --body-fg: #0f172a !important;
+  --body-bg: #f6f9f7 !important;
+  --body-quiet-color: #64748b !important;
+  --body-medium-color: #475569 !important;
+  --body-loud-color: #0f172a !important;
+
+  --header-color: #ffffff !important;
+  --header-branding-color: #ffffff !important;
+  --header-bg: #31AA60 !important;
+  --header-link-color: #ffffff !important;
+
+  --breadcrumbs-fg: #64748b !important;
+  --breadcrumbs-link-fg: #31AA60 !important;
+  --breadcrumbs-bg: transparent !important;
+
+  --link-fg: #31AA60 !important;
+  --link-hover-color: #279254 !important;
+  --link-selected-fg: #1f7c47 !important;
+
+  --hairline-color: #e2e8f0 !important;
+  --border-color: #e2e8f0 !important;
+
+  --error-fg: #dc2626 !important;
+
+  --message-success-bg: rgba(22, 163, 74, 0.08) !important;
+  --message-warning-bg: rgba(234, 179, 8, 0.08) !important;
+  --message-error-bg: rgba(220, 38, 38, 0.08) !important;
+
+  --darkened-bg: #f6f9f7 !important;
+  --selected-bg: rgba(49, 170, 96, 0.08) !important;
+  --selected-row: rgba(49, 170, 96, 0.08) !important;
+
+  --button-fg: #fff !important;
+  --button-bg: #31AA60 !important;
+  --button-hover-bg: #279254 !important;
+  --default-button-bg: #31AA60 !important;
+  --default-button-hover-bg: #279254 !important;
+  --close-button-bg: #64748b !important;
+  --close-button-hover-bg: #475569 !important;
+  --delete-button-bg: #dc2626 !important;
+  --delete-button-hover-bg: #b91c1c !important;
+
+  --object-tools-fg: #ffffff !important;
+  --object-tools-bg: #31AA60 !important;
+  --object-tools-hover-bg: #279254 !important;
+
+  color-scheme: light !important;
+}
+
+/* ===== 전역 배경 및 텍스트 색상 강제 오버라이드 ===== */
+html {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+body,
+body.dashboard,
+body.login,
+body.change-list,
+body.change-form,
+#container,
+.dashboard #container {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  background: var(--admin-bg) !important;
+  color: var(--text) !important;
+  overflow: visible !important;
+  min-height: 100vh !important;
+}
+
+/* 모든 링크 기본 색상 */
+a {
+  color: var(--brand) !important;
+}
+
+a:hover {
+  color: var(--brand-700) !important;
+}
+
+/* 헤더 내 링크만 흰색 */
+#header a {
+  color: #ffffff !important;
+}
+
+/* ===== 헤더 스타일 (메인 사이트와 유사) ===== */
+#header {
+  background: var(--brand);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+#header #branding h1, #header #branding h1 a,
+#header #user-tools, #header a {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+#header #user-tools a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+#container {
+  padding-top: 16px;
+}
+
+/* ===== Breadcrumbs ===== */
+.breadcrumbs {
+  background: transparent;
+  color: var(--muted);
+  border-bottom: 1px solid var(--admin-border);
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.breadcrumbs a {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+/* ===== 모듈 카드 스타일 (미니멀) ===== */
+.module, .app-auth, .app-community, .app-contests, .app-band {
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: visible;
+}
+
+.module h2, .module caption {
+  background: transparent;
+  border-bottom: 2px solid var(--admin-border);
+  color: var(--brand-800);
+  font-weight: 700;
+  padding: 14px 16px;
+  font-size: 15px;
+}
+
+.submit-row {
+  background: transparent;
+  border-top: 1px solid var(--admin-border);
+  padding: 16px;
+  border-radius: 0 0 8px 8px;
+}
+
+/* ===== 버튼 스타일 (미니멀) ===== */
+.button, input[type=submit], input[type=button], .submit-row input[type=submit] {
+  appearance: none;
+  border: 0;
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background .2s ease, opacity .2s ease;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.button:active, input[type=submit]:active {
+  opacity: 0.9;
+}
+
+.button.default, .submit-row input.default {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input[type=submit]:hover {
+  background: var(--brand-700);
+}
+
+.button.deletelink, .deletelink-box a {
+  background: #dc2626;
+  color: #fff;
+}
+
+.button.deletelink:hover, .deletelink-box a:hover {
+  background: #b91c1c;
+}
+
+/* actions_column 버튼 스타일 */
+.field-actions_column .button,
+.actions_column .button {
+  color: #ffffff !important;
+  background: #417690 !important;
+  border: none !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  transition: background 0.2s ease !important;
+}
+
+.field-actions_column .button:hover,
+.actions_column .button:hover {
+  opacity: 0.9 !important;
+}
+
+/* 삭제 버튼 스타일 */
+.field-actions_column .button[href*="/delete/"],
+.actions_column .button[href*="/delete/"] {
+  background: #ba2121 !important;
+  color: #ffffff !important;
+}
+
+.field-actions_column .button[href*="/delete/"]:hover,
+.actions_column .button[href*="/delete/"]:hover {
+  background: #a01d1d !important;
+  color: #ffffff !important;
+}
+
+.admin-top-links {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.admin-top-link {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: background .2s ease;
+}
+
+.admin-top-link:hover {
+  background: rgba(255,255,255,0.15);
+  color: #ffffff;
+}
+
+/* ===== 콘텐츠 영역 배경 강제 ===== */
+#content-main,
+#content-related,
+.colM #content-main,
+.colMS #content-main {
+  background: transparent !important;
+}
+
+/* Django admin 기본 어두운 색상 제거 */
+#content,
+#content-main .module,
+.module,
+.inline-group {
+  background: var(--surface) !important;
+}
+
+/* 모든 텍스트를 읽기 쉽게 */
+th,
+td,
+label,
+p,
+li,
+span,
+div {
+  color: var(--text);
+}
+
+#content {
+  background: transparent;
+}
+
+#content-main .module, #content-main .inline-group, .change-form, .change-list {
+  background: var(--admin-surface);
+}
+
+#changelist-filter {
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+}
+
+/* paginator 스타일은 아래에서 정의됨 */
+
+/* ===== 테이블 스타일 개선 (가독성 향상) ===== */
+#changelist table thead th,
+.results thead th {
+  background: var(--surface-2) !important;
+  color: var(--brand-800) !important;
+  border-bottom: 2px solid var(--admin-border) !important;
+  font-weight: 700 !important;
+  padding: 12px 10px !important;
+  text-align: left !important;
+}
+
+#changelist table tbody tr:hover,
+.results tbody tr:hover {
+  background: rgba(49, 170, 96, 0.05) !important;
+}
+
+#changelist table tbody td,
+.results tbody td {
+  padding: 10px !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05) !important;
+}
+
+#changelist table tbody tr,
+.results tbody tr {
+  transition: background 0.15s ease;
+}
+
+/* 테이블 링크 스타일 */
+#changelist table a,
+.results table a {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+#changelist table a:hover,
+.results table a:hover {
+  color: var(--brand-800);
+  text-decoration: underline;
+}
+
+fieldset.collapsed .collapse-toggle {
+  color: #64748b;
+}
+
+/* ===== Admin 레이아웃 전반 정리 (다크 테마 상쇄) ===== */
+
+body.dashboard #container,
+body.app-community #container,
+body.app-contests #container,
+body.app-band #container,
+body.app-accounts #container {
+  background: var(--admin-bg) !important;
+}
+
+#content {
+  background: transparent !important;
+  padding: 20px 24px 40px 24px !important;
+  overflow: visible !important;
+}
+
+#content-main,
+#content-related {
+  background: transparent !important;
+}
+
+/* 대시보드 / 사이드 느낌의 앱 카드 (좌측 컬럼) */
+.dashboard #content-main .module {
+  background: var(--surface) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--admin-border) !important;
+  padding: 8px 0 10px 0 !important;
+}
+
+.dashboard #content-main .module caption {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25) !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  padding: 8px 14px !important;
+}
+
+.dashboard #content-main .module table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard #content-main .module table th,
+.dashboard #content-main .module table td {
+  border: none;
+  padding: 6px 12px;
+  color: #0f172a;
+}
+
+.dashboard #content-main .module table a {
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.dashboard #content-main .module table a:hover {
+  color: var(--brand-800);
+}
+
+/* ===== 좌측 사이드바(앱 리스트) - 밝은 톤으로 재정비 ===== */
+#nav-sidebar,
+.sticky {
+  background: var(--surface) !important;
+  border-right: 1px solid var(--admin-border) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 0 rgba(15, 23, 42, 0) !important;
+  padding: 12px 0 16px 0 !important;
+}
+
+/* 사이드바 내 모든 링크 */
+#nav-sidebar a {
+  color: var(--text) !important;
+}
+
+#nav-sidebar a:hover {
+  color: var(--brand) !important;
+}
+
+#nav-sidebar .module {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 0 10px 0 !important;
+}
+
+#nav-sidebar .module caption {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 10px 16px 6px 16px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8 !important;
+}
+
+/* 캡션 안의 앱 이름 링크(Accounts, Band 등)를 텍스트처럼 보이게 */
+#nav-sidebar .module caption .section {
+  color: #94a3b8 !important;
+  text-decoration: none !important;
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+#nav-sidebar .module caption .section:hover {
+  color: #64748b !important;
+}
+
+/* Django 기본 table 구조를 카드형으로 재구성 */
+#nav-sidebar table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+#nav-sidebar tbody tr {
+  border-radius: 0;
+}
+
+#nav-sidebar tbody tr th,
+#nav-sidebar tbody tr td {
+  border: 0;
+  padding: 2px 6px;
+}
+
+#nav-sidebar tbody tr th a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 0;
+  color: var(--text) !important;
+  text-decoration: none;
+  font-size: 13px;
+  border-left: 2px solid transparent;
+}
+
+#nav-sidebar tbody tr:hover th a {
+  background: transparent !important;
+  color: var(--brand) !important;
+  border-left-color: var(--brand);
+}
+
+/* 현재 선택된 모델 강조 */
+#nav-sidebar .current-model th a[aria-current="page"] {
+  background: transparent !important;
+  color: var(--brand-800) !important;
+  border-left: 2px solid var(--brand);
+  font-weight: 600;
+}
+
+/* 우측의 "추가" 링크를 작은 뱃지 버튼으로 */
+#nav-sidebar td .addlink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  margin-right: 4px;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--brand-800) !important;
+  border: 1px solid var(--admin-border);
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#nav-sidebar td .addlink:hover {
+  background: var(--surface-2);
+  border-color: var(--brand);
+}
+
+/* 사이드바 상단 검색 인풋 정리 */
+#nav-filter {
+  width: calc(100% - 24px);
+  margin: 0 12px 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--admin-border);
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+#nav-filter:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+/* 리스트 / 필터 패널 */
+.change-list .module,
+#changelist .module,
+#changelist .results,
+#changelist-filter,
+.module.filtered,
+.module.aligned {
+  background: var(--admin-surface) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--admin-border) !important;
+}
+
+/* 기본 필터 스타일 (우측 사이드바용) - 상단 이동 시 오버라이드됨 */
+#changelist-filter {
+  padding: 14px 14px 10px 14px !important;
+}
+
+/* ===== 액션 바 스타일 (검은색 배경 제거) ===== */
+#changelist .actions,
+.actions {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 16px 0 !important;
+  margin: 0 0 16px 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 액션 선택 영역 */
+.actions label {
+  color: var(--text) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actions select {
+  background: var(--surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  min-width: 200px;
+  cursor: pointer;
+}
+
+.actions select:focus {
+  outline: none;
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px rgba(49, 170, 96, 0.1) !important;
+}
+
+.actions .button {
+  background: var(--brand) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.actions .button:hover {
+  background: var(--brand-700) !important;
+}
+
+/* 액션 카운터 */
+.action-counter,
+.action-counter + span {
+  background: transparent !important;
+  color: var(--muted) !important;
+  padding: 0 8px !important;
+  border-radius: 0;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+}
+
+/* 테이블 스타일 */
+#changelist .results {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible !important;
+  margin: 0;
+  padding: 0;
+}
+
+#changelist table,
+.change-list table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 0 !important;
+  background: var(--admin-surface) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+#changelist table thead th,
+.change-list table thead th {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  border-bottom: 2px solid var(--admin-border) !important;
+  padding: 12px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: left;
+  white-space: nowrap;
+}
+
+#changelist table tbody tr,
+.change-list table tbody tr {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5) !important;
+  transition: background 0.2s ease;
+}
+
+#changelist table tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+#changelist table tbody tr:hover,
+.change-list table tbody tr:hover {
+  background: rgba(49, 170, 96, 0.03) !important;
+}
+
+#changelist table tbody td,
+.change-list table tbody td {
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  vertical-align: middle;
+  color: var(--text) !important;
+}
+
+#changelist table tbody th,
+.change-list table tbody th {
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  vertical-align: middle;
+}
+
+/* 폼 화면(추가/수정) 카드화 */
+.change-form .module,
+.inline-group,
+.submit-row {
+  border-radius: 8px !important;
+  border: 1px solid var(--admin-border) !important;
+}
+
+.change-form .module {
+  background: var(--surface) !important;
+}
+
+.inline-group {
+  background: var(--surface) !important;
+}
+
+.submit-row {
+  background: transparent !important;
+  margin-top: 16px !important;
+  padding: 12px 16px !important;
+}
+
+/* 폼 필드 정리 */
+fieldset {
+  border-radius: 0 !important;
+  border-color: var(--admin-border) !important;
+  border-width: 1px !important;
+}
+
+fieldset h2 {
+  font-weight: 700 !important;
+  color: var(--admin-text) !important;
+}
+
+.aligned label {
+  font-weight: 600 !important;
+  color: #0f172a !important;
+}
+
+/* ===== 폼 입력 필드 스타일 (미니멀) ===== */
+input[type=text],
+input[type=email],
+input[type=number],
+input[type=password],
+input[type=url],
+input[type=date],
+input[type=time],
+input[type=datetime-local],
+textarea,
+select {
+  border-radius: 4px !important;
+  border: 1px solid var(--admin-border) !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  transition: border-color .2s ease !important;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  border-color: var(--brand) !important;
+}
+
+/* 체크박스, 라디오 버튼 */
+input[type=checkbox],
+input[type=radio] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--brand);
+}
+
+/* ===== 변경 목록 화면 2차 정리 ===== */
+
+#changelist {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  gap: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#changelist-form {
+  width: 100%;
+  clear: both;
+}
+
+/* 필터를 상단으로 이동 - 컴팩트한 가로 배치 */
+#changelist-filter {
+  position: relative !important;
+  max-height: none !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  padding: 16px 20px !important;
+  background: var(--admin-surface) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--admin-border) !important;
+  width: 100% !important;
+  float: none !important;
+  clear: both !important;
+  box-sizing: border-box !important;
+}
+
+/* 필터 헤더 */
+#changelist-filter h2 {
+  width: 100%;
+  margin: 0 0 16px 0 !important;
+  padding: 0 0 12px 0 !important;
+  border-bottom: 2px solid var(--admin-border) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--brand-800) !important;
+  line-height: 1.4 !important;
+}
+
+/* 필터 extra actions */
+#changelist-filter-extra-actions {
+  margin: 0 0 16px 0 !important;
+  padding: 0 !important;
+}
+
+#changelist-filter-extra-actions h3 {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#changelist-filter-extra-actions a {
+  color: var(--brand) !important;
+  text-decoration: none !important;
+  font-size: 13px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+#changelist-filter-extra-actions a:hover {
+  background: rgba(49, 170, 96, 0.08) !important;
+  color: var(--brand-700) !important;
+}
+
+/* viewlink 아이콘과 텍스트 겹침 해결 */
+#changelist-filter-extra-actions a.viewlink,
+.viewlink {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 8px !important;
+  text-decoration: none !important;
+  color: var(--brand) !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+#changelist-filter-extra-actions a.viewlink img,
+.viewlink img {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+
+#changelist-filter-extra-actions a.viewlink:hover,
+.viewlink:hover {
+  background: rgba(49, 170, 96, 0.08) !important;
+  color: var(--brand-700) !important;
+}
+
+/* 필터를 가로로 배치 - details 태그들 */
+#changelist-filter {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-details-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+#changelist-filter > details,
+.filter-details-wrapper > details {
+  display: block;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-width: 180px;
+  max-width: 220px;
+  flex: 0 0 auto;
+}
+
+/* details summary 스타일 */
+#changelist-filter > details > summary,
+.filter-details-wrapper > details > summary {
+  list-style: none !important;
+  cursor: pointer;
+  padding: 8px 12px !important;
+  margin: 0 0 8px 0 !important;
+  background: var(--surface-2) !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+  transition: all 0.2s ease;
+  position: relative;
+  padding-right: 32px !important;
+  line-height: 1.4 !important;
+  display: block;
+}
+
+#changelist-filter > details > summary::-webkit-details-marker,
+.filter-details-wrapper > details > summary::-webkit-details-marker {
+  display: none !important;
+}
+
+#changelist-filter > details > summary::after,
+.filter-details-wrapper > details > summary::after {
+  content: '▼';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+#changelist-filter > details[open] > summary::after,
+.filter-details-wrapper > details[open] > summary::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+#changelist-filter > details > summary:hover,
+.filter-details-wrapper > details > summary:hover {
+  background: rgba(49, 170, 96, 0.08) !important;
+  color: var(--brand) !important;
+}
+
+/* 필터 리스트 */
+#changelist-filter > details > ul,
+.filter-details-wrapper > details > ul {
+  margin: 0 !important;
+  padding: 4px 0 !important;
+  list-style: none !important;
+  display: block;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#changelist-filter > details > ul::-webkit-scrollbar,
+.filter-details-wrapper > details > ul::-webkit-scrollbar {
+  width: 6px;
+}
+
+#changelist-filter > details > ul::-webkit-scrollbar-track,
+.filter-details-wrapper > details > ul::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-radius: 3px;
+}
+
+#changelist-filter > details > ul::-webkit-scrollbar-thumb,
+.filter-details-wrapper > details > ul::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 3px;
+}
+
+#changelist-filter > details > ul::-webkit-scrollbar-thumb:hover,
+.filter-details-wrapper > details > ul::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+#changelist-filter > details li,
+.filter-details-wrapper > details li {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
+}
+
+#changelist-filter > details li a,
+.filter-details-wrapper > details li a {
+  display: block;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  font-size: 13px !important;
+  color: var(--text) !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#changelist-filter > details li a:hover,
+.filter-details-wrapper > details li a:hover {
+  background: rgba(49, 170, 96, 0.08) !important;
+  color: var(--brand) !important;
+}
+
+#changelist-filter > details li.selected a,
+.filter-details-wrapper > details li.selected a {
+  background: rgba(49, 170, 96, 0.12) !important;
+  color: var(--brand) !important;
+  font-weight: 600 !important;
+}
+
+/* changelist-form-container 스타일 */
+.changelist-form-container {
+  width: 100%;
+  clear: both;
+  margin: 0;
+  padding: 20px !important;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* toolbar 스타일 */
+#toolbar {
+  margin: 0 0 20px 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 1024px) {
+  .filter-details-wrapper {
+    flex-direction: column;
+  }
+  
+  #changelist-filter > details,
+  .filter-details-wrapper > details {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* 검색창, 액션 바 정리 */
+#changelist-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  border: 0 !important;
+  width: 100%;
+}
+
+#changelist-search > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex: 1;
+}
+
+#changelist-search label {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+}
+
+#changelist-search label img {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  opacity: 0.6;
+}
+
+#changelist-search input[type="text"] {
+  border-radius: 6px !important;
+  border: 1px solid var(--admin-border) !important;
+  background: var(--surface) !important;
+  padding: 10px 12px !important;
+  font-size: 14px !important;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#changelist-search input[type="text"]:focus {
+  outline: none;
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px rgba(49, 170, 96, 0.1) !important;
+}
+
+#changelist-search input[type="submit"],
+#changelist-search .button {
+  border-radius: 6px !important;
+  padding: 10px 20px !important;
+  background: var(--brand) !important;
+  color: #fff !important;
+  border: none !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+#changelist-search input[type="submit"]:hover,
+#changelist-search .button:hover {
+  background: var(--brand-700) !important;
+}
+
+#changelist .actions select {
+  min-width: 160px;
+}
+
+/* 빵부스러기와 상단 간격 정리 */
+.breadcrumbs {
+  padding: 8px 4px 10px 4px;
+  margin-bottom: 12px;
+}
+
+/* 페이지네이터(하단 검은 바 제거) */
+.paginator {
+  background: transparent !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-top: 1px solid var(--admin-border) !important;
+  padding: 16px 0 !important;
+  margin: 20px 0 0 0 !important;
+  color: var(--text) !important;
+  font-size: 14px !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.paginator a {
+  color: var(--brand) !important;
+  text-decoration: none !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease;
+  font-weight: 500 !important;
+}
+
+.paginator a:hover {
+  background: rgba(49, 170, 96, 0.08) !important;
+  color: var(--brand-700) !important;
+}
+
+.paginator .this-page {
+  color: var(--text) !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+}
+
+.paginator input[type="submit"] {
+  background: var(--brand) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-left: 12px;
+}
+
+.paginator input[type="submit"]:hover {
+  background: var(--brand-700) !important;
+}
+
+/* ===== 대시보드(index) 화면 ===== */
+.admin-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.admin-dashboard-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--brand-800);
+  letter-spacing: -0.5px;
+}
+
+.admin-dashboard-subtitle {
+  margin: 6px 0 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.admin-dashboard-app {
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  padding: 16px;
+  transition: border-color .2s ease;
+}
+
+.admin-dashboard-app:hover {
+  border-color: var(--brand);
+}
+
+.admin-dashboard-app__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.admin-dashboard-app__header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-dashboard-app__more {
+  font-size: 13px;
+  color: var(--brand-800);
+  text-decoration: none;
+}
+
+.admin-dashboard-app__more:hover {
+  text-decoration: underline;
+}
+
+.admin-dashboard-model-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-dashboard-model {
+  padding: 10px 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: transparent;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  transition: background .2s ease;
+}
+
+.admin-dashboard-model:last-child {
+  border-bottom: 0;
+}
+
+.admin-dashboard-model:hover {
+  background: rgba(49, 170, 96, 0.03);
+}
+
+.admin-dashboard-model--disabled {
+  opacity: 0.6;
+}
+
+.admin-dashboard-model__main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-dashboard-model__name {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 15px;
+  transition: color .2s ease;
+}
+
+.admin-dashboard-model__name:hover {
+  color: var(--brand);
+}
+
+.admin-dashboard-tag {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid var(--admin-border);
+  white-space: nowrap;
+  font-weight: 600;
+  transition: background .2s ease;
+}
+
+.admin-dashboard-tag:hover {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.admin-dashboard-model__meta {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ===== 로그인 화면 ===== */
+.admin-login-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  padding: 28px 26px 24px 26px;
+}
+
+.admin-login-card h1 {
+  margin: 0 0 18px 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--brand-800);
+  text-align: center;
+}
+
+.admin-login-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.admin-login-field label {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.admin-login-field input {
+  width: 100%;
+}
+
+.admin-login-actions {
+  margin-top: 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-login-errors {
+  margin-bottom: 14px;
+  padding: 8px 0 8px 10px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid #dc2626;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.admin-login-note {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ===== 메시지 리스트 ===== */
+.messagelist {
+  list-style: none;
+  margin: 0 0 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.messagelist li {
+  padding: 8px 0 8px 10px;
+  border-radius: 0;
+  font-weight: 500;
+  font-size: 14px;
+  border: 0;
+  background: transparent;
+}
+
+.messagelist li.success {
+  border-left: 3px solid #16a34a;
+  color: #166534;
+}
+
+.messagelist li.error {
+  border-left: 3px solid #dc2626;
+  color: #b91c1c;
+}
+
+.messagelist li.warning {
+  border-left: 3px solid #eab308;
+  color: #854d0e;
+}
+
+.messagelist li.info {
+  border-left: 3px solid #2563eb;
+  color: #1d4ed8;
+}
+
+/* ===== 외래키 관련 위젯 (미니멀) ===== */
+.related-widget-wrapper {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.related-widget-wrapper-link {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 4px !important;
+  text-decoration: none !important;
+  transition: background .2s ease, border-color .2s ease !important;
+  cursor: pointer;
+  padding: 0 !important;
+}
+
+.related-widget-wrapper-link:hover {
+  background: var(--surface-2) !important;
+  border-color: var(--brand) !important;
+}
+
+.related-widget-wrapper-link:active {
+  opacity: 0.8;
+}
+
+/* 외래키 위젯 아이콘 크기 조정 */
+.related-widget-wrapper-link img {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+}
+
+/* ===== 파일/이미지 업로드 ===== */
+input[type="file"] {
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  background: var(--surface) !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: border-color .2s ease !important;
+}
+
+input[type="file"]:hover {
+  border-color: rgba(49, 170, 96, 0.4) !important;
+}
+
+input[type="file"]:focus {
+  outline: none !important;
+  border-color: rgba(49, 170, 96, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(49, 170, 96, 0.1) !important;
+}
+
+/* 파일 업로드 현재 파일 표시 */
+.file-upload p.file-upload {
+  margin: 8px 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.file-upload a {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.file-upload a:hover {
+  text-decoration: underline;
+}
+
+/* 이미지 미리보기 */
+.clearable-file-input img,
+.file-upload img {
+  max-width: 300px;
+  max-height: 200px;
+  border-radius: 4px;
+  border: 1px solid var(--admin-border);
+  margin: 10px 0;
+}
+
+/* ===== 인라인 폼셋 ===== */
+.inline-group {
+  margin-top: 20px;
+}
+
+.inline-group h2 {
+  background: transparent !important;
+  padding: 12px 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 2px solid var(--admin-border) !important;
+  color: var(--brand-800) !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  margin: 0 0 12px 0 !important;
+}
+
+.inline-related {
+  background: var(--surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 4px !important;
+  padding: 16px !important;
+}
+
+.inline-related h3 {
+  background: transparent !important;
+  padding: 8px 0 8px 10px !important;
+  border-radius: 0 !important;
+  color: var(--text) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+  border-left: 2px solid var(--brand);
+}
+
+/* 인라인 테이블 */
+.inline-group table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.inline-group table thead th {
+  background: var(--surface-2) !important;
+  color: var(--brand-800) !important;
+  padding: 10px 8px !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid var(--admin-border) !important;
+  text-align: left !important;
+  font-size: 13px !important;
+}
+
+.inline-group table tbody td {
+  padding: 10px 8px !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05) !important;
+}
+
+.inline-group table tbody tr:hover {
+  background: rgba(49, 170, 96, 0.03) !important;
+}
+
+/* 인라인 추가 버튼 (미니멀) */
+.add-row a,
+.inline-group .add-row a {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px !important;
+  background: transparent !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 4px !important;
+  color: var(--brand) !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  transition: background .2s ease !important;
+  margin-top: 8px;
+}
+
+.add-row a:hover,
+.inline-group .add-row a:hover {
+  background: var(--surface-2) !important;
+}
+
+/* 인라인 삭제 체크박스 */
+.inline-deletelink {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
+/* ===== Help text / Required 표시 (미니멀) ===== */
+.help,
+.helptext,
+form .help {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Required 별표 */
+.required,
+label .required {
+  color: #dc2626;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* 필수 필드 라벨 강조 */
+.required-field label {
+  font-weight: 700 !important;
+}
+
+/* ===== 날짜/시간 위젯 (미니멀) ===== */
+.datetimeshortcuts {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 6px;
+  align-items: center;
+}
+
+.datetimeshortcuts a,
+.timezonewarning {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  border-radius: 3px;
+  color: var(--text) !important;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  transition: background .2s ease;
+}
+
+.datetimeshortcuts a:hover {
+  background: var(--surface-2);
+}
+
+/* 달력 팝업 (미니멀) */
+.calendarbox,
+.clockbox {
+  background: var(--surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 6px !important;
+  padding: 12px !important;
+}
+
+.calendarbox h2,
+.clockbox h2 {
+  background: transparent !important;
+  color: var(--brand-800) !important;
+  padding: 8px 0 !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  margin-bottom: 12px !important;
+  font-size: 14px !important;
+  border-radius: 0 !important;
+}
+
+.calendar caption,
+.calendarbox .calendar-shortcuts {
+  background: transparent !important;
+  padding: 8px 0 !important;
+  border-radius: 0 !important;
+}
+
+.calendar td,
+.calendar th {
+  padding: 6px !important;
+  text-align: center !important;
+  border-radius: 4px !important;
+}
+
+.calendar td a {
+  display: block;
+  padding: 6px;
+  border-radius: 4px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background .2s ease;
+}
+
+.calendar td a:hover {
+  background: rgba(49, 170, 96, 0.1);
+  color: var(--brand);
+}
+
+.calendar td.selected a {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.calendar td.today a {
+  background: transparent;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+/* ===== Many-to-Many 필터 위젯 ===== */
+.selector {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: 0;
+}
+
+.selector-available,
+.selector-chosen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selector h2 {
+  background: transparent !important;
+  padding: 8px 0 !important;
+  border-radius: 0 !important;
+  color: var(--brand-800) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  margin: 0 0 8px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+}
+
+.selector select {
+  min-height: 200px;
+  border-radius: 4px !important;
+  border: 1px solid var(--admin-border) !important;
+  padding: 8px !important;
+}
+
+.selector-chooser {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: center;
+}
+
+.selector-chooser a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background .2s ease, border-color .2s ease;
+}
+
+.selector-chooser a:hover {
+  background: var(--surface-2);
+  border-color: var(--brand);
+}
+
+/* 필터 검색 */
+.selector-filter {
+  margin-bottom: 8px;
+}
+
+.selector-filter label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.selector-filter input {
+  width: 100%;
+}
+
+/* ===== 에러 메시지 전역 스타일 (미니멀) ===== */
+.errorlist {
+  list-style: none !important;
+  margin: 0 0 8px 0 !important;
+  padding: 0 !important;
+}
+
+.errorlist li {
+  background: transparent;
+  border: 0;
+  border-left: 2px solid #dc2626;
+  padding: 4px 0 4px 8px;
+  color: #dc2626;
+  font-weight: 500;
+  font-size: 13px;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+/* 필드별 에러 */
+.form-row.errors {
+  background: transparent;
+  border-left: 2px solid #dc2626;
+  padding-left: 12px !important;
+}
+
+.form-row.errors input,
+.form-row.errors select,
+.form-row.errors textarea {
+  border-color: rgba(220, 38, 38, 0.4) !important;
+}
+
+.form-row.errors input:focus,
+.form-row.errors select:focus,
+.form-row.errors textarea:focus {
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+/* 비필드 에러 */
+.errornote {
+  background: transparent !important;
+  border: 0 !important;
+  border-left: 3px solid #dc2626 !important;
+  border-radius: 0 !important;
+  padding: 8px 0 8px 10px !important;
+  color: #b91c1c !important;
+  font-weight: 600 !important;
+  margin-bottom: 16px !important;
+}
+
+/* ===== 정렬 가능한 헤더 화살표 ===== */
+#changelist table thead th.sortable {
+  cursor: pointer;
+  transition: background .2s ease;
+}
+
+#changelist table thead th.sortable:hover {
+  background: rgba(49, 170, 96, 0.08) !important;
+}
+
+#changelist table thead th.sorted {
+  background: rgba(49, 170, 96, 0.12) !important;
+  color: var(--brand-800) !important;
+}
+
+.sortremove,
+.sortoptions a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  margin-left: 4px;
+  background: transparent;
+  border-radius: 0;
+  font-size: 11px;
+  text-decoration: none;
+  color: var(--brand-800);
+  font-weight: 600;
+}
+
+.sortremove:hover,
+.sortoptions a:hover {
+  text-decoration: underline;
+}
+
+/* 정렬 화살표 아이콘 */
+th.sorted.ascending .text a::after {
+  content: " ↑";
+  color: var(--brand);
+  font-weight: 700;
+}
+
+th.sorted.descending .text a::after {
+  content: " ↓";
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* ===== 필터 사이드바 상세 스타일 (미니멀) ===== */
+#changelist-filter h2 {
+  background: transparent !important;
+  padding: 8px 0 !important;
+  border-radius: 0 !important;
+  color: var(--brand-800) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  margin: 0 0 8px 0 !important;
+  border: 0;
+  border-bottom: 1px solid var(--admin-border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#changelist-filter h3 {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--muted) !important;
+  margin: 12px 0 6px 0 !important;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+#changelist-filter ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+
+#changelist-filter li {
+  margin: 0;
+  padding: 0;
+}
+
+#changelist-filter a {
+  display: block;
+  padding: 6px 0;
+  border-radius: 0;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color .2s ease;
+  margin-bottom: 1px;
+}
+
+#changelist-filter a:hover {
+  color: var(--brand);
+}
+
+#changelist-filter li.selected a {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* 필터 "모두" 링크 */
+#changelist-filter a.selected {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* ===== 읽기 전용 필드 ===== */
+.readonly,
+div.readonly {
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid var(--admin-border);
+  padding-left: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.form-row .readonly {
+  margin-top: 6px;
+}
+
+/* ===== 모바일 반응형 개선 ===== */
+@media (max-width: 768px) {
+  /* 헤더 조정 */
+  #header {
+    position: relative;
+  }
+
+  #header #branding h1 {
+    font-size: 18px;
+  }
+
+  .admin-top-links {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .admin-top-link {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  /* 사이드바 숨김 */
+  #nav-sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  #nav-sidebar.show {
+    left: 0;
+  }
+
+  /* 콘텐츠 전체 너비 */
+  #content-main {
+    margin-left: 0 !important;
+  }
+
+  /* 대시보드 그리드 */
+  .admin-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 테이블 스크롤 */
+  #changelist table,
+  .results table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* 변경 목록 필터 */
+  #changelist {
+    display: block !important;
+  }
+
+  #changelist-filter {
+    position: static !important;
+    margin-top: 16px;
+  }
+
+  /* 폼 조정 */
+  .form-row {
+    padding: 12px 10px !important;
+  }
+
+  /* 인라인 폼셋 */
+  .inline-group table {
+    font-size: 13px;
+  }
+
+  .inline-group table thead th,
+  .inline-group table tbody td {
+    padding: 8px 6px !important;
+  }
+
+  /* Many-to-Many 위젯 */
+  .selector {
+    flex-direction: column;
+  }
+
+  .selector-chooser {
+    flex-direction: row;
+  }
+
+  /* 외래키 위젯 */
+  .related-widget-wrapper {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 더 작은 화면 조정 */
+  body {
+    font-size: 14px;
+  }
+
+  #content {
+    padding: 12px 10px 20px 10px !important;
+  }
+
+  .breadcrumbs {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .module h2,
+  .module caption {
+    font-size: 14px !important;
+    padding: 10px 12px !important;
+  }
+
+  .button,
+  input[type=submit] {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+  }
+
+  .admin-dashboard-header h1 {
+    font-size: 22px;
+  }
+
+  .admin-dashboard-subtitle {
+    font-size: 13px;
+  }
+
+  /* 입력 필드 */
+  input[type=text],
+  input[type=email],
+  input[type=number],
+  input[type=password],
+  textarea,
+  select {
+    font-size: 16px !important; /* iOS 확대 방지 */
+  }
+}
+
+/* ===== 추가 강력한 오버라이드 (어두운 색상 완전 제거) ===== */
+
+/* 체크박스 선택된 행 */
+.selected,
+tr.selected,
+.selected td {
+  background: rgba(49, 170, 96, 0.08) !important;
+  color: var(--text) !important;
+}
+
+/* Django admin 기본 파란색 제거 */
+/* object-tools 컨테이너 */
+.object-tools {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  z-index: 11 !important;
+}
+
+/* object-tools li */
+.object-tools li {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+/* object-tools 링크 */
+.object-tools a {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  padding: 10px 16px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.object-tools a:hover {
+  background: var(--brand-700) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* object-tools 아이콘 */
+.object-tools a img {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  filter: brightness(0) invert(1) !important; /* 아이콘을 흰색으로 */
+}
+
+/* 폼 행 배경 */
+.form-row {
+  background: transparent !important;
+}
+
+/* 변경 폼 배경 */
+.change-form,
+.change-list {
+  background: var(--surface) !important;
+}
+
+/* 결과 테이블 강제 스타일 */
+.results {
+  background: var(--surface) !important;
+  border-radius: 0 !important;
+  overflow: visible;
+}
+
+/* 모든 thead */
+thead,
+thead th {
+  background: var(--surface-2) !important;
+  color: var(--brand-800) !important;
+}
+
+/* 모든 tbody */
+tbody,
+tbody td {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+/* 검색 영역 */
+#toolbar form input[type="text"],
+#changelist-search input[type="text"] {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--admin-border) !important;
+}
+
+/* 툴팁 */
+.help-tooltip,
+[title] {
+  color: var(--text) !important;
+}
+
+/* Django admin 기본 청록색 링크 제거 */
+.addlink,
+.changelink {
+  color: var(--brand) !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.addlink img,
+.changelink img {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+
+.addlink:hover,
+.changelink:hover {
+  color: var(--brand-700) !important;
+}
+
+/* viewlink는 위에서 정의됨 */
+
+/* 삭제 링크 */
+.deletelink,
+.deletelink-box a {
+  color: #dc2626 !important;
+  background: transparent !important;
+}
+
+.deletelink:hover,
+.deletelink-box a:hover {
+  text-decoration: underline !important;
+}
+
+/* 비어있는 변경 목록 메시지 */
+.empty-changelist,
+/* paginator 스타일은 위에서 정의됨 */
+
+/* Django admin 기본 컬러 스킴 완전 제거 */
+.colMS,
+.colM,
+.colSM {
+  background: transparent !important;
+}
+
+/* 모든 입력 요소 배경 */
+input,
+select,
+textarea {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* Django admin 기본 폰트 색상 오버라이드 */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--brand-800) !important;
+}
+
+/* 기존 필터 스타일 제거 (위에서 재정의됨) */
+
+/* 체크박스 라벨 */
+.vCheckboxLabel {
+  color: var(--text) !important;
+}
+
+/* Django 기본 정보 메시지 */
+.info,
+.warning,
+.success {
+  border-radius: 0 !important;
+  padding: 8px 0 8px 10px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-left: 3px solid currentColor !important;
+}
+
+/* 페이지 타이틀과 object-tools 영역 */
+#content {
+  position: relative !important;
+}
+
+#content > h1 {
+  color: var(--brand-800) !important;
+  font-weight: 800 !important;
+  margin: 0 0 20px 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* h1과 object-tools가 같은 줄에 있을 때 */
+.object-tools {
+  position: absolute !important;
+  right: 24px !important;
+  top: 20px !important;
+  z-index: 11 !important;
+}
+
+/* changelist 페이지에서 object-tools 위치 조정 */
+.change-list .object-tools {
+  top: 20px !important;
+  right: 24px !important;
+}
+
+/* 인라인 헤더 */
+.inline-related h2,
+.inline-group .tabular tr.has_original td {
+  background: var(--surface-2) !important;
+  color: var(--brand-800) !important;
+}
+
+/* 드롭다운 메뉴 */
+select option {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* 모든 테이블 셀 기본 */
+table {
+  background: var(--surface) !important;
+}
+
+table th,
+table td {
+  background: transparent !important;
+}
+
+/* 액티브 요소 */
+:focus {
+  outline-color: var(--brand) !important;
+}
+
+/* Django admin 기본 회색 배경 제거 */
+.module,
+.inline-group,
+fieldset {
+  background: var(--surface) !important;
+}
+
+/* 모든 텍스트 입력의 placeholder */
+::placeholder {
+  color: var(--muted) !important;
+  opacity: 0.6;
+}
+
+/* ===== 추가 Django admin 요소 완전 오버라이드 ===== */
+
+/* 팝업 창 */
+body.popup {
+  background: var(--surface) !important;
+}
+
+.popup #content {
+  background: var(--surface) !important;
+}
+
+.popup #header {
+  background: var(--brand) !important;
+}
+
+/* 자동완성 위젯 */
+.select2-container--admin-autocomplete .select2-selection--single,
+.select2-container--admin-autocomplete .select2-selection--multiple {
+  background: var(--surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  color: var(--text) !important;
+}
+
+.select2-container--admin-autocomplete .select2-results__option--highlighted {
+  background: rgba(49, 170, 96, 0.1) !important;
+  color: var(--brand-800) !important;
+}
+
+.select2-container--admin-autocomplete .select2-results__option[aria-selected=true] {
+  background: rgba(49, 170, 96, 0.15) !important;
+  color: var(--brand-800) !important;
+}
+
+.select2-dropdown {
+  background: var(--surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 4px !important;
+}
+
+.select2-search--dropdown .select2-search__field {
+  background: var(--surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  color: var(--text) !important;
+}
+
+/* 인라인 탭 */
+.inline-group .tabular thead th,
+.inline-group .tabular tbody td {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+.inline-group .tabular tr.add-row td {
+  background: var(--surface-2) !important;
+}
+
+/* 삭제된 인라인 항목 */
+.inline-deletelink {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  color: #dc2626 !important;
+  text-decoration: none !important;
+  font-size: 13px !important;
+}
+
+.inline-deletelink:hover {
+  text-decoration: underline !important;
+}
+
+/* 검색 결과 하이라이트 */
+.searchresult {
+  background: transparent !important;
+  padding: 0;
+  border-radius: 0;
+  font-weight: 600;
+  color: var(--brand-800) !important;
+  text-decoration: underline;
+}
+
+/* 비밀번호 필드 */
+.vPasswordField {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* URL 필드 */
+.vURLField {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* 텍스트 필드 */
+.vTextField,
+.vLargeTextField {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* 날짜 필드 */
+.vDateField,
+.vTimeField,
+.vDateTimeField {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* 외래키 원본 링크 */
+.related-lookup {
+  background: transparent !important;
+  border: 1px solid var(--admin-border) !important;
+}
+
+.related-lookup:hover {
+  background: var(--surface-2) !important;
+  border-color: var(--brand) !important;
+}
+
+/* 변경 폼 탭 */
+.change-form .submit-row {
+  background: var(--surface-2) !important;
+  border-top: 1px solid var(--admin-border) !important;
+}
+
+/* 폼셋 추가/삭제 버튼 */
+.inline-group .add-row a::before {
+  content: "+ ";
+  font-weight: 700;
+}
+
+/* 드래그 핸들 */
+.drag-handle {
+  cursor: move;
+  color: var(--muted) !important;
+}
+
+/* 접을 수 있는 필드셋 */
+.collapse.collapsed {
+  background: transparent !important;
+}
+
+fieldset.collapse h2 {
+  background: transparent !important;
+  color: var(--brand-800) !important;
+}
+
+/* 도움말 아이콘 */
+.help-icon {
+  color: var(--brand) !important;
+}
+
+/* 빈 폼 */
+.empty-form {
+  display: none !important;
+}
+
+/* 필수 필드 표시 */
+.required::after,
+label.required::after {
+  content: " *";
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* 사용자 도구 드롭다운 */
+#user-tools {
+  color: #ffffff !important;
+}
+
+#user-tools a {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+#user-tools a:hover {
+  color: #ffffff !important;
+}
+
+/* 모듈 내용 */
+.module .form-row {
+  background: transparent !important;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.module .form-row:last-child {
+  border-bottom: 0;
+}
+
+/* 모듈 내 필드 */
+.module .form-row label {
+  color: var(--text) !important;
+  font-weight: 600;
+}
+
+.module .form-row .help,
+.module .form-row .helptext {
+  color: var(--muted) !important;
+}
+
+/* 변경 목록 툴바 */
+#toolbar {
+  background: var(--surface-2) !important;
+}
+
+/* 검색 아이콘/버튼 */
+#toolbar form input[type="submit"],
+#changelist-search input[type="submit"] {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+}
+
+#toolbar form input[type="submit"]:hover,
+#changelist-search input[type="submit"]:hover {
+  background: var(--brand-700) !important;
+}
+
+/* 액션 Go 버튼 */
+.actions button[type="submit"],
+.actions input[type="submit"] {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+}
+
+.actions button[type="submit"]:hover,
+.actions input[type="submit"]:hover {
+  background: var(--brand-700) !important;
+}
+
+/* 체크박스 */
+input[type="checkbox"]:checked {
+  accent-color: var(--brand) !important;
+}
+
+/* 라디오 버튼 */
+input[type="radio"]:checked {
+  accent-color: var(--brand) !important;
+}
+
+/* 범위 입력 */
+input[type="range"] {
+  accent-color: var(--brand) !important;
+}
+
+/* 진행 표시줄 */
+progress {
+  accent-color: var(--brand) !important;
+}
+
+/* 스크롤바 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(49, 170, 96, 0.3);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(49, 170, 96, 0.5);
+}
+
+/* 선택 영역 */
+::selection {
+  background: rgba(49, 170, 96, 0.2);
+  color: var(--text);
+}
+
+::-moz-selection {
+  background: rgba(49, 170, 96, 0.2);
+  color: var(--text);
+}
+
+/* 로딩 상태 */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* 비활성화 상태 */
+:disabled,
+[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+/* 숨김 요소 */
+.hidden {
+  display: none !important;
+}
+
+/* 시각적으로만 숨김 (접근성) */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* 포커스 표시 */
+:focus-visible {
+  outline: 2px solid var(--brand) !important;
+  outline-offset: 2px !important;
+}
+
+/* 호버 가능한 요소 */
+@media (hover: hover) {
+  button:hover,
+  a:hover,
+  .button:hover {
+    transition: all 0.2s ease;
+  }
+}
+
+/* 애니메이션 감소 선호 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

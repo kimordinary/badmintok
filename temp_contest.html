@@ -1,0 +1,1606 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>배드민톡 - 전국 배드민턴 대회</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <meta name="theme-color" content="#31AA60">
+    
+<!-- 모바일 오버레이 완전 비활성화 -->
+<style>
+    /* 모바일 오버레이 완전히 제거 */
+    @media (max-width: 1024px) {
+        #mobileMenuOverlay,
+        #mobileMenuOverlay.active,
+        .mobile-menu-overlay,
+        .mobile-menu-overlay.active {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+        }
+
+        #mobileMenu,
+        #mobileMenu.active,
+        .mobile-menu,
+        .mobile-menu.active {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transform: translateX(-100%) !important;
+        }
+
+        /* body와 main은 항상 클릭 가능 */
+        body {
+            overflow: auto !important;
+            pointer-events: auto !important;
+        }
+
+        main {
+            pointer-events: auto !important;
+            position: relative !important;
+        }
+    }
+</style>
+<script>
+(function() {
+    'use strict';
+
+    // 모바일 감지
+    function isMobile() {
+        return window.matchMedia("(max-width: 1024px)").matches;
+    }
+
+    if (!isMobile()) return; // 데스크톱에서는 실행하지 않음
+
+    // 오버레이 제거 함수
+    function removeOverlay() {
+        const overlay = document.getElementById('mobileMenuOverlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            overlay.style.display = 'none';
+        }
+
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenu) {
+            mobileMenu.classList.remove('active');
+        }
+
+        if (document.body) {
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // base.html의 모바일 메뉴 함수 무력화
+    function disableMobileMenu() {
+        // 즉시 오버레이 제거
+        removeOverlay();
+
+        // base.html의 함수들을 빈 함수로 덮어쓰기
+        window.openMobileMenu = function() { removeOverlay(); };
+        window.closeMobileMenu = function() { removeOverlay(); };
+
+        // 모바일 메뉴 토글 버튼 이벤트 차단
+        const toggle = document.getElementById('mobileMenuToggle');
+        if (toggle) {
+            // 기존 이벤트 제거를 위해 복제
+            const newToggle = toggle.cloneNode(true);
+            if (toggle.parentNode) {
+                toggle.parentNode.replaceChild(newToggle, toggle);
+            }
+            // 빈 핸들러 등록 (가장 먼저 실행되도록 capture phase 사용)
+            newToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                removeOverlay();
+                return false;
+            }, true);
+        }
+    }
+
+    // 즉시 실행
+    disableMobileMenu();
+
+    // DOM 로드 후에도 실행
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', disableMobileMenu);
+    } else {
+        disableMobileMenu();
+    }
+
+    // 약간의 지연 후에도 실행 (base.html 스크립트가 나중에 로드될 수 있음)
+    setTimeout(disableMobileMenu, 100);
+    setTimeout(disableMobileMenu, 500);
+})();
+</script>
+
+    <!-- 모바일 오버레이 클릭 차단 방지 유틸리티 (가장 먼저 로드) -->
+    <script src="/static/js/mobile-overlay-fix.js"></script>
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <!-- 모바일 햄버거 메뉴 버튼 -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="메뉴 열기" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
+            <a class="logo" href="/" aria-label="Badmintok Home">Badmintok</a>
+
+            <nav class="main-nav" aria-label="주요 카테고리">
+                <ul>
+                    <li><a class="active" href="/contest/">전국 배드민턴 대회</a></li>
+                    <li><a class="" href="/badmintok/">배드민톡</a></li>
+                    <li><a class="" href="/member-reviews/">동호인 리뷰</a></li>
+                    <li><a class="" href="/community/">커뮤니티</a></li>
+                    <li><a class="" href="/band/">웹민턴</a></li>
+                </ul>
+            </nav>
+
+            <div class="auth-actions">
+                
+                    <a class="btn btn-ghost mobile-login-btn" href="/accounts/login/">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </a>
+                    <a class="btn btn-ghost" href="/accounts/login/">로그인</a>
+                    <a class="btn btn-primary" href="/accounts/signup/">회원가입</a>
+                
+            </div>
+        </div>
+    </header>
+
+    <!-- 모바일 메뉴 오버레이 -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+    <!-- 모바일 사이드 메뉴 -->
+    <nav class="mobile-menu" id="mobileMenu" aria-label="모바일 메뉴">
+        <div class="mobile-menu-header">
+            <span class="mobile-menu-title">메뉴</span>
+            <button class="mobile-menu-close" id="mobileMenuClose" aria-label="메뉴 닫기">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="mobile-menu-user">
+            
+                <div class="mobile-auth-buttons">
+                    <a href="/accounts/login/" class="btn btn-primary btn-block">로그인</a>
+                    <a href="/accounts/signup/" class="btn btn-outline btn-block">회원가입</a>
+                </div>
+            
+        </div>
+
+        <ul class="mobile-menu-list">
+            <li>
+                <a href="/" class="mobile-menu-item ">
+                    <span class="mobile-menu-icon">🏠</span>
+                    <span class="mobile-menu-text">홈</span>
+                </a>
+            </li>
+            <li>
+                <a href="/contest/" class="mobile-menu-item active">
+                    <span class="mobile-menu-icon">🏆</span>
+                    <span class="mobile-menu-text">전국 배드민턴 대회</span>
+                </a>
+            </li>
+            <li>
+                <a href="/badmintok/" class="mobile-menu-item ">
+                    <span class="mobile-menu-icon">📰</span>
+                    <span class="mobile-menu-text">배드민톡</span>
+                </a>
+            </li>
+            <li>
+                <a href="/member-reviews/" class="mobile-menu-item ">
+                    <span class="mobile-menu-icon">⭐</span>
+                    <span class="mobile-menu-text">동호인 리뷰</span>
+                </a>
+            </li>
+            <li>
+                <a href="/community/" class="mobile-menu-item ">
+                    <span class="mobile-menu-icon">💬</span>
+                    <span class="mobile-menu-text">커뮤니티</span>
+                </a>
+            </li>
+            <li>
+                <a href="/band/" class="mobile-menu-item ">
+                    <span class="mobile-menu-icon">👥</span>
+                    <span class="mobile-menu-text">웹민턴</span>
+                </a>
+            </li>
+        </ul>
+
+        
+    </nav>
+
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    
+
+    <main>
+        
+<section class="section" aria-labelledby="contest-title">
+    <div class="container" style="margin-top: 0;">
+        <!-- 카테고리 필터 탭 -->
+        <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+            <button class="community-tab contest-tab-btn active" role="tab" aria-selected="true" data-target="all">
+                전체
+            </button>
+            
+                <button class="community-tab contest-tab-btn" role="tab" aria-selected="false" data-target="category-1">
+                    전국
+                </button>
+            
+                <button class="community-tab contest-tab-btn" role="tab" aria-selected="false" data-target="category-2">
+                    지역
+                </button>
+            
+        </div>
+        <!-- 웹 캘린더 섹션 -->
+        <div class="calendar-section desktop-only">
+            <div class="contest-panels-calendar">
+                <div class="contest-panel-calendar active" id="contest-panel-calendar-all" role="tabpanel">
+                    <div class="calendar-controls">
+                        <span class="calendar-title" id="calendarTitle">2025년 1월</span>
+                        <div>
+                            <select class="calendar-select" id="calendarYear" aria-label="년도 선택">
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                            <select class="calendar-select" id="calendarMonth" aria-label="월 선택">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="calendar" id="calendarContainer">
+                        <table aria-live="polite">
+                            <thead>
+                                <tr>
+                                    <th scope="col">월</th>
+                                    <th scope="col">화</th>
+                                    <th scope="col">수</th>
+                                    <th scope="col">목</th>
+                                    <th scope="col">금</th>
+                                    <th scope="col">토</th>
+                                    <th scope="col">일</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarGrid"></tbody>
+                        </table>
+                        <div class="calendar-banner-layer"></div>
+                    </div>
+                </div>
+                
+                <div class="contest-panel-calendar" id="contest-panel-calendar-category-1" role="tabpanel">
+                    <div class="calendar-controls">
+                        <span class="calendar-title" id="calendarTitle-category-1">2025년 1월</span>
+                        <div>
+                            <select class="calendar-select" id="calendarYear-category-1" aria-label="년도 선택">
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                            <select class="calendar-select" id="calendarMonth-category-1" aria-label="월 선택">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="calendar" id="calendarContainer-category-1">
+                        <table aria-live="polite">
+                            <thead>
+                                <tr>
+                                    <th scope="col">월</th>
+                                    <th scope="col">화</th>
+                                    <th scope="col">수</th>
+                                    <th scope="col">목</th>
+                                    <th scope="col">금</th>
+                                    <th scope="col">토</th>
+                                    <th scope="col">일</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarGrid-category-1"></tbody>
+                        </table>
+                        <div class="calendar-banner-layer"></div>
+                    </div>
+                </div>
+                
+                <div class="contest-panel-calendar" id="contest-panel-calendar-category-2" role="tabpanel">
+                    <div class="calendar-controls">
+                        <span class="calendar-title" id="calendarTitle-category-2">2025년 1월</span>
+                        <div>
+                            <select class="calendar-select" id="calendarYear-category-2" aria-label="년도 선택">
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                            <select class="calendar-select" id="calendarMonth-category-2" aria-label="월 선택">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="calendar" id="calendarContainer-category-2">
+                        <table aria-live="polite">
+                            <thead>
+                                <tr>
+                                    <th scope="col">월</th>
+                                    <th scope="col">화</th>
+                                    <th scope="col">수</th>
+                                    <th scope="col">목</th>
+                                    <th scope="col">금</th>
+                                    <th scope="col">토</th>
+                                    <th scope="col">일</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarGrid-category-2"></tbody>
+                        </table>
+                        <div class="calendar-banner-layer"></div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- 대회 목록 섹션 -->
+        <div class="contest-list-section">
+            <div class="contest-panels-list">
+                <div class="contest-panel-list active" id="contest-panel-list-all" role="tabpanel">
+                    <div class="contest-list">
+                        
+                            <div class="contest-post-list">
+                                
+                                    <a href="/contest/test/" class="contest-post-item">
+                                        <div class="contest-post-image">
+                                            
+                                                <img src="/media/contest_images/poster_69083affed9d7_m_kle1aJz.jpg" alt="테스트 대회" class="contest-post-thumbnail">
+                                            
+                                        </div>
+                                        <div class="contest-post-content">
+                                            <div class="contest-post-header">
+                                                
+                                                    <span class="contest-post-category" style="--badge-color: #3CAE68">지역</span>
+                                                
+                                                
+                                                    <span class="contest-post-category contest-post-category-qualifying">승급</span>
+                                                
+                                            </div>
+                                            <h3 class="contest-post-title">테스트 대회</h3>
+                                            <div class="contest-post-meta">
+                                                <div class="contest-post-info">일정 : 2025.12.20 ~ 2025.12.21</div>
+                                                <div class="contest-post-info">장소 : 테스트 입니다.</div>
+                                                <div class="contest-post-info">접수 마감 : 2025.12.19</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                
+                                    <a href="/contest/contest/" class="contest-post-item">
+                                        <div class="contest-post-image">
+                                            
+                                                <img src="/media/contest_images/poster_69083affed9d7_m_nm70167.jpg" alt="창원시 협회장기 배드민턴 대회" class="contest-post-thumbnail">
+                                            
+                                        </div>
+                                        <div class="contest-post-content">
+                                            <div class="contest-post-header">
+                                                
+                                                    <span class="contest-post-category" style="--badge-color: #3CAE68">지역</span>
+                                                
+                                                
+                                                    <span class="contest-post-category contest-post-category-non-qualifying">비승급</span>
+                                                
+                                            </div>
+                                            <h3 class="contest-post-title">창원시 협회장기 배드민턴 대회</h3>
+                                            <div class="contest-post-meta">
+                                                <div class="contest-post-info">일정 : 2025.12.20 ~ 2025.12.21</div>
+                                                <div class="contest-post-info">장소 : 창원 축구센터</div>
+                                                <div class="contest-post-info">접수 마감 : 2025.12.15</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                
+                                    <a href="/contest/badminton-contest/" class="contest-post-item">
+                                        <div class="contest-post-image">
+                                            
+                                                <img src="/media/contest_images/poster_69083affed9d7_m_OawFTmp.jpg" alt="엔드라인 슈퍼루키 대잔치" class="contest-post-thumbnail">
+                                            
+                                        </div>
+                                        <div class="contest-post-content">
+                                            <div class="contest-post-header">
+                                                
+                                                    <span class="contest-post-category" style="--badge-color: #2980b9">전국</span>
+                                                
+                                                
+                                                    <span class="contest-post-category contest-post-category-qualifying">승급</span>
+                                                
+                                            </div>
+                                            <h3 class="contest-post-title">엔드라인 슈퍼루키 대잔치</h3>
+                                            <div class="contest-post-meta">
+                                                <div class="contest-post-info">일정 : 2025.12.20 ~ 2025.12.21</div>
+                                                <div class="contest-post-info">장소 : 고성종합체육관</div>
+                                                <div class="contest-post-info">접수 마감 : 2025.12.17</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                
+                            </div>
+                        
+                    </div>
+                </div>
+                
+                <div class="contest-panel-list" id="contest-panel-list-category-1" role="tabpanel">
+                    <!-- 모바일용 대회 리스트 -->
+                    <div class="contest-list mobile-only">
+                        <div class="contest-post-list" data-category-id="1">
+                            
+                                
+                            
+                                
+                            
+                                
+                                <a href="/contest/badminton-contest/" class="contest-post-item">
+                                    <div class="contest-post-image">
+                                        
+                                            <img src="/media/contest_images/poster_69083affed9d7_m_OawFTmp.jpg" alt="엔드라인 슈퍼루키 대잔치" class="contest-post-thumbnail">
+                                        
+                                    </div>
+                                    <div class="contest-post-content">
+                                        <div class="contest-post-header">
+                                            <span class="contest-post-category" style="--badge-color: #2980b9">전국</span>
+                                            
+                                                <span class="contest-post-category contest-post-category-qualifying">승급</span>
+                                            
+                                        </div>
+                                        <h3 class="contest-post-title">엔드라인 슈퍼루키 대잔치</h3>
+                                        <div class="contest-post-meta">
+                                            <div class="contest-post-info">일정 : 2025.12.20 ~ 2025.12.21</div>
+                                            <div class="contest-post-info">장소 : 고성종합체육관</div>
+                                            <div class="contest-post-info">접수 마감 : 2025.12.17</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                
+                            
+                        </div>
+                        <div class="empty-message" style="padding: 48px; text-align: center; color: #64748b; display: none;">
+                            <p>해당 카테고리의 대회 정보가 없습니다.</p>
+                        </div>
+                    </div>
+                    <!-- 데스크톱용 테이블 -->
+                    <div class="contest-table-wrapper desktop-only" aria-labelledby="contestTitle">
+                        <table class="contest-table" id="contestTable-category-1">
+                            <thead>
+                                <tr>
+                                    <th scope="col">분류</th>
+                                    <th scope="col">포스터</th>
+                                    <th scope="col">대회명</th>
+                                    <th scope="col">일정</th>
+                                    <th scope="col">장소</th>
+                                    <th scope="col">참가상품</th>
+                                    <th scope="col">스폰서</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contestTableBody-category-1">
+                                <tr>
+                                    <td colspan="7" class="empty-state">해당 카테고리의 대회 정보가 없습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="contest-panel-list" id="contest-panel-list-category-2" role="tabpanel">
+                    <!-- 모바일용 대회 리스트 -->
+                    <div class="contest-list mobile-only">
+                        <div class="contest-post-list" data-category-id="2">
+                            
+                                
+                                <a href="/contest/test/" class="contest-post-item">
+                                    <div class="contest-post-image">
+                                        
+                                            <img src="/media/contest_images/poster_69083affed9d7_m_kle1aJz.jpg" alt="테스트 대회" class="contest-post-thumbnail">
+                                        
+                                    </div>
+                                    <div class="contest-post-content">
+                                        <div class="contest-post-header">
+                                            <span class="contest-post-category" style="--badge-color: #3CAE68">지역</span>
+                                            
+                                                <span class="contest-post-category contest-post-category-qualifying">승급</span>
+                                            
+                                        </div>
+                                        <h3 class="contest-post-title">테스트 대회</h3>
+                                        <div class="contest-post-meta">
+                                            <div class="contest-post-info">일정 : 2025.12.20 ~ 2025.12.21</div>
+                                            <div class="contest-post-info">장소 : 테스트 입니다.</div>
+                                            <div class="contest-post-info">접수 마감 : 2025.12.19</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                
+                            
+                                
+                                <a href="/contest/contest/" class="contest-post-item">
+                                    <div class="contest-post-image">
+                                        
+                                            <img src="/media/contest_images/poster_69083affed9d7_m_nm70167.jpg" alt="창원시 협회장기 배드민턴 대회" class="contest-post-thumbnail">
+                                        
+                                    </div>
+                                    <div class="contest-post-content">
+                                        <div class="contest-post-header">
+                                            <span class="contest-post-category" style="--badge-color: #3CAE68">지역</span>
+                                            
+                                                <span class="contest-post-category contest-post-category-non-qualifying">비승급</span>
+                                            
+                                        </div>
+                                        <h3 class="contest-post-title">창원시 협회장기 배드민턴 대회</h3>
+                                        <div class="contest-post-meta">
+                                            <div class="contest-post-info">일정 : 2025.12.20 ~ 2025.12.21</div>
+                                            <div class="contest-post-info">장소 : 창원 축구센터</div>
+                                            <div class="contest-post-info">접수 마감 : 2025.12.15</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                
+                            
+                                
+                            
+                        </div>
+                        <div class="empty-message" style="padding: 48px; text-align: center; color: #64748b; display: none;">
+                            <p>해당 카테고리의 대회 정보가 없습니다.</p>
+                        </div>
+                    </div>
+                    <!-- 데스크톱용 테이블 -->
+                    <div class="contest-table-wrapper desktop-only" aria-labelledby="contestTitle">
+                        <table class="contest-table" id="contestTable-category-2">
+                            <thead>
+                                <tr>
+                                    <th scope="col">분류</th>
+                                    <th scope="col">포스터</th>
+                                    <th scope="col">대회명</th>
+                                    <th scope="col">일정</th>
+                                    <th scope="col">장소</th>
+                                    <th scope="col">참가상품</th>
+                                    <th scope="col">스폰서</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contestTableBody-category-2">
+                                <tr>
+                                    <td colspan="7" class="empty-state">해당 카테고리의 대회 정보가 없습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* 대회 리스트 스타일 (커뮤니티 포스트 아이템과 동일) */
+    .contest-post-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 24px;
+    }
+
+    .contest-post-list:empty {
+        display: none;
+    }
+
+    .contest-post-item {
+        display: flex;
+        gap: 24px;
+        padding: 16px;
+        background: #fff;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        align-items: center;
+        cursor: pointer;
+        pointer-events: auto;
+        touch-action: manipulation;
+    }
+
+    .contest-post-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .contest-post-item:active {
+        transform: scale(0.98);
+    }
+
+    .contest-post-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .contest-post-header {
+        margin-bottom: 4px;
+    }
+
+    .contest-post-category {
+        display: inline-block;
+        padding: 4px 10px;
+        background: var(--badge-color, var(--brand));
+        color: #ffffff;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .contest-post-category-qualifying {
+        background: #3b82f6 !important;
+        color: #ffffff;
+    }
+
+    .contest-post-category-non-qualifying {
+        background: #64748b !important;
+        color: #ffffff;
+    }
+
+    .contest-post-title {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.1;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .contest-post-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 0;
+    }
+
+    .contest-post-info {
+        font-size: 14px;
+        color: #64748b;
+        line-height: 1.4;
+    }
+
+    .contest-post-image {
+        width: 100px;
+        height: 120px;
+        min-width: 100px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f1f5f9;
+        flex-shrink: 0;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .contest-post-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center center;
+        display: block;
+        background: white;
+    }
+
+    .contest-post-no-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 12px;
+        background: #f8fafc;
+    }
+
+    .contest-tab-btn {
+        display: inline-block;
+        padding: 12px 20px;
+        text-decoration: none;
+        color: #64748b;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: inherit;
+        font-family: inherit;
+        border-radius: 0;
+    }
+
+    .contest-tab-btn:hover {
+        border-bottom-color: var(--brand);
+    }
+
+    .contest-tab-btn.active {
+        color: var(--brand) !important;
+        border-bottom: 2px solid var(--brand) !important;
+        font-weight: 600;
+    }
+
+    /* 캘린더 섹션과 리스트 섹션 분리 */
+    .calendar-section {
+        margin-bottom: 48px;
+    }
+
+    .contest-list-section {
+        margin-top: 48px;
+    }
+
+    .contest-panels-calendar .contest-panel-calendar,
+    .contest-panels-list .contest-panel-list {
+        display: none;
+    }
+
+    .contest-panels-calendar .contest-panel-calendar.active,
+    .contest-panels-list .contest-panel-list.active {
+        display: block;
+    }
+
+    .mobile-only {
+        display: none;
+    }
+
+    .contest-list {
+        width: 100%;
+    }
+
+    /* 데스크톱에서 웹 캘린더 강제 표시 */
+    @media (min-width: 769px) {
+        .desktop-only,
+        .calendar-section {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .calendar,
+        .calendar-banner-layer,
+        .calendar-event-banner {
+            display: block !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
+
+        /* 패널은 active 클래스가 있을 때만 표시 */
+        .contest-panels-calendar .contest-panel-calendar.active {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .mobile-only {
+            display: none !important;
+        }
+    }
+
+    /* 모바일/태블릿 레이아웃 */
+    @media (max-width: 1024px) {
+        .mobile-only {
+            display: block !important;
+        }
+
+        .contest-list {
+            display: block;
+            width: 100%;
+        }
+
+        .contest-post-list {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+        }
+
+        /* 모바일에서 패널 표시 규칙 */
+        .contest-panels-list .contest-panel-list {
+            display: none !important;
+        }
+
+        .contest-panels-list .contest-panel-list.active {
+            display: block !important;
+        }
+
+        /* 모바일 대회 포스트 레이아웃 최적화 */
+        .contest-post-item {
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .contest-post-image {
+            width: 100%;
+            height: 180px;
+            min-width: unset;
+        }
+
+        .contest-post-title {
+            font-size: 17px;
+            -webkit-line-clamp: 2;
+        }
+
+        .contest-post-meta {
+            font-size: 13px;
+        }
+
+        .contest-post-info {
+            font-size: 13px;
+        }
+
+        /* 탭 버튼 스크롤 가능하게 */
+        .community-tabs {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            white-space: nowrap;
+        }
+
+        .contest-tab-btn {
+            white-space: nowrap;
+        }
+
+        .contest-list-section {
+            margin-top: 0;
+        }
+    }
+
+    /* 아주 작은 모바일 화면 */
+    @media (max-width: 480px) {
+        .contest-post-title {
+            font-size: 16px;
+        }
+
+        .contest-post-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .contest-tab-btn {
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+    }
+</style>
+
+    </main>
+
+    <footer class="site-footer" aria-labelledby="footer-title">
+        <div class="container footer-grid">
+            <div>
+                <h3 id="footer-title">배드민톡</h3>
+                <p class="muted">온라인 배드민턴장, 동호인 No.1 커뮤니티</p>
+            </div>
+            <div>
+                <h4>서비스</h4>
+                <ul>
+                    <li><a href="/contest/">전국 배드민턴 대회</a></li>
+                    <li><a href="/community/">커뮤니티</a></li>
+                    <li><a href="/band/">웹민턴</a></li>
+                    <li><a href="/badmintok/">배드민톡</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>고객지원</h4>
+                <ul>
+                    <li><a href="#">공지사항</a></li>
+                    <li><a href="#">문의하기</a></li>
+                    <li><a href="#">이용약관</a></li>
+                    <li><a href="#">개인정보처리방침</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>팔로우</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">YouTube</a></li>
+                    <li><a href="#">Facebook</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <small>© 2025 Badmintok. All rights reserved.</small>
+            </div>
+        </div>
+    </footer>
+
+    
+<script>
+(function() {
+    'use strict';
+
+    // 전역 에러 핸들러 - Promise 오류 처리
+    window.addEventListener('unhandledrejection', function(event) {
+        // 외부 스크립트 오류는 무시
+        if (event.reason && typeof event.reason === 'string' &&
+            (event.reason.includes('contents.js') ||
+             event.reason.includes('main_pack') ||
+             event.reason.includes('nx_right_related_keywords'))) {
+            event.preventDefault();
+            return;
+        }
+        // 우리 코드의 오류만 로깅
+        console.error('Unhandled promise rejection:', event.reason);
+    });
+
+    // 전역 에러 핸들러 - 일반 오류 처리
+    window.addEventListener('error', function(event) {
+        // 외부 스크립트 오류는 무시
+        if (event.filename && (
+            event.filename.includes('contents.js') ||
+            event.filename.includes('search-layer.ts') ||
+            event.message.includes('main_pack') ||
+            event.message.includes('nx_right_related_keywords')
+        )) {
+            event.preventDefault();
+            return;
+        }
+    }, true);
+
+    // 모바일 감지 함수
+    function checkMobile() {
+        return window.matchMedia("(max-width: 1024px)").matches;
+    }
+    let isMobile = checkMobile();
+
+    // 모바일 전용 탭 핸들러
+    function initMobileTabs() {
+        if (!isMobile) return;
+
+        const tabButtons = document.querySelectorAll(".contest-tab-btn");
+        if (!tabButtons.length) return;
+
+        tabButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                const target = button.getAttribute('data-target');
+                if (!target) return;
+
+                // 모든 탭 버튼 업데이트
+                const allTabs = document.querySelectorAll(".contest-tab-btn");
+                allTabs.forEach(function(btn) {
+                    const isActive = btn === button;
+                    btn.classList.toggle("active", isActive);
+                    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+                });
+
+                // 리스트 패널만 업데이트
+                const listPanels = document.querySelectorAll(".contest-panel-list");
+                listPanels.forEach(function(panel) {
+                    const isActive = panel.id === "contest-panel-list-" + target;
+                    panel.classList.toggle("active", isActive);
+                });
+            });
+        });
+    }
+
+    // 모바일에서 탭 초기화
+    if (isMobile) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileTabs);
+        } else {
+            initMobileTabs();
+        }
+    }
+
+    // 데스크톱: 전체 기능 (모바일에서는 실행하지 않음)
+    if (!isMobile) {
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabButtons = document.querySelectorAll(".contest-tab-btn");
+
+            // 모든 대회 데이터 로드 및 준비
+            const contestData = JSON.parse("[{\u0022title\u0022: \u0022\u005Cud14c\u005Cuc2a4\u005Cud2b8 \u005Cub300\u005Cud68c\u0022, \u0022slug\u0022: \u0022test\u0022, \u0022schedule_start\u0022: \u00222025\u002D12\u002D20\u0022, \u0022schedule_end\u0022: \u00222025\u002D12\u002D21\u0022, \u0022period_display\u0022: \u00222025.12.20 ~ 2025.12.21\u0022, \u0022location\u0022: \u0022\u005Cud14c\u005Cuc2a4\u005Cud2b8 \u005Cuc785\u005Cub2c8\u005Cub2e4.\u0022, \u0022image_url\u0022: \u0022/media/contest_images/poster_69083affed9d7_m_kle1aJz.jpg\u0022, \u0022participant_reward\u0022: \u0022\u005Cud14c\u005Cuc2a4\u005Cud2b8 \u005Cuc785\u005Cub2c8\u005Cub2e4.\u0022, \u0022sponsor\u0022: \u0022\u005Cud14c\u005Cuc2a4\u005Cud2b8 \u005Cuc785\u005Cub2c8\u005Cub2e4.\u0022, \u0022category\u0022: {\u0022id\u0022: 2, \u0022name\u0022: \u0022\u005Cuc9c0\u005Cuc5ed\u0022, \u0022color\u0022: \u0022#3CAE68\u0022}}, {\u0022title\u0022: \u0022\u005Cucc3d\u005Cuc6d0\u005Cuc2dc \u005Cud611\u005Cud68c\u005Cuc7a5\u005Cuae30 \u005Cubc30\u005Cub4dc\u005Cubbfc\u005Cud134 \u005Cub300\u005Cud68c\u0022, \u0022slug\u0022: \u0022contest\u0022, \u0022schedule_start\u0022: \u00222025\u002D12\u002D20\u0022, \u0022schedule_end\u0022: \u00222025\u002D12\u002D21\u0022, \u0022period_display\u0022: \u00222025.12.20 ~ 2025.12.21\u0022, \u0022location\u0022: \u0022\u005Cucc3d\u005Cuc6d0 \u005Cucd95\u005Cuad6c\u005Cuc13c\u005Cud130\u0022, \u0022image_url\u0022: \u0022/media/contest_images/poster_69083affed9d7_m_nm70167.jpg\u0022, \u0022participant_reward\u0022: \u0022\u005Cuc591\u005Cub9d0\u0022, \u0022sponsor\u0022: \u0022\u005Cuc694\u005Cub125\u005Cuc2a4\u0022, \u0022category\u0022: {\u0022id\u0022: 2, \u0022name\u0022: \u0022\u005Cuc9c0\u005Cuc5ed\u0022, \u0022color\u0022: \u0022#3CAE68\u0022}}, {\u0022title\u0022: \u0022\u005Cuc5d4\u005Cub4dc\u005Cub77c\u005Cuc778 \u005Cuc288\u005Cud37c\u005Cub8e8\u005Cud0a4 \u005Cub300\u005Cuc794\u005Cuce58\u0022, \u0022slug\u0022: \u0022badminton\u002Dcontest\u0022, \u0022schedule_start\u0022: \u00222025\u002D12\u002D20\u0022, \u0022schedule_end\u0022: \u00222025\u002D12\u002D21\u0022, \u0022period_display\u0022: \u00222025.12.20 ~ 2025.12.21\u0022, \u0022location\u0022: \u0022\u005Cuace0\u005Cuc131\u005Cuc885\u005Cud569\u005Cuccb4\u005Cuc721\u005Cuad00\u0022, \u0022image_url\u0022: \u0022/media/contest_images/poster_69083affed9d7_m_OawFTmp.jpg\u0022, \u0022participant_reward\u0022: \u0022\u005Cud0c0\u005Cuc6d4\u0022, \u0022sponsor\u0022: \u0022\u005Cuc694\u005Cub125\u005Cuc2a4\u0022, \u0022category\u0022: {\u0022id\u0022: 1, \u0022name\u0022: \u0022\u005Cuc804\u005Cuad6d\u0022, \u0022color\u0022: \u0022#2980b9\u0022}}]");
+
+        const parseLocalDate = (value) => {
+            if (!value) return null;
+            const parts = value.split('-').map(Number);
+            if (parts.length !== 3) return null;
+            const [y, m, d] = parts;
+            return new Date(y, m - 1, d);
+        };
+
+        const allContestData = contestData
+            .map((contest) => {
+                const start = parseLocalDate(contest.schedule_start);
+                const end = parseLocalDate(contest.schedule_end) || start;
+                if (!start || !end || end < start) {
+                    return null;
+                }
+                return {
+                    ...contest,
+                    schedule_start: start,
+                    schedule_end: end,
+                };
+            })
+            .filter(Boolean);
+
+        // 카테고리 ID로 필터링하는 함수
+        function filterContestsByCategory(contests, categoryId) {
+            if (!categoryId || categoryId === 'all') {
+                return contests;
+            }
+            const categoryIdNum = parseInt(categoryId.replace('category-', ''), 10);
+            return contests.filter((contest) => {
+                return contest.category && contest.category.id === categoryIdNum;
+            });
+        }
+
+        // 범용 달력 렌더링 함수
+        function renderCalendar(panelId, year, month, filteredContests) {
+            const calendarTitle = panelId === 'all'
+                ? document.getElementById("calendarTitle")
+                : document.getElementById(`calendarTitle-${panelId}`);
+            const calendarGrid = panelId === 'all'
+                ? document.getElementById("calendarGrid")
+                : document.getElementById(`calendarGrid-${panelId}`);
+            const calendarContainer = panelId === 'all'
+                ? document.getElementById("calendarContainer")
+                : document.getElementById(`calendarContainer-${panelId}`);
+            const bannerLayer = calendarContainer
+                ? calendarContainer.querySelector(".calendar-banner-layer")
+                : null;
+
+            if (!calendarTitle || !calendarGrid || !calendarContainer) {
+                return;
+            }
+
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDate = new Date(year, month, 0).getDate();
+            const startIndex = (firstDay.getDay() + 6) % 7; // 월요일 시작
+            const totalCells = Math.ceil((startIndex + lastDate) / 7) * 7;
+
+            const startOfMonth = new Date(year, month - 1, 1);
+            const endOfMonth = new Date(year, month - 1, lastDate);
+
+            calendarTitle.textContent = `${year}년 ${month}월`;
+            calendarGrid.innerHTML = "";
+
+            const rowsMeta = [];
+            let row = document.createElement("tr");
+            let cellsInRow = [];
+
+            const pushRow = () => {
+                calendarGrid.appendChild(row);
+                rowsMeta.push({ row, cells: cellsInRow });
+                row = document.createElement("tr");
+                cellsInRow = [];
+            };
+
+            for (let i = 0; i < startIndex; i++) {
+                const emptyCell = document.createElement("td");
+                emptyCell.className = "empty";
+                row.appendChild(emptyCell);
+                cellsInRow.push({ cell: emptyCell });
+            }
+
+            for (let day = 1; day <= lastDate; day++) {
+                const cell = document.createElement("td");
+                cell.classList.add("calendar-day-cell");
+
+                const label = document.createElement("span");
+                label.className = "calendar-day-label";
+                label.textContent = day;
+                cell.appendChild(label);
+
+                const content = document.createElement("div");
+                content.className = "calendar-day-content";
+                cell.appendChild(content);
+
+                row.appendChild(cell);
+                cellsInRow.push({ cell, day, content });
+
+                if ((startIndex + day) % 7 === 0) {
+                    pushRow();
+                }
+            }
+
+            const filled = startIndex + lastDate;
+            for (let i = filled; i < totalCells; i++) {
+                const emptyCell = document.createElement("td");
+                emptyCell.className = "empty";
+                row.appendChild(emptyCell);
+                cellsInRow.push({ cell: emptyCell });
+                if ((i + 1) % 7 === 0) {
+                    pushRow();
+                }
+            }
+
+            if (cellsInRow.length) {
+                pushRow();
+            }
+
+            if (!bannerLayer) {
+                return;
+            }
+
+            bannerLayer.innerHTML = "";
+
+            const normalizeCategoryName = (name) => {
+                if (!name) return "";
+                return name.replace(/\s+/g, "").toLowerCase();
+            };
+
+            const categoryPriorityMap = new Map([
+                ["전국대회", 0],
+                ["전국", 0],
+                ["지역대회", 1],
+                ["지역", 1],
+                ["이벤트대회", 2],
+                ["이벤트", 2],
+                ["평일대회", 3],
+                ["평일", 3],
+            ]);
+
+            const getCategoryPriority = (category) => {
+                if (!category || !category.name) return 999;
+                const normalized = normalizeCategoryName(category.name);
+                return categoryPriorityMap.get(normalized) ?? 999;
+            };
+
+            const sortedContests = [...filteredContests].sort((a, b) => {
+                const priorityA = getCategoryPriority(a.category);
+                const priorityB = getCategoryPriority(b.category);
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                const timeA = a.schedule_start ? a.schedule_start.getTime() : 0;
+                const timeB = b.schedule_start ? b.schedule_start.getTime() : 0;
+                return timeA - timeB;
+            });
+
+            const slotAssignments = rowsMeta.map(() => Array(7).fill(0));
+
+            sortedContests.forEach((contest) => {
+                const effectiveStart = contest.schedule_start < startOfMonth ? startOfMonth : contest.schedule_start;
+                const effectiveEnd = contest.schedule_end > endOfMonth ? endOfMonth : contest.schedule_end;
+
+                if (effectiveStart > effectiveEnd) {
+                    return;
+                }
+
+                const startOffset = startIndex + (effectiveStart.getDate() - 1);
+                const endOffset = startIndex + (effectiveEnd.getDate() - 1);
+
+                const startWeek = Math.floor(startOffset / 7);
+                const endWeek = Math.floor(endOffset / 7);
+
+                let currentWeek = startWeek;
+                let currentStart = startOffset;
+
+                while (currentWeek <= endWeek) {
+                    const rowInfo = rowsMeta[currentWeek];
+                    if (!rowInfo) {
+                        break;
+                    }
+
+                    const weekStartOffset = currentWeek * 7;
+                    const weekEndOffset = weekStartOffset + 6;
+                    const weekStartCol = Math.max(currentStart - weekStartOffset, 0);
+                    const weekEndCol = Math.min(endOffset - weekStartOffset, 6);
+                    const spanCols = weekEndCol - weekStartCol + 1;
+
+                    const startCellInfo = rowInfo.cells[weekStartCol];
+                    const endCellInfo = rowInfo.cells[weekStartCol + spanCols - 1];
+                    if (!startCellInfo || !endCellInfo) {
+                        currentWeek += 1;
+                        currentStart = weekStartOffset + 7;
+                        continue;
+                    }
+
+                    const startCell = startCellInfo.cell;
+                    const endCell = endCellInfo.cell;
+
+                    const containerRect = calendarContainer.getBoundingClientRect();
+                    const startRect = startCell.getBoundingClientRect();
+                    const endRect = endCell.getBoundingClientRect();
+
+                    if (containerRect.width === 0 || containerRect.height === 0) {
+                        continue;
+                    }
+
+                    const labelEl = startCell.querySelector(".calendar-day-label");
+                    const labelHeight = labelEl ? labelEl.getBoundingClientRect().height : 0;
+
+                    let slotIndex = 0;
+                    for (let col = weekStartCol; col <= weekEndCol; col++) {
+                        slotIndex = Math.max(slotIndex, slotAssignments[currentWeek][col]);
+                    }
+
+                    for (let col = weekStartCol; col <= weekEndCol; col++) {
+                        slotAssignments[currentWeek][col] = slotIndex + 1;
+                    }
+
+                    const color = contest.category && contest.category.color ? contest.category.color : "#31AA60";
+                    const banner = document.createElement("a");
+                    banner.className = "calendar-event-banner";
+                    banner.href = `/contest/${contest.slug}/`;
+                    banner.textContent = contest.title;
+                    banner.style.backgroundColor = color;
+                    banner.style.color = "#ffffff";
+                    banner.title = `${contest.title} (${contest.period_display || ""})`;
+
+                    const topOffset = startRect.top - containerRect.top + labelHeight + 12 + slotIndex * 24;
+                    const leftOffset = startRect.left - containerRect.left;
+                    const actualWidth = endRect.right - startRect.left;
+                    const containerRight = containerRect.right - containerRect.left;
+                    const maxWidth = Math.max(0, containerRight - leftOffset);
+                    const finalWidth = Math.min(Math.max(0, actualWidth), maxWidth);
+
+                    banner.style.top = `${topOffset}px`;
+                    banner.style.left = `${leftOffset}px`;
+                    banner.style.width = `${finalWidth}px`;
+
+                    bannerLayer.appendChild(banner);
+
+                    currentWeek += 1;
+                    currentStart = weekStartOffset + 7;
+                }
+            });
+        }
+
+        // 테이블 렌더링 함수
+        function renderTable(panelId, filteredContests) {
+            if (panelId === 'all') {
+                return;
+            }
+
+            const tableBody = document.getElementById(`contestTableBody-category-${panelId}`);
+
+            if (!tableBody) {
+                return;
+            }
+
+            tableBody.innerHTML = "";
+
+            if (filteredContests.length === 0) {
+                const emptyRow = document.createElement("tr");
+                emptyRow.innerHTML = `<td colspan="7" class="empty-state">해당 카테고리의 대회 정보가 없습니다.</td>`;
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+
+            filteredContests.forEach((contest) => {
+                const row = document.createElement("tr");
+                const categoryBadge = contest.category
+                    ? `<span class="category-badge" style="--badge-color: ${contest.category.color}">${contest.category.name}</span>`
+                    : "-";
+                const image = contest.image_url
+                    ? `<img src="${contest.image_url}" alt="${contest.title}">`
+                    : `<div class="contest-thumb-placeholder">이미지 없음</div>`;
+
+                row.innerHTML = `
+                    <td>${categoryBadge}</td>
+                    <td>${image}</td>
+                    <td><a href="/contest/${contest.slug}/" class="contest-title-link"><strong>${contest.title}</strong></a></td>
+                    <td>${contest.period_display || "-"}</td>
+                    <td>${contest.location || "-"}</td>
+                    <td>${contest.participant_reward || "-"}</td>
+                    <td>${contest.sponsor || "-"}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 패널 업데이트 함수
+        function updatePanel(panelId, categoryId) {
+            const calendarPanel = document.getElementById(`contest-panel-calendar-${panelId}`);
+            const listPanel = document.getElementById(`contest-panel-list-${panelId}`);
+
+            if ((!calendarPanel || !calendarPanel.classList.contains("active")) &&
+                (!listPanel || !listPanel.classList.contains("active"))) {
+                return;
+            }
+
+            const filteredContests = filterContestsByCategory(allContestData, categoryId);
+
+            const yearSelect = panelId === 'all'
+                ? document.getElementById("calendarYear")
+                : document.getElementById(`calendarYear-${panelId}`);
+            const monthSelect = panelId === 'all'
+                ? document.getElementById("calendarMonth")
+                : document.getElementById(`calendarMonth-${panelId}`);
+
+            if (!yearSelect || !monthSelect) {
+                return;
+            }
+
+            const year = parseInt(yearSelect.value, 10);
+            const month = parseInt(monthSelect.value, 10);
+
+            const monthContests = filteredContests.filter((contest) => {
+                const contestYear = contest.schedule_start ? contest.schedule_start.getFullYear() : null;
+                const contestMonth = contest.schedule_start ? contest.schedule_start.getMonth() + 1 : null;
+                return contestYear === year && contestMonth === month;
+            });
+
+            renderCalendar(panelId, year, month, monthContests);
+            renderTable(panelId, filteredContests);
+        }
+
+        // 탭 클릭 이벤트 처리 (데스크톱만)
+        if (!isMobile) {
+            tabButtons.forEach((button) => {
+                button.addEventListener("click", function(e) {
+                    const target = button.dataset.target;
+                    if (!target) return;
+
+                    // 모든 탭 버튼 상태 업데이트
+                    const allTabButtons = document.querySelectorAll(".contest-tab-btn");
+                    allTabButtons.forEach((btn) => {
+                        const isActive = btn === button;
+                        btn.classList.toggle("active", isActive);
+                        btn.setAttribute("aria-selected", isActive ? "true" : "false");
+                    });
+
+                    // 캘린더 패널 업데이트
+                    const calendarPanels = document.querySelectorAll(".contest-panel-calendar");
+                    calendarPanels.forEach((panel) => {
+                        const isActive = panel.id === `contest-panel-calendar-${target}`;
+                        panel.classList.toggle("active", isActive);
+                    });
+
+                    // 리스트 패널 업데이트
+                    const listPanels = document.querySelectorAll(".contest-panel-list");
+                    listPanels.forEach((panel) => {
+                        const isActive = panel.id === `contest-panel-list-${target}`;
+                        panel.classList.toggle("active", isActive);
+                    });
+
+                    // 패널 업데이트
+                    setTimeout(() => {
+                        updatePanel(target, target);
+                    }, 10);
+                }, { passive: true });
+            });
+        }
+
+        // 전체 패널의 년/월 선택 이벤트
+        const yearSelect = document.getElementById("calendarYear");
+        const monthSelect = document.getElementById("calendarMonth");
+
+        if (yearSelect && monthSelect) {
+            const updateAllCalendar = () => {
+                updatePanel('all', 'all');
+            };
+            yearSelect.addEventListener("change", updateAllCalendar);
+            monthSelect.addEventListener("change", updateAllCalendar);
+
+            let resizeTimeout;
+            window.addEventListener("resize", () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    updateAllCalendar();
+                }, 150);
+            });
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            if ([2025, 2026].includes(currentYear)) {
+                yearSelect.value = currentYear.toString();
+                monthSelect.value = currentMonth.toString();
+            }
+
+            updateAllCalendar();
+        }
+
+        // 각 카테고리 패널의 년/월 선택 이벤트
+        
+        (function() {
+            const categoryId = 'category-1';
+            const yearSelect = document.getElementById(`calendarYear-${categoryId}`);
+            const monthSelect = document.getElementById(`calendarMonth-${categoryId}`);
+
+            if (yearSelect && monthSelect) {
+                const updateCategoryCalendar = () => {
+                    updatePanel(categoryId, categoryId);
+                };
+                yearSelect.addEventListener("change", updateCategoryCalendar);
+                monthSelect.addEventListener("change", updateCategoryCalendar);
+
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1;
+                if ([2025, 2026].includes(currentYear)) {
+                    yearSelect.value = currentYear.toString();
+                    monthSelect.value = currentMonth.toString();
+                }
+            }
+        })();
+        
+        (function() {
+            const categoryId = 'category-2';
+            const yearSelect = document.getElementById(`calendarYear-${categoryId}`);
+            const monthSelect = document.getElementById(`calendarMonth-${categoryId}`);
+
+            if (yearSelect && monthSelect) {
+                const updateCategoryCalendar = () => {
+                    updatePanel(categoryId, categoryId);
+                };
+                yearSelect.addEventListener("change", updateCategoryCalendar);
+                monthSelect.addEventListener("change", updateCategoryCalendar);
+
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1;
+                if ([2025, 2026].includes(currentYear)) {
+                    yearSelect.value = currentYear.toString();
+                    monthSelect.value = currentMonth.toString();
+                }
+            }
+        })();
+        
+        });
+    }
+})();
+</script>
+
+
+    <script>
+        (function() {
+            const scrollProgress = document.getElementById('scrollProgress');
+            const siteHeader = document.querySelector('.site-header');
+            const main = document.querySelector('main');
+
+            function setProgressBarPosition() {
+                if (siteHeader) {
+                    const headerHeight = siteHeader.offsetHeight;
+                    scrollProgress.style.top = headerHeight + 'px';
+                    // main에 헤더 높이만큼 padding-top 추가
+                    if (main) {
+                        main.style.paddingTop = headerHeight + 'px';
+                    }
+                }
+            }
+
+            function updateScrollProgress() {
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollableHeight = documentHeight - windowHeight;
+                const scrollPercentage = (scrollTop / scrollableHeight) * 100;
+
+                scrollProgress.style.width = Math.min(scrollPercentage, 100) + '%';
+            }
+
+            // 헤더 높이에 맞춰 진행바 위치 및 main padding 설정
+            setProgressBarPosition();
+
+            // 스크롤 이벤트 리스너 추가
+            window.addEventListener('scroll', updateScrollProgress);
+            window.addEventListener('resize', function() {
+                setProgressBarPosition();
+                updateScrollProgress();
+            });
+
+            // 초기 로드 시 실행
+            updateScrollProgress();
+        })();
+
+        // 모바일 메뉴 토글
+        (function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenuClose = document.getElementById('mobileMenuClose');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+            const body = document.body;
+
+            function openMobileMenu() {
+                mobileMenu.classList.add('active');
+                mobileMenuOverlay.classList.add('active');
+                mobileMenuToggle.setAttribute('aria-expanded', 'true');
+                body.style.overflow = 'hidden';
+            }
+
+            function closeMobileMenu() {
+                if (mobileMenu) {
+                    mobileMenu.classList.remove('active');
+                }
+                if (mobileMenuOverlay) {
+                    mobileMenuOverlay.classList.remove('active');
+                }
+                if (mobileMenuToggle) {
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                }
+                if (body) {
+                    body.style.overflow = '';
+                }
+            }
+
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Mobile menu toggle clicked');
+                    if (mobileMenu && mobileMenu.classList.contains('active')) {
+                        closeMobileMenu();
+                    } else {
+                        openMobileMenu();
+                    }
+                });
+            } else {
+                console.error('mobileMenuToggle not found');
+            }
+            
+            if (!mobileMenu) {
+                console.error('mobileMenu not found');
+            }
+            
+            if (!mobileMenuOverlay) {
+                console.error('mobileMenuOverlay not found');
+            }
+
+            if (mobileMenuClose) {
+                mobileMenuClose.addEventListener('click', closeMobileMenu);
+            }
+
+            if (mobileMenuOverlay) {
+                mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+            }
+
+            // ESC 키로 메뉴 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
+                    closeMobileMenu();
+                }
+            });
+
+            // 메뉴 아이템 클릭 시 메뉴 닫기
+            const mobileMenuItems = document.querySelectorAll('.mobile-menu-item');
+            mobileMenuItems.forEach(function(item) {
+                item.addEventListener('click', function() {
+                    closeMobileMenu();
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

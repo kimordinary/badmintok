@@ -1,0 +1,838 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_update %}{% if band_type == 'flash' %}번개 수정하기{% else %}모임 수정하기{% endif %}{% else %}{% if band_type == 'flash' %}번개 만들기{% else %}모임 만들기{% endif %}{% endif %} - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0;">
+        <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                <a href="{% if parent_band %}{% url 'band:detail' parent_band.id %}?tab=flash{% elif is_update %}{% url 'band:detail' band.id %}{% else %}{% url 'band:list' %}{% if band_type %}?type={{ band_type }}{% endif %}{% endif %}" style="text-decoration: none; color: #1e293b; font-size: 20px; line-height: 1;">&lt;</a>
+                <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: #1e293b;">{% if is_update %}{% if band_type == 'flash' %}번개 수정하기{% else %}모임 수정하기{% endif %}{% else %}{% if band_type == 'flash' %}번개 만들기{% else %}모임 만들기{% endif %}{% endif %}</h1>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" id="bandForm" action="{% if is_update and schedule %}{% url 'band:schedule_update' parent_band.id schedule.id %}{% elif parent_band %}{% url 'band:schedule_create' parent_band.id %}{% endif %}">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                    <div style="margin-bottom: 20px; padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; color: #dc2626;">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                                <p style="margin: 0; font-size: 14px;">{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+                <!-- 분류 (중복 선택 가능) - 모임/동호회만 표시 -->
+                {% if band_type != 'flash' %}
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                        분류
+                    </label>
+                    <p style="margin: 0 0 10px 0; font-size: 12px; color: #64748b;">
+                        여러 개를 선택할 수 있어요.
+                    </p>
+                    <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; background: #f8fafc;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                            {% for value, label in form.CATEGORY_CHOICES %}
+                                {% with selected_list=form.categories.value %}
+                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #1e293b; cursor: pointer;">
+                                        <input type="checkbox"
+                                               name="{{ form.categories.html_name }}"
+                                               value="{{ value }}"
+                                               {% if selected_list and value in selected_list %}checked{% endif %}
+                                               style="width: 14px; height: 14px; cursor: pointer; accent-color: var(--brand);">
+                                        <span>{{ label }}</span>
+                                    </label>
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if band_type == 'flash' %}
+                    <!-- 번개 타입: 이미지와 동일한 폼 -->
+                    
+                    <!-- 이미지 업로드 (3:4 비율, 최대 5장) -->
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b;">
+                                번개 사진 (최대 5장, 3:4 비율)
+                            </label>
+                            <span id="imageCount" style="font-size: 12px; color: #64748b;">0/5</span>
+                        </div>
+                        <input type="file" id="schedule_images" name="schedule_images" accept="image/*" multiple style="display: none;" onchange="handleScheduleImages(this)">
+                        <div id="scheduleImagesContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                            <!-- 기존 이미지 표시 -->
+                            {% if is_update and existing_images %}
+                                {% for img in existing_images %}
+                                    <div data-existing-image="{{ img.id }}" style="position: relative; aspect-ratio: 3/4; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+                                        <img src="{{ img.image.url }}" alt="이미지 {{ forloop.counter }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                        <input type="hidden" name="existing_image_ids" value="{{ img.id }}">
+                                        <button type="button" onclick="deleteExistingImage({{ img.id }}, this)" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: white; border: none; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; line-height: 1;">×</button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div id="imageUploadArea" onclick="document.getElementById('schedule_images').click()" style="width: 100%; aspect-ratio: 3/4; border: 2px dashed #3b82f6; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; cursor: pointer; margin-top: 12px;">
+                            <div id="imageUploadAreaContent" style="text-align: center;">
+                                <div id="imageUploadIcon" style="font-size: 32px; color: #3b82f6; margin-bottom: 8px;">📷</div>
+                                <div id="imageUploadText" style="font-size: 14px; color: #64748b; margin-bottom: 4px;">번개 사진을 등록해주세요.</div>
+                                <div id="imageUploadSubtext" style="font-size: 12px; color: #94a3b8;">비율 3:4 (최대 5장)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 번개 이름 -->
+                    <div style="margin-bottom: 24px;">
+                        <label for="id_name" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            번개 이름
+                        </label>
+                        <input type="text" name="name" id="id_name" class="form-input" placeholder="번개 이름을 입력하세요" maxlength="200" required value="{% if is_update %}{{ band.name }}{% endif %}" style="box-sizing: border-box;">
+                    </div>
+                    
+                    <!-- 날짜/시간 -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            날짜/시간
+                        </label>
+                        <div style="display: grid; grid-template-columns: 4fr 3fr 3fr; gap: 12px; align-items: start;">
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">📅</span>
+                                <input type="date" id="meeting_date" name="meeting_date" required class="form-input-with-icon" value="{% if is_update and schedule %}{{ schedule.start_datetime|date:'Y-m-d' }}{% endif %}" style="box-sizing: border-box; padding-left: 40px;">
+                            </div>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">🕐</span>
+                                <input type="time" id="meeting_time" name="meeting_time" required class="form-input-with-icon" value="{% if is_update and schedule %}{{ schedule.start_datetime|time:'H:i' }}{% endif %}" style="box-sizing: border-box; padding-left: 40px;">
+                            </div>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">🕐</span>
+                                <input type="time" id="meeting_end_time" name="meeting_end_time" class="form-input-with-icon" value="{% if is_update and schedule and schedule.end_datetime %}{{ schedule.end_datetime|time:'H:i' }}{% endif %}" style="box-sizing: border-box; padding-left: 40px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 위치 -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            위치
+                        </label>
+                        <div style="display: grid; grid-template-columns: 20% 80%; gap: 8px; margin-bottom: 8px;">
+                            <select id="flash_region" name="flash_region" required class="form-input" style="box-sizing: border-box; cursor: pointer;">
+                                <option value="">지역 선택</option>
+                                <option value="서울" {% if is_update and flash_region == "서울" %}selected{% endif %}>서울</option>
+                                <option value="경기" {% if is_update and flash_region == "경기" %}selected{% endif %}>경기</option>
+                                <option value="인천" {% if is_update and flash_region == "인천" %}selected{% endif %}>인천</option>
+                                <option value="부산" {% if is_update and flash_region == "부산" %}selected{% endif %}>부산</option>
+                                <option value="대구" {% if is_update and flash_region == "대구" %}selected{% endif %}>대구</option>
+                                <option value="광주" {% if is_update and flash_region == "광주" %}selected{% endif %}>광주</option>
+                                <option value="대전" {% if is_update and flash_region == "대전" %}selected{% endif %}>대전</option>
+                                <option value="울산" {% if is_update and flash_region == "울산" %}selected{% endif %}>울산</option>
+                                <option value="강원" {% if is_update and flash_region == "강원" %}selected{% endif %}>강원</option>
+                                <option value="세종" {% if is_update and flash_region == "세종" %}selected{% endif %}>세종</option>
+                                <option value="충북" {% if is_update and flash_region == "충북" %}selected{% endif %}>충북</option>
+                                <option value="충남" {% if is_update and flash_region == "충남" %}selected{% endif %}>충남</option>
+                                <option value="전북" {% if is_update and flash_region == "전북" %}selected{% endif %}>전북</option>
+                                <option value="전남" {% if is_update and flash_region == "전남" %}selected{% endif %}>전남</option>
+                                <option value="경북" {% if is_update and flash_region == "경북" %}selected{% endif %}>경북</option>
+                                <option value="경남" {% if is_update and flash_region == "경남" %}selected{% endif %}>경남</option>
+                                <option value="제주" {% if is_update and flash_region == "제주" %}selected{% endif %}>제주</option>
+                            </select>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">📍</span>
+                                <input type="text" id="meeting_location" name="meeting_location" placeholder="정확한 위치를 입력하세요." required value="{% if is_update and schedule %}{{ schedule.location }}{% endif %}" class="form-input-with-icon" style="box-sizing: border-box;">
+                            </div>
+                        </div>
+                        <button type="button" style="padding: 8px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; color: #64748b; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">지도 URL 추가</button>
+                    </div>
+                    
+                    <!-- 번개 설명 -->
+                    <div style="margin-bottom: 24px;">
+                        <label for="flash_description" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            번개 설명
+                        </label>
+                        <textarea name="flash_description" id="flash_description" class="form-input" placeholder="번개에 대한 설명을 입력하세요" rows="4" style="box-sizing: border-box; resize: vertical;">{% if is_update %}{{ band.description }}{% endif %}</textarea>
+                    </div>
+                    
+                    <!-- 참가비 -->
+                    <div style="margin-bottom: 24px;">
+                        <label for="meeting_cost" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            참가비
+                        </label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">₩</span>
+                            <input type="number" id="meeting_cost" name="meeting_cost" placeholder="참가비를 입력하세요" min="0" value="{% if is_update and meeting_cost %}{{ meeting_cost }}{% endif %}" class="form-input-with-icon" style="box-sizing: border-box;">
+                        </div>
+                    </div>
+                    
+                    <!-- 정원 -->
+                    <div style="margin-bottom: 24px;">
+                        <label for="meeting_capacity" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            정원 (5 ~ 300명)
+                        </label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">👤</span>
+                            <input type="number" id="meeting_capacity" name="meeting_capacity" value="{% if is_update and schedule %}{{ schedule.max_participants }}{% else %}20{% endif %}" min="5" max="300" required class="form-input-with-icon" style="box-sizing: border-box;">
+                        </div>
+                    </div>
+                    
+                    <!-- 번개 공지 체크박스 -->
+                    <div style="margin-bottom: 32px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="meeting_notification" name="meeting_notification" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--brand);">
+                            <span style="font-size: 14px; color: #1e293b;">번개 공지 (전체 멤버 알림)</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 숨겨진 필드들 -->
+                    <input type="hidden" name="band_type" value="flash">
+                    <input type="hidden" name="region" value="all">
+                    <input type="hidden" name="is_public" value="1">
+                    <input type="hidden" name="join_approval_required" value="0">
+                    <input type="hidden" name="description" value="">
+                    
+                {% else %}
+                    <!-- 일반 모임/동호회 타입 -->
+                    <!-- 배너 이미지: 상단으로 이동 -->
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label for="id_cover_image_group" style="display: block; font-size: 14px; font-weight: 600; color: #1e293b;">
+                                배너 이미지
+                            </label>
+                            {% if is_update and band.cover_image %}
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <button type="button"
+                                            onclick="document.getElementById('id_cover_image_group').click()"
+                                            style="padding: 4px 10px; font-size: 12px; border-radius: 999px; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; cursor: pointer;">
+                                        이미지 변경
+                                    </button>
+                                    <button type="button"
+                                            onclick="clearCoverImage('group')"
+                                            style="padding: 4px 10px; font-size: 12px; border-radius: 999px; border: 1px solid #fee2e2; background: #fef2f2; color: #b91c1c; cursor: pointer;">
+                                        삭제
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <p style="margin: 0 0 10px 0; padding: 10px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px; color: #1e40af; line-height: 1.5;">
+                            <strong>📐 이미지 크기:</strong> 1200px × 450px (고정 크기)<br>
+                            <span style="font-size: 12px; color: #3b82f6;">이 크기로 제작하시면 데스크톱과 모바일에서 최적화되어 표시됩니다.</span>
+                        </p>
+                        <!-- 항상 존재하는 숨겨진 파일 인풋 -->
+                        <input type="file" id="id_cover_image_group" name="cover_image" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                        <div id="imagePreviewGroup" onclick="document.getElementById('id_cover_image_group').click()" style="width: 100%; aspect-ratio: 8/3; border: 2px dashed #3b82f6; border-radius: 8px; display: {% if is_update and band.cover_image %}none{% else %}flex{% endif %}; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; cursor: pointer; position: relative; overflow: hidden;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 32px; color: #3b82f6; margin-bottom: 8px;">📷</div>
+                                <div style="font-size: 14px; color: #64748b;">모임/동호회 배너 이미지를 등록해주세요.</div>
+                            </div>
+                        </div>
+                        <img id="previewImgGroup" src="{% if is_update and band.cover_image %}{{ band.cover_image.url }}{% endif %}" alt="미리보기" onclick="document.getElementById('id_cover_image_group').click()" style="display: {% if is_update and band.cover_image %}block{% else %}none{% endif %}; width: 100%; aspect-ratio: 8/3; object-fit: cover; border-radius: 8px; margin-top: 8px; cursor: pointer;">
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label for="id_profile_image" style="display: block; font-size: 14px; font-weight: 600; color: #1e293b;">
+                                프로필 이미지
+                            </label>
+                            {% if is_update and band.profile_image %}
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <button type="button"
+                                            onclick="document.getElementById('id_profile_image').click()"
+                                            style="padding: 4px 10px; font-size: 12px; border-radius: 999px; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; cursor: pointer;">
+                                        이미지 변경
+                                    </button>
+                                    <button type="button"
+                                            onclick="clearProfileImage()"
+                                            style="padding: 4px 10px; font-size: 12px; border-radius: 999px; border: 1px solid #fee2e2; background: #fef2f2; color: #b91c1c; cursor: pointer;">
+                                        삭제
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <!-- 항상 존재하는 숨겨진 파일 인풋 -->
+                        <input type="file"
+                               id="id_profile_image"
+                               name="profile_image"
+                               accept="image/*"
+                               style="display: none;"
+                               onchange="previewProfileImage(this)">
+                        <input type="hidden" name="remove_cover_image" id="remove_cover_image" value="0">
+                        <input type="hidden" name="remove_profile_image" id="remove_profile_image" value="0">
+
+                        <div id="profileImagePreview"
+                             onclick="document.getElementById('id_profile_image').click()"
+                             style="display: {% if is_update and band.profile_image %}none{% else %}flex{% endif %}; align-items: center; gap: 12px; padding: 8px 12px; border: 2px dashed #e2e8f0; border-radius: 999px; background: #f8fafc; cursor: pointer; width: 100%; max-width: 280px;">
+                            <div style="width: 64px; height: 64px; border-radius: 999px; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #94a3b8;">
+                                👤
+                            </div>
+                            <div>
+                                <div style="font-size: 13px; color: #64748b; margin-bottom: 2px;">프로필 이미지를 등록해주세요.</div>
+                                <div style="font-size: 11px; color: #94a3b8;">정사각형 1:1, 최소 200×200px 권장</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <img id="profilePreviewImg"
+                                 src="{% if is_update and band.profile_image %}{{ band.profile_image.url }}{% endif %}"
+                                 alt="프로필 미리보기"
+                                 onclick="document.getElementById('id_profile_image').click()"
+                                 style="display: {% if is_update and band.profile_image %}block{% else %}none{% endif %}; width: 96px; height: 96px; border-radius: 999px; object-fit: cover; cursor: pointer;">
+                        </div>
+                    </div>
+                    
+                    <!-- 위치 (모임/동호회도 번개와 동일한 UI 사용) -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            위치
+                        </label>
+                        <div style="display: grid; grid-template-columns: 20% 80%; gap: 8px; margin-bottom: 8px;">
+                            <select id="group_region" name="group_region" class="form-input" style="box-sizing: border-box; cursor: pointer;">
+                                <option value="">지역 선택</option>
+                                <option value="서울" {% if group_region == "서울" %}selected{% endif %}>서울</option>
+                                <option value="경기" {% if group_region == "경기" %}selected{% endif %}>경기</option>
+                                <option value="인천" {% if group_region == "인천" %}selected{% endif %}>인천</option>
+                                <option value="부산" {% if group_region == "부산" %}selected{% endif %}>부산</option>
+                                <option value="대구" {% if group_region == "대구" %}selected{% endif %}>대구</option>
+                                <option value="광주" {% if group_region == "광주" %}selected{% endif %}>광주</option>
+                                <option value="대전" {% if group_region == "대전" %}selected{% endif %}>대전</option>
+                                <option value="울산" {% if group_region == "울산" %}selected{% endif %}>울산</option>
+                                <option value="강원" {% if group_region == "강원" %}selected{% endif %}>강원</option>
+                                <option value="세종" {% if group_region == "세종" %}selected{% endif %}>세종</option>
+                                <option value="충북" {% if group_region == "충북" %}selected{% endif %}>충북</option>
+                                <option value="충남" {% if group_region == "충남" %}selected{% endif %}>충남</option>
+                                <option value="전북" {% if group_region == "전북" %}selected{% endif %}>전북</option>
+                                <option value="전남" {% if group_region == "전남" %}selected{% endif %}>전남</option>
+                                <option value="경북" {% if group_region == "경북" %}selected{% endif %}>경북</option>
+                                <option value="경남" {% if group_region == "경남" %}selected{% endif %}>경남</option>
+                                <option value="제주" {% if group_region == "제주" %}selected{% endif %}>제주</option>
+                            </select>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">📍</span>
+                                <input type="text" id="group_location" name="group_location" placeholder="정확한 위치를 입력하세요." value="{% if group_location %}{{ group_location }}{% endif %}" class="form-input-with-icon" style="box-sizing: border-box;">
+                            </div>
+                        </div>
+                        <button type="button" style="padding: 8px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; color: #64748b; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">지도 URL 추가</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <label for="{{ form.name.id_for_label }}" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            모임 이름 <span style="color: #dc2626;">*</span>
+                        </label>
+                {{ form.name }}
+            </div>
+            
+                    <div style="margin-bottom: 24px;">
+                        <label for="{{ form.description.id_for_label }}" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            모임 한줄 소개
+                        </label>
+                        <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b;">짧은 한줄 소개를 입력하세요.</p>
+                {{ form.description }}
+            </div>
+            
+                    <div style="margin-bottom: 24px;">
+                        <label for="{{ form.detailed_description.id_for_label }}" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            모임 설명
+                        </label>
+                        <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b;">모임에 대한 상세한 설명을 작성하세요.</p>
+                {{ form.detailed_description }}
+            </div>
+            
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    {{ form.is_public }}
+                            <span style="font-size: 14px; color: #1e293b;">공개 모임</span>
+                </label>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">공개 모임은 모든 사용자가 볼 수 있습니다.</p>
+            </div>
+            
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    {{ form.join_approval_required }}
+                            <span style="font-size: 14px; color: #1e293b;">가입 승인 필요</span>
+                </label>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">체크하면 관리자가 가입을 승인해야 합니다.</p>
+            </div>
+            
+                    {{ form.band_type }}
+                    <input type="hidden" name="region" value="all">
+                {% endif %}
+                
+                <!-- 생성 버튼 -->
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; margin-bottom: {% if is_update and band_type == 'flash' %}8px{% else %}12px{% endif %};">
+                    {% if is_update %}{% if band_type == 'flash' %}번개 수정하기{% else %}모임 수정하기{% endif %}{% else %}{% if band_type == 'flash' %}번개 만들기{% else %}모임 만들기{% endif %}{% endif %}
+                </button>
+            </form>
+            
+            {% if is_update and band_type == 'flash' and schedule %}
+            <form method="post" action="{% url 'band:schedule_delete' parent_band.id schedule.id %}" id="deleteScheduleForm" style="margin: 0;">
+                {% csrf_token %}
+                <button type="button" onclick="confirmDeleteSchedule()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                    번개 삭제하기
+                </button>
+            </form>
+            {% endif %}
+                
+                {% if band_type == 'flash' %}
+                    <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
+                        홍보를 위한 허위 생성 시 모임 노출률이 감소될 수 있습니다.
+                    </p>
+                {% endif %}
+            </form>
+            </div>
+    </div>
+</section>
+
+<style>
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(49, 170, 96, 0.1);
+    }
+    
+    .form-input-with-icon {
+        width: 100%;
+        padding: 12px 12px 12px 40px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    
+    .form-input-with-icon:focus {
+        outline: none;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(49, 170, 96, 0.1);
+    }
+    
+    textarea.form-input {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    input[type="checkbox"] {
+        accent-color: var(--brand);
+    }
+    
+    input[type="date"],
+    input[type="time"] {
+        color: #1e293b;
+    }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.6;
+    }
+</style>
+
+<script>
+    function previewImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        // 배너 이미지 크기 검증 (모임/동호회용)
+        const isGroupCover = input.id === 'id_cover_image_group';
+        if (isGroupCover) {
+            const img = new Image();
+            let objectUrl = null;
+            img.onload = function() {
+                const width = img.width;
+                const height = img.height;
+                const recommendedWidth = 1200;
+                const recommendedHeight = 450;
+                const tolerance = 50; // 50px 오차 허용
+                
+                if (Math.abs(width - recommendedWidth) > tolerance || Math.abs(height - recommendedHeight) > tolerance) {
+                    const confirmUpload = confirm(
+                        `현재 이미지 크기: ${width}px × ${height}px\n\n` +
+                        `권장 크기: ${recommendedWidth}px × ${recommendedHeight}px\n\n` +
+                        `권장 크기와 다릅니다. 계속 업로드하시겠습니까?\n\n` +
+                        `(권장 크기로 제작하시면 최적화되어 표시됩니다.)`
+                    );
+                    
+                    if (!confirmUpload) {
+                        input.value = '';
+                        if (objectUrl) URL.revokeObjectURL(objectUrl);
+                        return;
+                    }
+                }
+                
+                // 이미지 미리보기 표시
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewGroup = document.getElementById('previewImgGroup');
+                    const previewContainerGroup = document.getElementById('imagePreviewGroup');
+                    if (previewGroup && previewContainerGroup) {
+                        previewGroup.src = e.target.result;
+                        previewGroup.style.display = 'block';
+                        previewContainerGroup.style.display = 'none';
+                    }
+                    if (objectUrl) URL.revokeObjectURL(objectUrl);
+                };
+                reader.readAsDataURL(file);
+            };
+            img.onerror = function() {
+                if (objectUrl) URL.revokeObjectURL(objectUrl);
+                alert('이미지를 불러올 수 없습니다.');
+            };
+            objectUrl = URL.createObjectURL(file);
+            img.src = objectUrl;
+        } else {
+            // 번개용 프리뷰 (기존 로직)
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('previewImg');
+                const previewContainer = document.getElementById('imagePreview');
+                if (preview && previewContainer) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    previewContainer.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function previewProfileImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('profilePreviewImg');
+            const previewContainer = document.getElementById('profileImagePreview');
+            if (preview && previewContainer) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                previewContainer.style.display = 'none';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearCoverImage(type) {
+        const inputId = type === 'flash' ? 'id_cover_image' : 'id_cover_image_group';
+        const previewId = type === 'flash' ? 'previewImg' : 'previewImgGroup';
+        const containerId = type === 'flash' ? 'imagePreview' : 'imagePreviewGroup';
+        const removeField = document.getElementById('remove_cover_image');
+
+        const fileInput = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        const container = document.getElementById(containerId);
+
+        if (fileInput) fileInput.value = '';
+        if (preview) {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+        if (container) {
+            container.style.display = 'flex';
+        }
+        if (removeField) {
+            removeField.value = '1';
+        }
+    }
+
+    function clearProfileImage() {
+        const fileInput = document.getElementById('id_profile_image');
+        const preview = document.getElementById('profilePreviewImg');
+        const container = document.getElementById('profileImagePreview');
+        const removeField = document.getElementById('remove_profile_image');
+
+        if (fileInput) fileInput.value = '';
+        if (preview) {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+        if (container) {
+            container.style.display = 'flex';
+        }
+        if (removeField) {
+            removeField.value = '1';
+        }
+    }
+
+    // 번개 이미지 업로드 처리 (최대 5장, 3:4 비율)
+    let scheduleImages = [];
+    let deletedImageIds = [];
+    const maxImages = 5;
+    
+    // 기존 이미지 개수 확인
+    const existingImageCount = {% if is_update and existing_images %}{{ existing_images|length }}{% else %}0{% endif %};
+    
+    function deleteExistingImage(imageId, button) {
+        deletedImageIds.push(imageId);
+        const imageDiv = button.closest('div');
+        imageDiv.remove();
+        
+        const currentCount = document.querySelectorAll('#scheduleImagesContainer > div').length + scheduleImages.length;
+        updateImageCount();
+        
+        // 삭제된 이미지 ID를 hidden input으로 추가
+        const deleteInput = document.createElement('input');
+        deleteInput.type = 'hidden';
+        deleteInput.name = 'delete_images';
+        deleteInput.value = imageId;
+        document.getElementById('bandForm').appendChild(deleteInput);
+        
+        // 업로드 영역 표시 및 크기 조정
+        const uploadArea = document.getElementById('imageUploadArea');
+        if (currentCount < maxImages) {
+            uploadArea.style.display = 'flex';
+            // 이미지가 1장 이상일 때 배너 크기를 20%로 축소
+            const iconElement = document.getElementById('imageUploadIcon');
+            const textElement = document.getElementById('imageUploadText');
+            const subtextElement = document.getElementById('imageUploadSubtext');
+            const contentElement = document.getElementById('imageUploadAreaContent');
+            
+            if (currentCount >= 1) {
+                uploadArea.style.aspectRatio = 'none';
+                uploadArea.style.height = '60px';
+                uploadArea.style.minHeight = '60px';
+                uploadArea.style.padding = '8px';
+                if (iconElement) iconElement.style.fontSize = '20px';
+                if (iconElement) iconElement.style.marginBottom = '4px';
+                if (textElement) textElement.style.fontSize = '12px';
+                if (textElement) textElement.style.marginBottom = '2px';
+                if (subtextElement) subtextElement.style.fontSize = '10px';
+                if (contentElement) contentElement.style.transform = 'scale(0.8)';
+            } else {
+                uploadArea.style.aspectRatio = '3/4';
+                uploadArea.style.height = '';
+                uploadArea.style.minHeight = '';
+                uploadArea.style.padding = '';
+                if (iconElement) iconElement.style.fontSize = '32px';
+                if (iconElement) iconElement.style.marginBottom = '8px';
+                if (textElement) textElement.style.fontSize = '14px';
+                if (textElement) textElement.style.marginBottom = '4px';
+                if (subtextElement) subtextElement.style.fontSize = '12px';
+                if (contentElement) contentElement.style.transform = '';
+            }
+        }
+    }
+    
+    function updateImageCount() {
+        const imageCount = document.getElementById('imageCount');
+        const currentCount = document.querySelectorAll('#scheduleImagesContainer > div').length + scheduleImages.length;
+        if (imageCount) {
+            imageCount.textContent = `${currentCount}/${maxImages}`;
+        }
+    }
+
+    function handleScheduleImages(input) {
+        const files = Array.from(input.files);
+        const existingCount = document.querySelectorAll('#scheduleImagesContainer > div[data-existing-image]').length;
+        const currentNewCount = scheduleImages.length;
+        const remainingSlots = maxImages - existingCount - currentNewCount;
+        
+        if (files.length > remainingSlots) {
+            alert(`최대 ${maxImages}장까지 업로드할 수 있습니다. (현재 ${existingCount + currentNewCount}장, 추가 가능 ${remainingSlots}장)`);
+            files.splice(remainingSlots);
+        }
+
+        files.forEach(file => {
+            const currentTotal = existingCount + scheduleImages.length;
+            if (currentTotal >= maxImages) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                scheduleImages.push({
+                    file: file,
+                    preview: e.target.result
+                });
+                updateScheduleImagePreview();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 파일 입력 초기화 (같은 파일 다시 선택 가능하도록)
+        input.value = '';
+    }
+
+    function updateScheduleImagePreview() {
+        const container = document.getElementById('scheduleImagesContainer');
+        const uploadArea = document.getElementById('imageUploadArea');
+        const imageCount = document.getElementById('imageCount');
+        
+        // 기존 이미지는 유지하고 새 이미지만 추가
+        const existingImages = container.querySelectorAll('div[data-existing-image]');
+        const existingCount = existingImages.length;
+        
+        // 새 이미지만 추가
+        scheduleImages.forEach((imgData, index) => {
+            const imageDiv = document.createElement('div');
+            imageDiv.style.position = 'relative';
+            imageDiv.style.aspectRatio = '3/4';
+            imageDiv.style.borderRadius = '8px';
+            imageDiv.style.overflow = 'hidden';
+            imageDiv.style.border = '1px solid #e2e8f0';
+            
+            const img = document.createElement('img');
+            img.src = imgData.preview;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.innerHTML = '×';
+            deleteBtn.style.position = 'absolute';
+            deleteBtn.style.top = '8px';
+            deleteBtn.style.right = '8px';
+            deleteBtn.style.width = '28px';
+            deleteBtn.style.height = '28px';
+            deleteBtn.style.borderRadius = '50%';
+            deleteBtn.style.background = 'rgba(0, 0, 0, 0.6)';
+            deleteBtn.style.color = 'white';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.fontSize = '20px';
+            deleteBtn.style.display = 'flex';
+            deleteBtn.style.alignItems = 'center';
+            deleteBtn.style.justifyContent = 'center';
+            deleteBtn.style.lineHeight = '1';
+            deleteBtn.onclick = () => {
+                scheduleImages.splice(index, 1);
+                updateScheduleImagePreview();
+            };
+            
+            imageDiv.appendChild(img);
+            imageDiv.appendChild(deleteBtn);
+            container.appendChild(imageDiv);
+        });
+        
+        updateImageCount();
+        
+        const currentCount = document.querySelectorAll('#scheduleImagesContainer > div').length;
+        if (currentCount >= maxImages) {
+            uploadArea.style.display = 'none';
+        } else {
+            uploadArea.style.display = 'flex';
+            // 이미지가 1장 이상일 때 배너 크기를 20%로 축소
+            const iconElement = document.getElementById('imageUploadIcon');
+            const textElement = document.getElementById('imageUploadText');
+            const subtextElement = document.getElementById('imageUploadSubtext');
+            const contentElement = document.getElementById('imageUploadAreaContent');
+            
+            if (currentCount >= 1) {
+                uploadArea.style.aspectRatio = 'none';
+                uploadArea.style.height = '60px';
+                uploadArea.style.minHeight = '60px';
+                uploadArea.style.padding = '8px';
+                if (iconElement) iconElement.style.fontSize = '20px';
+                if (iconElement) iconElement.style.marginBottom = '4px';
+                if (textElement) textElement.style.fontSize = '12px';
+                if (textElement) textElement.style.marginBottom = '2px';
+                if (subtextElement) subtextElement.style.fontSize = '10px';
+                if (contentElement) contentElement.style.transform = 'scale(0.8)';
+            } else {
+                uploadArea.style.aspectRatio = '3/4';
+                uploadArea.style.height = '';
+                uploadArea.style.minHeight = '';
+                uploadArea.style.padding = '';
+                if (iconElement) iconElement.style.fontSize = '32px';
+                if (iconElement) iconElement.style.marginBottom = '8px';
+                if (textElement) textElement.style.fontSize = '14px';
+                if (textElement) textElement.style.marginBottom = '4px';
+                if (subtextElement) subtextElement.style.fontSize = '12px';
+                if (contentElement) contentElement.style.transform = '';
+            }
+        }
+    }
+    
+    // 기존 이미지 삭제 시 중복 추가 방지
+    function removeNewImageIfExists(imageId) {
+        // 새로 추가된 이미지 중에서 같은 파일이 있는지 확인하고 제거
+        // (현재는 기존 이미지만 삭제하므로 필요 없음)
+    }
+    
+    // 페이지 로드 시 이미지 개수 업데이트 및 배너 크기 조정
+    document.addEventListener('DOMContentLoaded', function() {
+        updateImageCount();
+        const uploadArea = document.getElementById('imageUploadArea');
+        const currentCount = document.querySelectorAll('#scheduleImagesContainer > div').length;
+        if (uploadArea && currentCount >= 1) {
+            const iconElement = document.getElementById('imageUploadIcon');
+            const textElement = document.getElementById('imageUploadText');
+            const subtextElement = document.getElementById('imageUploadSubtext');
+            const contentElement = document.getElementById('imageUploadAreaContent');
+            
+            uploadArea.style.aspectRatio = 'none';
+            uploadArea.style.height = '60px';
+            uploadArea.style.minHeight = '60px';
+            uploadArea.style.padding = '8px';
+            if (iconElement) iconElement.style.fontSize = '20px';
+            if (iconElement) iconElement.style.marginBottom = '4px';
+            if (textElement) textElement.style.fontSize = '12px';
+            if (textElement) textElement.style.marginBottom = '2px';
+            if (subtextElement) subtextElement.style.fontSize = '10px';
+            if (contentElement) contentElement.style.transform = 'scale(0.8)';
+        }
+    });
+    
+    // 번개 삭제 확인 함수
+    function confirmDeleteSchedule() {
+        if (confirm('정말 삭제하시겠습니까?\n복구가 불가능합니다.')) {
+            document.getElementById('deleteScheduleForm').submit();
+        }
+    }
+
+    // 폼 제출 시 이미지 파일들을 동적으로 추가
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('bandForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // 기존 schedule_images 입력 제거
+                const existingInputs = form.querySelectorAll('input[name="schedule_images"]');
+                existingInputs.forEach(input => input.remove());
+                
+                // 새로 추가된 이미지가 있는 경우에만 파일 입력 추가
+                if (scheduleImages.length > 0) {
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.name = 'schedule_images';
+                    fileInput.multiple = true;
+                    fileInput.style.display = 'none';
+                    
+                    // DataTransfer를 사용하여 모든 파일을 하나의 input에 추가
+                    const dataTransfer = new DataTransfer();
+                    scheduleImages.forEach((imgData) => {
+                        dataTransfer.items.add(imgData.file);
+                    });
+                    fileInput.files = dataTransfer.files;
+                    
+                    form.appendChild(fileInput);
+                }
+            });
+        }
+    });
+    
+    // 날짜/시간 기본값 설정 및 분류 아코디언
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('meeting_date');
+        const timeInput = document.getElementById('meeting_time');
+        
+        if (dateInput && !dateInput.value) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.value = tomorrow.toISOString().split('T')[0];
+        }
+        
+        if (timeInput && !timeInput.value) {
+            timeInput.value = '19:00';
+        }
+    });
+</script>
+{% endblock %}

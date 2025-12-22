@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title|default:post.content|truncatewords:10 }} - {{ band.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .post-content img {
+        max-width: 100% !important;
+        height: auto !important;
+        display: block;
+        margin: 16px 0;
+        border-radius: 8px;
+    }
+    .post-content {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 900px;">
+        <div style="margin-bottom: 16px;">
+            <a href="{% url 'band:detail' band.id %}" style="color: var(--brand); text-decoration: none;">← {{ band.name }}</a>
+        </div>
+        
+        <!-- 게시글 -->
+        <div style="padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
+            {% if post.is_pinned %}
+                <span style="display: inline-block; padding: 4px 8px; background: var(--brand); color: white; font-size: 12px; border-radius: 4px; margin-bottom: 12px;">고정</span>
+            {% endif %}
+            {% if post.is_notice %}
+                <span style="display: inline-block; padding: 4px 8px; background: #dc2626; color: white; font-size: 12px; border-radius: 4px; margin-bottom: 12px;">공지</span>
+            {% endif %}
+            
+            {% if post.title %}
+                <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 700; color: #1e293b;">{{ post.title }}</h1>
+            {% endif %}
+            
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
+                <img src="{{ post.author.profile_image_url }}" alt="{{ post.author.activity_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <div>
+                    <div style="font-weight: 700; color: #1e293b;">{{ post.author.activity_name }}</div>
+                    <div style="font-size: 13px; color: #64748b;">{{ post.created_at|date:"Y년 m월 d일 H:i" }}</div>
+                </div>
+            </div>
+            
+            <div class="post-content" style="margin-bottom: 16px; line-height: 1.8; color: #1e293b;">
+                {{ post.content|safe }}
+            </div>
+            
+            
+            <!-- 투표 -->
+            {% if vote %}
+                <div style="padding: 16px; background: #f8fafc; border-radius: 8px; margin-bottom: 16px;">
+                    <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700;">{{ vote.title }}</h3>
+                    {% if is_member %}
+                        <form method="post" action="{% url 'band:vote_participate' band.id post.id %}">
+                            {% csrf_token %}
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                {% for option in vote.options.all %}
+                                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px; background: white; border-radius: 6px; cursor: pointer;">
+                                        {% if vote.is_multiple_choice %}
+                                            <input type="checkbox" name="options" value="{{ option.id }}" {% if option.id in user_vote_choices %}checked{% endif %}>
+                                        {% else %}
+                                            <input type="radio" name="options" value="{{ option.id }}" {% if option.id in user_vote_choices %}checked{% endif %}>
+                                        {% endif %}
+                                        <span style="flex: 1;">{{ option.option_text }}</span>
+                                        <span style="font-size: 14px; color: var(--brand); font-weight: 600;">{{ option.vote_count }}표</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="margin-top: 12px;">투표하기</button>
+                        </form>
+                    {% else %}
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            {% for option in vote.options.all %}
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: white; border-radius: 6px;">
+                                    <span>{{ option.option_text }}</span>
+                                    <span style="font-size: 14px; color: var(--brand); font-weight: 600;">{{ option.vote_count }}표</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button onclick="toggleLike({{ post.id }})" class="btn btn-ghost" id="like-btn" style="{% if is_liked %}color: var(--brand);{% endif %} display: flex; align-items: center; gap: 4px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" {% if is_liked %}fill="currentColor"{% else %}fill="none" stroke="currentColor"{% endif %} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                        <span id="like-count">{{ post.like_count }}</span>
+                    </button>
+                    <span style="color: #94a3b8; display: flex; align-items: center; gap: 4px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        {{ post.comment_count }}
+                    </span>
+                    <span style="color: #94a3b8; display: flex; align-items: center; gap: 4px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        {{ post.view_count }}
+                    </span>
+                </div>
+                {% if request.user.is_authenticated and post.author == request.user %}
+                    <div style="display: flex; gap: 8px;">
+                        <a href="{% url 'band:post_update' band.id post.id %}" class="btn btn-ghost" style="font-size: 13px; padding: 6px 12px; border: 1px solid #e2e8f0; text-decoration: none;">수정</a>
+                        <a href="{% url 'band:post_delete' band.id post.id %}" class="btn btn-ghost" style="font-size: 13px; padding: 6px 12px; color: #dc2626; border: 1px solid #fee2e2; text-decoration: none;">삭제</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 댓글 -->
+        <div style="padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700;">댓글 ({{ post.comment_count }})</h2>
+            
+            {% if is_member %}
+                <form method="post" action="{% url 'band:comment_create' band.id post.id %}" style="margin-bottom: 24px; position: relative;">
+                    {% csrf_token %}
+                    <textarea name="content" rows="1" placeholder="댓글을 작성하세요..." style="width: 100%; padding: 12px 60px 12px 12px; border: 1px solid #e2e8f0; border-radius: 8px; resize: none; height: 48px; font-size: 14px; line-height: 1.5; box-sizing: border-box; font-family: inherit; overflow-y: auto; display: block;"></textarea>
+                    <button type="submit" style="position: absolute; right: 8px; top: 8px; width: 32px; height: 32px; padding: 0 !important; margin: 0 !important; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; background: var(--brand); z-index: 10;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;">
+                            <line x1="12" y1="19" x2="12" y2="5"></line>
+                            <polyline points="5 12 12 5 19 12"></polyline>
+                        </svg>
+                    </button>
+                </form>
+            {% endif %}
+            
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                {% for comment in comments %}
+                    <div id="comment-{{ comment.id }}" style="padding: 12px; background: #f8fafc; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <img src="{{ comment.author.profile_image_url }}" alt="{{ comment.author.activity_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                <span style="font-weight: 700; font-size: 14px;">{{ comment.author.activity_name }}</span>
+                                <span style="font-size: 12px; color: #94a3b8;">{{ comment.created_at|date:"m.d H:i" }}</span>
+                                {% if comment.updated_at != comment.created_at %}
+                                    <span style="font-size: 11px; color: #94a3b8;">(수정됨)</span>
+                                {% endif %}
+                            </div>
+                            {% if request.user.is_authenticated and comment.author == request.user %}
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" onclick="editComment({{ comment.id }}, '{{ comment.content|escapejs }}')" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px; border: 1px solid #e2e8f0; text-decoration: none; cursor: pointer;">수정</button>
+                                    <form method="post" action="{% url 'band:comment_delete' band.id post.id comment.id %}" style="display: inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px; color: #dc2626; border: 1px solid #fee2e2; cursor: pointer;">삭제</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+                            <div id="comment-content-{{ comment.id }}" style="flex: 1; color: #1e293b; line-height: 1.6;">{{ comment.content|linebreaks }}</div>
+                            {% if is_member %}
+                                <button type="button" id="reply-btn-{{ comment.id }}" onclick="toggleReplyForm({{ comment.id }})" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px; border: 1px solid #e2e8f0; text-decoration: none; cursor: pointer; color: #64748b; flex-shrink: 0; white-space: nowrap;">답글</button>
+                            {% endif %}
+                        </div>
+                        <div id="comment-edit-{{ comment.id }}" style="display: none;">
+                            <form method="post" action="{% url 'band:comment_update' band.id post.id comment.id %}">
+                                {% csrf_token %}
+                                <textarea name="content" rows="3" required style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; resize: vertical; min-height: 80px; max-height: 200px; font-size: 14px; line-height: 1.5; box-sizing: border-box; font-family: inherit;" id="comment-edit-textarea-{{ comment.id }}"></textarea>
+                                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                    <button type="submit" class="btn btn-primary" style="font-size: 13px; padding: 6px 12px;">저장</button>
+                                    <button type="button" onclick="cancelEdit({{ comment.id }})" class="btn btn-ghost" style="font-size: 13px; padding: 6px 12px;">취소</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- 대댓글 작성 폼 -->
+                        {% if is_member %}
+                            <div id="reply-form-{{ comment.id }}" style="display: none; margin-left: 40px; margin-top: 12px;">
+                                <form method="post" action="{% url 'band:comment_create' band.id post.id %}" style="position: relative;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="parent" value="{{ comment.id }}">
+                                    <textarea name="content" rows="1" placeholder="대댓글을 작성하세요..." style="width: 100%; padding: 12px 60px 12px 12px; border: 1px solid #e2e8f0; border-radius: 8px; resize: none; height: 48px; font-size: 14px; line-height: 1.5; box-sizing: border-box; font-family: inherit; overflow-y: auto; display: block;"></textarea>
+                                    <button type="submit" style="position: absolute; right: 8px; top: 8px; width: 32px; height: 32px; padding: 0 !important; margin: 0 !important; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; background: var(--brand); z-index: 10;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;">
+                                            <line x1="12" y1="19" x2="12" y2="5"></line>
+                                            <polyline points="5 12 12 5 19 12"></polyline>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- 대댓글 -->
+                        {% for reply in comment.replies.all %}
+                            <div style="margin-left: 40px; margin-top: 12px; padding: 12px; background: white; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <img src="{{ reply.author.profile_image_url }}" alt="{{ reply.author.activity_name }}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                                        <span style="font-weight: 700; font-size: 13px;">{{ reply.author.activity_name }}</span>
+                                        <span style="font-size: 11px; color: #94a3b8;">{{ reply.created_at|date:"m.d H:i" }}</span>
+                                        {% if reply.updated_at != reply.created_at %}
+                                            <span style="font-size: 10px; color: #94a3b8;">(수정됨)</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if request.user.is_authenticated and reply.author == request.user %}
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" onclick="editComment({{ reply.id }}, '{{ reply.content|escapejs }}')" class="btn btn-ghost" style="font-size: 11px; padding: 3px 6px; border: 1px solid #e2e8f0; text-decoration: none; cursor: pointer;">수정</button>
+                                            <form method="post" action="{% url 'band:comment_delete' band.id post.id reply.id %}" style="display: inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-ghost" style="font-size: 11px; padding: 3px 6px; color: #dc2626; border: 1px solid #fee2e2; cursor: pointer;">삭제</button>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div id="comment-content-{{ reply.id }}" style="color: #1e293b; line-height: 1.6; font-size: 14px;">{{ reply.content|linebreaks }}</div>
+                                <div id="comment-edit-{{ reply.id }}" style="display: none;">
+                                    <form method="post" action="{% url 'band:comment_update' band.id post.id reply.id %}">
+                                        {% csrf_token %}
+                                        <textarea name="content" rows="3" required style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; resize: vertical; min-height: 80px; max-height: 200px; font-size: 14px; line-height: 1.5; box-sizing: border-box; font-family: inherit;" id="comment-edit-textarea-{{ reply.id }}"></textarea>
+                                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                            <button type="submit" class="btn btn-primary" style="font-size: 13px; padding: 6px 12px;">저장</button>
+                                            <button type="button" onclick="cancelEdit({{ reply.id }})" class="btn btn-ghost" style="font-size: 13px; padding: 6px 12px;">취소</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if request.user.is_authenticated %}
+<!-- DEBUG BandPost author/current user
+     postId={{ post.id }}
+     author_id={{ post.author.id }}
+     author_name="{{ post.author.activity_name }}"
+     current_user_id={{ request.user.id }}
+     current_user_name="{{ request.user.activity_name }}"
+-->
+{% endif %}
+
+<script>
+function toggleLike(postId) {
+    fetch(`/band/{{ band.id }}/posts/${postId}/like/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('like-count').textContent = data.like_count;
+        const btn = document.getElementById('like-btn');
+        if (data.is_liked) {
+            btn.style.color = 'var(--brand)';
+        } else {
+            btn.style.color = '';
+        }
+    });
+}
+
+function editComment(commentId, originalContent) {
+    // 기존 내용 숨기기
+    document.getElementById('comment-content-' + commentId).style.display = 'none';
+    // 수정 폼 보이기
+    const editDiv = document.getElementById('comment-edit-' + commentId);
+    editDiv.style.display = 'block';
+    // 텍스트 영역에 원본 내용 설정
+    const textarea = document.getElementById('comment-edit-textarea-' + commentId);
+    if (textarea) {
+        textarea.value = originalContent;
+        textarea.focus();
+    }
+}
+
+function cancelEdit(commentId) {
+    // 수정 폼 숨기기
+    document.getElementById('comment-edit-' + commentId).style.display = 'none';
+    // 기존 내용 보이기
+    document.getElementById('comment-content-' + commentId).style.display = 'block';
+}
+
+function toggleReplyForm(commentId) {
+    const form = document.getElementById('reply-form-' + commentId);
+    const btn = document.getElementById('reply-btn-' + commentId);
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+        if (btn) {
+            btn.textContent = '취소';
+        }
+    } else {
+        form.style.display = 'none';
+        if (btn) {
+            btn.textContent = '답글';
+        }
+    }
+}
+</script>
+{% endblock %}
+

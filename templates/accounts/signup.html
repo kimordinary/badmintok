@@ -4,55 +4,823 @@
 {% block title %}회원가입 - 배드민톡{% endblock %}
 
 {% block content %}
-<section class="auth-hero" aria-labelledby="signup-title" style="background-image: url('{% static 'images/badmintok.png' %}');">
-    <div class="auth-hero__overlay"></div>
-    <div class="auth-hero__content">
-        <h1 id="signup-title">배드민톡 회원가입</h1>
-        <p>동호인 1등 커뮤니티에서 라켓 라이프를 시작하세요.</p>
-    </div>
-</section>
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 20px;">
+    <div style="width: 100%; max-width: 400px;">
+        <!-- 제목 -->
+        <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1e293b; text-align: center;">회원가입</h1>
+        <p style="margin: 0 0 32px 0; font-size: 14px; color: #64748b; text-align: center;">이메일을 입력하여 계정을 만드세요</p>
 
-<section class="auth-section">
-    <div class="container auth-grid">
-        <div class="auth-intro">
-            <h2>회원 전용 혜택</h2>
-            <ul>
-                <li>전국 배드민턴 대회 일정 & 참가신청 관리</li>
-                <li>코트 메이트 찾기, 장비 토론 등 실시간 커뮤니티</li>
-                <li>장비 리뷰, 할인몰 소식, 동호인 뉴스 맞춤 제공</li>
-            </ul>
-            <p class="auth-note">이미 계정이 있으신가요? <a href="{% url 'accounts:login' %}">로그인하기</a></p>
-        </div>
+        <!-- 회원가입 폼 -->
+        <form method="post" novalidate style="display: flex; flex-direction: column; gap: 20px;">
+            {% csrf_token %}
 
-        <div class="auth-card" role="form">
-            <h3>회원가입</h3>
-            <form method="post" novalidate>
-                {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div style="padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; color: #dc2626; font-size: 14px;">
+                    {% for error in form.non_field_errors %}
+                        <p style="margin: 0;">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
-                {% if form.non_field_errors %}
-                    <div class="form-errors" role="alert">
-                        {% for error in form.non_field_errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
+            <!-- Email 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.email.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">이메일</label>
+                <input type="email" 
+                       name="{{ form.email.name }}" 
+                       id="{{ form.email.id_for_label }}" 
+                       placeholder="m@example.com"
+                       value="{{ form.email.value|default:'' }}"
+                       required
+                       autofocus
+                       style="width: 100%; padding: 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                {% for error in form.email.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- 활동명 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.activity_name.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">활동명</label>
+                <input type="text" 
+                       name="{{ form.activity_name.name }}" 
+                       id="{{ form.activity_name.id_for_label }}" 
+                       placeholder="활동명을 입력하세요"
+                       value="{{ form.activity_name.value|default:'' }}"
+                       required
+                       style="width: 100%; padding: 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                {% for error in form.activity_name.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- Password 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.password1.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">비밀번호</label>
+                <input type="password" 
+                       name="{{ form.password1.name }}" 
+                       id="{{ form.password1.id_for_label }}" 
+                       placeholder="비밀번호를 입력하세요"
+                       required
+                       style="width: 100%; padding: 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                {% if form.password1.help_text %}
+                    <small style="color: #64748b; font-size: 12px; line-height: 1.4;">{{ form.password1.help_text|safe }}</small>
                 {% endif %}
+                {% for error in form.password1.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
 
-                {% for field in form %}
-                    <div class="form-field{% if field.errors %} has-error{% endif %}">
-                        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
-                        {{ field }}
-                        {% if field.help_text %}
-                            <small class="help-text">{{ field.help_text|safe }}</small>
-                        {% endif %}
-                        {% for error in field.errors %}
-                            <small class="error-text">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+            <!-- Password 확인 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.password2.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">비밀번호 확인</label>
+                <input type="password" 
+                       name="{{ form.password2.name }}" 
+                       id="{{ form.password2.id_for_label }}" 
+                       placeholder="비밀번호를 다시 입력하세요"
+                       required
+                       style="width: 100%; padding: 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                {% if form.password2.help_text %}
+                    <small style="color: #64748b; font-size: 12px;">{{ form.password2.help_text|safe }}</small>
+                {% endif %}
+                {% for error in form.password2.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- 법적 동의 항목 -->
+            <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #f8fafc; border-radius: 6px;">
+                <!-- 이용약관 동의 -->
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <input type="checkbox" 
+                           name="{{ form.terms_agreed.name }}" 
+                           id="{{ form.terms_agreed.id_for_label }}" 
+                           required
+                           style="margin-top: 2px; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;">
+                    <label for="{{ form.terms_agreed.id_for_label }}" style="font-size: 14px; color: #1e293b; cursor: pointer; line-height: 1.5; flex: 1;">
+                        <a href="#" onclick="openTermsModal(event); return false;" style="color: var(--brand); text-decoration: underline;">이용약관</a>에 동의합니다 (필수)
+                    </label>
+                </div>
+                {% for error in form.terms_agreed.errors %}
+                    <small style="color: #dc2626; font-size: 12px; margin-left: 24px;">{{ error }}</small>
                 {% endfor %}
 
-                <button type="submit" class="btn btn-primary btn-full">가입하기</button>
-            </form>
+                <!-- 개인정보처리방침 동의 -->
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <input type="checkbox" 
+                           name="{{ form.privacy_agreed.name }}" 
+                           id="{{ form.privacy_agreed.id_for_label }}" 
+                           required
+                           style="margin-top: 2px; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;">
+                    <label for="{{ form.privacy_agreed.id_for_label }}" style="font-size: 14px; color: #1e293b; cursor: pointer; line-height: 1.5; flex: 1;">
+                        <a href="#" onclick="openPrivacyModal(event); return false;" style="color: var(--brand); text-decoration: underline;">개인정보처리방침</a>에 동의합니다 (필수)
+                    </label>
+                </div>
+                {% for error in form.privacy_agreed.errors %}
+                    <small style="color: #dc2626; font-size: 12px; margin-left: 24px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- 회원가입 버튼 -->
+            <button type="submit" style="width: 100%; padding: 12px; background: var(--brand); color: #ffffff; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                가입하기
+            </button>
+        </form>
+
+        <!-- 구분선 -->
+        <div style="margin: 24px 0; position: relative; text-align: center;">
+            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #e2e8f0;"></div>
+            <span style="position: relative; background: #ffffff; padding: 0 12px; font-size: 14px; color: #94a3b8;">또는 다음으로 계속</span>
+        </div>
+
+        <!-- 소셜 로그인 버튼 -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- 카카오 로그인 -->
+            <a href="{% url 'accounts:kakao_login' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #FEE500; border: none; border-radius: 6px; text-decoration: none; color: #000000; font-size: 14px; font-weight: 500; transition: background 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 2.625-1.724 4.95-4.326 6.379l1.05 3.936-4.05-2.625c-1.05.15-2.1.225-3.174.225-5.799 0-10.5-3.664-10.5-8.185C1.5 6.664 6.201 3 12 3z"/>
+                </svg>
+                <span>카카오로 회원가입</span>
+            </a>
+        </div>
+
+        <!-- 로그인 링크 -->
+        <p style="margin: 24px 0 0 0; text-align: center; font-size: 14px; color: #1e293b;">
+            이미 계정이 있으신가요? <a href="{% url 'accounts:login' %}" style="color: #1e293b; text-decoration: underline;">로그인</a>
+        </p>
+    </div>
+</div>
+
+<style>
+    button[type="submit"]:hover {
+        background: var(--brand-700) !important;
+    }
+
+    a[href*="kakao"]:hover {
+        background: #FDD835 !important;
+    }
+
+    input[type="checkbox"] {
+        accent-color: var(--brand);
+        cursor: pointer;
+    }
+
+    input[type="checkbox"]:checked {
+        accent-color: var(--brand);
+    }
+</style>
+
+<!-- 이용약관 모달 -->
+<div id="termsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+        <!-- 모달 헤더 -->
+        <div style="padding: 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1e293b;">배드민톡 이용약관</h2>
+            <button onclick="closeTermsModal()" style="background: none; border: none; cursor: pointer; padding: 4px; color: #64748b; font-size: 24px; line-height: 1; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        
+        <!-- 모달 내용 (스크롤 가능) -->
+        <div id="termsModalContent" style="flex: 1; overflow-y: auto; padding: 24px; font-size: 14px; line-height: 1.8; color: #1e293b;">
+            <p style="margin: 0 0 24px 0; font-size: 14px; color: #64748b;">(전자상거래 표준약관 기반)</p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제1조(목적)</h2>
+            <p style="margin: 0 0 20px 0;">
+                이 약관은 평범한(전자상거래 사업자, 이하 "회사")이 운영하는 <strong>배드민톡(https://badmintok.com, 이하 "몰")</strong>에서 제공하는 인터넷 관련 서비스(이하 "서비스")를 이용함에 있어 몰과 이용자의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.<br>
+                ※ PC통신, 무선 등을 이용하는 전자상거래에 대해서도 그 성질에 반하지 않는 한 이 약관을 준용합니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제2조(정의)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">"몰"이란 회사가 재화 또는 용역(이하 "재화 등")을 이용자에게 제공하기 위하여 컴퓨터 등 정보통신설비를 이용하여 재화 등을 거래할 수 있도록 설정한 가상의 영업장을 말하며, 아울러 사이버몰을 운영하는 사업자의 의미로도 사용합니다.</li>
+                <li style="margin-bottom: 8px;">"이용자"란 몰에 접속하여 이 약관에 따라 몰이 제공하는 서비스를 받는 회원 및 비회원을 말합니다.</li>
+                <li style="margin-bottom: 8px;">"회원"이라 함은 몰에 회원등록을 한 자로서, 계속적으로 몰이 제공하는 서비스를 이용할 수 있는 자를 말합니다.</li>
+                <li>"비회원"이라 함은 회원에 가입하지 않고 몰이 제공하는 서비스를 이용하는 자를 말합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제3조(약관 등의 명시와 설명 및 개정)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 이 약관의 내용과 상호 및 대표자 성명, 영업소 소재지 주소(소비자의 불만을 처리할 수 있는 곳의 주소를 포함), 전자우편주소, 사업자등록번호, 통신판매업 신고번호(해당 시), 개인정보보호책임자 등을 이용자가 쉽게 알 수 있도록 몰의 초기 서비스화면(전면) 또는 연결화면을 통하여 게시합니다. 다만, 약관의 내용은 이용자가 연결화면을 통하여 볼 수 있도록 할 수 있습니다.</li>
+            </ol>
+            
+            <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin: 12px 0 20px 0;">
+                <p style="margin: 0 0 6px 0; font-weight: 600;">상호(개인사업자): 평범한</p>
+                <p style="margin: 0 0 6px 0;">대표자: 김형규</p>
+                <p style="margin: 0 0 6px 0;">사업자등록번호: 638-09-02602</p>
+                <p style="margin: 0 0 6px 0;">통신판매업 신고번호: 신고 예정(신고 완료 후 고지)</p>
+                <p style="margin: 0 0 6px 0;">영업소 소재지: 경상남도 창원시 마산합포구 가포본동 5길 23 203동 1401호 (51755)</p>
+                <p style="margin: 0 0 6px 0;">고객센터: 전화 미운영 / 이메일 문의(<a href="mailto:kimyukim99@naver.com" style="color: var(--brand);">kimyukim99@naver.com</a>)</p>
+                <p style="margin: 0;">개인정보보호책임자: 김형규(이메일: <a href="mailto:kimyukim99@naver.com" style="color: var(--brand);">kimyukim99@naver.com</a>)</p>
+            </div>
+
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;" start="2">
+                <li style="margin-bottom: 8px;">몰은 이용자가 약관에 동의하기에 앞서 청약철회·배송책임·환불조건 등 중요한 내용을 이용자가 이해할 수 있도록 별도의 연결화면 또는 팝업화면 등을 제공하여 이용자의 확인을 구할 수 있습니다.</li>
+                <li style="margin-bottom: 8px;">몰은 관련 법령을 위배하지 않는 범위에서 이 약관을 개정할 수 있습니다.</li>
+                <li style="margin-bottom: 8px;">몰이 약관을 개정할 경우 적용일자 및 개정사유를 명시하여 현행약관과 함께 몰의 초기화면에 적용일자 7일 이전부터 적용일자 전일까지 공지합니다. 다만, 이용자에게 불리하게 약관내용을 변경하는 경우에는 최소 30일 이상의 사전 유예기간을 두고 공지합니다.</li>
+                <li style="margin-bottom: 8px;">개정약관은 적용일자 이후 체결되는 계약에만 적용되고, 그 이전에 이미 체결된 계약에 대해서는 개정 전 약관조항이 그대로 적용됩니다. 다만 이용자가 개정약관 적용을 원하는 의사를 공지기간 내에 표시하고 몰이 동의한 경우에는 개정약관이 적용됩니다.</li>
+                <li>이 약관에서 정하지 아니한 사항과 이 약관의 해석에 관하여는 관계법령 또는 상관례에 따릅니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제4조(서비스의 제공 및 변경)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 다음과 같은 업무를 수행합니다.
+                    <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                        <li>재화 또는 용역에 대한 정보 제공 및 구매계약의 체결(쇼핑몰 서비스 제공 시)</li>
+                        <li>구매계약이 체결된 재화 또는 용역의 배송(쇼핑몰 서비스 제공 시)</li>
+                        <li>커뮤니티 및 콘텐츠 제공, 운영(게시판 등)</li>
+                        <li>기타 몰이 정하는 업무</li>
+                    </ul>
+                </li>
+                <li style="margin-bottom: 8px;">몰은 재화 또는 용역의 품절 또는 기술적 사양의 변경 등의 경우 장차 체결되는 계약에 의해 제공할 재화 또는 용역의 내용을 변경할 수 있습니다. 이 경우 변경된 재화 또는 용역의 내용 및 제공일자를 명시하여 공지합니다.</li>
+                <li style="margin-bottom: 8px;">몰이 이용자와 계약을 체결한 서비스 내용을 변경할 경우 그 사유를 이용자에게 통지 가능한 방법으로 통지합니다.</li>
+                <li>전항의 경우 몰은 이용자가 입은 손해를 배상합니다. 다만, 몰이 고의 또는 과실이 없음을 입증하는 경우에는 그러하지 아니합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제5조(서비스의 중단)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 정보통신설비의 보수점검·교체·고장, 통신두절 등의 사유가 발생한 경우 서비스 제공을 일시적으로 중단할 수 있습니다.</li>
+                <li style="margin-bottom: 8px;">제1항으로 인한 손해에 대하여 몰은 배상합니다. 단, 몰이 고의 또는 과실이 없음을 입증하는 경우에는 그러하지 아니합니다.</li>
+                <li>사업종목 전환, 사업 포기, 업체 간 통합 등으로 서비스 제공이 불가능한 경우 몰은 제8조에 정한 방법으로 이용자에게 통지하고, 관련 법령 및 몰이 제시한 조건에 따라 보상합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제6조(회원가입)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">이용자는 몰이 정한 가입 양식에 따라 회원정보를 기입한 후 이 약관에 동의한다는 의사표시를 함으로써 회원가입을 신청합니다.</li>
+                <li style="margin-bottom: 8px;">몰은 제1항과 같이 회원가입을 신청한 이용자 중 다음 각 호에 해당하지 않는 한 회원으로 등록합니다.
+                    <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                        <li>가입신청자가 이전에 회원자격을 상실한 적이 있는 경우(단, 자격상실 후 3년 경과 및 몰의 재가입 승낙 시 예외)</li>
+                        <li>등록 내용에 허위, 누락, 오기가 있는 경우</li>
+                        <li>기타 회원으로 등록하는 것이 기술상 현저히 지장이 있다고 판단되는 경우</li>
+                    </ul>
+                </li>
+                <li style="margin-bottom: 8px;">회원가입계약의 성립 시기는 몰의 승낙이 회원에게 도달한 시점으로 합니다.</li>
+                <li>회원은 등록사항에 변경이 있는 경우 상당한 기간 이내에 회원정보 수정 등의 방법으로 변경사항을 알려야 합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제7조(회원 탈퇴 및 자격 상실 등)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">회원은 몰에 언제든지 탈퇴를 요청할 수 있으며 몰은 즉시 회원탈퇴를 처리합니다.</li>
+                <li style="margin-bottom: 8px;">회원이 다음 각 호의 사유에 해당하는 경우 몰은 회원자격을 제한 및 정지시킬 수 있습니다.
+                    <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                        <li>가입 신청 시에 허위 내용을 등록한 경우</li>
+                        <li>몰을 이용하여 구입한 재화 등의 대금 등 채무를 기일에 지급하지 않는 경우(쇼핑몰 운영 시)</li>
+                        <li>다른 사람의 몰 이용을 방해하거나 그 정보를 도용하는 등 전자상거래 질서를 위협하는 경우</li>
+                        <li>법령 또는 이 약관이 금지하거나 공서양속에 반하는 행위를 하는 경우</li>
+                    </ul>
+                </li>
+                <li style="margin-bottom: 8px;">몰이 회원 자격을 제한·정지 시킨 후 동일한 행위가 2회 이상 반복되거나 30일 이내에 그 사유가 시정되지 아니하는 경우 몰은 회원자격을 상실시킬 수 있습니다.</li>
+                <li>몰이 회원자격을 상실시키는 경우에는 회원등록을 말소하며, 말소 전에 최소 30일 이상의 기간을 정하여 소명할 기회를 부여합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제8조(회원에 대한 통지)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰이 회원에 대한 통지를 하는 경우 회원이 지정한 전자우편 주소로 할 수 있습니다.</li>
+                <li>몰은 불특정다수 회원에 대한 통지의 경우 1주일 이상 몰 게시판에 게시함으로써 개별 통지에 갈음할 수 있습니다. 다만, 회원 본인의 거래와 관련하여 중대한 영향을 미치는 사항은 개별 통지합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제9조(구매신청 및 개인정보 제공 동의 등)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰 이용자는 쇼핑몰 서비스 제공 시 몰상에서 다음 또는 이와 유사한 방법에 의하여 구매를 신청합니다.
+                    <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                        <li>재화 등의 검색 및 선택</li>
+                        <li>받는 사람의 성명, 주소, 전화번호, 전자우편주소(또는 이동전화번호) 등의 입력</li>
+                        <li>약관내용, 청약철회권 제한, 배송료 등 비용부담 관련 내용 확인</li>
+                        <li>이 약관에 동의하고 위 사항을 확인하거나 거부하는 표시</li>
+                        <li>재화 등의 구매신청 및 확인</li>
+                        <li>결제방법 선택</li>
+                    </ul>
+                </li>
+                <li style="margin-bottom: 8px;">몰이 제3자에게 구매자 개인정보를 제공할 필요가 있는 경우 제공받는 자, 이용목적, 항목, 보유 및 이용기간을 알리고 동의를 받습니다.</li>
+                <li>몰이 개인정보 취급을 위탁하는 경우 수탁자 및 위탁업무 내용을 알립니다. 다만 계약이행에 필요하고 이용자 편의증진과 관련된 경우에는 개인정보 처리방침을 통해 고지할 수 있습니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제10조(계약의 성립)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 제9조와 같은 구매신청에 대하여 다음 각 호에 해당하면 승낙하지 않을 수 있습니다.
+                    <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                        <li>신청 내용에 허위, 누락, 오기가 있는 경우</li>
+                        <li>미성년자가 청소년보호법상 금지되는 재화·용역을 구매하는 경우</li>
+                        <li>기타 기술상 현저히 지장이 있다고 판단되는 경우</li>
+                    </ul>
+                </li>
+                <li style="margin-bottom: 8px;">몰의 승낙이 수신확인통지 형태로 이용자에게 도달한 시점에 계약이 성립한 것으로 봅니다.</li>
+                <li>승낙의 의사표시에는 구매신청 확인, 판매가능 여부, 정정·취소 등에 관한 정보 등을 포함합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제11조(지급방법)</h2>
+            <p style="margin: 0 0 20px 0;">
+                몰에서 구매한 재화 또는 용역에 대한 대금지급방법은 다음 각 호의 방법 중 가용한 방법으로 할 수 있습니다. 몰은 이용자의 지급방법에 대하여 어떠한 명목의 수수료도 추가하여 징수하지 않습니다.
+            </p>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>계좌이체</li>
+                <li>카드 결제</li>
+                <li>무통장입금</li>
+                <li>전자화폐</li>
+                <li>수령 시 대금지급</li>
+                <li>포인트 결제(몰이 운영·제공하는 경우)</li>
+                <li>상품권 결제(몰이 인정한 경우)</li>
+                <li>기타 전자적 지급 방법</li>
+            </ul>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제12조(수신확인통지·구매신청 변경 및 취소)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 이용자의 구매신청이 있는 경우 수신확인통지를 합니다.</li>
+                <li>수신확인통지를 받은 이용자는 의사표시 불일치 등이 있는 경우 즉시 변경 및 취소를 요청할 수 있고, 몰은 배송 전에 요청이 있는 경우 지체 없이 처리합니다. 다만 이미 대금을 지불한 경우 제15조에 따릅니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제13조(재화 등의 공급)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 별도 약정이 없는 이상 청약일로부터 7일 이내에 재화 등을 배송할 수 있도록 필요한 조치를 합니다. 다만 대금의 전부 또는 일부를 받은 경우에는 받은 날부터 3영업일 이내에 조치를 취합니다.</li>
+                <li>몰은 배송수단, 배송비 부담자, 배송기간 등을 명시하며, 약정 배송기간을 초과한 경우 손해를 배상합니다. 다만 고의·과실이 없음을 입증하는 경우에는 그러하지 아니합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제14조(환급)</h2>
+            <p style="margin: 0 0 20px 0;">
+                몰은 재화 등이 품절 등의 사유로 제공이 불가능한 경우 지체 없이 그 사유를 이용자에게 통지하고, 사전에 대금을 받은 경우 받은 날부터 3영업일 이내에 환급하거나 환급에 필요한 조치를 취합니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제15조(청약철회 등)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">이용자는 관련 법령에 따라 재화 등을 공급받은 날로부터 7일 이내에 청약철회를 할 수 있습니다.</li>
+                <li style="margin-bottom: 8px;">다음 각 호에 해당하는 경우 반품 및 교환이 제한될 수 있습니다(법령상 예외 포함).
+                    <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                        <li>이용자 책임으로 재화 등이 멸실 또는 훼손된 경우(단, 확인을 위한 포장 훼손은 예외)</li>
+                        <li>이용자의 사용 또는 일부 소비로 가치가 현저히 감소한 경우</li>
+                        <li>시간 경과로 재판매가 곤란할 정도로 가치가 현저히 감소한 경우</li>
+                        <li>복제가 가능한 재화 등의 포장을 훼손한 경우</li>
+                    </ul>
+                </li>
+                <li style="margin-bottom: 8px;">몰이 사전에 제한 사실을 명확히 고지하지 않은 경우, 이용자의 청약철회가 제한되지 않습니다.</li>
+                <li>표시·광고와 다르거나 계약과 다르게 이행된 경우, 법령이 정한 기간 내 청약철회 등을 할 수 있습니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제16조(청약철회 등의 효과)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 반환받은 경우 3영업일 이내에 대금을 환급합니다. 환급이 지연되면 법령이 정한 지연이자를 지급합니다.</li>
+                <li style="margin-bottom: 8px;">카드 결제 등으로 지급한 경우 결제수단 제공자에게 청구 정지 또는 취소를 요청합니다.</li>
+                <li style="margin-bottom: 8px;">반환 비용은 원칙적으로 이용자 부담이며, 표시·광고와 다르거나 계약과 다르게 이행된 경우에는 몰이 부담합니다.</li>
+                <li>발송비를 부담한 경우, 청약철회 시 비용 부담 주체를 알기 쉽게 표시합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제17조(개인정보보호)</h2>
+            <p style="margin: 0 0 20px 0;">
+                몰은 관련 법령 및 개인정보 처리방침에 따라 이용자의 개인정보를 보호합니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제18조("몰"의 의무)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 법령과 이 약관이 금지하거나 공서양속에 반하는 행위를 하지 않으며 지속적이고 안정적으로 서비스를 제공하기 위해 노력합니다.</li>
+                <li style="margin-bottom: 8px;">몰은 이용자가 안전하게 인터넷 서비스를 이용할 수 있도록 개인정보 보호를 위한 보안 시스템을 갖춥니다.</li>
+                <li style="margin-bottom: 8px;">몰이 부당한 표시·광고로 이용자가 손해를 입은 때에는 관련 법령에 따라 배상책임을 집니다.</li>
+                <li>몰은 이용자가 원하지 않는 영리목적의 광고성 전자우편을 발송하지 않습니다(단, 이용자의 사전 동의가 있는 경우는 제외).</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제19조(회원의 ID 및 비밀번호에 대한 의무)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">ID와 비밀번호 관리책임은 회원에게 있습니다.</li>
+                <li style="margin-bottom: 8px;">회원은 ID 및 비밀번호를 제3자에게 이용하게 해서는 안 됩니다.</li>
+                <li>도난 또는 제3자 사용을 인지한 경우 즉시 몰에 통보하고 안내에 따라야 합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제20조(이용자의 의무)</h2>
+            <p style="margin: 0 0 8px 0;">이용자는 다음 행위를 하여서는 안 됩니다.</p>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>신청 또는 변경 시 허위 내용 등록</li>
+                <li>타인의 정보 도용</li>
+                <li>몰에 게시된 정보의 변경</li>
+                <li>몰이 정한 정보 이외의 정보(프로그램 등) 송신 또는 게시</li>
+                <li>저작권 등 지적재산권 침해</li>
+                <li>명예훼손 또는 업무방해</li>
+                <li>외설·폭력 등 공서양속에 반하는 정보 게시</li>
+            </ul>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제21조(연결 "몰"과 피연결 "몰" 간의 관계)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">하이퍼링크 등으로 연결된 경우, 전자를 연결 몰, 후자를 피연결 몰이라 합니다.</li>
+                <li>연결 몰은 피연결 몰이 독자적으로 제공하는 재화 등에 대하여 보증 책임을 지지 않습니다(필요 시 화면에 명시).</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제22조(저작권의 귀속 및 이용제한)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰이 작성한 저작물의 저작권 등 지적재산권은 몰에 귀속합니다.</li>
+                <li style="margin-bottom: 8px;">이용자는 몰의 사전 승낙 없이 영리 목적으로 이용하거나 제3자에게 이용하게 해서는 안 됩니다.</li>
+                <li>몰은 약정에 따라 이용자에게 귀속된 저작권을 사용하는 경우 당해 이용자에게 통보합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제23조(분쟁해결)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">몰은 이용자가 제기하는 정당한 의견이나 불만을 반영하고 피해보상처리기구를 운영할 수 있습니다.</li>
+                <li style="margin-bottom: 8px;">불만사항은 우선 처리하되, 신속 처리가 곤란한 경우 사유와 일정을 통보합니다.</li>
+                <li>전자상거래 분쟁 관련 피해구제신청이 있는 경우, 관계기관 또는 분쟁조정기관의 조정에 따를 수 있습니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">제24조(재판권 및 준거법)</h2>
+            <ol style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li style="margin-bottom: 8px;">전자상거래 분쟁에 관한 소송은 제소 당시 이용자 주소를 관할하는 법원에 제기하며, 주소가 없는 경우 거소 관할 법원에 제기합니다. 주소·거소가 불명확하거나 외국 거주자의 경우 민사소송법상의 관할법원에 제기합니다.</li>
+                <li>본 약관과 관련된 소송에는 대한민국 법을 적용합니다.</li>
+            </ol>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">부 칙(시행일)</h2>
+            <p style="margin: 0 0 20px 0; font-weight: 600;">
+                이 약관은 2025년 12월 21일부터 시행합니다.
+            </p>
+        </div>
+        
+        <!-- 모달 푸터 (동의 버튼) -->
+        <div style="padding: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; flex-shrink: 0;">
+            <button id="termsAgreeBtn" onclick="agreeTerms()" disabled style="flex: 1; padding: 12px; background: #cbd5e1; color: #64748b; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: not-allowed; transition: all 0.2s;">
+                동의하기
+            </button>
+            <button onclick="closeTermsModal()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #1e293b; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                취소
+            </button>
         </div>
     </div>
-</section>
+</div>
+
+<!-- 개인정보처리방침 모달 -->
+<div id="privacyModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+        <!-- 모달 헤더 -->
+        <div style="padding: 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1e293b;">개인정보 처리방침</h2>
+            <button onclick="closePrivacyModal()" style="background: none; border: none; cursor: pointer; padding: 4px; color: #64748b; font-size: 24px; line-height: 1; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        
+        <!-- 모달 내용 (스크롤 가능) -->
+        <div id="privacyModalContent" style="flex: 1; overflow-y: auto; padding: 24px; font-size: 14px; line-height: 1.8; color: #1e293b;">
+            <p style="margin: 0 0 24px 0; font-size: 14px; color: #1e293b; line-height: 1.8;">
+                <strong>배드민톡(<a href="https://badmintok.com" style="color: var(--brand);">https://badmintok.com</a>, 이하 "서비스")</strong>은 개인사업자 <strong>평범한</strong>(이하 "회사")이 운영하는 배드민턴 커뮤니티 및(추후) 쇼핑몰 플랫폼입니다. 회사는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고, 관련 고충을 신속하고 원활하게 처리하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
+            </p>
+            <p style="margin: 0 0 24px 0; font-size: 14px; color: #1e293b; font-weight: 600;">
+                본 개인정보 처리방침은 <strong>배드민톡 서비스 전반</strong>에 적용됩니다.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">1. 개인정보의 처리 목적</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 관련 법령에 따라 별도의 동의를 받는 등 필요한 조치를 이행합니다.
+            </p>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(1) 회원가입 및 관리</h3>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>회원 가입의사 확인 및 회원제 서비스 제공에 따른 본인 식별·인증</li>
+                <li>회원자격 유지·관리, 부정 이용 방지</li>
+                <li>만 14세 미만 아동 가입 시 법정대리인 동의 여부 확인</li>
+                <li>각종 고지·통지 및 고객 문의·고충처리</li>
+            </ul>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(2) 서비스 제공(커뮤니티/콘텐츠/쇼핑몰)</h3>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>커뮤니티 기능 제공(게시글/댓글/활동 기록 등)</li>
+                <li>콘텐츠 제공 및 이용 이력 관리</li>
+                <li>(추후) 쇼핑몰 기능 제공, 구매 및 요금 결제, 물품 배송 또는 청구서 발송</li>
+                <li>맞춤형 서비스 제공 및 서비스 품질 개선</li>
+            </ul>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(3) 마케팅 및 광고 활용(제휴 포함)</h3>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>이벤트 및 광고성 정보 제공, 참여기회 제공</li>
+                <li>제휴 콘텐츠 제공 및 운영</li>
+                <li>접속빈도 파악, 서비스 이용 통계 분석</li>
+            </ul>
+            <p style="margin: 0 0 20px 0; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px;">
+                ※ <strong>마케팅 정보 수신은 선택 동의 사항</strong>이며, 동의하지 않아도 서비스 이용에 제한이 없습니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">2. 개인정보의 처리 및 보유 기간</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 개인정보 수집 시 정보주체로부터 동의받은 보유·이용기간 또는 법령에 따른 보유기간 내에서 개인정보를 처리·보유합니다. 개인정보 처리 목적 달성 또는 회원 탈퇴 시에는 지체 없이 해당 개인정보를 파기합니다.
+            </p>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(1) 서비스별 보유 기간</h3>
+            <ul style="margin: 0 0 12px 0; padding-left: 24px; line-height: 1.8;">
+                <li><strong>회원가입 및 관리</strong>: 회원 탈퇴 시까지</li>
+                <li><strong>서비스 제공(커뮤니티/콘텐츠/쇼핑몰)</strong>: 서비스 제공 완료 및 요금 결제·정산 완료 시까지
+                    <ul style="margin: 8px 0 0 20px; padding-left: 0;">
+                        <li>단, 커뮤니티 특성상 회원이 작성한 게시물·댓글 등은 서비스 운영·이용자 보호를 위해 <strong>탈퇴 후에도 삭제되지 않을 수 있으며</strong>, 회원이 삭제한 게시물은 별도 보관하지 않습니다(법령상 보존 의무가 있는 경우 예외).</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(2) 관계 법령에 따른 보존(필요 시)</h3>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>계약 또는 청약철회 등에 관한 기록: 5년</li>
+                <li>대금결제 및 재화 등의 공급에 관한 기록: 5년</li>
+                <li>소비자 불만 또는 분쟁처리에 관한 기록: 3년</li>
+                <li>표시·광고에 관한 기록: 6개월</li>
+                <li>서비스 방문 기록(접속로그, IP 등): 3개월</li>
+            </ul>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">3. 처리하는 개인정보의 항목 및 수집 방법</h2>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(1) 처리하는 개인정보 항목</h3>
+
+            <h4 style="font-size: 15px; font-weight: 600; margin: 16px 0 6px 0; color: #1e293b;">1) 일반 회원가입 시</h4>
+            <ul style="margin: 0 0 12px 0; padding-left: 24px; line-height: 1.8;">
+                <li><strong>필수항목</strong>: 아이디, 비밀번호, 이름, 닉네임, 이메일, 휴대전화</li>
+                <li><strong>선택항목</strong>: 생년월일, 성별, 프로필 이미지</li>
+            </ul>
+
+            <h4 style="font-size: 15px; font-weight: 600; margin: 16px 0 6px 0; color: #1e293b;">2) 만 14세 미만 가입 시(법정대리인 동의)</h4>
+            <ul style="margin: 0 0 12px 0; padding-left: 24px; line-height: 1.8;">
+                <li><strong>필수항목</strong>: 법정대리인 성명, 법정대리인 연락처(휴대전화), 아동과의 관계</li>
+            </ul>
+
+            <h4 style="font-size: 15px; font-weight: 600; margin: 16px 0 6px 0; color: #1e293b;">3) 간편 로그인(SNS) 이용 시</h4>
+            <p style="margin: 0 0 6px 0; font-size: 13px; color: #64748b;">
+                간편 로그인 제공 사업자로부터 다음 정보가 제공될 수 있습니다(회원의 계정 연동 및 로그인 제공 목적).
+            </p>
+            <ul style="margin: 0 0 12px 0; padding-left: 24px; line-height: 1.8;">
+                <li><strong>카카오 로그인</strong>: 이름, 이메일</li>
+                <li><strong>네이버 로그인</strong>: 아이디, 이름, 이메일, 별명, 생일</li>
+                <li><strong>구글 로그인</strong>: 이름, 이메일</li>
+            </ul>
+            <p style="margin: 0 0 20px 0; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px;">
+                ※ 실제 제공 항목은 회원이 각 SNS 사업자에서 동의한 범위 및 해당 사업자 정책에 따라 달라질 수 있습니다.
+            </p>
+
+            <h4 style="font-size: 15px; font-weight: 600; margin: 16px 0 6px 0; color: #1e293b;">4) 서비스 이용 과정에서 자동으로 수집될 수 있는 정보</h4>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>서비스 이용기록, 접속 로그, 쿠키, 접속 IP, 기기정보(브라우저/OS 등), 이용정지 기록, 불량 이용 기록</li>
+                <li>(추후 쇼핑몰 오픈 시) 결제기록, 배송 관련 처리기록(주문 처리에 필요한 범위)</li>
+            </ul>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(2) 개인정보 수집 방법</h3>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>홈페이지 회원가입 및 서비스 이용 과정</li>
+                <li>게시판 이용, 이벤트 응모</li>
+                <li>SNS 간편 로그인 연동</li>
+                <li>자동 생성 정보 수집 도구를 통한 수집(로그, 쿠키 등)</li>
+            </ul>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">4. 만 14세 미만 아동의 개인정보 처리에 관한 사항</h2>
+            <p style="margin: 0 0 20px 0;">
+                회사는 만 14세 미만 아동의 개인정보를 수집하는 경우 법정대리인의 동의를 받아 서비스 수행에 필요한 최소한의 개인정보를 수집합니다.
+            </p>
+            <p style="margin: 0 0 20px 0;">
+                회사는 법정대리인의 동의 여부를 전자적 방법 등을 통해 확인할 수 있으며, 법정대리인은 아동의 개인정보에 대해 열람·정정·삭제·처리정지를 요청할 수 있습니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">5. 개인정보의 제3자 제공에 관한 사항</h2>
+            <p style="margin: 0 0 20px 0;">
+                회사는 정보주체의 개인정보를 원칙적으로 외부에 제공하지 않습니다.
+            </p>
+            <p style="margin: 0 0 20px 0;">
+                다만, 법령에 따라 제공이 요구되는 경우에는 예외로 합니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">6. 개인정보 처리의 위탁에 관한 사항</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 원활한 서비스 제공을 위해 다음과 같이 개인정보 처리 업무를 위탁할 수 있습니다. 위탁 계약 체결 시 관련 법령에 따라 위탁업무 수행 목적 외 개인정보 처리금지, 기술적·관리적 보호조치, 재위탁 제한, 관리·감독, 손해배상 등 책임에 관한 사항을 문서로 명시하고, 수탁자가 개인정보를 안전하게 처리하는지 감독합니다. 또한 <strong>수탁자의 개인정보 처리 현황을 정기적으로 점검·관리</strong>합니다.
+            </p>
+            <div style="overflow-x: auto; margin: 12px 0 20px 0;">
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0;">
+                    <thead>
+                        <tr style="background: #f8fafc;">
+                            <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; font-size: 13px;">수탁업체</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; font-size: 13px;">위탁업무</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 13px;">Amazon Web Services(AWS)</td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 13px;">웹 서버 운영 및 데이터 보관(호스팅)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 13px;">택배사(추후 선정)</td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 13px;">(추후 쇼핑몰 오픈 시) 상품 배송</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p style="margin: 0 0 20px 0; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px;">
+                ※ 위탁업체 및 위탁업무 내용이 변경될 경우 지체 없이 본 개인정보 처리방침을 통해 공개합니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">6-1. 개인정보의 국외 이전(해당 없음)</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 <strong>AWS 서울 리전(ap-northeast-2)</strong>을 사용하여 서비스를 운영하며, 회사가 통제하는 개인정보는 원칙적으로 <strong>국외로 이전되지 않습니다.</strong>
+            </p>
+            <p style="margin: 0 0 20px 0;">
+                다만, 이용자의 인터넷 환경, 네트워크 경로, 외부 사업자(SNS 로그인 등)의 정책 및 기술적 사유로 인해 <strong>통신 과정에서 국외 경유가 발생할 수 있으며</strong>, 이 경우에도 회사는 개인정보가 안전하게 보호될 수 있도록 합리적인 보호조치를 이행합니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">7. 개인정보의 파기절차 및 파기방법</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체 없이 해당 개인정보를 파기합니다.
+            </p>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(1) 파기 절차</h3>
+            <ul style="margin: 0 0 12px 0; padding-left: 24px; line-height: 1.8;">
+                <li>정보주체로부터 동의받은 보유기간이 경과하거나 처리목적이 달성된 개인정보는 내부 방침 및 관련 법령에 따라 파기합니다.</li>
+                <li>다른 법령에 따라 계속 보존해야 하는 경우에는 별도의 DB로 옮기거나 보관 장소를 달리하여 보존하며, 법률에 의한 경우를 제외하고 다른 목적으로 이용하지 않습니다.</li>
+            </ul>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(2) 파기 방법</h3>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li>전자적 파일: 복구·재생이 불가능한 기술적 방법으로 삭제</li>
+                <li>종이 문서: 분쇄 또는 소각</li>
+            </ul>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">8. 정보주체와 법정대리인의 권리·의무 및 행사방법</h2>
+            <p style="margin: 0 0 12px 0;">
+                정보주체(만 14세 미만 아동의 경우 법정대리인 포함)는 회사에 대해 언제든지 다음 권리를 행사할 수 있습니다.
+            </p>
+            <ul style="margin: 0 0 12px 0; padding-left: 24px; line-height: 1.8;">
+                <li>개인정보 열람 요구</li>
+                <li>개인정보 정정·삭제 요구</li>
+                <li>개인정보 처리정지 요구</li>
+            </ul>
+            <p style="margin: 0 0 20px 0;">
+                권리 행사는 서비스 내 회원정보 수정/회원탈퇴 기능을 통해 직접 가능하며, 또는 개인정보 보호책임자에게 이메일로 요청할 수 있습니다. 회사는 지체 없이 조치하겠습니다.
+            </p>
+            <p style="margin: 0 0 20px 0; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 13px; color: #991b1b;">
+                단, 관련 법령에 따라 열람·처리정지 등이 제한되거나, 다른 법령에서 해당 개인정보의 보관을 명시한 경우 삭제 요구가 제한될 수 있습니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">9. 개인정보의 안전성 확보조치</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다.
+            </p>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li><strong>관리적 조치</strong>: 내부관리계획 수립·시행, 정기 교육, 접근 권한 관리</li>
+                <li><strong>기술적 조치</strong>: 접근통제, 계정/권한 관리, 개인정보 암호화, 보안프로그램 설치 및 갱신</li>
+                <li><strong>물리적 조치</strong>: 서버 및 자료 보관 장소에 대한 접근 통제</li>
+            </ul>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">10. 개인정보를 자동으로 수집하는 장치의 설치·운영 및 거부에 관한 사항</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 이용자에게 맞춤형 서비스를 제공하기 위해 '쿠키(cookie)'를 사용할 수 있습니다. 쿠키는 웹사이트 운영 서버가 이용자의 브라우저에 전송하는 소량의 정보이며, 이용자의 기기에 저장될 수 있습니다.
+            </p>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(1) 쿠키 사용 목적</h3>
+            <ul style="margin: 0 0 12px 0; padding-left: 24px; line-height: 1.8;">
+                <li>이용자의 방문 및 이용 형태, 보안 접속 여부, 서비스 이용 통계 등을 파악하여 최적화된 서비스 제공</li>
+            </ul>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 8px 0; color: #1e293b;">(2) 쿠키 저장 거부 방법</h3>
+            <p style="margin: 0 0 20px 0;">
+                이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있습니다.
+            </p>
+            <p style="margin: 0 0 20px 0; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px;">
+                다만, 쿠키 저장을 거부할 경우 일부 서비스 이용에 어려움이 발생할 수 있습니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">11. 개인정보 보호책임자에 관한 사항</h2>
+            <p style="margin: 0 0 12px 0;">
+                회사는 개인정보 처리에 관한 업무를 총괄하여 책임지고, 개인정보 처리와 관련한 문의, 불만처리 및 피해구제를 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.
+            </p>
+            <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin: 12px 0 20px 0;">
+                <p style="margin: 0 0 6px 0; font-weight: 600;"><strong>개인정보 보호책임자</strong>: 김형규</p>
+                <p style="margin: 0 0 6px 0;"><strong>상호(개인사업자)</strong>: 평범한</p>
+                <p style="margin: 0;"><strong>문의 이메일</strong>: <a href="mailto:kimyukim99@naver.com" style="color: var(--brand);">kimyukim99@naver.com</a></p>
+            </div>
+            <p style="margin: 0 0 20px 0;">
+                정보주체는 서비스 이용 중 발생한 개인정보 보호 관련 문의를 개인정보 보호책임자에게 할 수 있으며, 회사는 지체 없이 답변 및 처리하겠습니다.
+            </p>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">12. 정보주체의 권익침해에 대한 구제방법</h2>
+            <p style="margin: 0 0 12px 0;">
+                개인정보 침해로 인한 구제를 받기 위하여 아래 기관에 분쟁해결 또는 상담을 신청할 수 있습니다.
+            </p>
+            <ul style="margin: 0 0 20px 0; padding-left: 24px; line-height: 1.8;">
+                <li><strong>개인정보침해신고센터</strong>: (국번없이) 118</li>
+                <li><strong>개인정보분쟁조정위원회</strong>: 1833-6972</li>
+                <li><strong>경찰청</strong>: (국번없이) 182</li>
+            </ul>
+
+            <h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--brand-800);">13. 개인정보 처리방침 변경</h2>
+            <p style="margin: 0 0 12px 0;">
+                본 개인정보 처리방침은 <strong>2025년 12월 21일</strong>부터 적용됩니다.
+            </p>
+            <p style="margin: 0 0 20px 0;">
+                법령 또는 회사 정책에 따라 내용이 변경될 수 있으며, 변경 시 서비스 내 공지 등을 통해 안내합니다.
+            </p>
+        </div>
+        
+        <!-- 모달 푸터 (동의 버튼) -->
+        <div style="padding: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; flex-shrink: 0;">
+            <button id="privacyAgreeBtn" onclick="agreePrivacy()" disabled style="flex: 1; padding: 12px; background: #cbd5e1; color: #64748b; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: not-allowed; transition: all 0.2s;">
+                동의하기
+            </button>
+            <button onclick="closePrivacyModal()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #1e293b; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                취소
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 이용약관 모달 열기
+    function openTermsModal(event) {
+        event.preventDefault();
+        const modal = document.getElementById('termsModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // 스크롤 감지 초기화
+        const content = document.getElementById('termsModalContent');
+        const agreeBtn = document.getElementById('termsAgreeBtn');
+        checkTermsScroll();
+        
+        content.addEventListener('scroll', checkTermsScroll);
+    }
+
+    // 이용약관 모달 닫기
+    function closeTermsModal() {
+        const modal = document.getElementById('termsModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // 이용약관 스크롤 체크
+    function checkTermsScroll() {
+        const content = document.getElementById('termsModalContent');
+        const agreeBtn = document.getElementById('termsAgreeBtn');
+        const scrollTop = content.scrollTop;
+        const scrollHeight = content.scrollHeight;
+        const clientHeight = content.clientHeight;
+        
+        // 최하단까지 스크롤했는지 확인 (10px 여유)
+        if (scrollTop + clientHeight >= scrollHeight - 10) {
+            agreeBtn.disabled = false;
+            agreeBtn.style.background = 'var(--brand)';
+            agreeBtn.style.color = '#ffffff';
+            agreeBtn.style.cursor = 'pointer';
+        } else {
+            agreeBtn.disabled = true;
+            agreeBtn.style.background = '#cbd5e1';
+            agreeBtn.style.color = '#64748b';
+            agreeBtn.style.cursor = 'not-allowed';
+        }
+    }
+
+    // 이용약관 동의
+    function agreeTerms() {
+        document.getElementById('{{ form.terms_agreed.id_for_label }}').checked = true;
+        closeTermsModal();
+    }
+
+    // 개인정보처리방침 모달 열기
+    function openPrivacyModal(event) {
+        event.preventDefault();
+        const modal = document.getElementById('privacyModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // 스크롤 감지 초기화
+        const content = document.getElementById('privacyModalContent');
+        checkPrivacyScroll();
+        
+        content.addEventListener('scroll', checkPrivacyScroll);
+    }
+
+    // 개인정보처리방침 모달 닫기
+    function closePrivacyModal() {
+        const modal = document.getElementById('privacyModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // 개인정보처리방침 스크롤 체크
+    function checkPrivacyScroll() {
+        const content = document.getElementById('privacyModalContent');
+        const agreeBtn = document.getElementById('privacyAgreeBtn');
+        const scrollTop = content.scrollTop;
+        const scrollHeight = content.scrollHeight;
+        const clientHeight = content.clientHeight;
+        
+        // 최하단까지 스크롤했는지 확인 (10px 여유)
+        if (scrollTop + clientHeight >= scrollHeight - 10) {
+            agreeBtn.disabled = false;
+            agreeBtn.style.background = 'var(--brand)';
+            agreeBtn.style.color = '#ffffff';
+            agreeBtn.style.cursor = 'pointer';
+        } else {
+            agreeBtn.disabled = true;
+            agreeBtn.style.background = '#cbd5e1';
+            agreeBtn.style.color = '#64748b';
+            agreeBtn.style.cursor = 'not-allowed';
+        }
+    }
+
+    // 개인정보처리방침 동의
+    function agreePrivacy() {
+        document.getElementById('{{ form.privacy_agreed.id_for_label }}').checked = true;
+        closePrivacyModal();
+    }
+
+    // 모달 외부 클릭 시 닫기
+    document.getElementById('termsModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeTermsModal();
+        }
+    });
+
+    document.getElementById('privacyModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePrivacyModal();
+        }
+    });
+</script>
 {% endblock %}

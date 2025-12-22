@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - 배드민톡 동호인톡{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="position: relative;">
+        <!-- 뒤로가기 -->
+        <div style="margin-bottom: 16px;">
+            <a href="{% url 'community:list' %}" style="color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                ← 목록으로
+            </a>
+        </div>
+
+        <!-- 메인 콘텐츠 (비로그인 시 블러 처리) -->
+        <div class="{% if not user.is_authenticated %}content-blur{% endif %}">
+
+        <!-- 게시글 헤더 -->
+        <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1e293b;">{{ post.title }}</h1>
+                {% if user == post.author %}
+                    <div style="display: flex; gap: 8px;">
+                        <a href="{% url 'community:update' post.slug %}" class="btn btn-ghost" style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; font-weight: 500; text-decoration: none; height: 36px; box-sizing: border-box; line-height: 1.5; font-family: inherit; border: 1px solid rgba(49, 170, 96, .3); background: #fff; color: var(--brand); cursor: pointer; transition: background .2s ease, color .2s ease;">수정</a>
+                        <form action="{% url 'community:delete' post.slug %}" method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost" style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; font-weight: 500; height: 36px; box-sizing: border-box; line-height: 1.5; font-family: inherit; border: 1px solid rgba(49, 170, 96, .3); background: #fff; color: var(--brand); cursor: pointer; transition: background .2s ease, color .2s ease;" onclick="return confirm('정말 삭제하시겠습니까?');">삭제</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <span style="display: inline-block; padding: 4px 12px; background: #f1f5f9; color: #475569; border-radius: 4px; font-size: 14px; font-weight: 500;">
+                    {{ post.get_category_display }}
+                </span>
+                <span style="color: #64748b; font-size: 14px;">
+                    <strong>{{ post.author.activity_name }}</strong>
+                </span>
+                <span style="color: #94a3b8; font-size: 14px;">{{ post.created_at|date:"Y.m.d H:i" }}</span>
+                {% if post.updated_at != post.created_at %}
+                    <span style="color: #94a3b8; font-size: 14px;">(수정: {{ post.updated_at|date:"Y.m.d H:i" }})</span>
+                {% endif %}
+                <span style="color: #94a3b8; font-size: 14px;">조회 {{ post.view_count }}</span>
+            </div>
+        </div>
+
+        <!-- 게시글 내용 -->
+        <div style="min-height: 200px; margin-bottom: 32px; line-height: 1.8; color: #1e293b;">
+            <!-- 이미지 목록 -->
+            {% if post.images.exists %}
+                <div style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px;">
+                    {% for image in post.images.all %}
+                        <img src="{{ image.image.url }}" alt="게시글 이미지 {{ forloop.counter }}" 
+                             style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- 텍스트 내용 (Quill HTML) -->
+            <div class="post-content" style="word-wrap: break-word;">
+                {{ post.content|safe }}
+            </div>
+            <style>
+                .post-content {
+                    font-size: 16px;
+                    line-height: 1.8;
+                    color: #1e293b;
+                }
+                .post-content h1, .post-content h2, .post-content h3 {
+                    margin: 24px 0 16px 0;
+                    font-weight: 700;
+                    color: #1e293b;
+                }
+                .post-content h1 { font-size: 28px; }
+                .post-content h2 { font-size: 24px; }
+                .post-content h3 { font-size: 20px; }
+                .post-content p {
+                    margin: 12px 0;
+                }
+                .post-content img {
+                    max-width: 100%;
+                    height: auto;
+                    border-radius: 8px;
+                    margin: 16px 0;
+                }
+                .post-content ul, .post-content ol {
+                    margin: 12px 0;
+                    padding-left: 24px;
+                }
+                .post-content li {
+                    margin: 6px 0;
+                }
+                .post-content blockquote {
+                    border-left: 4px solid var(--brand);
+                    padding-left: 16px;
+                    margin: 16px 0;
+                    color: #64748b;
+                    font-style: italic;
+                }
+                .post-content code {
+                    background: #f1f5f9;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                }
+                .post-content pre {
+                    background: #f1f5f9;
+                    padding: 16px;
+                    border-radius: 8px;
+                    overflow-x: auto;
+                    margin: 16px 0;
+                }
+                .post-content pre code {
+                    background: none;
+                    padding: 0;
+                }
+                .post-content a {
+                    color: var(--brand);
+                    text-decoration: underline;
+                }
+                .post-content a:hover {
+                    color: var(--brand-700);
+                }
+            </style>
+        </div>
+
+        <!-- 좋아요 / 공유 버튼 -->
+        <div style="display: flex; gap: 12px; margin-bottom: 48px; padding: 32px 0; border-bottom: 1px solid #e2e8f0;">
+            <form action="{% url 'community:like' post.slug %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit"
+                        style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #fff; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 500; transition: all 0.2s;">
+                    {% if user in post.likes.all %}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                    {% else %}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                    {% endif %}
+                    <span>좋아요 {{ post.like_count }}</span>
+                </button>
+            </form>
+            <button type="button"
+                    id="shareButton"
+                    onclick="copyPostLink()"
+                    style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #fff; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 500; transition: all 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                    <polyline points="16 6 12 2 8 6"></polyline>
+                    <line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+                <span>공유</span>
+            </button>
+        </div>
+
+        <!-- 댓글 섹션 -->
+        <div style="margin-top: 48px;">
+            <h2 style="margin-bottom: 24px; font-size: 24px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>사용자와 소통해요, 배드민톡!</span>
+            </h2>
+
+            {% if user.is_authenticated %}
+            <!-- 댓글 작성 폼 -->
+            <div style="padding: 24px; margin-bottom: 32px;">
+                <form method="post" action="{% url 'community:comment_create' post.slug %}">
+                    {% csrf_token %}
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">
+                                {{ user.activity_name|slice:":1" }}
+                            </div>
+                            <span style="font-weight: 600; color: #1e293b;">{{ user.activity_name }}</span>
+                        </div>
+                    </div>
+                    <textarea name="content" placeholder="댓글을 입력하세요..." required
+                              style="width: 100%; min-height: 100px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 15px; line-height: 1.6; resize: none; font-family: inherit;"></textarea>
+                    <div style="margin-top: 12px; text-align: right;">
+                        <button type="submit" style="padding: 12px 24px; background: var(--brand); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                            댓글 남기기
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            <div style="background: #f8fafc; border-radius: 12px; padding: 32px; margin-bottom: 32px; text-align: center;">
+                <p style="color: #64748b; margin-bottom: 16px;">로그인하시면 댓글을 남기실 수 있습니다.</p>
+                <a href="{% url 'accounts:login' %}" style="display: inline-block; padding: 12px 24px; background: var(--brand); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">로그인</a>
+            </div>
+            {% endif %}
+
+            <!-- 댓글 목록 -->
+            <div style="margin-top: 32px;">
+                {% for comment in comments %}
+                <div style="padding: 24px; background: #f8fafc; border-radius: 12px; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: start; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; flex-shrink: 0;">
+                            {{ comment.author.activity_name|slice:":1" }}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #1e293b;">{{ comment.author.activity_name }}</span>
+                            </div>
+                            <p style="margin: 0 0 16px 0; color: #475569; line-height: 1.7; white-space: pre-wrap;">{{ comment.content }}</p>
+
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <form method="post" action="{% url 'community:comment_like' comment.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" style="background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 14px; padding: 4px 8px; border-radius: 6px; transition: all 0.2s;">
+                                        {% if user in comment.likes.all %}
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                        </svg>
+                                        {% else %}
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                        </svg>
+                                        {% endif %}
+                                        <span>{{ comment.like_count }}</span>
+                                    </button>
+                                </form>
+
+                                <button onclick="toggleReplyForm({{ comment.id }})" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 14px; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <span>답글</span>
+                                </button>
+
+                                {% if user == comment.author %}
+                                <form method="post" action="{% url 'community:comment_delete' comment.id %}" style="display: inline;" onsubmit="return confirm('댓글을 삭제하시겠습니까?');">
+                                    {% csrf_token %}
+                                    <button type="submit" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 14px; padding: 4px 8px; border-radius: 6px;">
+                                        삭제
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+
+                            <!-- 대댓글 작성 폼 -->
+                            {% if user.is_authenticated %}
+                            <div id="reply-form-{{ comment.id }}" style="display: none; margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                                <form method="post" action="{% url 'community:comment_create' post.slug %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                                    <textarea name="content" placeholder="답글을 입력하세요..." required
+                                              style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; line-height: 1.6; resize: none; font-family: inherit; margin-bottom: 8px;"></textarea>
+                                    <div style="text-align: right;">
+                                        <button type="button" onclick="toggleReplyForm({{ comment.id }})" style="padding: 8px 16px; background: #fff; color: #64748b; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 8px;">
+                                            취소
+                                        </button>
+                                        <button type="submit" style="padding: 8px 16px; background: var(--brand); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                                            답글 달기
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            {% endif %}
+
+                            <!-- 대댓글 목록 -->
+                            {% for reply in comment.replies.all %}
+                            {% if not reply.is_deleted %}
+                            <div style="margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                                <div style="display: flex; align-items: start; gap: 12px;">
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #94a3b8; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; flex-shrink: 0;">
+                                        {{ reply.author.activity_name|slice:":1" }}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                            <span style="font-weight: 600; color: #1e293b; font-size: 14px;">{{ reply.author.activity_name }}</span>
+                                        </div>
+                                        <p style="margin: 0 0 12px 0; color: #475569; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">{{ reply.content }}</p>
+
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <form method="post" action="{% url 'community:comment_like' reply.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" style="background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #64748b; font-size: 13px; padding: 2px 6px; border-radius: 4px;">
+                                                    {% if user in reply.likes.all %}
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                    </svg>
+                                                    {% else %}
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                    </svg>
+                                                    {% endif %}
+                                                    <span>{{ reply.like_count }}</span>
+                                                </button>
+                                            </form>
+
+                                            {% if user == reply.author %}
+                                            <form method="post" action="{% url 'community:comment_delete' reply.id %}" style="display: inline;" onsubmit="return confirm('답글을 삭제하시겠습니까?');">
+                                                {% csrf_token %}
+                                                <button type="submit" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 13px; padding: 2px 6px; border-radius: 4px;">
+                                                    삭제
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+            <div style="padding: 64px 32px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 12px;">
+                    <p style="font-size: 15px;">첫 댓글을 남겨보세요!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        </div>
+        <!-- 메인 콘텐츠 끝 -->
+
+        <!-- 비로그인 사용자용 회원가입 유도 모달 -->
+        {% if not user.is_authenticated %}
+        <div class="signup-modal">
+            <div class="signup-modal-content">
+                <div class="signup-modal-icon">🏸</div>
+                <h2 class="signup-modal-title">전체 내용을 보려면<br>회원가입이 필요해요</h2>
+                <p class="signup-modal-desc">배드민톡에 가입하고<br>다양한 배드민턴 정보를 확인하세요!</p>
+                <div class="signup-modal-buttons">
+                    <a href="{% url 'accounts:signup' %}" class="signup-modal-btn-primary">회원가입하기</a>
+                    <a href="{% url 'accounts:login' %}" class="signup-modal-btn-secondary">로그인</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <style>
+            /* 콘텐츠 블러 효과 */
+            .content-blur {
+                filter: blur(8px);
+                pointer-events: none;
+                user-select: none;
+            }
+
+            /* 회원가입 유도 모달 */
+            .signup-modal {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 1000;
+                background: #fff;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                padding: 48px 40px;
+                max-width: 440px;
+                width: 90%;
+                text-align: center;
+                animation: modalFadeIn 0.3s ease;
+            }
+
+            @keyframes modalFadeIn {
+                from {
+                    opacity: 0;
+                    transform: translate(-50%, -45%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate(-50%, -50%);
+                }
+            }
+
+            .signup-modal-icon {
+                font-size: 64px;
+                margin-bottom: 24px;
+                animation: bounce 2s ease-in-out infinite;
+            }
+
+            @keyframes bounce {
+                0%, 100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+
+            .signup-modal-title {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1e293b;
+                margin: 0 0 16px 0;
+                line-height: 1.4;
+            }
+
+            .signup-modal-desc {
+                font-size: 16px;
+                color: #64748b;
+                margin: 0 0 32px 0;
+                line-height: 1.6;
+            }
+
+            .signup-modal-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .signup-modal-btn-primary {
+                display: block;
+                padding: 16px 32px;
+                background: var(--brand);
+                color: #fff;
+                text-decoration: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 12px rgba(49, 170, 96, 0.3);
+            }
+
+            .signup-modal-btn-primary:hover {
+                background: #2d9c5a;
+                box-shadow: 0 6px 20px rgba(49, 170, 96, 0.4);
+                transform: translateY(-2px);
+            }
+
+            .signup-modal-btn-secondary {
+                display: block;
+                padding: 16px 32px;
+                background: #f8fafc;
+                color: #64748b;
+                text-decoration: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                border: 1px solid #e2e8f0;
+            }
+
+            .signup-modal-btn-secondary:hover {
+                background: #f1f5f9;
+                color: #475569;
+                border-color: #cbd5e1;
+            }
+
+            /* 모바일 최적화 */
+            @media (max-width: 768px) {
+                .signup-modal {
+                    padding: 36px 24px;
+                    border-radius: 16px;
+                    max-width: 90%;
+                }
+
+                .signup-modal-icon {
+                    font-size: 56px;
+                    margin-bottom: 20px;
+                }
+
+                .signup-modal-title {
+                    font-size: 20px;
+                    margin-bottom: 12px;
+                }
+
+                .signup-modal-desc {
+                    font-size: 14px;
+                    margin-bottom: 24px;
+                }
+
+                .signup-modal-btn-primary,
+                .signup-modal-btn-secondary {
+                    padding: 14px 24px;
+                    font-size: 15px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .signup-modal {
+                    padding: 28px 20px;
+                    width: 85%;
+                }
+
+                .signup-modal-icon {
+                    font-size: 48px;
+                    margin-bottom: 16px;
+                }
+
+                .signup-modal-title {
+                    font-size: 18px;
+                }
+
+                .signup-modal-desc {
+                    font-size: 13px;
+                }
+
+                .signup-modal-btn-primary,
+                .signup-modal-btn-secondary {
+                    padding: 12px 20px;
+                    font-size: 14px;
+                }
+            }
+        </style>
+
+        <script>
+            function copyPostLink() {
+                const postUrl = window.location.href;
+
+                navigator.clipboard.writeText(postUrl).then(function() {
+                    const shareButton = document.getElementById('shareButton');
+                    const originalHTML = shareButton.innerHTML;
+                    shareButton.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>복사됨</span>';
+                    shareButton.style.background = 'var(--brand)';
+                    shareButton.style.color = '#fff';
+                    shareButton.style.borderColor = 'var(--brand)';
+
+                    setTimeout(function() {
+                        shareButton.innerHTML = originalHTML;
+                        shareButton.style.background = '#fff';
+                        shareButton.style.color = '#64748b';
+                        shareButton.style.borderColor = '#e2e8f0';
+                    }, 2000);
+                }).catch(function(err) {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = postUrl;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        const shareButton = document.getElementById('shareButton');
+                        const originalHTML = shareButton.innerHTML;
+                        shareButton.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>복사됨</span>';
+                        shareButton.style.background = 'var(--brand)';
+                        shareButton.style.color = '#fff';
+                        shareButton.style.borderColor = 'var(--brand)';
+                        setTimeout(function() {
+                            shareButton.innerHTML = originalHTML;
+                            shareButton.style.background = '#fff';
+                            shareButton.style.color = '#64748b';
+                            shareButton.style.borderColor = '#e2e8f0';
+                        }, 2000);
+                    } catch (err) {
+                        alert('링크 복사에 실패했습니다: ' + err);
+                    }
+                    document.body.removeChild(textarea);
+                });
+            }
+
+            // 답글 폼 토글
+            function toggleReplyForm(commentId) {
+                const replyForm = document.getElementById('reply-form-' + commentId);
+                if (replyForm.style.display === 'none' || replyForm.style.display === '') {
+                    replyForm.style.display = 'block';
+                } else {
+                    replyForm.style.display = 'none';
+                }
+            }
+
+            // CSRF 토큰 가져오기
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            const csrftoken = getCookie('csrftoken');
+
+            // 게시글 좋아요 AJAX 처리
+            document.addEventListener('DOMContentLoaded', function() {
+                const postLikeForm = document.querySelector('form[action*="like"]');
+                if (postLikeForm && postLikeForm.action.includes('/like/')) {
+                    postLikeForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const form = e.target;
+                        const button = form.querySelector('button[type="submit"]');
+                        const likeCountSpan = button.querySelector('span:last-child');
+                        
+                        fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrftoken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams(new FormData(form))
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                likeCountSpan.textContent = '좋아요 ' + data.like_count;
+                                
+                                const svg = button.querySelector('svg');
+                                if (data.liked) {
+                                    svg.setAttribute('fill', '#ef4444');
+                                    svg.setAttribute('stroke', '#ef4444');
+                                } else {
+                                    svg.setAttribute('fill', 'none');
+                                    svg.setAttribute('stroke', 'currentColor');
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('좋아요 처리 중 오류가 발생했습니다.');
+                        });
+                    });
+                }
+
+                // 댓글 좋아요 AJAX 처리
+                document.querySelectorAll('form[action*="comment"][action*="like"]').forEach(function(form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const button = form.querySelector('button[type="submit"]');
+                        const likeCountSpan = button.querySelector('span:last-child');
+                        const svg = button.querySelector('svg');
+                        
+                        fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrftoken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams(new FormData(form))
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                likeCountSpan.textContent = data.like_count;
+                                if (data.liked) {
+                                    svg.setAttribute('fill', 'currentColor');
+                                } else {
+                                    svg.setAttribute('fill', 'none');
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                    });
+                });
+            });
+        </script>
+    </div>
+</section>
+{% endblock %}
+

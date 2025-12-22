@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# Environment files
+.env
+.env.*
+!.env.prod.example
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist
+build
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Database
+*.sqlite3
+*.db
+
+# Media files (업로드된 파일은 볼륨으로 관리)
+media/*
+
+# Static files (collectstatic으로 생성됨)
+staticfiles/*
+
+# Logs
+*.log
+logs/
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Test files
+.pytest_cache
+.coverage
+htmlcov/
+.tox/
+
+# Temporary files
+*.tmp
+tmp/
+temp/

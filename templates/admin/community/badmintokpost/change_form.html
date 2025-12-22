@@ -1,0 +1,12 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {% if category_data %}
+    <script>
+        // 카테고리 데이터를 JavaScript에 전달
+        window.BADMINTOK_CATEGORY_DATA = {{ category_data|safe }};
+    </script>
+    {% endif %}
+{% endblock %}

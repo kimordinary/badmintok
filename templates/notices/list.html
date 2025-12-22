@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}공지사항 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative; margin-top: 20px;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0; max-width: 900px;">
+        <div style="margin-bottom: 32px;">
+            <h1 style="font-size: 32px; font-weight: 700; margin: 0; color: var(--brand-800);">공지사항</h1>
+        </div>
+
+        {% if notices_page %}
+            <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+                {% for notice in notices_page %}
+                    <a href="{% url 'notice_detail' notice.id %}" style="text-decoration: none; color: inherit;">
+                        <div style="padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; transition: all 0.2s ease; {% if notice.is_pinned %}border-left: 4px solid var(--brand);{% endif %}">
+                            <div style="display: flex; justify-content: space-between; align-items: start; gap: 16px;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        {% if notice.is_pinned %}
+                                            <span style="display: inline-block; padding: 4px 8px; background: var(--brand); color: white; border-radius: 4px; font-size: 12px; font-weight: 600;">고정</span>
+                                        {% endif %}
+                                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #1e293b; line-height: 1.4;">{{ notice.title }}</h3>
+                                    </div>
+                                    <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ notice.content|striptags|truncatewords:30 }}</p>
+                                    <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted);">
+                                        <span>{{ notice.author.activity_name }}</span>
+                                        <span>·</span>
+                                        <span>{{ notice.created_at|date:"Y년 m월 d일" }}</span>
+                                        <span>·</span>
+                                        <span>조회 {{ notice.view_count }}</span>
+                                    </div>
+                                </div>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted); flex-shrink: 0;">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+            {% if notices_page.has_other_pages %}
+                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px;">
+                    {% if notices_page.has_previous %}
+                        <a href="?page={{ notices_page.previous_page_number }}" class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                    {% endif %}
+                    <span style="color: var(--muted); font-weight: 600;">{{ notices_page.number }} / {{ notices_page.paginator.num_pages }}</span>
+                    {% if notices_page.has_next %}
+                        <a href="?page={{ notices_page.next_page_number }}" class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="padding: 48px; text-align: center; color: #64748b; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <p style="margin: 0;">공지사항이 없습니다.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+@media (max-width: 768px) {
+    .section > .container {
+        padding: 16px;
+    }
+    
+    .section > .container h1 {
+        font-size: 24px !important;
+    }
+}
+</style>
+{% endblock %}

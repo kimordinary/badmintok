@@ -4,57 +4,92 @@
 {% block title %}로그인 - 배드민톡{% endblock %}
 
 {% block content %}
-<section class="auth-hero" aria-labelledby="login-title" style="background-image: url('{% static 'images/badmintok.png' %}');">
-    <div class="auth-hero__overlay"></div>
-    <div class="auth-hero__content">
-        <h1 id="login-title">배드민톡 로그인</h1>
-        <p>나의 배드민턴 커뮤니티, 지금 바로 이어서 즐겨보세요.</p>
-    </div>
-</section>
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 20px;">
+    <div style="width: 100%; max-width: 400px;">
+        <!-- 제목 -->
+        <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1e293b; text-align: center;">로그인</h1>
+        <p style="margin: 0 0 32px 0; font-size: 14px; color: #64748b; text-align: center;">온라인 배드민턴장 배드민톡에 오신걸 환영합니다.</p>
 
-<section class="auth-section">
-    <div class="container auth-grid">
-        <div class="auth-intro">
-            <h2>다시 돌아오셨군요!</h2>
-            <ul>
-                <li>찜해둔 대회와 할인 상품을 한 번에 확인</li>
-                <li>배드민턴 번개, 장비 토론 등 커뮤니티 참여</li>
-                <li>활동 기록과 맞춤형 뉴스 받아보기</li>
-            </ul>
-            <p class="auth-note">계정이 없으신가요? <a href="{% url 'accounts:signup' %}">회원가입하기</a></p>
-        </div>
+        <!-- 로그인 폼 -->
+        <form method="post" novalidate style="display: flex; flex-direction: column; gap: 20px;">
+            {% csrf_token %}
 
-        <div class="auth-card" role="form">
-            <h3>로그인</h3>
-            <form method="post" novalidate>
-                {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div style="padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; color: #dc2626; font-size: 14px;">
+                    {% for error in form.non_field_errors %}
+                        <p style="margin: 0;">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
-                {% if form.non_field_errors %}
-                    <div class="form-errors" role="alert">
-                        {% for error in form.non_field_errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% for field in form %}
-                    <div class="form-field{% if field.errors %} has-error{% endif %}">
-                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {{ field }}
-                        {% for error in field.errors %}
-                            <small class="error-text">{{ error }}</small>
-                        {% endfor %}
-                    </div>
+            <!-- Email 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.username.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">이메일</label>
+                <input type="text" 
+                       name="{{ form.username.name }}" 
+                       id="{{ form.username.id_for_label }}" 
+                       placeholder="m@example.com"
+                       value="{{ form.username.value|default:'' }}"
+                       required
+                       style="width: 100%; padding: 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                {% for error in form.username.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
                 {% endfor %}
-
-                <button type="submit" class="btn btn-primary btn-full">로그인</button>
-            </form>
-
-            <div class="social-logins">
-                <span class="social-divider">또는</span>
-                <a href="{% url 'accounts:kakao_login' %}" class="btn btn-kakao btn-full">카카오로 로그인</a>
             </div>
+
+            <!-- Password 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label for="{{ form.password.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">비밀번호</label>
+                    <a href="#" style="font-size: 14px; color: #1e293b; text-decoration: none;">비밀번호를 잊으셨나요?</a>
+                </div>
+                <input type="password" 
+                       name="{{ form.password.name }}" 
+                       id="{{ form.password.id_for_label }}" 
+                       required
+                       style="width: 100%; padding: 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                {% for error in form.password.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- Login 버튼 -->
+            <button type="submit" style="width: 100%; padding: 12px; background: var(--brand); color: #ffffff; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                로그인
+            </button>
+        </form>
+
+        <!-- 구분선 -->
+        <div style="margin: 24px 0; position: relative; text-align: center;">
+            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #e2e8f0;"></div>
+            <span style="position: relative; background: #ffffff; padding: 0 12px; font-size: 14px; color: #94a3b8;">또는 다음으로 계속</span>
         </div>
+
+        <!-- 소셜 로그인 버튼 -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- 카카오 로그인 -->
+            <a href="{% url 'accounts:kakao_login' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #FEE500; border: none; border-radius: 6px; text-decoration: none; color: #000000; font-size: 14px; font-weight: 500; transition: background 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 2.625-1.724 4.95-4.326 6.379l1.05 3.936-4.05-2.625c-1.05.15-2.1.225-3.174.225-5.799 0-10.5-3.664-10.5-8.185C1.5 6.664 6.201 3 12 3z"/>
+                </svg>
+                <span>카카오로 로그인</span>
+            </a>
+        </div>
+
+        <!-- 회원가입 링크 -->
+        <p style="margin: 24px 0 0 0; text-align: center; font-size: 14px; color: #1e293b;">
+            계정이 없으신가요? <a href="{% url 'accounts:signup' %}" style="color: #1e293b; text-decoration: underline;">회원가입</a>
+        </p>
     </div>
-</section>
+</div>
+
+<style>
+    button[type="submit"]:hover {
+        background: var(--brand-700) !important;
+    }
+
+    a[href*="kakao"]:hover {
+        background: #FDD835 !important;
+    }
+</style>
 {% endblock %}

@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}{{ schedule.title }} - 참석하기 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0;">
+        <div style="max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+            <!-- 헤더 -->
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                <a href="{% url 'band:detail' band.id %}?tab=flash" style="text-decoration: none; color: #1e293b; font-size: 20px; line-height: 1;">&lt;</a>
+                <h1 id="scheduleTitle" style="margin: 0; font-size: 20px; font-weight: 700; color: #1e293b;">{{ schedule.title|default:band.name }}</h1>
+            </div>
+            
+            <!-- 번개 이미지 슬라이드 -->
+            {% if schedule.images.all %}
+                <div style="margin-bottom: 24px; border-radius: 12px; overflow: hidden; background: #f8fafc;">
+                    {% if schedule.images.all|length > 1 %}
+                        <!-- 슬라이드 형식 (2장 이상) -->
+                        <div class="schedule-image-slider-detail" style="position: relative; width: 100%; aspect-ratio: 3/4; overflow: hidden;">
+                            <div class="schedule-slider-track-detail" style="display: flex; width: {% widthratio schedule.images.all|length 1 100 %}%; height: 100%; transition: transform 0.3s ease;">
+                                {% for img in schedule.images.all %}
+                                    <div class="schedule-slide-detail" style="width: {% widthratio 100 schedule.images.all|length 1 %}%; height: 100%; flex-shrink: 0;">
+                                        <img src="{{ img.image.url }}" alt="번개 이미지 {{ forloop.counter }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="schedule-nav schedule-nav-prev" data-schedule-prev aria-label="이전 이미지" style="position: absolute; top: 50%; left: 8px; transform: translateY(-50%); width: 32px; height: 32px; border: none; border-radius: 50%; background: rgba(0, 0, 0, 0.5); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; z-index: 10; font-size: 18px; line-height: 1; font-weight: 600;">‹</button>
+                            <button type="button" class="schedule-nav schedule-nav-next" data-schedule-next aria-label="다음 이미지" style="position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 32px; height: 32px; border: none; border-radius: 50%; background: rgba(0, 0, 0, 0.5); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; z-index: 10; font-size: 18px; line-height: 1; font-weight: 600;">›</button>
+                            <div class="schedule-slider-dots-detail" style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 10;">
+                                {% for img in schedule.images.all %}
+                                    <button type="button" class="schedule-dot-detail" data-slide="{{ forloop.counter0 }}" style="width: 8px; height: 8px; border-radius: 50%; border: none; background: {% if forloop.first %}white{% else %}rgba(255, 255, 255, 0.5){% endif %}; cursor: pointer; padding: 0;"></button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- 단일 이미지 -->
+                        <img src="{{ schedule.images.first.image.url }}" alt="번개 이미지" style="width: 100%; aspect-ratio: 3/4; object-fit: cover;">
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+            <!-- 번개 정보 -->
+            <div style="margin-bottom: 24px;">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #64748b; font-size: 14px;">일시</span>
+                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">
+                            {{ schedule.start_datetime|date:"Y년 m월 d일 (D) H:i" }}
+                            {% if schedule.end_datetime %}
+                                ~ {{ schedule.end_datetime|time:"H:i" }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if schedule.location %}
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #64748b; font-size: 14px;">위치</span>
+                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">{{ schedule.location }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #64748b; font-size: 14px;">참가 인원</span>
+                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">
+                            {{ schedule.current_participants }}명
+                            {% if schedule.max_participants %}
+                                / {{ schedule.max_participants }}명
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if meeting_cost %}
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #64748b; font-size: 14px;">참가비</span>
+                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">{{ meeting_cost }}원</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if schedule.description %}
+                    <div>
+                        <span style="color: #64748b; font-size: 14px;">설명</span>
+                        <div id="scheduleDescription" data-description-original="{{ schedule.description|escapejs }}" style="margin-top: 4px; font-size: 14px; color: #1e293b; line-height: 1.6; white-space: pre-wrap;">{{ schedule.description|linebreaks }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 참가자 목록 -->
+            {% if approved_participants %}
+            <div style="margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 700; color: #1e293b;">참가자 ({{ approved_participants|length }}명)</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    {% for app in approved_participants %}
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            {% if app.user.profile_image %}
+                                <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.activity_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                            {% else %}
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">{{ app.user.activity_name|first }}</div>
+                            {% endif %}
+                            <span style="font-size: 14px; font-weight: 500; color: #1e293b;">{{ app.user.activity_name }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- 신청 상태 및 버튼 -->
+            <div style="margin-bottom: 24px;">
+                {% if user_application %}
+                    {% if user_application.status == "pending" %}
+                        <div style="padding: 16px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 14px; font-weight: 600; color: #92400e;">대기 중</span>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; color: #78350f;">참가 신청이 대기 중입니다. 승인을 기다려주세요.</p>
+                        </div>
+                        <form method="post" action="{% url 'band:schedule_application_cancel' band.id schedule.id %}" style="margin-bottom: 12px;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost" style="width: 100%; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 500; color: #64748b;">신청 취소</button>
+                        </form>
+                    {% elif user_application.status == "approved" %}
+                        <div style="padding: 16px; background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 8px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 14px; font-weight: 600; color: #065f46;">승인됨</span>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; color: #047857;">참가 신청이 승인되었습니다. 번개에 참석해주세요!</p>
+                        </div>
+                        <form method="post" action="{% url 'band:schedule_application_cancel' band.id schedule.id %}" style="margin-bottom: 12px;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost" style="width: 100%; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 500; color: #64748b;">참가 취소</button>
+                        </form>
+                    {% elif user_application.status == "rejected" %}
+                        <div style="padding: 16px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 14px; font-weight: 600; color: #991b1b;">거부됨</span>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; color: #7f1d1d;">
+                                {% if user_application.rejection_reason %}
+                                    사유: {{ user_application.rejection_reason }}
+                                {% else %}
+                                    참가 신청이 거부되었습니다.
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% elif user_application.status == "cancelled" %}
+                        <div style="padding: 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px;">
+                            <p style="margin: 0; font-size: 13px; color: #475569;">참가 신청이 취소되었습니다.</p>
+                        </div>
+                        <a href="{% url 'band:schedule_apply' band.id schedule.id %}" class="btn btn-primary" style="display: block; width: 100%; text-align: center; padding: 12px; background: var(--brand); color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">다시 신청하기</a>
+                    {% endif %}
+                {% else %}
+                    <!-- 신청 가능한 경우 -->
+                    {% if schedule.max_participants and schedule.current_participants >= schedule.max_participants %}
+                        <div style="padding: 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px;">
+                            <p style="margin: 0; font-size: 14px; color: #475569; text-align: center;">참가 인원이 마감되었습니다.</p>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'band:schedule_apply' band.id schedule.id %}" class="btn btn-primary" style="display: block; width: 100%; text-align: center; padding: 12px; background: var(--brand); color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">참가 신청하기</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <!-- 관리자용: 대기 중인 신청 목록 -->
+            {% if can_manage and pending_applications %}
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #1e293b;">대기 중인 신청 ({{ pending_applications|length }}건)</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for app in pending_applications %}
+                        <div style="padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    {% if app.user.profile_image %}
+                                        <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.activity_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    {% else %}
+                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">{{ app.user.activity_name|first }}</div>
+                                    {% endif %}
+                                    <div>
+                                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ app.user.activity_name }}</div>
+                                        <div style="font-size: 12px; color: #64748b;">{{ app.applied_at|date:"Y.m.d H:i" }}</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <form method="post" action="{% url 'band:schedule_application_approve' band.id schedule.id app.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: var(--brand); color: white; border-radius: 6px; border: none; cursor: pointer;">승인</button>
+                                    </form>
+                                    <a href="{% url 'band:schedule_application_reject' band.id schedule.id app.id %}" class="btn btn-ghost" style="padding: 8px 16px; font-size: 13px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #64748b;">거부</a>
+                                </div>
+                            </div>
+                            {% if app.notes %}
+                                <div style="padding: 8px 12px; background: #fff; border-radius: 6px; font-size: 13px; color: #475569; white-space: pre-wrap;">{{ app.notes }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<style>
+    .schedule-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease;
+        z-index: 10;
+        font-size: 18px;
+        line-height: 1;
+        font-weight: 600;
+    }
+
+    .schedule-nav:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
+
+    .schedule-nav:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
+    .schedule-nav-prev {
+        left: 8px;
+    }
+
+    .schedule-nav-next {
+        right: 8px;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 제목에서 날짜 패턴(예: "- 2025-12-09") 제거
+        const titleEl = document.getElementById('scheduleTitle');
+        if (titleEl) {
+            const cleanedTitle = titleEl.textContent.replace(/\s*[-–]\s*\d{4}-\d{2}-\d{2}$/, '').trim();
+            titleEl.textContent = cleanedTitle;
+        }
+
+        // 설명에서 "참가비/비용/입장료"로 시작하는 줄을 제거하여 중복 표시를 방지
+        const descEl = document.getElementById('scheduleDescription');
+        if (descEl) {
+            const raw = descEl.dataset.descriptionOriginal || '';
+            // \u000A를 실제 줄바꿈으로 변환
+            const normalized = raw.replace(/\\u000A/g, '\n').replace(/\\n/g, '\n');
+            // 줄바꿈으로 분리하고 참가비 관련 줄 제거
+            const lines = normalized.split(/\r?\n/);
+            const cleaned = lines
+                .filter(line => {
+                    const trimmed = line.trim();
+                    // "참가비:", "비용:", "입장료:"로 시작하는 줄 제거
+                    return !trimmed.match(/^(참가비|비용|입장료)[:\s]/);
+                })
+                .join('\n')
+                .trim();
+            if (cleaned) {
+                // 줄바꿈을 <br>로 변환하여 HTML로 표시
+                descEl.innerHTML = cleaned.replace(/\n/g, '<br>');
+            } else {
+                // 모든 내용이 제거된 경우 요소 숨김
+                descEl.parentElement.style.display = 'none';
+            }
+        }
+
+        const slider = document.querySelector('.schedule-image-slider-detail');
+        if (!slider) return;
+        
+        const track = slider.querySelector('.schedule-slider-track-detail');
+        const slides = slider.querySelectorAll('.schedule-slide-detail');
+        const dots = slider.querySelectorAll('.schedule-dot-detail');
+        const prevBtn = slider.querySelector('[data-schedule-prev]');
+        const nextBtn = slider.querySelector('[data-schedule-next]');
+        
+        if (slides.length <= 1) {
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+            return;
+        }
+        
+        let currentSlide = 0;
+        let autoSlideInterval;
+        
+        function updateSlide(index) {
+            currentSlide = index;
+            const slideWidth = 100 / slides.length;
+            track.style.transform = `translateX(-${currentSlide * slideWidth}%)`;
+            
+            dots.forEach((d, i) => {
+                d.style.background = i === currentSlide ? 'white' : 'rgba(255, 255, 255, 0.5)';
+            });
+        }
+        
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateSlide(currentSlide);
+        }
+        
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            updateSlide(currentSlide);
+        }
+        
+        // 도트 클릭
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', function() {
+                updateSlide(index);
+            });
+        });
+        
+        // 화살표 버튼 클릭
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function() {
+                prevSlide();
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function() {
+                nextSlide();
+            });
+        }
+        
+        // 자동 슬라이드 (3초마다)
+        autoSlideInterval = setInterval(nextSlide, 3000);
+        
+        // 마우스 호버 시 자동 슬라이드 일시 정지
+        slider.addEventListener('mouseenter', function() {
+            clearInterval(autoSlideInterval);
+        });
+        
+        slider.addEventListener('mouseleave', function() {
+            autoSlideInterval = setInterval(nextSlide, 3000);
+        });
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,177 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  /* Editor.js 최적화 스타일 */
+  .editorjs-optimized-layout {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  /* content 필드를 전폭으로 */
+  .field-content {
+    grid-column: 1 / -1 !important;
+  }
+
+  .field-content .form-row {
+    display: block !important;
+  }
+
+  .field-content label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--brand-800);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  /* Editor.js 컨테이너 스타일링 */
+  #editorjs-content {
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    padding: 24px !important;
+    min-height: 500px !important;
+    background: #ffffff !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  /* Editor.js 내부 스타일 */
+  .codex-editor__redactor {
+    padding-bottom: 100px !important;
+  }
+
+  .ce-block__content,
+  .ce-toolbar__content {
+    max-width: 100% !important;
+  }
+
+  .ce-paragraph {
+    line-height: 1.8;
+    font-size: 16px;
+  }
+
+  .ce-header {
+    font-weight: 700;
+    color: var(--brand-800);
+  }
+
+  /* 툴바 스타일 */
+  .ce-toolbar__plus,
+  .ce-toolbar__settings-btn {
+    color: var(--brand) !important;
+  }
+
+  .ce-toolbar__plus:hover,
+  .ce-toolbar__settings-btn:hover {
+    background: rgba(49, 170, 96, 0.1) !important;
+  }
+
+  /* 인라인 툴바 */
+  .ce-inline-toolbar {
+    background: #ffffff !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .ce-inline-tool {
+    color: var(--text) !important;
+  }
+
+  .ce-inline-tool:hover {
+    background: var(--surface-2) !important;
+  }
+
+  /* 블록 툴박스 */
+  .ce-popover {
+    background: #ffffff !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .ce-popover-item:hover {
+    background: rgba(49, 170, 96, 0.05) !important;
+  }
+
+  .ce-popover-item__icon {
+    color: var(--brand) !important;
+  }
+
+  /* fieldset 레이아웃 최적화 */
+  .module.aligned .form-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 16px;
+    align-items: start;
+    padding: 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  }
+
+  .module.aligned .form-row:last-child {
+    border-bottom: 0;
+  }
+
+  .module.aligned .form-row > div {
+    display: block;
+  }
+
+  .module.aligned label {
+    font-weight: 600;
+    color: var(--text);
+    padding-top: 8px;
+  }
+
+  /* content 필드는 특별 처리 */
+  .field-content.form-row {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .field-content label {
+    margin-bottom: 16px;
+  }
+
+  /* 안내 메시지 */
+  .editorjs-help-text {
+    background: rgba(49, 170, 96, 0.05);
+    border-left: 3px solid var(--brand);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .editorjs-help-text strong {
+    color: var(--brand-800);
+    font-weight: 700;
+  }
+
+  /* submit-row 하단 고정 */
+  .submit-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    background: var(--surface) !important;
+    border-top: 2px solid var(--admin-border) !important;
+    padding: 16px 24px !important;
+    margin: 0 -24px -20px -24px !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="editorjs-optimized-layout">
+  <div class="editorjs-help-text">
+    <strong>💡 Editor.js 사용 가이드:</strong>
+    왼쪽 <strong>+</strong> 버튼을 클릭하여 블록(제목, 리스트, 이미지, 인용 등)을 추가할 수 있습니다.
+    텍스트를 선택하면 굵게, 기울임 등 서식을 적용할 수 있습니다.
+  </div>
+
+  {{ block.super }}
+</div>
+{% endblock %}

@@ -3,10 +3,48 @@
 {% block title %}배드민톡 - 뉴스{% endblock %}
 
 {% block content %}
-<section class="section" aria-labelledby="news-title">
-    <div class="container">
-        <h1 id="news-title">배드민톡 뉴스</h1>
-        <p>동호인들을 위한 최신 소식을 곧 전해드릴 예정입니다.</p>
+<section class="section" aria-labelledby="news-title" style="position: relative;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0;">
+        <!-- 카테고리 필터 탭 -->
+        <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+            <a href="{% url 'news' %}" 
+               class="community-tab active" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                전체
+            </a>
+            <a href="{% url 'news' %}?category=tournament" 
+               class="community-tab" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                대회 소식
+            </a>
+            <a href="{% url 'news' %}?category=player" 
+               class="community-tab" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                선수 소식
+            </a>
+            <a href="{% url 'news' %}?category=equipment" 
+               class="community-tab" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                장비 뉴스
+            </a>
+            <a href="{% url 'news' %}?category=community" 
+               class="community-tab" 
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                동호인 소식
+            </a>
+        </div>
+        
+        <div style="padding: 48px; text-align: center; color: #64748b;">
+            <p>동호인들을 위한 최신 소식을 곧 전해드릴 예정입니다.</p>
+        </div>
     </div>
 </section>
+
+<style>
+    .community-tab.active {
+        color: var(--brand) !important;
+        border-bottom-color: var(--brand) !important;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}

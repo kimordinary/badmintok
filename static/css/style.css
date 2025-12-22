@@ -23,6 +23,16 @@
     --surface-2: #f6f9f7;
 }
 
+* {
+    box-sizing: border-box;
+}
+
+html {
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+}
+
 body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
         Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Apple SD Gothic Neo', 'Noto Sans KR',
@@ -32,30 +42,57 @@ body {
     padding: 0;
     margin: 0;
     display: block;
+    overflow-x: hidden;
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
 }
 
-body > header,
-body > main,
+body > header {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+}
+
+body > main {
+    width: 100%;
+    overflow-x: hidden;
+    padding-top: 0;
+}
+
 body > footer {
     width: 100%;
+    overflow-x: hidden;
 }
 
 main > section {
     width: 100%;
+    overflow-x: hidden;
+    position: relative;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .site-header {
-    position: sticky;
-    top: 0;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     background: var(--surface);
     border-bottom: 1px solid rgba(15, 23, 42, 0.06);
     z-index: 100;
+    width: 100%;
+    overflow-x: hidden;
+    will-change: transform;
+    margin: 0;
+    padding: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .scroll-progress {
@@ -76,6 +113,10 @@ main > section {
     max-width: 1200px;
     margin: 0 auto;
     padding: 16px 20px;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 101;
 }
 
 .logo {
@@ -265,27 +306,58 @@ main > section {
 }
 
 .calendar-controls {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 12px;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    padding: 16px 20px;
+    background: var(--brand);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    margin: 0;
 }
 
 .calendar-title {
     font-size: 22px;
     font-weight: 700;
-    color: var(--brand-800);
+    color: #ffffff;
 }
 
 .calendar-select {
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(15, 23, 42, 0.1);
-    background: #fff;
+    padding: 6px 24px 6px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: #ffffff;
     font-weight: 600;
-    color: var(--text);
-    justify-self: start;
+    color: #000000;
+    margin-left: 8px;
+    cursor: pointer;
+    appearance: none;
+    position: relative;
+    min-width: 50px;
+    text-align: center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 6px center;
+    background-repeat: no-repeat;
+    background-size: 12px;
+}
+
+.calendar-select:hover {
+    background-color: #f8f9fa;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+.calendar-select:focus {
+    outline: none;
+    background-color: #ffffff;
+    border-color: var(--brand);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+.calendar-select option {
+    background: #ffffff;
+    color: #000000;
 }
 
 .calendar-select:focus {
@@ -294,11 +366,14 @@ main > section {
 }
 
 .calendar {
-    border-radius: 16px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    background: linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
-    padding: 20px;
-    overflow-x: auto;
+    border-left: 1px solid rgba(15, 23, 42, 0.08);
+    border-right: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    background: #ffffff;
+    padding: 0;
+    overflow: hidden;
     position: relative;
 }
 
@@ -397,6 +472,59 @@ main > section {
     border-radius: 50%;
     background: #fff;
     opacity: 0.8;
+}
+
+.category-badge-qualifying {
+    background: #3b82f6 !important;
+}
+
+.category-badge-qualifying::before {
+    background: #fff;
+    opacity: 0.8;
+}
+
+.category-badge-non-qualifying {
+    background: #64748b !important;
+}
+
+.category-badge-non-qualifying::before {
+    background: #fff;
+    opacity: 0.8;
+}
+
+.contest-event-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    background: #3b82f6;
+}
+
+.contest-event-badge.event-badge-female {
+    background: #ec4899;
+}
+
+.contest-event-badge.event-badge-mixed {
+    background: #14b8a6;
+    position: relative;
+}
+
+.contest-event-badge.event-badge-mixed span,
+.contest-event-badge.event-badge-mixed {
+    transform: translateY(-1px);
+    text-shadow: 
+        0 -1px 1px rgba(255, 255, 255, 0.3),
+        0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.contest-event-badge.event-badge-male {
+    background: #3b82f6;
+}
+
+.contest-event-badge.event-badge-default {
+    background: #475569;
 }
 
 .contest-detail {
@@ -706,7 +834,7 @@ main > section {
     display: flex;
     flex-direction: column;
     gap: 3px;
-}
+    }
 
 .contest-same-week__detail-item {
     display: flex;
@@ -731,6 +859,10 @@ main > section {
 .calendar table {
     width: 100%;
     border-collapse: collapse;
+    border-top: none;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    overflow: hidden;
 }
 
 .calendar {
@@ -741,22 +873,41 @@ main > section {
     text-align: center;
     font-weight: 700;
     color: var(--brand-800);
-    padding: 12px 0;
+    padding: 4px 8px;
     border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+    border-right: 1px solid rgba(15, 23, 42, 0.05);
+    background: #fff;
+    height: 24px;
+    vertical-align: middle;
+    font-size: 13px;
+}
+
+.calendar thead th:last-child {
+    border-right: none;
+    color: #dc2626;
 }
 
 .calendar tbody tr {
     position: relative;
-    height: 90px;
+    height: 100px;
 }
 
 .calendar tbody td {
     width: 14.285%;
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border-right: 1px solid rgba(15, 23, 42, 0.05);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
     height: 100%;
     background: #fff;
     vertical-align: top;
-    padding: 6px 8px;
+    padding: 8px;
+}
+
+.calendar tbody td:last-child {
+    border-right: none;
+}
+
+.calendar tbody tr:last-child td {
+    border-bottom: none;
 }
 
 .calendar-day-cell {
@@ -772,34 +923,81 @@ main > section {
 
 .calendar-day-content {
     margin-top: 10px;
-}
-
-.calendar-banner-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 1;
-}
-
-.calendar-event-banner {
-    position: absolute;
+    min-height: 60px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 18px;
-    padding: 4px 8px;
+    flex-direction: column;
+    gap: 3px;
+}
+
+/* 주말 셀 스타일 */
+.weekend-cell {
+    background: #f8fafc !important;
+}
+
+/* 캘린더 이벤트 아이템 (뱃지 스타일) */
+.calendar-event-item {
+    display: inline-block;
+    padding: 4px 10px;
     background: #31AA60;
     color: #ffffff;
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.1;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
     text-decoration: none;
-    border-radius: 0;
-    pointer-events: auto;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
     box-sizing: border-box;
+}
+
+.calendar-event-item:hover {
+    opacity: 0.85;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.calendar-event-item:active {
+    opacity: 0.7;
+}
+
+/* 모바일에서 데스크톱 전용 요소 숨김 (desktop-only 클래스 사용) */
+@media (max-width: 768px) {
+    /* 모바일에서 모든 링크와 버튼이 클릭 가능하도록 */
+    a, button, input, select, textarea {
+        pointer-events: auto !important;
+        touch-action: manipulation !important;
+    }
+
+    /* contest 페이지 전용 */
+    .contest-post-item,
+    .contest-tab-btn,
+    .community-tab {
+        pointer-events: auto !important;
+        touch-action: manipulation !important;
+        cursor: pointer !important;
+    }
+
+    /* 모든 2차 탭(카테고리 필터 탭) 슬라이드 스타일 */
+    .community-tabs {
+        display: flex !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important; /* Firefox */
+        -ms-overflow-style: none !important; /* IE/Edge */
+        white-space: nowrap !important;
+    }
+
+    .community-tabs::-webkit-scrollbar {
+        display: none !important; /* Chrome/Safari/Opera */
+    }
+
+    .community-tab {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+    }
 }
 
 .calendar-day-number {
@@ -1627,12 +1825,49 @@ main > section {
 }
 
 @media (max-width: 640px) {
+    body {
+        font-size: 15px;
+    }
+
+    .container {
+        padding: 0 16px;
+    }
+
     .header-inner {
-        padding: 14px 16px;
+        padding: 12px 16px;
+        gap: 16px;
+    }
+
+    .logo {
+        font-size: 18px;
+    }
+
+    .profile-preview {
+        gap: 8px;
+    }
+
+    .profile-preview img {
+        width: 32px;
+        height: 32px;
+    }
+
+    .welcome {
+        font-size: 13px;
+    }
+
+    .auth-actions {
+        gap: 8px;
+    }
+
+    .auth-actions .btn {
+        padding: 8px 12px;
+        font-size: 13px;
     }
 
     .tab-bar {
         padding: 0 16px 10px 16px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .tab span:not(.icon) {
@@ -1642,6 +1877,7 @@ main > section {
     .tab {
         padding: 10px;
         border-radius: 999px;
+        flex-shrink: 0;
     }
 
     .tab .icon {
@@ -1655,9 +1891,52 @@ main > section {
     .feature-extra .review-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .section > .container {
+        padding: 16px 16px 0 16px;
+        margin-top: 0 !important;
+    }
+
+    .hero {
+        min-height: 300px;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr;
+        padding: 24px 16px;
+    }
+
+    .site-footer h3 {
+        font-size: 16px;
+    }
+
+    .site-footer {
+        font-size: 14px;
+    }
+
+    .posts li {
+        padding: 12px 14px;
+    }
+
+    .post-link {
+        font-size: 15px;
+    }
+
+    .meta {
+        font-size: 13px;
+    }
 }
 
 @media (max-width: 560px) {
+    .container {
+        padding: 0 12px;
+    }
+
+    .section > .container {
+        padding: 16px 12px 0 12px;
+        margin-top: 0 !important;
+    }
+
     .product-card {
         width: 200px;
     }
@@ -1673,6 +1952,7 @@ main > section {
 
     .footer-grid {
         grid-template-columns: 1fr;
+        padding: 20px 12px;
     }
 
     .videos-grid {
@@ -1685,6 +1965,18 @@ main > section {
 
     .success-actions {
         flex-direction: column;
+    }
+
+    .site-footer {
+        font-size: 13px;
+    }
+
+    .site-footer h3 {
+        font-size: 15px;
+    }
+
+    .header-inner {
+        padding: 10px 12px;
     }
 }
 
@@ -1709,4 +2001,369 @@ main > section {
 
 .contest-table .contest-title-link:hover {
     color: var(--brand-800);
+}
+
+/* ========== 모바일 헤더 스타일 ========== */
+
+/* 햄버거 메뉴 버튼 */
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 28px;
+    height: 22px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1002;
+    position: relative;
+    pointer-events: auto;
+    touch-action: manipulation;
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 3px;
+    background: var(--brand);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger-line:nth-child(1) {
+    transform: translateY(9.5px) rotate(45deg);
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger-line:nth-child(3) {
+    transform: translateY(-9.5px) rotate(-45deg);
+}
+
+/* 모바일 프로필 버튼 */
+.mobile-profile-btn {
+    display: none;
+}
+
+.profile-avatar-mobile {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.mobile-login-btn {
+    display: none;
+}
+
+/* 모바일 메뉴 오버레이 */
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 1000;
+}
+
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* 안전장치: 모바일에서 오버레이가 클릭을 막지 않도록 하는 전역 규칙 */
+/* 특정 페이지에서 오버레이를 비활성화해야 할 때 사용 */
+body.disable-mobile-overlay .mobile-menu-overlay,
+body.disable-mobile-overlay .mobile-menu-overlay.active,
+body.disable-mobile-overlay #mobileMenuOverlay,
+body.disable-mobile-overlay #mobileMenuOverlay.active {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    z-index: -9999 !important;
+    position: fixed !important;
+    top: -9999px !important;
+    left: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+body.disable-mobile-overlay .mobile-menu,
+body.disable-mobile-overlay .mobile-menu.active,
+body.disable-mobile-overlay #mobileMenu,
+body.disable-mobile-overlay #mobileMenu.active {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateX(-100%) !important;
+    z-index: -9999 !important;
+}
+
+body.disable-mobile-overlay {
+    overflow: auto !important;
+    pointer-events: auto !important;
+}
+
+/* 모바일 사이드 메뉴 */
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    background: #fff;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1001;
+    overflow-y: auto;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-menu.active {
+    transform: translateX(0);
+}
+
+/* 모바일 메뉴 헤더 */
+.mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.mobile-menu-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.mobile-menu-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.mobile-menu-close:hover {
+    color: #1e293b;
+}
+
+/* 모바일 메뉴 유저 섹션 */
+.mobile-menu-user {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.mobile-user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mobile-user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.mobile-user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mobile-user-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.mobile-user-mypage {
+    font-size: 14px;
+    color: var(--brand);
+    text-decoration: none;
+}
+
+.mobile-user-mypage:hover {
+    text-decoration: underline;
+}
+
+.mobile-auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-block {
+    width: 100%;
+    display: block;
+    text-align: center;
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--brand);
+    border: 1px solid var(--brand);
+}
+
+.btn-outline:hover {
+    background: var(--brand);
+    color: #fff;
+}
+
+/* 모바일 메뉴 리스트 */
+.mobile-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.mobile-menu-list li {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    color: #1e293b;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.mobile-menu-item:hover {
+    background: #f8fafc;
+}
+
+.mobile-menu-item.active {
+    background: #f0f9ff;
+    color: var(--brand);
+    font-weight: 600;
+}
+
+.mobile-menu-icon {
+    font-size: 24px;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mobile-menu-text {
+    font-size: 16px;
+}
+
+/* 모바일 메뉴 푸터 */
+.mobile-menu-footer {
+    padding: 20px;
+    border-top: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+/* ========== 모바일 반응형 (768px 이하) ========== */
+@media (max-width: 768px) {
+    /* 햄버거 버튼 표시 */
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    /* 데스크톱 네비게이션 숨김 */
+    .main-nav {
+        display: none;
+    }
+
+    /* 데스크톱 인증 버튼 숨김 */
+    .auth-actions .btn {
+        display: none;
+    }
+
+    .auth-actions .profile-preview {
+        display: none;
+    }
+
+    .auth-actions form {
+        display: none;
+    }
+
+    /* 모바일 프로필/로그인 버튼 표시 */
+    .mobile-profile-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+    }
+
+    .mobile-login-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+    }
+
+    /* 헤더 레이아웃 조정 */
+    .header-inner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
+/* 더 작은 모바일 (480px 이하) */
+@media (max-width: 480px) {
+    .mobile-menu {
+        width: 85%;
+        max-width: 300px;
+    }
+
+    .logo {
+        font-size: 20px;
+    }
+}
+
+/* 배너 Sponsored 라벨 */
+.banner-sponsored-label {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    color: #ffffff;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    z-index: 10;
+    text-transform: uppercase;
+    line-height: 1.2;
 }

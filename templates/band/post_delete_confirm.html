@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}게시글 삭제 - {{ band.name }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 600px;">
+        <h1>게시글 삭제</h1>
+        <p style="color: #64748b; margin-bottom: 24px;">{{ band.name }}</p>
+        
+        <div style="padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
+            <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                정말 이 게시글을 삭제하시겠습니까?
+            </p>
+            
+            {% if post.title %}
+                <div style="padding: 12px; background: #f8fafc; border-radius: 6px; margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: #64748b; margin-bottom: 4px;">제목</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #1e293b;">{{ post.title }}</div>
+                </div>
+            {% endif %}
+            
+            <div style="padding: 12px; background: #f8fafc; border-radius: 6px; margin-bottom: 16px;">
+                <div style="font-size: 14px; color: #64748b; margin-bottom: 4px;">내용</div>
+                <div style="font-size: 14px; color: #1e293b; line-height: 1.6;">{{ post.content|truncatewords:30 }}</div>
+            </div>
+            
+            <div style="padding: 12px; background: #fee2e2; border: 1px solid #dc2626; border-radius: 6px; margin-bottom: 16px;">
+                <div style="font-size: 13px; color: #dc2626;">
+                    ⚠️ 삭제된 게시글은 복구할 수 없습니다.
+                </div>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" class="btn btn-primary" style="background: #dc2626; border-color: #dc2626;">삭제하기</button>
+                <a href="{% url 'band:post_detail' band.id post.id %}" class="btn btn-ghost">취소</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git restore:*)",
+      "Bash(python manage.py shell:*)",
+      "Bash(python manage.py:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec:*)",
+      "Bash(docker-compose:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)",
+      "Bash(del temp_contest.html)",
+      "Bash(git checkout:*)",
+      "Bash(find:*)",
+      "Bash(python setup_category_hierarchy.py:*)",
+      "Bash(timeout 5 bash -c \"while ! curl -s http://127.0.0.1:8000/ > /dev/null; do sleep 0.5; done && echo ''Server is ready''\")",
+      "Bash(timeout 5 bash:*)",
+      "WebFetch(domain:127.0.0.1)",
+      "Bash(python:*)",
+      "Bash(mysql:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(del .env.prod)",
+      "Bash(cat:*)",
+      "Bash(icacls:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

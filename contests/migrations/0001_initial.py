@@ -35,8 +35,8 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='수정일')),
             ],
             options={
-                'verbose_name': '배드민턴 대회',
-                'verbose_name_plural': '배드민턴 대회',
+                'verbose_name': '전국 배드민턴 대회',
+                'verbose_name_plural': '전국 배드민턴 대회',
                 'ordering': ['-schedule_start', '-created_at'],
             },
         ),

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}모임 삭제 신청 - {{ band.name }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 600px;">
+        <div style="margin-bottom: 24px;">
+            <a href="{% url 'band:detail' band.id %}" style="color: var(--brand); text-decoration: none;">← {{ band.name }}</a>
+        </div>
+        
+        <div style="padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1e293b;">모임 삭제 신청</h1>
+            <p style="margin: 0 0 24px 0; font-size: 14px; color: #64748b;">
+                모임 삭제 신청 시 관리자 승인 후 삭제되며, 해당 계정으로 일주일간 모임을 새로 생성할 수 없습니다.
+            </p>
+            
+            <div style="padding: 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; margin-bottom: 24px;">
+                <div style="display: flex; align-items: start; gap: 12px;">
+                    <span style="font-size: 20px;">⚠️</span>
+                    <div>
+                        <div style="font-weight: 600; color: #991b1b; margin-bottom: 8px;">주의사항</div>
+                        <ul style="margin: 0; padding-left: 20px; color: #7f1d1d; font-size: 14px; line-height: 1.6;">
+                            <li>모임 삭제 시 모든 멤버, 게시글, 일정, 댓글 등 관련 데이터가 함께 삭제됩니다.</li>
+                            <li>삭제된 모임은 복구할 수 없습니다.</li>
+                            <li>삭제 승인 후 해당 계정으로 일주일간 모임을 새로 생성할 수 없습니다.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div style="margin-bottom: 24px;">
+                    <label for="deletion_reason" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                        삭제 사유 <span style="color: #dc2626;">*</span>
+                    </label>
+                    <textarea 
+                        id="deletion_reason" 
+                        name="deletion_reason" 
+                        rows="6" 
+                        placeholder="모임을 삭제하는 이유를 입력해주세요."
+                        required
+                        style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; line-height: 1.5; resize: vertical; box-sizing: border-box; font-family: inherit;"
+                    ></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 12px;">
+                    <a href="{% url 'band:detail' band.id %}" class="btn btn-ghost" style="flex: 1; text-align: center; text-decoration: none;">취소</a>
+                    <button type="submit" class="btn btn-primary" style="flex: 1; background-color: #dc2626; border-color: #dc2626;">삭제 신청</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

@@ -1,0 +1,80 @@
+
+{% extends "base.html" %}
+
+{% block title %}일정 만들기 - {{ band.name }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 800px;">
+        <div style="margin-bottom: 16px;">
+            <a href="{% url 'band:schedule_list' band.id %}" style="color: var(--brand); text-decoration: none;">← 일정 목록</a>
+        </div>
+        
+        <h1>일정 만들기</h1>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="form-errors" style="margin-bottom: 20px;">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="form-field">
+                <label for="{{ form.title.id_for_label }}">일정 제목 <span class="required">*</span></label>
+                {{ form.title }}
+            </div>
+            
+            <div class="form-field">
+                <label for="{{ form.description.id_for_label }}">모임 참가 조건 및 설명</label>
+                {{ form.description }}
+            </div>
+            
+            <div class="form-field">
+                <label for="{{ form.start_datetime.id_for_label }}">시작 일시 <span class="required">*</span></label>
+                {{ form.start_datetime }}
+            </div>
+            
+            <div class="form-field">
+                <label for="{{ form.end_datetime.id_for_label }}">종료 일시</label>
+                {{ form.end_datetime }}
+            </div>
+            
+            <div class="form-field">
+                <label for="{{ form.location.id_for_label }}">장소</label>
+                {{ form.location }}
+            </div>
+            
+            <div class="form-field">
+                <label for="{{ form.max_participants.id_for_label }}">최대 참가 인원</label>
+                {{ form.max_participants }}
+                <p class="help-text">비워두면 인원 제한이 없습니다.</p>
+            </div>
+            
+            <div class="form-field">
+                <label>
+                    {{ form.requires_approval }}
+                    승인 필요
+                </label>
+                <p class="help-text">체크하면 관리자가 신청을 승인해야 참가할 수 있습니다.</p>
+            </div>
+            
+            <div class="form-field">
+                <label for="{{ form.application_deadline.id_for_label }}">신청 마감일</label>
+                {{ form.application_deadline }}
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button type="submit" class="btn btn-primary">일정 만들기</button>
+                <a href="{% url 'band:schedule_list' band.id %}" class="btn btn-ghost">취소</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
