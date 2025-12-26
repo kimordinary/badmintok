@@ -708,6 +708,7 @@ main > section {
 }
 
 .contest-detail__description {
+    margin-top: 24px;
     padding: 24px;
     border-radius: 16px;
     border: 1px solid rgba(15, 23, 42, 0.08);

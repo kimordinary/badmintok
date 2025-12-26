@@ -36,37 +36,35 @@
         </div>
         {% endif %}
 
-        <!-- 메인 탭 (전체/리뷰/기타 카테고리) -->
+        <!-- 메인 탭 (동적 탭) -->
         <div class="community-tab-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; flex-wrap: wrap; gap: 12px;">
             <div class="community-tabs" style="display: flex; align-items: center; flex: 1; min-width: 0; flex-wrap: wrap;">
-                <a href="{% url 'community:list' %}" 
-                   class="community-tab {% if not active_tab %}active{% endif %}" 
+                <a href="{% url 'community:list' %}"
+                   class="community-tab {% if not active_tab %}active{% endif %}"
                    style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500; white-space: nowrap;">
                     전체
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews" 
-                   class="community-tab {% if active_tab == 'reviews' %}active{% endif %}" 
+                {% for tab in tabs %}
+                <a href="{% url 'community:list' %}?tab={{ tab.slug }}"
+                   class="community-tab {% if active_tab == tab.slug %}active{% endif %}"
                    style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500; white-space: nowrap;">
-                    리뷰
+                    {{ tab.name }}
                 </a>
-                {% for category in category_choices %}
-                    <a href="{% url 'community:list' %}?category={{ category.slug }}" 
-                       class="community-tab {% if not active_tab and current_category == category.slug %}active{% endif %}" 
-                       style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500; white-space: nowrap;">
-                        {{ category.name }}
-                    </a>
                 {% endfor %}
             </div>
         </div>
 
         <!-- 전체 탭 및 일반 카테고리 탭 컨텐츠 -->
-        {% if not active_tab or active_tab != 'reviews' %}
+        {% if not active_tab or active_tab != 'hot' and active_tab != 'reviews' %}
         <div id="all-content" style="margin-top: 20px;">
             <!-- 공지사항 배너 -->
             {% if pinned_notice %}
             <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
                 <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
-                    <span style="font-size: 32px; line-height: 1;">📣</span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
                         <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
@@ -83,7 +81,7 @@
             {% if hot_posts %}
             <div class="mobile-hot-posts-banner" style="display: none; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">🔥 인기글</h3>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">인기글</h3>
                 </div>
                 <div class="hot-posts-scroll" style="display: flex; gap: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 4px;">
                     {% for post in hot_posts|slice:":3" %}
@@ -91,8 +89,19 @@
                         <a href="{% url 'community:detail' post.slug %}" class="hot-post-card" style="flex-shrink: 0; width: 280px; padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 8px;">
                             <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ post.title }}</h4>
                             <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #64748b; margin-top: auto;">
-                                <span>👀 {{ post.view_count }}</span>
-                                <span>❤️ {{ post.like_count }}</span>
+                                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    {{ post.view_count }}
+                                </span>
+                                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                    {{ post.like_count }}
+                                </span>
                             </div>
                         </a>
                         {% endif %}
@@ -263,8 +272,19 @@
                                                 {{ post.title }}
                                             </h4>
                                             <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
-                                                <span>👀 {{ post.view_count }}</span>
-                                                <span>❤️ {{ post.like_count }}</span>
+                                                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                    </svg>
+                                                    {{ post.view_count }}
+                                                </span>
+                                                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                    </svg>
+                                                    {{ post.like_count }}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -281,6 +301,134 @@
         </div>
         {% endif %}
 
+        <!-- Hot 탭 컨텐츠 -->
+        {% if active_tab == 'hot' %}
+        <div id="hot-content" style="margin-top: 20px;">
+            <!-- 공지사항 배너 -->
+            {% if pinned_notice %}
+            <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
+                        <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'notice_list' %}" style="padding: 12px 24px; background: var(--brand); color: #fff; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 600; white-space: nowrap;">
+                    <span class="notice-banner-text">전체 보기</span>
+                    <span class="notice-banner-arrow">→</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Hot 글 목록 -->
+            <div class="community-list">
+                {% if posts %}
+                    <div class="community-post-list">
+                        {% for post in posts %}
+                            {% if post.slug %}
+                            <a href="{% url 'community:detail' post.slug %}" class="community-post-item">
+                                <div class="community-post-content">
+                                    <div class="community-post-header">
+                                        <span class="community-post-category">{{ post.get_category_display }}</span>
+                                    </div>
+                                    <h3 class="community-post-title">{{ post.title }}</h3>
+                                    <p class="community-post-excerpt">
+                                        {% if post.content|striptags|length > 80 %}
+                                            {{ post.content|striptags|truncatewords:15 }}
+                                        {% else %}
+                                            {{ post.content|striptags }}
+                                        {% endif %}
+                                    </p>
+                                    <div class="community-post-meta">
+                                        <span class="community-post-author">{{ post.author.activity_name }}</span>
+                                        <span class="community-post-separator">|</span>
+                                        <span class="community-post-time">
+                                            {% now "Y-m-d" as today %}
+                                            {% if post.created_at|date:"Y-m-d" == today %}
+                                                {{ post.created_at|timesince|timesince_simple }} 전
+                                            {% else %}
+                                                {{ post.created_at|date:"m.d" }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="community-post-separator">|</span>
+                                        <span class="community-post-action">
+                                            <span class="community-post-action-icon">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                </svg>
+                                            </span>
+                                            <span class="community-post-action-count">{{ post.like_count }}</span>
+                                        </span>
+                                        <span class="community-post-action">
+                                            <span class="community-post-action-icon">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                                </svg>
+                                            </span>
+                                            <span class="community-post-action-count">{{ post.comment_count }}</span>
+                                        </span>
+                                        <span class="community-post-action">
+                                            <span class="community-post-action-icon">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                            </span>
+                                            <span class="community-post-action-count">{{ post.view_count }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="community-post-image">
+                                    {% if post.images.all %}
+                                        {% with first_image=post.images.all.0 %}
+                                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                        {% endwith %}
+                                    {% elif post.content|extract_first_image %}
+                                        <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                    {% else %}
+                                        <div class="community-post-no-image">이미지 없음</div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- 페이지네이션 -->
+                    {% if is_paginated %}
+                        <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                            {% if page_obj.has_previous %}
+                                <a href="?tab=hot&page=1" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
+                                <a href="?tab=hot&page={{ page_obj.previous_page_number }}" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                            {% endif %}
+
+                            <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
+                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                            </span>
+
+                            {% if page_obj.has_next %}
+                                <a href="?tab=hot&page={{ page_obj.next_page_number }}" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                                <a href="?tab=hot&page={{ page_obj.paginator.num_pages }}" 
+                                   class="btn btn-ghost" style="padding: 8px 12px;">마지막</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div style="padding: 48px; text-align: center; color: #64748b;">
+                        <p>인기글이 없습니다.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 리뷰 탭 컨텐츠 -->
         {% if active_tab == 'reviews' %}
         <div id="reviews-content">
@@ -291,33 +439,33 @@
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     전체
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=racket"
-                   class="community-tab {% if current_category == 'racket' %}active{% endif %}"
+                <a href="{% url 'community:list' %}?tab=reviews&category=community-racket"
+                   class="community-tab {% if current_category == 'community-racket' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     라켓
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=shoes"
-                   class="community-tab {% if current_category == 'shoes' %}active{% endif %}"
+                <a href="{% url 'community:list' %}?tab=reviews&category=community-shoes"
+                   class="community-tab {% if current_category == 'community-shoes' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     신발/가방
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=apparel"
-                   class="community-tab {% if current_category == 'apparel' %}active{% endif %}"
+                <a href="{% url 'community:list' %}?tab=reviews&category=community-apparel"
+                   class="community-tab {% if current_category == 'community-apparel' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     의류
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=shuttlecock"
-                   class="community-tab {% if current_category == 'shuttlecock' %}active{% endif %}"
+                <a href="{% url 'community:list' %}?tab=reviews&category=community-shuttlecock"
+                   class="community-tab {% if current_category == 'community-shuttlecock' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     셔틀콕
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=protective"
-                   class="community-tab {% if current_category == 'protective' %}active{% endif %}"
+                <a href="{% url 'community:list' %}?tab=reviews&category=community-protective"
+                   class="community-tab {% if current_category == 'community-protective' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     보호대
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=accessories"
-                   class="community-tab {% if current_category == 'accessories' %}active{% endif %}"
+                <a href="{% url 'community:list' %}?tab=reviews&category=community-accessories"
+                   class="community-tab {% if current_category == 'community-accessories' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     기타/용품
                 </a>
@@ -327,7 +475,10 @@
             {% if pinned_notice %}
             <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
                 <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
-                    <span style="font-size: 32px; line-height: 1;">📣</span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
                         <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
@@ -400,15 +551,28 @@
                                             </span>
                                             <span class="community-post-separator">|</span>
                                             <span class="community-post-action">
-                                                <span class="community-post-action-icon">❤️</span>
+                                                <span class="community-post-action-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                    </svg>
+                                                </span>
                                                 <span class="community-post-action-count">{{ post.like_count }}</span>
                                             </span>
                                             <span class="community-post-action">
-                                                <span class="community-post-action-icon">💬</span>
+                                                <span class="community-post-action-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                                    </svg>
+                                                </span>
                                                 <span class="community-post-action-count">{{ post.comment_count }}</span>
                                             </span>
                                             <span class="community-post-action">
-                                                <span class="community-post-action-icon">👀</span>
+                                                <span class="community-post-action-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                    </svg>
+                                                </span>
                                                 <span class="community-post-action-count">{{ post.view_count }}</span>
                                             </span>
                                         </div>
@@ -478,8 +642,19 @@
                                                     {{ post.title }}
                                                 </h4>
                                                 <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
-                                                    <span>👀 {{ post.view_count }}</span>
-                                                    <span>❤️ {{ post.like_count }}</span>
+                                                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                        {{ post.view_count }}
+                                                    </span>
+                                                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                        </svg>
+                                                        {{ post.like_count }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -490,12 +665,6 @@
                                 <p style="margin: 0; color: #64748b; font-size: 14px;">인기글이 없습니다.</p>
                             {% endif %}
                         </div>
-                    </div>
-
-                    <!-- 미정 컨테이너 -->
-                    <div class="sidebar-widget" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1e293b;">미정</h3>
-                        <p style="margin: 0; color: #64748b; font-size: 14px;">내용 미정입니다.</p>
                     </div>
                 </div>
             </div>
@@ -529,7 +698,7 @@
         position: relative;
         min-width: 100%;
         max-width: 100%;
-        aspect-ratio: 4 / 1;
+        aspect-ratio: 8 / 3;
         scroll-snap-align: center;
         border-radius: 12px;
         overflow: hidden;

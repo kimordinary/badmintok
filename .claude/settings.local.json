@@ -24,7 +24,12 @@
       "Bash(taskkill:*)",
       "Bash(del .env.prod)",
       "Bash(cat:*)",
-      "Bash(icacls:*)"
+      "Bash(icacls:*)",
+      "Bash(docker restart:*)",
+      "Bash(timeout 10 bash -c \"while ! curl -s http://127.0.0.1/badminton-tournament/ > /dev/null; do sleep 0.5; done && echo ''Server is ready''\")",
+      "Bash(tasklist:*)",
+      "Bash(cmd.exe //c taskkill //F //PID 37076)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

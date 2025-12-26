@@ -21,17 +21,40 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-sspxl=1jonty09c+iave54)vi=uis7yv!r%7f0kd1+cw4bq@sr'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-sspxl=1jonty09c+iave54)vi=uis7yv!r%7f0kd1+cw4bq@sr')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# 환경 변수가 없으면 기본적으로 DEBUG=True (로컬 개발 환경)
+# Docker 환경에서는 환경 변수로 명시적으로 설정
+DEBUG_ENV = os.environ.get('DJANGO_DEBUG', '')
+if DEBUG_ENV:
+    DEBUG = DEBUG_ENV.lower() == 'true'
+else:
+    # 환경 변수가 없으면 로컬 개발 환경으로 간주하고 DEBUG=True
+    DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS 설정
+ALLOWED_HOSTS_ENV = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+if ALLOWED_HOSTS_ENV:
+    ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',')]
+else:
+    # 개발 환경 기본값: 모든 호스트 허용 + 내부 컨테이너 이름
+    ALLOWED_HOSTS = ['*', 'badmintok-web', 'badmintok-web-prod', 'localhost', '127.0.0.1']
 
 # Nginx 프록시를 통한 요청 처리
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
-SECURE_PROXY_SSL_HEADER = None  # HTTPS 사용 시 설정
+
+# HTTPS 사용 시 설정 (프로덕션)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = False  # Nginx에서 처리하므로 False
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SECURE_PROXY_SSL_HEADER = None
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 
 # Application definition
@@ -153,8 +176,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # File upload settings
 # 전체 요청 크기 제한 (이미지 + 폼 데이터 포함)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB (이미지 + 폼 데이터를 고려하여 여유있게 설정)
-FILE_UPLOAD_MAX_MEMORY_SIZE = 3145728  # 3MB (개별 파일 크기 제한)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB (이미지 + 폼 데이터를 고려하여 여유있게 설정)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB (개별 파일 크기 제한)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -165,19 +188,61 @@ AUTH_USER_MODEL = 'accounts.User'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
+# 보안 설정
+if not DEBUG:
+    # 프로덕션 보안 설정
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    
+    # 로깅 설정
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {message}',
+                'style': '{',
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            },
+        },
+        'root': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+        },
+    }
+
 # 세션 설정
-SESSION_COOKIE_SECURE = False  # 개발 환경에서는 False (HTTPS 사용 시 True)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'  # 'Lax'로 설정하여 외부 리다이렉트에서도 쿠키 전달
 SESSION_SAVE_EVERY_REQUEST = True
 # 프로덕션 환경에서 Nginx 프록시를 통한 세션 유지
-# localhost와 127.0.0.1은 다른 도메인으로 취급되므로 None으로 설정
 SESSION_COOKIE_DOMAIN = None  # None으로 설정하여 모든 도메인에서 쿠키 전달
 SESSION_COOKIE_PATH = '/'  # 모든 경로에서 쿠키 전달
 # 세션 쿠키 이름 (기본값 사용)
 SESSION_COOKIE_NAME = 'sessionid'
+# SESSION_COOKIE_SECURE는 위에서 DEBUG에 따라 설정됨
 
-KAKAO_CLIENT_ID = '90b3d0426d0273b8e9d1113e6184ba6a'
-KAKAO_CLIENT_SECRET = ''
-# 개발 환경: 8000 포트 사용
+KAKAO_CLIENT_ID = os.environ.get('KAKAO_REST_API_KEY', '90b3d0426d0273b8e9d1113e6184ba6a')
+KAKAO_CLIENT_SECRET = os.environ.get('KAKAO_CLIENT_SECRET', '')
+# 카카오 리다이렉트 URI
 KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI', 'http://127.0.0.1:8000/accounts/kakao')

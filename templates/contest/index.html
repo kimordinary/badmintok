@@ -512,8 +512,6 @@
                                                 {% with first_image=contest.images.first %}
                                                     {% if first_image %}
                                                         <img src="{{ first_image.image.url }}" alt="{{ contest.title }}" class="contest-post-thumbnail">
-                                                    {% elif contest.image %}
-                                                        <img src="{{ contest.image.url }}" alt="{{ contest.title }}" class="contest-post-thumbnail">
                                                     {% else %}
                                                         <div class="contest-post-no-image">이미지 없음</div>
                                                     {% endif %}
@@ -577,8 +575,7 @@
                     </div>
                     {% for category in categories %}
                     <div class="contest-panel-list" id="contest-panel-list-category-{{ category.id }}" role="tabpanel">
-                        <!-- 모바일용 대회 리스트 -->
-                        <div class="contest-list mobile-only">
+                        <div class="contest-list">
                             <div class="contest-post-list" data-category-id="{{ category.id }}">
                                 {% for contest in contests %}
                                     {% if contest.category and contest.category.id == category.id %}
@@ -587,8 +584,6 @@
                                             {% with first_image=contest.images.first %}
                                                 {% if first_image %}
                                                     <img src="{{ first_image.image.url }}" alt="{{ contest.title }}" class="contest-post-thumbnail">
-                                                {% elif contest.image %}
-                                                    <img src="{{ contest.image.url }}" alt="{{ contest.title }}" class="contest-post-thumbnail">
                                                 {% else %}
                                                     <div class="contest-post-no-image">이미지 없음</div>
                                                 {% endif %}
@@ -609,7 +604,9 @@
                                                         {% endif %}
                                                     {% endif %}
                                                 {% endwith %}
+                                                    {% if contest.category %}
                                                 <span class="contest-post-category" style="--badge-color: {{ contest.category.color }}">{{ contest.category.name }}</span>
+                                                    {% endif %}
                                                 {% if contest.is_qualifying %}
                                                     <span class="contest-post-category contest-post-category-qualifying">승급</span>
                                                 {% else %}
@@ -630,7 +627,7 @@
                                                 </div>
                                                 <div class="contest-post-info">
                                                     <span style="color: #64748b;">장소:</span>
-                                                    <span style="margin-left: 8px;">{{ contest.get_location_display|default:"-" }}</span>
+                                                        <span style="margin-left: 8px;">{{ contest.get_location_display|default:"-"|bold_region }}</span>
                                                 </div>
                                                 <div class="contest-post-info">
                                                     <span style="color: #64748b;">접수 마감:</span>
@@ -640,32 +637,16 @@
                                         </div>
                                     </a>
                                     {% endif %}
+                                {% empty %}
+                                    <div style="padding: 48px; text-align: center; color: #64748b;">
+                                        <p>해당 카테고리의 대회 정보가 없습니다.</p>
+                                    </div>
                                 {% endfor %}
                             </div>
+                            {% comment %} 카테고리에 해당하는 대회가 없는 경우 빈 메시지 표시 (JavaScript에서 처리) {% endcomment %}
                             <div class="empty-message" style="padding: 48px; text-align: center; color: #64748b; display: none;">
                                 <p>해당 카테고리의 대회 정보가 없습니다.</p>
                             </div>
-                        </div>
-                        <!-- 데스크톱용 테이블 -->
-                        <div class="contest-table-wrapper desktop-only" aria-labelledby="contestTitle">
-                            <table class="contest-table" id="contestTable-category-{{ category.id }}">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">분류</th>
-                                        <th scope="col">포스터</th>
-                                        <th scope="col">대회명</th>
-                                        <th scope="col">일정</th>
-                                        <th scope="col">장소</th>
-                                        <th scope="col">참가상품</th>
-                                        <th scope="col">스폰서</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="contestTableBody-category-{{ category.id }}">
-                                    <tr>
-                                        <td colspan="7" class="empty-state">해당 카테고리의 대회 정보가 없습니다.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                     {% endfor %}
@@ -731,7 +712,7 @@
         position: relative;
         min-width: 100%;
         max-width: 100%;
-        aspect-ratio: 4 / 1;
+        aspect-ratio: 8 / 3;
         scroll-snap-align: center;
         border-radius: 12px;
         overflow: hidden;
@@ -1844,46 +1825,38 @@
         }
 
         // 테이블 렌더링 함수
-        function renderTable(panelId, filteredContests) {
+        function updateContestList(panelId, filteredContests) {
             if (panelId === 'all') {
                 return;
             }
 
-            const tableBody = document.getElementById(`contestTableBody-category-${panelId}`);
+            const contestList = document.querySelector(`#contest-panel-list-category-${panelId} .contest-post-list`);
+            const emptyMessage = document.querySelector(`#contest-panel-list-category-${panelId} .empty-message`);
 
-            if (!tableBody) {
+            if (!contestList) {
                 return;
             }
 
-            tableBody.innerHTML = "";
+            // 카드 리스트에서 실제로 보이는 아이템 개수 확인
+            const visibleItems = contestList.querySelectorAll('.contest-post-item:not([style*="display: none"])').length;
+            const hasVisibleItems = visibleItems > 0 || contestList.querySelectorAll('.contest-post-item').length > 0;
 
-            if (filteredContests.length === 0) {
-                const emptyRow = document.createElement("tr");
-                emptyRow.innerHTML = `<td colspan="7" class="empty-state">해당 카테고리의 대회 정보가 없습니다.</td>`;
-                tableBody.appendChild(emptyRow);
-                return;
+            // 서버에서 이미 렌더링된 카드 리스트가 있으므로, 빈 메시지만 표시/숨김 처리
+            if (!hasVisibleItems || filteredContests.length === 0) {
+                if (emptyMessage) {
+                    emptyMessage.style.display = 'block';
+                }
+                if (contestList) {
+                    contestList.style.display = 'none';
+                }
+            } else {
+                if (emptyMessage) {
+                    emptyMessage.style.display = 'none';
+                }
+                if (contestList) {
+                    contestList.style.display = 'flex';
+                }
             }
-
-            filteredContests.forEach((contest) => {
-                const row = document.createElement("tr");
-                const categoryBadge = contest.category
-                    ? `<span class="category-badge" style="--badge-color: ${contest.category.color}">${contest.category.name}</span>`
-                    : "-";
-                const image = contest.image_url
-                    ? `<img src="${contest.image_url}" alt="${contest.title}">`
-                    : `<div class="contest-thumb-placeholder">이미지 없음</div>`;
-
-                row.innerHTML = `
-                    <td>${categoryBadge}</td>
-                    <td>${image}</td>
-                    <td><a href="/badminton-tournament/${contest.slug}/" class="contest-title-link"><strong>${contest.title}</strong></a></td>
-                    <td>${contest.period_display || "-"}</td>
-                    <td>${contest.location || "-"}</td>
-                    <td>${contest.participant_reward || "-"}</td>
-                    <td>${contest.sponsor ? contest.sponsor.name : "-"}</td>
-                `;
-                tableBody.appendChild(row);
-            });
         }
 
         // 패널 업데이트 함수
@@ -1944,7 +1917,7 @@
             });
 
             renderCalendar(panelId, year, month, monthContests);
-            renderTable(panelId, filteredContests);
+            updateContestList(panelId, filteredContests);
 
             // 모바일 주말 캘린더 렌더링 (전체 탭만)
             if (isMobile && panelId === 'all') {

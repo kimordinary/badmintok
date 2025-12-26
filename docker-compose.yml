@@ -1,9 +1,9 @@
 version: "3.9"
 
 services:
-  db:
+  mysql8:
     image: mysql:8.0.43
-    container_name: badmintok-mysql-dev
+    container_name: mysql8
     restart: always
     env_file:
       - .env
@@ -16,37 +16,94 @@ services:
       - db_data:/var/lib/mysql
     networks:
       - badmintok-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   web:
     build: .
-    container_name: badmintok-web-dev
+    container_name: badmintok-web
     restart: always
-    ports:
-      - "8080:8080"
+    # Gunicorn은 내부 포트만 노출 (nginx를 통해서만 접근)
+    expose:
+      - "8080"
     env_file:
       - .env
     environment:
-      DB_HOST: "${DB_HOST}"
-      DB_PORT: "${DB_PORT}"
+      # Django 개발 환경 설정 (개발 환경에서는 항상 True로 강제)
+      # .env 파일의 값보다 우선하도록 명시적으로 설정
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "*"
+      
+      # 기존 MySQL 컨테이너 이름 사용 (mysql8)
+      DB_HOST: "mysql8"
+      DB_PORT: "${DB_PORT:-3306}"
       DB_NAME: "${DB_NAME}"
       DB_USER: "${DB_USER}"
       DB_PASSWORD: "${DB_PASSWORD}"
-    depends_on:
-      - db
+      TZ: "Asia/Seoul"
+      
+      # Gunicorn 설정 (개발 환경에서는 적은 워커)
+      GUNICORN_WORKERS: "${GUNICORN_WORKERS:-2}"
+      GUNICORN_TIMEOUT: "${GUNICORN_TIMEOUT:-120}"
+      GUNICORN_LOG_LEVEL: "${GUNICORN_LOG_LEVEL:-debug}"
     volumes:
-      # 코드 전체를 마운트해서 자동 리로드
+      # 개발 환경: 코드 마운트 (코드 변경 시 즉시 반영)
+      # named volume을 사용하여 staticfiles와 media를 보호
       - .:/app
-      # 업로드 파일 보존
-      - ./media:/app/media
+      # 정적 파일 및 업로드 파일 (Nginx와 공유) - 코드 마운트 이후에 마운트하여 덮어쓰기
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    depends_on:
+      mysql8:
+        condition: service_healthy
     networks:
       - badmintok-net
-    # 개발 환경: runserver 사용 (마이그레이션 후 실행)
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python manage.py runserver 0.0.0.0:8080 --insecure"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/login/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: badmintok-nginx
+    restart: always
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    depends_on:
+      web:
+        condition: service_healthy
+    volumes:
+      # Nginx 설정 (개발 환경용 badmintok.conf만 마운트)
+      - ./nginx/conf.d/badmintok.conf:/etc/nginx/conf.d/badmintok.conf:ro
+      # 정적/미디어 파일 (web 컨테이너와 공유된 볼륨)
+      - static_data:/usr/share/nginx/html/static:ro
+      - media_data:/usr/share/nginx/html/media:ro
+      # Nginx 로그
+      - nginx_logs:/var/log/nginx
+    networks:
+      - badmintok-net
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   db_data:
+    driver: local
+  static_data:
+    driver: local
+  media_data:
+    driver: local
+  nginx_logs:
+    driver: local
 
 networks:
   badmintok-net:

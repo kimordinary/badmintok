@@ -3,7 +3,7 @@ from django import forms
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import Category, Post, PostImage, Comment, PostShare, BadmintokPost, CommunityPost
+from .models import Category, Tab, Post, PostImage, Comment, PostShare, BadmintokPost, CommunityPost
 from .widgets import EditorJSWidget
 
 
@@ -15,6 +15,22 @@ class CategoryAdmin(admin.ModelAdmin):
     list_editable = ["display_order", "is_active"]
     prepopulated_fields = {"slug": ("name",)}
     ordering = ["display_order", "name"]
+
+
+@admin.register(Tab)
+class TabAdmin(admin.ModelAdmin):
+    list_display = ["id", "name", "slug", "category", "source", "display_order", "is_active", "created_at"]
+    list_filter = ["source", "is_active", "created_at"]
+    search_fields = ["name", "slug"]
+    list_editable = ["display_order", "is_active"]
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ["source", "display_order", "name"]
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """카테고리 선택 시 활성화된 카테고리만 표시"""
+        if db_field.name == "category":
+            kwargs["queryset"] = Category.objects.filter(is_active=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class PostAdminForm(forms.ModelForm):

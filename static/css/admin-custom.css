@@ -1480,23 +1480,29 @@ input[type="file"]:focus {
 }
 
 /* 파일 업로드 현재 파일 표시 */
-.file-upload p.file-upload {
-  margin: 8px 0;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-  font-size: 13px;
-  color: var(--muted);
+.file-upload,
+p.file-upload {
+  margin: 8px 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
+  color: var(--muted) !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
 }
 
 .file-upload a {
-  color: var(--brand);
-  text-decoration: none;
-  font-weight: 600;
+  color: var(--brand) !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  word-break: break-all !important;
 }
 
 .file-upload a:hover {
-  text-decoration: underline;
+  text-decoration: underline !important;
 }
 
 /* 이미지 미리보기 */
@@ -1548,21 +1554,48 @@ input[type="file"]:focus {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
+  table-layout: auto !important;
 }
 
 .inline-group table thead th {
   background: var(--surface-2) !important;
   color: var(--brand-800) !important;
-  padding: 10px 8px !important;
+  padding: 10px 12px !important;
   font-weight: 700 !important;
   border-bottom: 2px solid var(--admin-border) !important;
   text-align: left !important;
   font-size: 13px !important;
+  white-space: nowrap !important;
 }
 
 .inline-group table tbody td {
-  padding: 10px 8px !important;
+  padding: 12px !important;
   border-bottom: 1px solid rgba(15, 23, 42, 0.05) !important;
+  vertical-align: top !important;
+  box-sizing: border-box !important;
+}
+
+/* 인라인 테이블 original 컬럼 */
+.inline-group table tbody td.original {
+  min-width: 180px !important;
+  max-width: 250px !important;
+  padding: 12px !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+}
+
+/* 인라인 테이블 필드 컬럼들 */
+.inline-group table tbody td.field-image,
+.inline-group table tbody td.field-order {
+  min-width: 150px !important;
+  padding: 12px !important;
+}
+
+/* 인라인 테이블 삭제 체크박스 컬럼 */
+.inline-group table tbody td.delete {
+  width: 60px !important;
+  text-align: center !important;
+  padding: 12px !important;
 }
 
 .inline-group table tbody tr:hover {
@@ -1660,6 +1693,9 @@ label .required {
   border: 1px solid var(--admin-border) !important;
   border-radius: 6px !important;
   padding: 12px !important;
+  min-width: 280px !important;
+  width: auto !important;
+  box-sizing: border-box !important;
 }
 
 .calendarbox h2,
@@ -1673,18 +1709,44 @@ label .required {
   border-radius: 0 !important;
 }
 
+.calendar {
+  width: 100% !important;
+  min-width: 250px !important;
+  table-layout: fixed !important;
+}
+
+.calendarnav-previous,
+.calendarnav-next {
+  padding: 4px 8px !important;
+  margin: 0 4px !important;
+  text-decoration: none !important;
+  color: var(--brand) !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  transition: background 0.2s ease !important;
+}
+
+.calendarnav-previous:hover,
+.calendarnav-next:hover {
+  background: rgba(49, 170, 96, 0.1) !important;
+}
+
 .calendar caption,
-.calendarbox .calendar-shortcuts {
+.calendarbox .calendar-shortcuts,
+.calendarbox .calendar-cancel {
   background: transparent !important;
   padding: 8px 0 !important;
   border-radius: 0 !important;
+  text-align: center !important;
 }
 
 .calendar td,
 .calendar th {
-  padding: 6px !important;
+  padding: 6px 8px !important;
   text-align: center !important;
   border-radius: 4px !important;
+  width: 14.28% !important;
+  box-sizing: border-box !important;
 }
 
 .calendar td a {

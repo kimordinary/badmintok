@@ -188,3 +188,9 @@ credentials/
 *.old
 *~
 
+# Windows special files
+nul
+con
+prn
+aux
+

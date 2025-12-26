@@ -58,6 +58,13 @@ services:
       KAKAO_REST_API_KEY: "${KAKAO_REST_API_KEY}"
       KAKAO_REDIRECT_URI: "${KAKAO_REDIRECT_URI}"
 
+      # Gunicorn 설정
+      GUNICORN_WORKERS: "${GUNICORN_WORKERS:-3}"
+      GUNICORN_TIMEOUT: "${GUNICORN_TIMEOUT:-120}"
+      GUNICORN_LOG_LEVEL: "${GUNICORN_LOG_LEVEL:-info}"
+      GUNICORN_MAX_REQUESTS: "${GUNICORN_MAX_REQUESTS:-1000}"
+      GUNICORN_MAX_REQUESTS_JITTER: "${GUNICORN_MAX_REQUESTS_JITTER:-50}"
+
       # 시간대
       TZ: "Asia/Seoul"
     depends_on:
@@ -94,8 +101,8 @@ services:
       # HTTPS를 사용하는 경우 아래 주석 해제
       # - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
-      # Nginx 설정
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # Nginx 설정 (프로덕션용)
+      - ./nginx/conf.d/badmintok-prod.conf:/etc/nginx/conf.d/badmintok.conf:ro
       # 정적/미디어 파일 (web 컨테이너와 공유된 볼륨)
       - static_data:/usr/share/nginx/html/static:ro
       - media_data:/usr/share/nginx/html/media:ro

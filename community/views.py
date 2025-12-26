@@ -1,6 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.db.models import Count, Q, Max
+from django.db.models import Count, Q, Max, F, Case, When, ExpressionWrapper, FloatField
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -11,12 +11,13 @@ from django.views.decorators.http import require_POST
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.files.storage import default_storage
 from django.conf import settings
+from django.utils import timezone
 from datetime import datetime, timedelta
 import logging
 import os
 import uuid
 
-from .models import Category, Post, Comment, PostImage
+from .models import Category, Tab, Post, Comment, PostImage
 from badmintok.models import BadmintokBanner, Notice
 
 logger = logging.getLogger(__name__)
@@ -38,31 +39,75 @@ class PostListView(ListView):
         queryset = Post.objects.filter(
             is_deleted=False,
             is_draft=False,
-            published_at__lte=now,
             source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS]  # 커뮤니티와 동호인 리뷰 글 표시
+        ).filter(
+            Q(published_at__lte=now) | Q(published_at__isnull=True)  # published_at이 없거나 현재 시간 이전인 것
         ).select_related("author", "category").prefetch_related(
             Prefetch("images", queryset=PostImage.objects.order_by("order"))
         )
         
-        # 탭 필터링
+        # 탭 필터링 - 동적으로 처리
         active_tab = self.request.GET.get("tab", "")
         category = self.request.GET.get("category", "")
-        
-        # 리뷰 탭인 경우 리뷰 관련 카테고리만 필터링
-        review_categories = ['racket', 'shoes', 'apparel', 'shuttlecock', 'protective', 'accessories']
-        if active_tab == "reviews":
-            if category and category in review_categories:
-                # 특정 리뷰 카테고리 선택
-                try:
-                    category_obj = Category.objects.get(slug=category, is_active=True)
-                    queryset = queryset.filter(category=category_obj)
-                except Category.DoesNotExist:
-                    pass
-            # category가 없거나 'all'이면 리뷰 관련 카테고리 전체 표시
-            elif not category or category == 'all':
-                queryset = queryset.filter(category__slug__in=review_categories)
+
+        # Hot 탭인 경우 인기글만 표시
+        if active_tab == "hot":
+            # Hot 글 - 최근 30일 내 글 + 복합 점수 + 시간 가중치
+            recent_30_days = now - timedelta(days=30)
+            recent_7_days = now - timedelta(days=7)
+
+            queryset = queryset.annotate(
+                # 시간 가중치: 최근 7일 내면 1.5배, 그 외는 1.0배
+                time_weight=Case(
+                    When(published_at__gte=recent_7_days, then=1.5),
+                    When(published_at__isnull=True, created_at__gte=recent_7_days, then=1.5),
+                    default=1.0,
+                    output_field=FloatField()
+                ),
+                # 복합 점수: (조회수 * 1 + 좋아요 * 2 + 댓글 * 3) * 시간가중치
+                hot_score=ExpressionWrapper(
+                    (F('view_count') * 1 + F('like_count') * 2 + F('comment_count') * 3) * F('time_weight'),
+                    output_field=FloatField()
+                )
+            ).filter(
+                Q(published_at__gte=recent_30_days) | Q(published_at__isnull=True, created_at__gte=recent_30_days)  # 최근 30일 내 글
+            ).order_by('-hot_score')
+        elif active_tab:
+            # 리뷰 탭인 경우 하드코딩된 카테고리 목록 사용
+            if active_tab == 'reviews':
+                reviews_category_slugs = ['community-racket', 'community-shoes', 'community-apparel', 'community-shuttlecock', 'community-protective', 'community-accessories']
+                queryset = queryset.filter(
+                    Q(category__slug__in=reviews_category_slugs) | Q(categories__slug__in=reviews_category_slugs)
+                ).distinct()
+                
+                # 2차 카테고리 필터링 (카테고리 선택 시)
+                if category:
+                    queryset = queryset.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+            # 동적 탭 필터링
+            else:
+                current_tab = Tab.objects.filter(slug=active_tab, source=Tab.Source.COMMUNITY, is_active=True).first()
+                if current_tab:
+                    # 카테고리가 연결된 탭인 경우
+                    if current_tab.category:
+                        # 현재 탭의 카테고리와 그 하위 카테고리들을 가져옴
+                        tab_category = current_tab.category
+                        category_slugs = [tab_category.slug]
+
+                        # 하위 카테고리 추가
+                        child_categories = Category.objects.filter(parent=tab_category, is_active=True)
+                        category_slugs.extend([cat.slug for cat in child_categories])
+
+                        # 카테고리 필터링
+                        queryset = queryset.filter(
+                            Q(category__slug__in=category_slugs) | Q(categories__slug__in=category_slugs)
+                        ).distinct()
+
+                        # 2차 카테고리 필터링 (카테고리 선택 시)
+                        if category:
+                            queryset = queryset.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+                    # 카테고리가 없는 탭인 경우 모든 글 표시 (필터링 없음)
         else:
-            # 리뷰 탭이 아닌 경우 일반 카테고리 필터링
+            # 탭이 없는 경우 일반 카테고리 필터링
             if category:
                 # slug로 먼저 시도, 없으면 id로 시도
                 try:
@@ -89,31 +134,45 @@ class PostListView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # 동호인톡/동호인 리뷰 게시글에 실제로 사용된 카테고리만 가져오기 (배드민톡 전용 카테고리 제외)
-        # 배드민톡 전용 카테고리 슬러그 목록
-        badmintok_only_slugs = [
-            'tournament', 'player', 'equipment', 'community',
-            'yonex', 'lining', 'victor', 'mizuno', 'technist', 
-            'strokus', 'redsun', 'trion', 'tricore', 'apacs'
-        ]
-        # 동호인톡/동호인 리뷰 게시글에 실제로 사용된 카테고리만 필터링
-        used_categories = Category.objects.filter(
-            is_active=True,
-            posts__source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS],
-            posts__is_deleted=False
-        ).exclude(
-            slug__in=badmintok_only_slugs
-        ).distinct().order_by("display_order", "name")
-        context["category_choices"] = used_categories
+
+        # 활성화된 동호인톡 탭 가져오기
+        tabs = Tab.objects.filter(
+            source=Tab.Source.COMMUNITY,
+            is_active=True
+        ).select_related('category').order_by('display_order')
+        context["tabs"] = tabs
+
         context["active_tab"] = self.request.GET.get("tab", "")
         context["current_category"] = self.request.GET.get("category", "")
         context["search_query"] = self.request.GET.get("search", "")
         
-        # Hot 글 (조회수 상위 10개) - 커뮤니티와 동호인 리뷰 글
+        # Hot 글 - 최근 30일 내 글 + 복합 점수 + 시간 가중치
+        now = timezone.now()
+        # 최근 30일 기준일
+        recent_30_days = now - timedelta(days=30)
+        # 최근 7일 기준일 (시간 가중치 적용)
+        recent_7_days = now - timedelta(days=7)
+        
         hot_posts = Post.objects.filter(
             is_deleted=False,
             source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS]
-        ).select_related("author", "category").order_by("-view_count")[:10]
+        ).filter(
+            Q(published_at__lte=now) | Q(published_at__isnull=True)  # published_at이 없거나 현재 시간 이전인 것
+        ).filter(
+            Q(published_at__gte=recent_30_days) | Q(published_at__isnull=True, created_at__gte=recent_30_days)  # 최근 30일 내 글
+        ).select_related("author", "category").annotate(
+            # 시간 가중치: 최근 7일 내면 1.5배, 그 외는 1.0배
+            time_weight=Case(
+                When(published_at__gte=recent_7_days, then=1.5),
+                default=1.0,
+                output_field=FloatField()
+            ),
+            # 복합 점수: (조회수 * 1 + 좋아요 * 2 + 댓글 * 3) * 시간가중치
+            hot_score=ExpressionWrapper(
+                (F('view_count') * 1 + F('like_count') * 2 + F('comment_count') * 3) * F('time_weight'),
+                output_field=FloatField()
+            )
+        ).order_by('-hot_score')[:10]
         context["hot_posts"] = hot_posts
         
         # admin에서 설정한 배너 이미지 목록
@@ -230,13 +289,100 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     template_name = "community/post_form.html"
     fields = ["title", "category", "content"]
     success_url = reverse_lazy("community:list")
-    
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # 활성화된 카테고리만 표시
-        form.fields["category"].queryset = Category.objects.filter(is_active=True).order_by("display_order", "name")
+        # 동호인톡 활성 탭의 카테고리만 포함
+        community_tabs = Tab.objects.filter(
+            source=Tab.Source.COMMUNITY,
+            is_active=True
+        ).select_related('category')
+
+        # 탭에서 사용하는 카테고리 slug 목록 생성
+        allowed_category_slugs = set()
+        for tab in community_tabs:
+            if tab.category:  # 카테고리가 연결된 탭만 처리
+                allowed_category_slugs.add(tab.category.slug)
+                # 하위 카테고리도 포함
+                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
+                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+
+        # hot 카테고리는 제외하고, allowed_category_slugs가 비어있으면 모든 카테고리 허용
+        if allowed_category_slugs:
+            form.fields["category"].queryset = Category.objects.filter(
+                slug__in=allowed_category_slugs,
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).order_by("display_order", "name")
+        else:
+            # 카테고리가 없는 탭만 있는 경우 모든 활성 카테고리 허용
+            form.fields["category"].queryset = Category.objects.filter(
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).order_by("display_order", "name")
         return form
-    
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # 계층 구조로 카테고리 정리
+        # 동호인톡 활성 탭의 카테고리만 포함
+        community_tabs = Tab.objects.filter(
+            source=Tab.Source.COMMUNITY,
+            is_active=True
+        ).select_related('category')
+
+        # 탭에서 사용하는 카테고리 slug 목록 생성
+        allowed_category_slugs = set()
+        for tab in community_tabs:
+            if tab.category:  # 카테고리가 연결된 탭만 처리
+                allowed_category_slugs.add(tab.category.slug)
+                # 하위 카테고리도 포함
+                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
+                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+
+        # allowed_category_slugs가 비어있으면 모든 카테고리 허용
+        if allowed_category_slugs:
+            all_categories = list(Category.objects.filter(
+                slug__in=allowed_category_slugs,
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).select_related('parent').order_by("display_order", "name"))
+        else:
+            all_categories = list(Category.objects.filter(
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).select_related('parent').order_by("display_order", "name"))
+
+        def build_hierarchy():
+            """계층 구조 리스트 생성"""
+            hierarchy = []
+            parents = [c for c in all_categories if c.parent is None]
+
+            for parent in parents:
+                # 해당 parent의 children 찾기
+                children = [c for c in all_categories if c.parent_id == parent.id]
+
+                if children:
+                    # children이 있으면 parent를 상위 카테고리로 표시
+                    parent.has_children = True
+                    hierarchy.append(parent)
+                    for child in children:
+                        child.has_children = False
+                    hierarchy.extend(children)
+                else:
+                    # children이 없으면 선택 가능한 일반 카테고리로 표시
+                    parent.has_children = False
+                    hierarchy.append(parent)
+
+            return hierarchy
+
+        context['categories_hierarchical'] = build_hierarchy()
+        return context
+
     def form_valid(self, form):
         form.instance.author = self.request.user
         
@@ -277,9 +423,96 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # 활성화된 카테고리만 표시
-        form.fields["category"].queryset = Category.objects.filter(is_active=True).order_by("display_order", "name")
+        # 동호인톡 활성 탭의 카테고리만 포함
+        community_tabs = Tab.objects.filter(
+            source=Tab.Source.COMMUNITY,
+            is_active=True
+        ).select_related('category')
+
+        # 탭에서 사용하는 카테고리 slug 목록 생성
+        allowed_category_slugs = set()
+        for tab in community_tabs:
+            if tab.category:  # 카테고리가 연결된 탭만 처리
+                allowed_category_slugs.add(tab.category.slug)
+                # 하위 카테고리도 포함
+                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
+                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+
+        # hot 카테고리는 제외하고, allowed_category_slugs가 비어있으면 모든 카테고리 허용
+        if allowed_category_slugs:
+            form.fields["category"].queryset = Category.objects.filter(
+                slug__in=allowed_category_slugs,
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).order_by("display_order", "name")
+        else:
+            # 카테고리가 없는 탭만 있는 경우 모든 활성 카테고리 허용
+            form.fields["category"].queryset = Category.objects.filter(
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).order_by("display_order", "name")
         return form
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # 계층 구조로 카테고리 정리
+        # 동호인톡 활성 탭의 카테고리만 포함
+        community_tabs = Tab.objects.filter(
+            source=Tab.Source.COMMUNITY,
+            is_active=True
+        ).select_related('category')
+
+        # 탭에서 사용하는 카테고리 slug 목록 생성
+        allowed_category_slugs = set()
+        for tab in community_tabs:
+            if tab.category:  # 카테고리가 연결된 탭만 처리
+                allowed_category_slugs.add(tab.category.slug)
+                # 하위 카테고리도 포함
+                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
+                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+
+        # allowed_category_slugs가 비어있으면 모든 카테고리 허용
+        if allowed_category_slugs:
+            all_categories = list(Category.objects.filter(
+                slug__in=allowed_category_slugs,
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).select_related('parent').order_by("display_order", "name"))
+        else:
+            all_categories = list(Category.objects.filter(
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).select_related('parent').order_by("display_order", "name"))
+
+        def build_hierarchy():
+            """계층 구조 리스트 생성"""
+            hierarchy = []
+            parents = [c for c in all_categories if c.parent is None]
+
+            for parent in parents:
+                # 해당 parent의 children 찾기
+                children = [c for c in all_categories if c.parent_id == parent.id]
+
+                if children:
+                    # children이 있으면 parent를 상위 카테고리로 표시
+                    parent.has_children = True
+                    hierarchy.append(parent)
+                    for child in children:
+                        child.has_children = False
+                    hierarchy.extend(children)
+                else:
+                    # children이 없으면 선택 가능한 일반 카테고리로 표시
+                    parent.has_children = False
+                    hierarchy.append(parent)
+
+            return hierarchy
+
+        context['categories_hierarchical'] = build_hierarchy()
+        return context
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -388,7 +621,7 @@ def badmintok_post_editor(request, post_id=None):
     if request.method == 'POST':
         title = request.POST.get('title', '')
         content = request.POST.get('content', '')
-        category_id = request.POST.get('category')
+        category_ids = request.POST.getlist('categories')  # 복수 카테고리 선택
         is_pinned = request.POST.get('is_pinned') == 'on'
         is_draft = request.POST.get('is_draft') == 'true'  # 임시저장 여부
         slug = request.POST.get('slug', '').strip()
@@ -404,8 +637,11 @@ def badmintok_post_editor(request, post_id=None):
                 # 수정
                 post.title = title
                 post.content = content
-                if category_id:
-                    post.category_id = category_id
+                # 첫 번째 카테고리를 메인 카테고리로 설정
+                if category_ids:
+                    post.category_id = category_ids[0]
+                else:
+                    post.category = None
                 post.is_pinned = is_pinned
                 post.is_draft = is_draft
 
@@ -441,6 +677,12 @@ def badmintok_post_editor(request, post_id=None):
 
                 post.save()
 
+                # 카테고리 설정 (ManyToMany)
+                if category_ids:
+                    post.categories.set(category_ids)
+                else:
+                    post.categories.clear()
+
                 if is_draft:
                     messages.success(request, '임시저장 되었습니다.')
                 else:
@@ -448,8 +690,8 @@ def badmintok_post_editor(request, post_id=None):
             else:
                 # 새 글 작성
                 category = None
-                if category_id:
-                    category = Category.objects.get(id=category_id)
+                if category_ids:
+                    category = Category.objects.get(id=category_ids[0])
 
                 # 발행 일시 파싱
                 parsed_published_at = None
@@ -474,6 +716,10 @@ def badmintok_post_editor(request, post_id=None):
                 )
                 post.save()
 
+                # 카테고리 설정 (ManyToMany)
+                if category_ids:
+                    post.categories.set(category_ids)
+
                 if is_draft:
                     messages.success(request, '임시저장 되었습니다.')
                 else:
@@ -487,31 +733,51 @@ def badmintok_post_editor(request, post_id=None):
             messages.error(request, f'게시글 저장 중 오류가 발생했습니다: {str(e)}')
 
     # 카테고리 목록 (계층 구조)
-    # 상위 카테고리와 하위 카테고리를 모두 가져옴
-    badmintok_parent_slugs = ['news', 'reviews', 'brands']
-    badmintok_category_slugs = [
-        'tournament', 'player', 'equipment', 'community',
-        'racket', 'shoes', 'apparel', 'shuttlecock', 'protective', 'accessories',
-        'yonex', 'lining', 'victor', 'mizuno', 'technist',
-        'strokus', 'redsun', 'trion', 'tricore', 'apacs'
-    ]
+    # Tab 기반으로 동적으로 카테고리 가져오기
+    badmintok_tabs = Tab.objects.filter(
+        source=Tab.Source.BADMINTOK,
+        is_active=True
+    ).select_related('category')
 
-    all_slugs = badmintok_parent_slugs + badmintok_category_slugs
+    # Tab에 연결된 상위 카테고리와 그 하위 카테고리들을 모두 수집
+    category_ids = set()
+    for tab in badmintok_tabs:
+        if tab.category:
+            # 상위 카테고리 추가
+            category_ids.add(tab.category.id)
+            # 하위 카테고리들 추가
+            child_categories = Category.objects.filter(parent=tab.category, is_active=True)
+            category_ids.update(child_categories.values_list('id', flat=True))
+
+    # 수집한 카테고리들을 가져옴
     all_categories = Category.objects.filter(
-        slug__in=all_slugs,
+        id__in=category_ids,
         is_active=True
     ).select_related('parent').order_by('display_order', 'name')
 
     # 계층 구조로 정리 (상위 -> 하위 순서)
     def build_hierarchy():
-        """계층 구조 리스트 생성"""
+        """계층 구조 리스트 생성 - children이 있는 parent만 구분"""
         hierarchy = []
         parents = [c for c in all_categories if c.parent is None]
 
         for parent in parents:
-            hierarchy.append(parent)
+            # 해당 parent의 children 찾기
             children = [c for c in all_categories if c.parent_id == parent.id]
-            hierarchy.extend(children)
+
+            # children이 있는 경우만 parent를 먼저 추가하고 children 추가
+            if children:
+                # children이 있으면 parent를 상위 카테고리로 표시
+                parent.has_children = True
+                hierarchy.append(parent)
+                # 각 하위 카테고리에도 has_children = False 설정
+                for child in children:
+                    child.has_children = False
+                hierarchy.extend(children)
+            else:
+                # children이 없으면 선택 가능한 일반 카테고리로 표시
+                parent.has_children = False
+                hierarchy.append(parent)
 
         return hierarchy
 

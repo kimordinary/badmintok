@@ -45,9 +45,6 @@
                             </div>
                         {% endif %}
                     </div>
-                {% elif contest.image %}
-                    <!-- 기존 단일 이미지 (fallback) -->
-                    <img src="{{ contest.image.url }}" alt="{{ contest.title }}" />
                 {% else %}
                     <div class="contest-thumb-placeholder" style="width:100%; height:260px;">이미지 없음</div>
                 {% endif %}
@@ -232,7 +229,7 @@
 
         {% if contest_month and week_number %}
             <article class="contest-detail__same-week">
-                <h2>{{ contest_month }}월 {{ week_number }}주차 다른 대회도 있어요</h2>
+                <h2>🏆 {{ contest_month }}월 {{ week_number }}주차 다른 대회도 있어요</h2>
                 {% if same_week_contests %}
                     <div class="contest-post-list">
                         {% for other_contest in same_week_contests %}
@@ -241,8 +238,6 @@
                                     {% with first_image=other_contest.images.first %}
                                         {% if first_image %}
                                             <img src="{{ first_image.image.url }}" alt="{{ other_contest.title }}" class="contest-post-thumbnail">
-                                        {% elif other_contest.image %}
-                                            <img src="{{ other_contest.image.url }}" alt="{{ other_contest.title }}" class="contest-post-thumbnail">
                                         {% else %}
                                             <div class="contest-post-no-image">이미지 없음</div>
                                         {% endif %}
@@ -666,8 +661,7 @@
     .slider-container {
         position: relative;
         width: 100%;
-        height: 100%;
-        min-height: 400px;
+        height: auto;
     }
 
     .slider-item {
@@ -675,24 +669,21 @@
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%;
         opacity: 0;
         transition: opacity 0.5s ease-in-out;
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
 
     .slider-item.active {
         opacity: 1;
         z-index: 1;
+        position: relative;
     }
 
     .slider-item img {
         width: 100%;
-        height: 100%;
-        object-fit: contain;
+        height: auto;
         display: block;
+        background: #fff;
     }
 
     /* 슬라이더 버튼 */
@@ -945,10 +936,6 @@
     /* 모바일 최적화 */
     @media (max-width: 768px) {
         /* 슬라이더 모바일 스타일 */
-        .slider-container {
-            min-height: 300px;
-        }
-
         .slider-btn {
             width: 36px;
             height: 36px;

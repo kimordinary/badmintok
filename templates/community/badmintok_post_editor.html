@@ -746,25 +746,35 @@
                 <h3 class="wp-sidebar-title">게시글 설정</h3>
 
                 <div class="wp-form-group">
-                    <label for="id_category" class="wp-form-label">카테고리</label>
-                    <select name="category" id="id_category" class="wp-form-select" form="postForm" style="font-family: inherit;">
-                        <option value="">선택하세요</option>
+                    <label class="wp-form-label">카테고리 (복수 선택 가능)</label>
+                    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background: #fff;">
                         {% for category in categories %}
                             {% if category.parent %}
-                                {# 하위 카테고리 - 선택 가능, 들여쓰기 #}
-                                <option value="{{ category.id }}" {% if post and post.category_id == category.id %}selected{% endif %} style="padding-left: 20px;">
-                                    &nbsp;&nbsp;&nbsp;{{ category.name }}
-                                </option>
-                            {% else %}
-                                {# 상위 카테고리 - 비활성화, 굵게 #}
-                                <option value="" disabled style="font-weight: 700; color: #1e293b; background: #f8fafc;">
+                                {# 하위 카테고리 - 체크박스, 들여쓰기 #}
+                                <label style="display: block; padding: 6px 8px 6px 32px; margin: 2px 0; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 14px; color: #334155;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                    <input type="checkbox" name="categories" value="{{ category.id }}" {% if post and category in post.categories.all %}checked{% endif %} form="postForm" style="margin-right: 8px; cursor: pointer;">
                                     {{ category.name }}
-                                </option>
+                                </label>
+                            {% elif category.has_children %}
+                                {# children이 있는 상위 카테고리 - 구분선과 함께 체크박스 표시 #}
+                                <div style="border-top: {% if not forloop.first %}1px solid #e2e8f0{% else %}none{% endif %}; margin-top: 8px; padding-top: 8px;">
+                                    <label style="display: block; padding: 6px 8px; margin: 2px 0; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 14px; font-weight: 700; color: #1e293b;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                        <input type="checkbox" name="categories" value="{{ category.id }}" {% if post and category in post.categories.all %}checked{% endif %} form="postForm" style="margin-right: 8px; cursor: pointer;">
+                                        {{ category.name }}
+                                    </label>
+                                </div>
+                            {% else %}
+                                {# children이 없는 독립 카테고리 - 체크박스 #}
+                                <label style="display: block; padding: 6px 8px; margin: 2px 0; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 14px; color: #334155;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                    <input type="checkbox" name="categories" value="{{ category.id }}" {% if post and category in post.categories.all %}checked{% endif %} form="postForm" style="margin-right: 8px; cursor: pointer;">
+                                    {{ category.name }}
+                                </label>
                             {% endif %}
                         {% endfor %}
-                    </select>
+                    </div>
                     <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
-                        굵은 글씨는 상위 카테고리입니다
+                        <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">info</span>
+                        여러 카테고리를 선택할 수 있습니다
                     </p>
                 </div>
             </div>

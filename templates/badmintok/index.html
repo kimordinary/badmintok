@@ -30,29 +30,16 @@
         </div>
         {% endif %}
 
-        <!-- 메인 탭 (뉴스/리뷰/피드) -->
+        <!-- 메인 탭 (동적 탭) -->
         <div class="badmintok-tab-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; flex-wrap: wrap; gap: 12px;">
             <div class="community-tabs" style="display: flex; align-items: center; flex: 1; min-width: 0;">
-                <a href="{% url 'badmintok' %}?tab=news" 
-                   class="community-tab {% if active_tab == 'news' or not active_tab %}active{% endif %}" 
+                {% for tab in tabs %}
+                <a href="{% url 'badmintok' %}?tab={{ tab.slug }}"
+                   class="community-tab {% if active_tab == tab.slug or forloop.first and not active_tab %}active{% endif %}"
                    style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500;">
-                    뉴스
+                    {{ tab.name }}
                 </a>
-                <a href="{% url 'badmintok' %}?tab=reviews" 
-                   class="community-tab {% if active_tab == 'reviews' %}active{% endif %}" 
-                   style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500;">
-                    리뷰
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand" 
-                   class="community-tab {% if active_tab == 'brand' %}active{% endif %}" 
-                   style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500;">
-                    브랜드관
-                </a>
-                <a href="{% url 'badmintok' %}?tab=feed" 
-                   class="community-tab {% if active_tab == 'feed' %}active{% endif %}" 
-                   style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500;">
-                    피드
-                </a>
+                {% endfor %}
             </div>
         </div>
 
@@ -61,28 +48,28 @@
         <div id="news-content">
             <!-- 뉴스 카테고리 필터 탭 -->
             <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
-                <a href="{% url 'badmintok' %}?tab=news" 
-                   class="community-tab {% if not category or category == 'all' %}active{% endif %}" 
+                <a href="{% url 'badmintok' %}?tab=news"
+                   class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     전체
                 </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=tournament" 
-                   class="community-tab {% if category == 'tournament' %}active{% endif %}" 
+                <a href="{% url 'badmintok' %}?tab=news&category=tournament"
+                   class="community-tab {% if category == 'tournament' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     대회 소식
                 </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=player" 
-                   class="community-tab {% if category == 'player' %}active{% endif %}" 
+                <a href="{% url 'badmintok' %}?tab=news&category=player"
+                   class="community-tab {% if category == 'player' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     선수 소식
                 </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=equipment" 
-                   class="community-tab {% if category == 'equipment' %}active{% endif %}" 
+                <a href="{% url 'badmintok' %}?tab=news&category=equipment"
+                   class="community-tab {% if category == 'equipment' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     장비 뉴스
                 </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=community" 
-                   class="community-tab {% if category == 'community' %}active{% endif %}" 
+                <a href="{% url 'badmintok' %}?tab=news&category=community"
+                   class="community-tab {% if category == 'community' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     동호인 소식
                 </a>
@@ -116,8 +103,19 @@
                         <a href="{% url 'badmintok_detail' post.slug %}" class="hot-post-card" style="flex-shrink: 0; width: 280px; padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 8px;">
                             <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ post.title }}</h4>
                             <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #64748b; margin-top: auto;">
-                                <span>👀 {{ post.view_count }}</span>
-                                <span>❤️ {{ post.like_count }}</span>
+                                <span style="display: flex; align-items: center; gap: 4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    {{ post.view_count }}
+                                </span>
+                                <span style="display: flex; align-items: center; gap: 4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                    {{ post.like_count }}
+                                </span>
                             </div>
                         </a>
                     {% endfor %}
@@ -167,7 +165,13 @@
                                     <a href="{% url 'badmintok_detail' post.slug %}" class="community-post-item">
                                         <div class="community-post-content">
                                             <div class="community-post-header">
-                                                <span class="community-post-category">{{ post.get_category_display }}</span>
+                                                {% for cat in post.categories.all|slice:":2" %}
+                                                    <span class="community-post-category {% if forloop.first %}community-post-category-primary{% endif %}">{{ cat.name }}</span>
+                                                {% empty %}
+                                                    {% if post.category %}
+                                                        <span class="community-post-category community-post-category-primary">{{ post.category.name }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
                                             </div>
                                             <h3 class="community-post-title">{{ post.title }}</h3>
                                             <p class="community-post-excerpt">
@@ -217,7 +221,9 @@
                                             </div>
                                         </div>
                                         <div class="community-post-image">
-                                            {% if post.images.all %}
+                                            {% if post.thumbnail %}
+                                                <img src="{{ post.thumbnail.url }}" alt="{{ post.thumbnail_alt|default:post.title }}" class="community-post-thumbnail">
+                                            {% elif post.images.all %}
                                                 {% with first_image=post.images.all.0 %}
                                                     <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
                                                 {% endwith %}
@@ -276,8 +282,19 @@
                                                     {{ post.title }}
                                                 </h4>
                                                 <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
-                                                    <span>👀 {{ post.view_count }}</span>
-                                                    <span>❤️ {{ post.like_count }}</span>
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                        {{ post.view_count }}
+                                                    </span>
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                        </svg>
+                                                        {{ post.like_count }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -368,7 +385,13 @@
                             <a href="{% url 'badmintok_detail' post.slug %}" class="community-post-item">
                                 <div class="community-post-content">
                                     <div class="community-post-header">
-                                        <span class="community-post-category">{{ post.get_category_display }}</span>
+                                        {% for cat in post.categories.all|slice:":2" %}
+                                            <span class="community-post-category {% if forloop.first %}community-post-category-primary{% endif %}">{{ cat.name }}</span>
+                                        {% empty %}
+                                            {% if post.category %}
+                                                <span class="community-post-category community-post-category-primary">{{ post.category.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
                                     </div>
                                     <h3 class="community-post-title">{{ post.title }}</h3>
                                     <p class="community-post-excerpt">
@@ -418,7 +441,9 @@
                                     </div>
                                 </div>
                                 <div class="community-post-image">
-                                    {% if post.images.all %}
+                                    {% if post.thumbnail %}
+                                        <img src="{{ post.thumbnail.url }}" alt="{{ post.thumbnail_alt|default:post.title }}" class="community-post-thumbnail">
+                                    {% elif post.images.all %}
                                         {% with first_image=post.images.all.0 %}
                                             <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
                                         {% endwith %}
@@ -480,8 +505,19 @@
                                                     {{ post.title }}
                                                 </h4>
                                                 <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
-                                                    <span>👀 {{ post.view_count }}</span>
-                                                    <span>❤️ {{ post.like_count }}</span>
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                        {{ post.view_count }}
+                                                    </span>
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                        </svg>
+                                                        {{ post.like_count }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -511,8 +547,19 @@
                         <a href="{% url 'badmintok_detail' post.slug %}" class="hot-post-card" style="flex-shrink: 0; width: 280px; padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 8px;">
                             <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ post.title }}</h4>
                             <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #64748b; margin-top: auto;">
-                                <span>👀 {{ post.view_count }}</span>
-                                <span>❤️ {{ post.like_count }}</span>
+                                <span style="display: flex; align-items: center; gap: 4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    {{ post.view_count }}
+                                </span>
+                                <span style="display: flex; align-items: center; gap: 4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                    {{ post.like_count }}
+                                </span>
                             </div>
                         </a>
                     {% endfor %}
@@ -578,18 +625,9 @@
                     아펙스
                 </a>
             </div>
-            
-            <div style="padding: 48px; text-align: center; color: #64748b;">
-                <p>브랜드관 콘텐츠를 준비 중입니다.</p>
-            </div>
-        </div>
-        {% endif %}
 
-        <!-- 피드 탭 컨텐츠 -->
-        {% if active_tab == 'feed' %}
-        <div id="feed-content" style="margin-top: 20px;">
             <!-- 메인 콘텐츠 그리드 -->
-            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
+            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; margin-top: 20px;">
                 <!-- 왼쪽 컬럼: 검색 및 게시글 목록 -->
                 <div class="community-left-column" style="display: flex; flex-direction: column; gap: 24px;">
                     <!-- 검색 기능 -->
@@ -616,105 +654,110 @@
                     <!-- 게시글 목록 -->
                     <div class="community-list">
                         {% if posts %}
-                    <div class="community-post-list">
-                        {% for post in posts %}
-                            <a href="{% url 'badmintok_detail' post.slug %}" class="community-post-item">
-                                <div class="community-post-content">
-                                    <div class="community-post-header">
-                                        <span class="community-post-category">{{ post.get_category_display }}</span>
-                                    </div>
-                                    <h3 class="community-post-title">{{ post.title }}</h3>
-                                    <p class="community-post-excerpt">
-                                        {% if post.content|striptags|length > 80 %}
-                                            {{ post.content|striptags|truncatewords:15 }}
-                                        {% else %}
-                                            {{ post.content|striptags }}
-                                        {% endif %}
-                                    </p>
-                                    <div class="community-post-meta">
-                                        <span class="community-post-author">{{ post.author.activity_name }}</span>
-                                        <span class="community-post-separator">|</span>
-                                        <span class="community-post-time">
-                                            {% now "Y-m-d" as today %}
-                                            {% if post.created_at|date:"Y-m-d" == today %}
-                                                {{ post.created_at|timesince|timesince_simple }} 전
+                            <div class="community-post-list">
+                                {% for post in posts %}
+                                    <a href="{% url 'badmintok_detail' post.slug %}" class="community-post-item">
+                                        <div class="community-post-content">
+                                            <div class="community-post-header">
+                                                {% for cat in post.categories.all|slice:":2" %}
+                                                    <span class="community-post-category {% if forloop.first %}community-post-category-primary{% endif %}">{{ cat.name }}</span>
+                                                {% empty %}
+                                                    {% if post.category %}
+                                                        <span class="community-post-category community-post-category-primary">{{ post.category.name }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <h3 class="community-post-title">{{ post.title }}</h3>
+                                            <p class="community-post-excerpt">
+                                                {% if post.content|striptags|length > 80 %}
+                                                    {{ post.content|striptags|truncatewords:15 }}
+                                                {% else %}
+                                                    {{ post.content|striptags }}
+                                                {% endif %}
+                                            </p>
+                                            <div class="community-post-meta">
+                                                <span class="community-post-author">{{ post.author.activity_name }}</span>
+                                                <span class="community-post-separator">|</span>
+                                                <span class="community-post-time">
+                                                    {% now "Y-m-d" as today %}
+                                                    {% if post.created_at|date:"Y-m-d" == today %}
+                                                        {{ post.created_at|timesince|timesince_simple }} 전
+                                                    {% else %}
+                                                        {{ post.created_at|date:"m.d" }}
+                                                    {% endif %}
+                                                </span>
+                                                <span class="community-post-separator">|</span>
+                                                <span class="community-post-action">
+                                                    <span class="community-post-action-icon">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="community-post-action-count">{{ post.like_count }}</span>
+                                                </span>
+                                                <span class="community-post-action">
+                                                    <span class="community-post-action-icon">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="community-post-action-count">{{ post.comment_count }}</span>
+                                                </span>
+                                                <span class="community-post-action">
+                                                    <span class="community-post-action-icon">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="community-post-action-count">{{ post.view_count }}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="community-post-image">
+                                            {% if post.thumbnail %}
+                                                <img src="{{ post.thumbnail.url }}" alt="{{ post.thumbnail_alt|default:post.title }}" class="community-post-thumbnail">
+                                            {% elif post.images.all %}
+                                                {% with first_image=post.images.all.0 %}
+                                                    <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                                {% endwith %}
+                                            {% elif post.content|extract_first_image %}
+                                                <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
                                             {% else %}
-                                                {{ post.created_at|date:"m.d" }}
+                                                <div class="community-post-no-image">이미지 없음</div>
                                             {% endif %}
-                                        </span>
-                                        <span class="community-post-separator">|</span>
-                                        <span class="community-post-action">
-                                            <span class="community-post-action-icon">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                                                </svg>
-                                            </span>
-                                            <span class="community-post-action-count">{{ post.like_count }}</span>
-                                        </span>
-                                        <span class="community-post-action">
-                                            <span class="community-post-action-icon">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                                </svg>
-                                            </span>
-                                            <span class="community-post-action-count">{{ post.comment_count }}</span>
-                                        </span>
-                                        <span class="community-post-action">
-                                            <span class="community-post-action-icon">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
-                                                </svg>
-                                            </span>
-                                            <span class="community-post-action-count">{{ post.view_count }}</span>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="community-post-image">
-                                    {% if post.images.all %}
-                                        {% with first_image=post.images.all.0 %}
-                                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
-                                        {% endwith %}
-                                    {% elif post.content|extract_first_image %}
-                                        <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
-                                    {% else %}
-                                        <div class="community-post-no-image">이미지 없음</div>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            </div>
+
+                            <!-- 페이지네이션 -->
+                            {% if is_paginated %}
+                                <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                                    {% if page_obj.has_previous %}
+                                        <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page=1"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
+                                        <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.previous_page_number }}"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                                    {% endif %}
+
+                                    <span style="padding: 8px 12px; color: #64748b;">
+                                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                                    </span>
+
+                                    {% if page_obj.has_next %}
+                                        <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.next_page_number }}"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                                        <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.paginator.num_pages }}"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">마지막</a>
                                     {% endif %}
                                 </div>
-                            </a>
-                        {% endfor %}
-                    </div>
-
-                    <!-- 페이지네이션 -->
-                    {% if is_paginated %}
-                        <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
-                            {% if page_obj.has_previous %}
-                                <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page=1"
-                                   class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
-                                <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.previous_page_number }}"
-                                   class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
                             {% endif %}
-
-                            <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
-                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                            </span>
-
-                            {% if page_obj.has_next %}
-                                <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.next_page_number }}"
-                                   class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
-                                <a href="?tab={{ active_tab }}{% if category %}&category={{ category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.paginator.num_pages }}"
-                                   class="btn btn-ghost" style="padding: 8px 12px;">마지막</a>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div style="padding: 48px; text-align: center; color: #64748b;">
-                        <p>게시글이 없습니다.</p>
-                        {% if user.is_staff %}
-                            <a href="{% url 'badmintok_create' %}" class="btn btn-primary" style="margin-top: 16px;">첫 글 쓰기</a>
+                        {% else %}
+                            <div style="padding: 48px; text-align: center; color: #64748b;">
+                                <p>게시글이 없습니다.</p>
+                            </div>
                         {% endif %}
-                    </div>
-                {% endif %}
                     </div>
                 </div>
 
@@ -733,8 +776,197 @@
                                                     {{ post.title }}
                                                 </h4>
                                                 <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
-                                                    <span>👀 {{ post.view_count }}</span>
-                                                    <span>❤️ {{ post.like_count }}</span>
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                        {{ post.view_count }}
+                                                    </span>
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                        </svg>
+                                                        {{ post.like_count }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            {% else %}
+                                <p style="margin: 0; color: #64748b; font-size: 14px;">인기글이 없습니다.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 피드 탭 컨텐츠 -->
+        {% if active_tab == 'feed' %}
+        <div id="feed-content" style="margin-top: 20px;">
+            <!-- 메인 콘텐츠 그리드 -->
+            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
+                <!-- 왼쪽 컬럼: 검색 및 게시글 목록 -->
+                <div class="community-left-column" style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- 검색 기능 -->
+                    <div class="community-search-grid" style="position: relative;">
+                        <form method="get" action="{% url 'badmintok' %}" style="position: relative;">
+                            <input type="text"
+                                   name="search"
+                                   value="{{ search_query }}"
+                                   placeholder="제목, 내용 검색..."
+                                   style="width: 100%; padding: 12px 48px 12px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; font-family: inherit; background: #fff;">
+                            <input type="hidden" name="tab" value="{{ active_tab }}">
+                            <button type="submit" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; background: var(--brand); border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <polyline points="19 12 12 5 5 12"></polyline>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 게시글 목록 -->
+                    <div class="community-list">
+                        {% if posts %}
+                            <div class="community-post-list">
+                                {% for post in posts %}
+                                    <a href="{% url 'badmintok_detail' post.slug %}" class="community-post-item">
+                                        <div class="community-post-content">
+                                            <div class="community-post-header">
+                                                {% for cat in post.categories.all|slice:":2" %}
+                                                    <span class="community-post-category {% if forloop.first %}community-post-category-primary{% endif %}">{{ cat.name }}</span>
+                                                {% empty %}
+                                                    {% if post.category %}
+                                                        <span class="community-post-category community-post-category-primary">{{ post.category.name }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <h3 class="community-post-title">{{ post.title }}</h3>
+                                            <p class="community-post-excerpt">
+                                                {% if post.content|striptags|length > 80 %}
+                                                    {{ post.content|striptags|truncatewords:15 }}
+                                                {% else %}
+                                                    {{ post.content|striptags }}
+                                                {% endif %}
+                                            </p>
+                                            <div class="community-post-meta">
+                                                <span class="community-post-author">{{ post.author.activity_name }}</span>
+                                                <span class="community-post-separator">|</span>
+                                                <span class="community-post-time">
+                                                    {% now "Y-m-d" as today %}
+                                                    {% if post.created_at|date:"Y-m-d" == today %}
+                                                        {{ post.created_at|timesince|timesince_simple }} 전
+                                                    {% else %}
+                                                        {{ post.created_at|date:"m.d" }}
+                                                    {% endif %}
+                                                </span>
+                                                <span class="community-post-separator">|</span>
+                                                <span class="community-post-action">
+                                                    <span class="community-post-action-icon">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="community-post-action-count">{{ post.like_count }}</span>
+                                                </span>
+                                                <span class="community-post-action">
+                                                    <span class="community-post-action-icon">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="community-post-action-count">{{ post.comment_count }}</span>
+                                                </span>
+                                                <span class="community-post-action">
+                                                    <span class="community-post-action-icon">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="community-post-action-count">{{ post.view_count }}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="community-post-image">
+                                            {% if post.thumbnail %}
+                                                <img src="{{ post.thumbnail.url }}" alt="{{ post.thumbnail_alt|default:post.title }}" class="community-post-thumbnail">
+                                            {% elif post.images.all %}
+                                                {% with first_image=post.images.all.0 %}
+                                                    <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                                {% endwith %}
+                                            {% elif post.content|extract_first_image %}
+                                                <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                            {% else %}
+                                                <div class="community-post-no-image">이미지 없음</div>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            </div>
+
+                            <!-- 페이지네이션 -->
+                            {% if is_paginated %}
+                                <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                                    {% if page_obj.has_previous %}
+                                        <a href="?tab={{ active_tab }}{% if search_query %}&search={{ search_query }}{% endif %}&page=1"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
+                                        <a href="?tab={{ active_tab }}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.previous_page_number }}"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                                    {% endif %}
+
+                                    <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
+                                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                                    </span>
+
+                                    {% if page_obj.has_next %}
+                                        <a href="?tab={{ active_tab }}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.next_page_number }}"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                                        <a href="?tab={{ active_tab }}{% if search_query %}&search={{ search_query }}{% endif %}&page={{ page_obj.paginator.num_pages }}"
+                                           class="btn btn-ghost" style="padding: 8px 12px;">마지막</a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div style="padding: 48px; text-align: center; color: #64748b;">
+                                <p>게시글이 없습니다.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 오른쪽 컬럼: 사이드바 -->
+                <div class="community-sidebar" style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- 배드민톡 인기글 -->
+                    <div class="sidebar-widget" style="padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1e293b;">배드민톡 인기글</h3>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            {% if hot_posts %}
+                                {% for post in hot_posts %}
+                                    <a href="{% url 'badmintok_detail' post.slug %}" style="display: block; padding: 12px; background: #f8fafc; border-radius: 6px; text-decoration: none; transition: all 0.2s ease; border: 1px solid transparent;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                                            <div style="flex: 1; min-width: 0;">
+                                                <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1e293b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                                    {{ post.title }}
+                                                </h4>
+                                                <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; margin-top: 4px;">
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                        {{ post.view_count }}
+                                                    </span>
+                                                    <span style="display: flex; align-items: center; gap: 4px;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                                        </svg>
+                                                        {{ post.like_count }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -777,7 +1009,7 @@
         position: relative;
         min-width: 100%;
         max-width: 100%;
-        aspect-ratio: 4 / 1;
+        aspect-ratio: 8 / 3;
         scroll-snap-align: center;
         border-radius: 12px;
         overflow: hidden;
@@ -881,6 +1113,10 @@
         border-radius: 4px;
         font-size: 12px;
         font-weight: 500;
+    }
+
+    .community-post-category-primary {
+        color: #3B82F6;
     }
     
     .community-post-title {

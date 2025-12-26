@@ -47,6 +47,49 @@ class Category(models.Model):
         return " > ".join(path)
 
 
+class Tab(models.Model):
+    """배드민톡/동호인톡 탭 모델"""
+
+    class Source(models.TextChoices):
+        COMMUNITY = "community", _("동호인톡")
+        BADMINTOK = "badmintok", _("배드민톡")
+
+    name = models.CharField(_("탭 이름"), max_length=50)
+    slug = models.SlugField(_("슬러그"), max_length=50, help_text=_("URL에 사용될 고유 식별자"))
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='tabs',
+        verbose_name=_("연결된 카테고리"),
+        help_text=_("이 탭에서 표시할 카테고리 (선택사항)")
+    )
+    source = models.CharField(
+        _("출처"),
+        max_length=20,
+        choices=Source.choices,
+        help_text=_("배드민톡 또는 동호인톡")
+    )
+    display_order = models.PositiveIntegerField(_("표시 순서"), default=0, help_text=_("작은 숫자일수록 먼저 표시됩니다"))
+    is_active = models.BooleanField(_("활성화"), default=True)
+    created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("수정일"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("탭")
+        verbose_name_plural = _("탭")
+        ordering = ["source", "display_order", "name"]
+        unique_together = [["slug", "source"]]  # 같은 source 내에서 slug 중복 방지
+        indexes = [
+            models.Index(fields=["source", "is_active", "display_order"]),
+            models.Index(fields=["slug", "source"]),
+        ]
+
+    def __str__(self):
+        return f"[{self.get_source_display()}] {self.name}"
+
+
 class Post(models.Model):
     """게시글 모델"""
     
@@ -62,7 +105,14 @@ class Post(models.Model):
         null=True,
         blank=True,
         related_name="posts",
-        verbose_name=_("카테고리")
+        verbose_name=_("메인 카테고리")
+    )
+    categories = models.ManyToManyField(
+        Category,
+        blank=True,
+        related_name="posts_multi",
+        verbose_name=_("카테고리"),
+        help_text=_("여러 카테고리 선택 가능")
     )
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,

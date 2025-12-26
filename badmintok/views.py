@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F, Case, When, ExpressionWrapper, FloatField, IntegerField
 from django.core.paginator import Paginator
 from django.urls import reverse
+from django.utils import timezone
+from datetime import timedelta
 from band.models import Band
-from community.models import Post, Category, PostImage
+from community.models import Post, Category, PostImage, Tab
 from .models import BadmintokBanner, Notice
 
 
@@ -44,7 +46,7 @@ def badmintok_detail(request, slug):
     post = get_object_or_404(
         Post.objects.filter(base_filter)
         .select_related("author", "category")
-        .prefetch_related("images", "likes"),
+        .prefetch_related("images", "likes", "categories"),
         slug=slug
     )
 
@@ -104,7 +106,7 @@ def badmintok_detail(request, slug):
             is_draft=False,
             source=Post.Source.BADMINTOK,
             published_at__lte=now
-        ).exclude(id=post.id).select_related("author", "category").prefetch_related("images")
+        ).exclude(id=post.id).select_related("author", "category").prefetch_related("images", "categories")
         
         # 뉴스 탭 카테고리 필터링
         news_filter = Q(category__slug__in=news_category_slugs)
@@ -120,7 +122,7 @@ def badmintok_detail(request, slug):
                 is_draft=False,
                 source=Post.Source.BADMINTOK,
                 published_at__lte=now
-            ).exclude(id=post.id).select_related("author", "category").prefetch_related("images")
+            ).exclude(id=post.id).select_related("author", "category").prefetch_related("images", "categories")
         
         # 인기글 (조회수 기준) - 상위 2개
         popular_posts = list(news_posts.order_by("-view_count")[:2])
@@ -146,7 +148,7 @@ def badmintok_detail(request, slug):
             is_draft=False,
             source=Post.Source.BADMINTOK,
             published_at__lte=now
-        ).exclude(id=post.id).select_related("author", "category").prefetch_related("images")
+        ).exclude(id=post.id).select_related("author", "category").prefetch_related("images", "categories")
         
         # 인기글 (조회수 기준) - 상위 2개
         popular_posts = list(all_posts.order_by("-view_count")[:2])
@@ -177,7 +179,15 @@ def badmintok(request):
     """배드민톡 통합 페이지 (뉴스 & 리뷰 & 피드)"""
     from django.utils import timezone
 
-    active_tab = request.GET.get("tab", "news")  # 기본값은 뉴스
+    # 활성화된 배드민톡 탭 가져오기
+    tabs = Tab.objects.filter(
+        source=Tab.Source.BADMINTOK,
+        is_active=True
+    ).select_related('category').order_by('display_order')
+
+    # 기본 탭 설정 (첫 번째 탭 또는 없으면 'news')
+    default_tab = tabs[0].slug if tabs.exists() else "news"
+    active_tab = request.GET.get("tab", default_tab)
     category = request.GET.get("category", "")
 
     # admin에서 설정한 배너 이미지 목록
@@ -200,23 +210,64 @@ def badmintok(request):
     posts = Post.objects.filter(
         is_deleted=False,
         is_draft=False,
-        source=Post.Source.BADMINTOK,
-        published_at__lte=now
-    ).select_related("author", "category").prefetch_related("images")
-    
-    # 탭별 필터링
-    if active_tab == "news":
-        # 뉴스: 카테고리 필터링
-        if category:
-            posts = posts.filter(category__slug=category)
-    elif active_tab == "reviews":
-        # 리뷰: 카테고리 필터링
-        if category:
-            posts = posts.filter(category__slug=category)
-    elif active_tab == "feed":
-        # 피드: 전체 게시물
-        pass
-    
+        source=Post.Source.BADMINTOK
+    ).filter(
+        Q(published_at__lte=now) | Q(published_at__isnull=True)  # published_at이 없거나 현재 시간 이전인 것
+    ).select_related("author", "category").prefetch_related("images", "categories")
+
+    # 탭별 필터링 - 동적으로 처리
+    current_tab = tabs.filter(slug=active_tab).first()
+    if current_tab:
+        # 뉴스 탭인 경우 하드코딩된 카테고리 목록 사용
+        if active_tab == 'news':
+            news_category_slugs = ['tournament', 'player', 'equipment', 'community']
+            posts = posts.filter(
+                Q(category__slug__in=news_category_slugs) | Q(categories__slug__in=news_category_slugs)
+            ).distinct()
+            
+            # 2차 카테고리 필터링 (카테고리 선택 시)
+            if category:
+                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+        # 리뷰 탭인 경우 하드코딩된 카테고리 목록 사용
+        elif active_tab == 'reviews':
+            reviews_category_slugs = ['racket', 'shoes', 'apparel', 'shuttlecock', 'protective', 'accessories']
+            posts = posts.filter(
+                Q(category__slug__in=reviews_category_slugs) | Q(categories__slug__in=reviews_category_slugs)
+            ).distinct()
+            
+            # 2차 카테고리 필터링 (카테고리 선택 시)
+            if category:
+                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+        # 브랜드관 탭인 경우 하드코딩된 카테고리 목록 사용
+        elif active_tab == 'brand':
+            brand_category_slugs = ['yonex', 'lining', 'victor', 'mizuno', 'technist', 'strokus', 'redsun', 'trion', 'tricore', 'apacs']
+            posts = posts.filter(
+                Q(category__slug__in=brand_category_slugs) | Q(categories__slug__in=brand_category_slugs)
+            ).distinct()
+            
+            # 2차 카테고리 필터링 (카테고리 선택 시)
+            if category:
+                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+        # 카테고리가 연결된 탭인 경우
+        elif current_tab.category:
+            # 현재 탭의 카테고리와 그 하위 카테고리들을 가져옴
+            tab_category = current_tab.category
+            category_slugs = [tab_category.slug]
+
+            # 하위 카테고리 추가
+            child_categories = Category.objects.filter(parent=tab_category, is_active=True)
+            category_slugs.extend([cat.slug for cat in child_categories])
+
+            # 카테고리 필터링
+            posts = posts.filter(
+                Q(category__slug__in=category_slugs) | Q(categories__slug__in=category_slugs)
+            ).distinct()
+
+            # 2차 카테고리 필터링 (카테고리 선택 시)
+            if category:
+                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+        # 카테고리가 없는 탭인 경우 모든 글 표시 (필터링 없음)
+
     # 검색 기능
     search = request.GET.get("search")
     if search:
@@ -232,18 +283,40 @@ def badmintok(request):
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
     
-    # Hot 글 (조회수 상위 10개) - 배드민톡 글만 (임시저장 및 예약발행 제외)
+    # Hot 글 - 최근 30일 내 글 + 복합 점수 + 시간 가중치
+    # 최근 30일 기준일
+    recent_30_days = now - timedelta(days=30)
+    # 최근 7일 기준일 (시간 가중치 적용)
+    recent_7_days = now - timedelta(days=7)
+    
     hot_posts = Post.objects.filter(
         is_deleted=False,
         is_draft=False,
-        source=Post.Source.BADMINTOK,
-        published_at__lte=now
-    ).select_related("author", "category").order_by("-view_count")[:10]
+        source=Post.Source.BADMINTOK
+    ).filter(
+        Q(published_at__lte=now) | Q(published_at__isnull=True)  # published_at이 없거나 현재 시간 이전인 것
+    ).filter(
+        Q(published_at__gte=recent_30_days) | Q(published_at__isnull=True, created_at__gte=recent_30_days)  # 최근 30일 내 글
+    ).select_related("author", "category").prefetch_related("categories").annotate(
+        # 시간 가중치: 최근 7일 내면 1.5배, 그 외는 1.0배
+        time_weight=Case(
+            When(published_at__gte=recent_7_days, then=1.5),
+            When(published_at__isnull=True, created_at__gte=recent_7_days, then=1.5),
+            default=1.0,
+            output_field=FloatField()
+        ),
+        # 복합 점수: (조회수 * 1 + 좋아요 * 2 + 댓글 * 3) * 시간가중치
+        hot_score=ExpressionWrapper(
+            (F('view_count') * 1 + F('like_count') * 2 + F('comment_count') * 3) * F('time_weight'),
+            output_field=FloatField()
+        )
+    ).order_by('-hot_score')[:10]
 
     # 고정된 공지사항 가져오기 (최신 1개)
     pinned_notice = Notice.objects.filter(is_pinned=True).order_by("-created_at").first()
 
     return render(request, "badmintok/index.html", {
+        "tabs": tabs,
         "active_tab": active_tab,
         "category": category,
         "banner_images": banner_images,
@@ -380,8 +453,9 @@ def member_reviews(request):
     posts = Post.objects.filter(
         is_deleted=False,
         is_draft=False,
-        source=Post.Source.MEMBER_REVIEWS,
-        published_at__lte=now
+        source=Post.Source.MEMBER_REVIEWS
+    ).filter(
+        Q(published_at__lte=now) | Q(published_at__isnull=True)  # published_at이 없거나 현재 시간 이전인 것
     ).select_related("author", "category").prefetch_related("images")
     
     # 카테고리 필터링
@@ -403,13 +477,34 @@ def member_reviews(request):
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
     
-    # Hot 글 (조회수 상위 10개) - 동호인 리뷰 글만 (임시저장 및 예약발행 제외)
+    # Hot 글 - 최근 30일 내 글 + 복합 점수 + 시간 가중치
+    # 최근 30일 기준일
+    recent_30_days = now - timedelta(days=30)
+    # 최근 7일 기준일 (시간 가중치 적용)
+    recent_7_days = now - timedelta(days=7)
+    
     hot_posts = Post.objects.filter(
         is_deleted=False,
         is_draft=False,
-        source=Post.Source.MEMBER_REVIEWS,
-        published_at__lte=now
-    ).select_related("author", "category").order_by("-view_count")[:10]
+        source=Post.Source.MEMBER_REVIEWS
+    ).filter(
+        Q(published_at__lte=now) | Q(published_at__isnull=True)  # published_at이 없거나 현재 시간 이전인 것
+    ).filter(
+        Q(published_at__gte=recent_30_days) | Q(published_at__isnull=True, created_at__gte=recent_30_days)  # 최근 30일 내 글
+    ).select_related("author", "category").annotate(
+        # 시간 가중치: 최근 7일 내면 1.5배, 그 외는 1.0배
+        time_weight=Case(
+            When(published_at__gte=recent_7_days, then=1.5),
+            When(published_at__isnull=True, created_at__gte=recent_7_days, then=1.5),
+            default=1.0,
+            output_field=FloatField()
+        ),
+        # 복합 점수: (조회수 * 1 + 좋아요 * 2 + 댓글 * 3) * 시간가중치
+        hot_score=ExpressionWrapper(
+            (F('view_count') * 1 + F('like_count') * 2 + F('comment_count') * 3) * F('time_weight'),
+            output_field=FloatField()
+        )
+    ).order_by('-hot_score')[:10]
     
     return render(request, "member_reviews/index.html", {
         "category": category,

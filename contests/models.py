@@ -1,5 +1,7 @@
 from collections import OrderedDict
 from datetime import date
+import os
+import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -19,6 +21,15 @@ class ContestCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+
+def contest_image_upload_to(instance, filename):
+    """대회 이미지 파일명 생성 함수 - 파일명을 안전하게 처리"""
+    # 파일 확장자 추출
+    ext = os.path.splitext(filename)[1].lower()
+    # UUID를 사용하여 고유 파일명 생성 (한글/특수문자 문제 해결)
+    unique_filename = f"{uuid.uuid4().hex[:12]}{ext}"
+    return f"contest_images/{unique_filename}"
 
 
 class Sponsor(models.Model):
@@ -67,8 +78,7 @@ class Contest(models.Model):
         help_text="승급 대회인 경우 체크하세요. 비승급 대회는 체크하지 않습니다.",
     )
     title = models.CharField("대회명", max_length=200)
-    slug = models.SlugField("슬러그", unique=True, max_length=45, help_text="URL에서 사용할 고유 값입니다.")
-    image = models.ImageField("이미지", upload_to="contest_images/", blank=True, null=True)
+    slug = models.SlugField("슬러그", unique=True, max_length=45, allow_unicode=True, help_text="URL에서 사용할 고유 값입니다.")
     schedule_start = models.DateField("대회 시작일")
     schedule_end = models.DateField("대회 종료일", blank=True, null=True)
     region = models.CharField("지역", max_length=20, choices=Region.choices, default=Region.SEOUL)
@@ -149,7 +159,7 @@ class Contest(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(self.title)
+            base_slug = slugify(self.title, allow_unicode=True)
             slug = base_slug
             counter = 1
             while Contest.objects.filter(slug=slug).exclude(pk=self.pk).exists():
@@ -299,7 +309,7 @@ class ContestImage(models.Model):
         related_name="images",
         verbose_name="대회",
     )
-    image = models.ImageField("이미지", upload_to="contest_images/")
+    image = models.ImageField("이미지", upload_to=contest_image_upload_to)
     order = models.PositiveIntegerField("순서", default=0, help_text="이미지 표시 순서 (작은 숫자가 먼저 표시됨)")
     created_at = models.DateTimeField("등록일", auto_now_add=True)
 
