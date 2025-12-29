@@ -90,7 +90,7 @@
                         <label for="id_name" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
                             번개 이름
                         </label>
-                        <input type="text" name="name" id="id_name" class="form-input" placeholder="번개 이름을 입력하세요" maxlength="200" required value="{% if is_update %}{{ band.name }}{% endif %}" style="box-sizing: border-box;">
+                        <input type="text" name="name" id="id_name" class="form-input" placeholder="번개 이름을 입력하세요" maxlength="200" required value="{% if is_update and schedule %}{{ schedule.title }}{% endif %}" style="box-sizing: border-box;">
                     </div>
                     
                     <!-- 날짜/시간 -->
@@ -153,7 +153,7 @@
                         <label for="flash_description" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
                             번개 설명
                         </label>
-                        <textarea name="flash_description" id="flash_description" class="form-input" placeholder="번개에 대한 설명을 입력하세요" rows="4" style="box-sizing: border-box; resize: vertical;">{% if is_update %}{{ band.description }}{% endif %}</textarea>
+                        <textarea name="flash_description" id="flash_description" class="form-input" placeholder="번개에 대한 설명을 입력하세요" rows="4" style="box-sizing: border-box; resize: vertical;">{% if is_update and schedule %}{{ flash_description }}{% endif %}</textarea>
                     </div>
                     
                     <!-- 참가비 -->

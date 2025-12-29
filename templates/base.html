@@ -138,9 +138,20 @@
     <div class="scroll-progress" id="scrollProgress"></div>
 
     {% if messages %}
-        <div class="messages">
+        <div class="messages-banner">
             {% for message in messages %}
-                <div class="message message-{{ message.tags }}">{{ message }}</div>
+                <div class="message-banner message-banner-{{ message.tags }}">
+                    <div class="message-banner-content">
+                        <span class="message-banner-icon">
+                            {% if message.tags == 'error' %}⚠️
+                            {% elif message.tags == 'success' %}✅
+                            {% elif message.tags == 'warning' %}⚠️
+                            {% else %}ℹ️{% endif %}
+                        </span>
+                        <span class="message-banner-text">{{ message }}</span>
+                    </div>
+                    <button class="message-banner-close" onclick="this.parentElement.remove()" aria-label="닫기">×</button>
+                </div>
             {% endfor %}
         </div>
     {% endif %}

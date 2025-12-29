@@ -1,0 +1,204 @@
+name: Deploy to AWS Lightsail
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-2
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # AWS credentials는 S3 사용 시에만 필요 (선택사항)
+      - name: Configure AWS credentials (optional)
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create .env.prod file
+        run: |
+          cat > .env.prod << EOF
+          # Django 설정
+          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG || 'False' }}
+          DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}
+          
+          # 데이터베이스 설정
+          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE || 'badmintok' }}
+          MYSQL_USER=${{ secrets.MYSQL_USER || 'badmintok_user' }}
+          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          
+          DB_HOST=${{ secrets.DB_HOST || 'db' }}
+          DB_PORT=${{ secrets.DB_PORT || '3306' }}
+          DB_NAME=${{ secrets.DB_NAME || 'badmintok' }}
+          DB_USER=${{ secrets.DB_USER || 'badmintok_user' }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          
+          # 카카오 로그인 설정
+          KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}
+          
+          # Nginx 설정
+          NGINX_HTTP_PORT=${{ secrets.NGINX_HTTP_PORT || '80' }}
+          
+          # Gunicorn 설정
+          GUNICORN_WORKERS=${{ secrets.GUNICORN_WORKERS || '3' }}
+          GUNICORN_TIMEOUT=${{ secrets.GUNICORN_TIMEOUT || '120' }}
+          GUNICORN_LOG_LEVEL=${{ secrets.GUNICORN_LOG_LEVEL || 'info' }}
+          GUNICORN_MAX_REQUESTS=${{ secrets.GUNICORN_MAX_REQUESTS || '1000' }}
+          GUNICORN_MAX_REQUESTS_JITTER=${{ secrets.GUNICORN_MAX_REQUESTS_JITTER || '50' }}
+          
+          # 시간대
+          TZ=${{ secrets.TZ || 'Asia/Seoul' }}
+          EOF
+
+      - name: Prepare deployment package
+        run: |
+          # 필요한 파일들만 포함하여 tar 압축 파일 생성
+          tar --exclude='.git' \
+              --exclude='__pycache__' \
+              --exclude='*.pyc' \
+              --exclude='*.log' \
+              --exclude='.DS_Store' \
+              --exclude='db.sqlite3' \
+              --exclude='staticfiles' \
+              --exclude='media' \
+              --exclude='.env*' \
+              --exclude='!.env.prod' \
+              --exclude='!.env.prod.example' \
+              -czf deploy.tar.gz \
+              accounts/ badmintok/ band/ community/ contests/ \
+              templates/ static/ nginx/ mysql/ \
+              Dockerfile docker-compose.prod.yml entrypoint.sh \
+              requirements.txt manage.py .env.prod env.prod.example
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
+          source: "deploy.tar.gz"
+          target: "/tmp/"
+
+      - name: Setup and Deploy on Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
+          script: |
+            set -e
+            
+            echo "=== Starting deployment ==="
+            
+            # 프로젝트 디렉토리로 이동 (Amazon Linux 2023: ec2-user)
+            USER_HOME="/home/${{ secrets.LIGHTSAIL_USER }}"
+            if [ "${{ secrets.LIGHTSAIL_USER }}" = "ec2-user" ]; then
+              USER_HOME="/home/ec2-user"
+            fi
+            
+            # 프로젝트 디렉토리 생성
+            mkdir -p $USER_HOME/badmintok
+            
+            # 기존 컨테이너 중지 (다운타임 최소화)
+            if [ -f $USER_HOME/badmintok/docker-compose.prod.yml ]; then
+              echo "Stopping existing containers..."
+              cd $USER_HOME/badmintok
+              docker-compose -f docker-compose.prod.yml down || true
+            fi
+            
+            # 배포 패키지 압축 해제
+            echo "Extracting deployment package..."
+            cd $USER_HOME/badmintok
+            tar -xzf /tmp/deploy.tar.gz
+            rm -f /tmp/deploy.tar.gz
+            
+            # .env.prod 파일 확인 및 권한 설정
+            if [ -f .env.prod ]; then
+              echo ".env.prod file found and ready"
+              chmod 600 .env.prod
+            else
+              echo "ERROR: .env.prod file not found!"
+              echo "Please check GitHub Secrets configuration."
+              exit 1
+            fi
+            
+            # Docker 이미지 빌드
+            echo "Building Docker images..."
+            docker-compose -f docker-compose.prod.yml build --no-cache
+            
+            # 컨테이너 시작
+            echo "Starting containers..."
+            docker-compose -f docker-compose.prod.yml up -d
+            
+            # 서비스 상태 확인
+            echo "Waiting for services to be healthy..."
+            sleep 15
+            
+            # 헬스체크
+            echo "Checking service health..."
+            docker-compose -f docker-compose.prod.yml ps
+            
+            # 마이그레이션 실행 (필요한 경우)
+            echo "Running database migrations..."
+            docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput || true
+            
+            # 정적 파일 수집
+            echo "Collecting static files..."
+            docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput --clear || true
+            
+            # Nginx 재시작 (설정 변경 시)
+            echo "Restarting Nginx..."
+            docker-compose -f docker-compose.prod.yml restart nginx || true
+            
+            # 불필요한 이미지 정리
+            echo "Cleaning up unused Docker images..."
+            docker image prune -f || true
+            
+            echo "=== Deployment completed! ==="
+            
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
+          script: |
+            echo "=== Verifying deployment ==="
+            
+            # 컨테이너 상태 확인
+            USER_HOME="/home/${{ secrets.LIGHTSAIL_USER }}"
+            if [ "${{ secrets.LIGHTSAIL_USER }}" = "ec2-user" ]; then
+              USER_HOME="/home/ec2-user"
+            fi
+            cd $USER_HOME/badmintok
+            docker-compose -f docker-compose.prod.yml ps
+            
+            # 웹 서버 응답 확인
+            sleep 5
+            curl -f http://localhost/health/ || echo "Health check failed, but deployment may still be in progress"
+            
+            echo "=== Verification completed ==="
+

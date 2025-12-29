@@ -38,18 +38,35 @@ def band_list(request):
         today = timezone.now().date()
         
         # 1. 번개 타입(band_type="flash") 밴드 조회 (번개는 승인 없이도 표시)
-        flash_bands = Band.objects.filter(
-            is_public=True,
-            band_type="flash"
-        ).prefetch_related("schedules")
+        # 본인이 만든 번개도 표시되도록 수정
+        if request.user.is_authenticated:
+            flash_bands = Band.objects.filter(
+                Q(is_public=True, band_type="flash") |  # 공개된 번개
+                Q(created_by=request.user, band_type="flash")  # 본인이 만든 번개
+            ).prefetch_related("schedules")
+        else:
+            flash_bands = Band.objects.filter(
+                is_public=True,
+                band_type="flash"
+            ).prefetch_related("schedules")
         
         # 2. 모임/동호회 타입 밴드 중 미래 스케줄이 있는 것 조회
-        schedule_bands = Band.objects.filter(
-            is_public=True,
-            is_approved=True,
-            band_type__in=["group", "club"],
-            schedules__start_datetime__gte=timezone.now()
-        ).prefetch_related("schedules").distinct()
+        # 본인이 만든 모임의 스케줄도 승인 전이라도 표시되도록 수정
+        if request.user.is_authenticated:
+            schedule_bands = Band.objects.filter(
+                Q(is_public=True, is_approved=True) |  # 승인된 모임/동호회
+                Q(created_by=request.user, band_type__in=["group", "club"])  # 본인이 만든 모임/동호회 (승인 전이라도)
+            ).filter(
+                band_type__in=["group", "club"],
+                schedules__start_datetime__gte=timezone.now()
+            ).prefetch_related("schedules").distinct()
+        else:
+            schedule_bands = Band.objects.filter(
+                is_public=True,
+                is_approved=True,
+                band_type__in=["group", "club"],
+                schedules__start_datetime__gte=timezone.now()
+            ).prefetch_related("schedules").distinct()
         
         # 지역 필터
         region = request.GET.get("region", "")
@@ -276,12 +293,24 @@ def band_list(request):
         })
     
     # 모임/동호회 탭일 때는 밴드 리스트 표시 (일정 정보도 함께 가져오기)
-    # 승인된 모임/동호회만 표시
-    bands = Band.objects.filter(
-        is_public=True,
-        is_approved=True,  # 관리자 승인된 것만
-        band_type__in=["group", "club"]  # 모임/동호회만
-    ).annotate(
+    # 승인된 모임/동호회 또는 본인이 만든 모임 표시
+    if request.user.is_authenticated:
+        # 승인된 모임/동호회 또는 본인이 만든 모임
+        bands = Band.objects.filter(
+            Q(is_public=True, is_approved=True) |  # 승인된 모임
+            Q(created_by=request.user, band_type__in=["group", "club"])  # 본인이 만든 모임 (승인 전이라도)
+        ).filter(
+            band_type__in=["group", "club"]  # 모임/동호회만
+        )
+    else:
+        # 비로그인 사용자는 승인된 모임만 표시
+        bands = Band.objects.filter(
+            is_public=True,
+            is_approved=True,  # 관리자 승인된 것만
+            band_type__in=["group", "club"]  # 모임/동호회만
+        )
+    
+    bands = bands.annotate(
         total_members=Count("members", filter=Q(members__status="active")),
         total_posts=Count("posts")
     ).prefetch_related("schedules").order_by("-created_at")
@@ -405,9 +434,10 @@ def band_create(request):
             request.user.band_creation_blocked_until = None
             request.user.save()
     
-    # 모임/동호회 생성 시: 소셜 로그인 사용자만 생성 가능
-    if band_type in ["group", "club"]:
-        if not request.user.is_social_auth:
+    # 모임/동호회 생성 시: 소셜 로그인 사용자 또는 관리자만 생성 가능
+    # GET 요청 시에만 체크 (POST 요청은 폼 제출 후 처리)
+    if request.method == "GET" and band_type in ["group", "club"]:
+        if not request.user.is_social_auth and not (request.user.is_staff or request.user.is_superuser):
             messages.error(
                 request,
                 "모임/동호회를 만들려면 카카오톡 등 소셜 로그인으로 가입한 사용자만 가능합니다. "
@@ -416,7 +446,7 @@ def band_create(request):
             return redirect("band:list")
     
     # 번개 생성 시: 모임/동호회를 가지고 있는 모임장만 생성 가능
-    if band_type == "flash":
+    if request.method == "GET" and band_type == "flash":
         # 사용자가 모임(group) 또는 동호회(club) 타입의 밴드에서 모임장(owner)인지 확인
         owned_groups_or_clubs = Band.objects.filter(
             created_by=request.user,
@@ -440,6 +470,16 @@ def band_create(request):
             return redirect("band:list")
     
     if request.method == "POST":
+        # POST 요청 시에도 소셜 로그인 또는 관리자 체크 (보안을 위해)
+        if band_type in ["group", "club"]:
+            if not request.user.is_social_auth and not (request.user.is_staff or request.user.is_superuser):
+                messages.error(
+                    request,
+                    "모임/동호회를 만들려면 카카오톡 등 소셜 로그인으로 가입한 사용자만 가능합니다. "
+                    "소셜 로그인으로 가입해주세요."
+                )
+                return redirect("band:list")
+        
         form = BandForm(request.POST, request.FILES)
         if form.is_valid():
             band = form.save(commit=False)
@@ -1297,12 +1337,19 @@ def post_detail(request, band_id, post_id):
         # 해당 게시글을 조회한 시간 확인
         last_viewed = viewed_posts.get(str(post_id))
         
+        # last_viewed를 float로 변환 (세션에서 문자열로 저장되었을 수 있음)
+        try:
+            if last_viewed is not None:
+                last_viewed = float(last_viewed)
+        except (ValueError, TypeError):
+            last_viewed = None
+        
         # 조회한 적이 없거나 1시간(3600초) 이상 경과한 경우에만 카운팅
         if not last_viewed or (current_time - last_viewed) >= 3600:
             post.view_count += 1
             post.save(update_fields=["view_count"])
-            # 세션에 조회 시간 업데이트
-            viewed_posts[str(post_id)] = current_time
+            # 세션에 조회 시간 업데이트 (float로 명시적으로 저장)
+            viewed_posts[str(post_id)] = float(current_time)
             request.session['viewed_posts'] = viewed_posts
     else:
         # 비로그인 사용자는 접근 불가하지만, 혹시 모를 경우를 대비
@@ -1811,6 +1858,7 @@ def schedule_update(request, band_id, schedule_id):
     
     if request.method == "POST":
         # 기존 번개 생성 페이지와 동일한 필드 처리
+        flash_name = request.POST.get("name", "").strip()  # 사용자가 입력한 번개 이름
         meeting_date = request.POST.get("meeting_date")
         meeting_time = request.POST.get("meeting_time")
         meeting_end_time = request.POST.get("meeting_end_time")
@@ -1818,6 +1866,7 @@ def schedule_update(request, band_id, schedule_id):
         flash_description = request.POST.get("flash_description", "")
         meeting_cost = request.POST.get("meeting_cost", "")
         meeting_capacity = request.POST.get("meeting_capacity", "20")
+        flash_region = request.POST.get("flash_region", "")  # 지역 정보
         
         # 날짜/시간 결합
         if meeting_date and meeting_time:
@@ -1857,8 +1906,11 @@ def schedule_update(request, band_id, schedule_id):
                 "schedule": schedule,
             })
         
-        # 번개 이름 생성 (모임 이름 + 날짜)
-        schedule_title = f"{band.name} - {meeting_date}"
+        # 번개 이름: 사용자가 입력한 이름이 있으면 사용, 없으면 기본값 (모임 이름 + 날짜 + 시간)
+        if flash_name:
+            schedule_title = flash_name
+        else:
+            schedule_title = f"{band.name} - {meeting_date} {meeting_time}"
         
         # 참가비 정보를 description에 포함
         description = flash_description
@@ -1873,6 +1925,38 @@ def schedule_update(request, band_id, schedule_id):
         schedule.location = meeting_location
         schedule.max_participants = int(meeting_capacity) if meeting_capacity else None
         schedule.save()
+        
+        # 지역 정보를 부모 Band에 저장
+        if flash_region:
+            # 구체 지역을 권역으로 매핑
+            region_mapping = {
+                # 수도권
+                "서울": "capital",
+                "경기": "capital",
+                "인천": "capital",
+                # 영남권
+                "부산": "yeongnam",
+                "대구": "yeongnam",
+                "울산": "yeongnam",
+                "경남": "yeongnam",
+                "경북": "yeongnam",
+                # 호남권
+                "광주": "honam",
+                "전남": "honam",
+                "전북": "honam",
+                # 충청권
+                "대전": "chungcheong",
+                "충남": "chungcheong",
+                "충북": "chungcheong",
+                "세종": "chungcheong",
+                # 강원권
+                "강원": "gangwon",
+                # 제주권
+                "제주": "jeju",
+            }
+            band.region = region_mapping.get(flash_region, "all")
+            band.flash_region_detail = flash_region
+            band.save(update_fields=["region", "flash_region_detail"])
         
         # 기존 이미지 삭제 여부 확인
         delete_images = request.POST.getlist('delete_images')
@@ -1918,6 +2002,9 @@ def schedule_update(request, band_id, schedule_id):
         # 기존 이미지 가져오기
         existing_images = schedule.images.all().order_by('order')
         
+        # 지역 정보 가져오기 (부모 Band에서)
+        flash_region = band.flash_region_detail or ""
+        
         return render(request, "band/create.html", {
             "band": None,
             "band_type": "flash",
@@ -1925,6 +2012,10 @@ def schedule_update(request, band_id, schedule_id):
             "form": None,
             "parent_band": band,  # 부모 밴드 정보 전달
             "schedule": schedule,  # 수정할 스케줄 정보 전달
+            "flash_region": flash_region,  # 지역 정보 전달
+            "flash_description": flash_description,  # 번개 설명 전달
+            "meeting_cost": meeting_cost,  # 참가비 전달
+            "existing_images": existing_images,  # 기존 이미지 전달
             "flash_description": flash_description,  # 번개 설명
             "meeting_cost": meeting_cost,  # 참가비
             "existing_images": existing_images,  # 기존 이미지

@@ -1028,10 +1028,10 @@
                                                         {{ band.created_at|date:"Y.m.d" }}
                                                     {% endif %}
                                                 </span>
-                                                <span style="font-size: 13px; color: #64748b; white-space: nowrap; flex-shrink: 0;">참가 {% if band.first_schedule %}{{ band.first_schedule.current_participants }}{% if band.first_schedule.max_participants %}/{{ band.first_schedule.max_participants }}{% endif %}{% else %}{{ band.total_members|default:band.member_count }}{% endif %}</span>
+                                                <span class="participant-count-mobile-hide" style="font-size: 13px; color: #64748b; white-space: nowrap; flex-shrink: 0;">참가 {% if band.first_schedule %}{{ band.first_schedule.current_participants }}{% if band.first_schedule.max_participants %}/{{ band.first_schedule.max_participants }}{% endif %}{% else %}{{ band.total_members|default:band.member_count }}{% endif %}</span>
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; color: #64748b; font-size: 13px; white-space: nowrap; flex-shrink: 0;">
-                                                더보기 <span style="font-size: 16px; line-height: 1;">+</span>
+                                                <span class="more-text-mobile-hide">더보기 </span><span style="font-size: 16px; line-height: 1;">+</span>
                                             </div>
                                         </div>
                                     </a>
