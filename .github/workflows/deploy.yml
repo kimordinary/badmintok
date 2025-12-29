@@ -48,6 +48,7 @@ jobs:
           
           # Nginx 설정
           NGINX_HTTP_PORT=${NGINX_HTTP_PORT:-80}
+          NGINX_HTTPS_PORT=${NGINX_HTTPS_PORT:-443}
           
           # Gunicorn 설정
           GUNICORN_WORKERS=${GUNICORN_WORKERS:-3}
@@ -68,6 +69,7 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           NGINX_HTTP_PORT: ${{ secrets.NGINX_HTTP_PORT }}
+          NGINX_HTTPS_PORT: ${{ secrets.NGINX_HTTPS_PORT }}
           GUNICORN_WORKERS: ${{ secrets.GUNICORN_WORKERS }}
           GUNICORN_TIMEOUT: ${{ secrets.GUNICORN_TIMEOUT }}
           GUNICORN_LOG_LEVEL: ${{ secrets.GUNICORN_LOG_LEVEL }}
@@ -87,7 +89,7 @@ jobs:
           
           # 임시 디렉토리에 필요한 파일들 복사
           mkdir -p deploy-temp
-          cp -r accounts badmintok band community contests templates static nginx mysql deploy-temp/ 2>/dev/null || true
+          cp -r accounts badmintok band community contests templates static nginx mysql scripts deploy-temp/ 2>/dev/null || true
           cp Dockerfile docker-compose.prod.yml entrypoint.sh requirements.txt manage.py deploy-temp/ 2>/dev/null || true
           cp .env.prod env.prod.example deploy-temp/ 2>/dev/null || true
           
@@ -202,9 +204,9 @@ jobs:
               exit 1
             fi
             
-            # Nginx 시작
-            echo "Starting Nginx..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx
+            # Certbot 및 Nginx 시작
+            echo "Starting Certbot and Nginx..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d certbot nginx
             
             echo "Waiting for Nginx to start..."
             sleep 5

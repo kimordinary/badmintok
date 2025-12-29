@@ -96,8 +96,7 @@ services:
         condition: service_healthy
     ports:
       - "${NGINX_HTTP_PORT:-80}:80"
-      # HTTPS를 사용하는 경우 아래 주석 해제
-      # - "${NGINX_HTTPS_PORT:-443}:443"
+      - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
       # Nginx 설정 (프로덕션용)
       - ./nginx/conf.d/badmintok-prod.conf:/etc/nginx/conf.d/badmintok.conf:ro
@@ -106,8 +105,9 @@ services:
       # 정적/미디어 파일 (web 컨테이너와 공유된 볼륨)
       - static_data:/usr/share/nginx/html/static:ro
       - media_data:/usr/share/nginx/html/media:ro
-      # SSL 인증서 (HTTPS 사용 시)
-      # - ./nginx/ssl:/etc/nginx/ssl:ro
+      # Let's Encrypt SSL 인증서
+      - certbot_etc:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
       # Nginx 로그
       - nginx_logs:/var/log/nginx
     networks:
@@ -123,6 +123,23 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot:
+    image: certbot/certbot
+    container_name: badmintok-certbot-prod
+    restart: unless-stopped
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    networks:
+      - badmintok-net
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   db_data:
@@ -132,6 +149,10 @@ volumes:
   media_data:
     driver: local
   nginx_logs:
+    driver: local
+  certbot_etc:
+    driver: local
+  certbot_www:
     driver: local
 
 networks:
