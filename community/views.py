@@ -28,7 +28,7 @@ class PostListView(ListView):
     model = Post
     template_name = "community/index.html"
     context_object_name = "posts"
-    paginate_by = 20
+    paginate_by = 10
     
     def get_queryset(self):
         from django.db.models import Prefetch
@@ -130,6 +130,11 @@ class PostListView(ListView):
         # 정렬: 고정글 먼저, 그 다음 최신순
         queryset = queryset.order_by("-is_pinned", "-created_at")
         
+        # content 필드는 템플릿에서 직접 사용하지 않고 서버에서 excerpt 추출에만 사용
+        # excerpt 추출을 위해 content가 필요하므로 defer를 사용하지 않음
+        # 템플릿에서는 서버에서 추출한 excerpt와 image_url만 사용하므로 
+        # 템플릿 렌더링 시 content 필드 파싱 오버헤드는 없음
+        
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -193,6 +198,87 @@ class PostListView(ListView):
         # 고정된 공지사항 가져오기 (최신 1개)
         pinned_notice = Notice.objects.filter(is_pinned=True).order_by("-created_at").first()
         context["pinned_notice"] = pinned_notice
+
+        # 페이지네이션 페이지 번호 범위 계산
+        if hasattr(context.get('page_obj'), 'paginator'):
+            paginator = context['page_obj'].paginator
+            current_page = context['page_obj'].number
+            total_pages = paginator.num_pages
+            
+            # 표시할 페이지 번호 범위 계산 (현재 페이지 주변 ±2)
+            if total_pages <= 7:
+                # 7페이지 이하면 모두 표시
+                page_range = list(range(1, total_pages + 1))
+            else:
+                # 7페이지 초과면 현재 페이지 주변만 표시
+                page_range = []
+                start_page = max(1, current_page - 2)
+                end_page = min(total_pages, current_page + 2)
+                
+                if start_page > 1:
+                    page_range.append(1)
+                    if start_page > 2:
+                        page_range.append(None)  # ... 표시용
+                
+                page_range.extend(range(start_page, end_page + 1))
+                
+                if end_page < total_pages:
+                    if end_page < total_pages - 1:
+                        page_range.append(None)  # ... 표시용
+                    page_range.append(total_pages)
+            
+            context["pagination_page_range"] = page_range
+
+        # 서버 측 최적화: 게시물 excerpt 및 이미지 URL 추출
+        import re
+        from django.utils.html import strip_tags
+        
+        # 메인 게시물 리스트 최적화
+        posts = context.get('posts', [])
+        for post in posts:
+            if hasattr(post, 'content') and post.content:
+                # HTML 태그 제거 및 excerpt 추출
+                text_content = strip_tags(post.content)
+                if len(text_content) > 80:
+                    # 80자 초과 시 15단어로 제한
+                    words = text_content.split()[:15]
+                    post.excerpt = ' '.join(words) + '...'
+                else:
+                    post.excerpt = text_content
+                
+                # 첫 번째 이미지 URL 추출
+                pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
+                match = re.search(pattern, post.content, re.IGNORECASE)
+                if match:
+                    post.content_image_url = match.group(1)
+                else:
+                    post.content_image_url = None
+            else:
+                post.excerpt = ""
+                post.content_image_url = None
+        
+        # Hot 게시물 리스트 최적화
+        hot_posts = context.get('hot_posts', [])
+        for post in hot_posts:
+            if hasattr(post, 'content') and post.content:
+                # HTML 태그 제거 및 excerpt 추출
+                text_content = strip_tags(post.content)
+                if len(text_content) > 80:
+                    words = text_content.split()[:15]
+                    post.excerpt = ' '.join(words) + '...'
+                else:
+                    post.excerpt = text_content
+                
+                # 첫 번째 이미지 URL 추출
+                pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
+                match = re.search(pattern, post.content, re.IGNORECASE)
+                if match:
+                    post.content_image_url = match.group(1)
+                else:
+                    post.content_image_url = None
+            else:
+                post.excerpt = ""
+                post.content_image_url = None
 
         return context
 

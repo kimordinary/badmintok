@@ -41,18 +41,28 @@ echo "Database is ready!"
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
+# 미디어 디렉토리 생성 및 권한 설정
+echo "Creating media directory..."
+mkdir -p /app/media
+chmod 755 /app/media
+
 # 정적 파일 수집
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
 # Superuser 생성 (선택사항 - 환경 변수가 있을 경우에만)
-if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then
+# 커스텀 User 모델은 email을 USERNAME_FIELD로 사용하므로, email, activity_name, password 순서
+if [ -n "$DJANGO_SUPERUSER_EMAIL" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_ACTIVITY_NAME" ]; then
     echo "Creating superuser if not exists..."
     python manage.py shell <<EOF
 from django.contrib.auth import get_user_model
 User = get_user_model()
-if not User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists():
-    User.objects.create_superuser('$DJANGO_SUPERUSER_USERNAME', '$DJANGO_SUPERUSER_EMAIL', '$DJANGO_SUPERUSER_PASSWORD')
+if not User.objects.filter(email='$DJANGO_SUPERUSER_EMAIL').exists():
+    User.objects.create_superuser(
+        email='$DJANGO_SUPERUSER_EMAIL',
+        activity_name='$DJANGO_SUPERUSER_ACTIVITY_NAME',
+        password='$DJANGO_SUPERUSER_PASSWORD'
+    )
     print('Superuser created successfully')
 else:
     print('Superuser already exists')

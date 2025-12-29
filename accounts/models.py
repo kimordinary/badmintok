@@ -83,8 +83,8 @@ class User(AbstractUser):
 
 
 profile_storage = FileSystemStorage(
-    location=settings.BASE_DIR / "static",
-    base_url=settings.STATIC_URL,
+    location=settings.MEDIA_ROOT,
+    base_url=settings.MEDIA_URL,
 )
 
 

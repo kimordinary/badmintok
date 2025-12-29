@@ -3,22 +3,82 @@
 
 {% block title %}배드민톡 - 동호인톡{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* Critical CSS - 초기 렌더링 시 레이아웃 안정화 */
+    * {
+        box-sizing: border-box;
+    }
+    html {
+        overflow-x: hidden;
+        width: 100%;
+    }
+    body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    .section {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    .section > .container {
+        width: 100% !important;
+        max-width: 1200px !important;
+        padding: 0 20px !important;
+        margin: 40px 0 !important;
+        box-sizing: border-box !important;
+    }
+    .community-main-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 300px !important;
+        gap: 24px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    @media (max-width: 1024px) {
+        .community-main-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+    /* 이미지 로딩 중 레이아웃 시프트 방지 */
+    .community-post-image {
+        width: 120px !important;
+        height: 120px !important;
+        min-width: 120px !important;
+        min-height: 120px !important;
+    }
+    .community-post-thumbnail {
+        width: 120px !important;
+        height: 120px !important;
+        object-fit: cover;
+    }
+    .badmintok-banner-item {
+        aspect-ratio: 8 / 3 !important;
+        min-height: 0 !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="section" aria-labelledby="community-title" style="position: relative;">
-    <div class="container" style="position: relative; min-height: 400px; margin-top: 0;">
+<section class="section" aria-labelledby="community-title" style="position: relative; min-height: 0;">
+    <div class="container" style="position: relative; margin-top: 0; min-height: 0;">
         <!-- 배너 영역 (헤더 바로 아래, 메인 탭 위) -->
         {% if banner_images %}
         <div class="banner-wrapper" style="margin-top: 24px; margin-bottom: 24px;">
             <div class="badmintok-banners" aria-label="배드민톡 배너" data-banner-container>
                 {% for banner in banner_images %}
-                    <div class="badmintok-banner-item">
+                        <div class="badmintok-banner-item">
                         <span class="banner-sponsored-label">Sponsored</span>
                         {% if banner.link_url %}
-                            <a href="{{ banner.link_url }}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; height: 100%;">
-                                <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy" style="cursor: pointer;">
+                            <a href="{{ banner.link_url }}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;">
+                                <img src="{{ banner.url }}" alt="{{ banner.alt }}" {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %} style="cursor: pointer;">
                             </a>
                         {% else %}
-                            <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy">
+                            <img src="{{ banner.url }}" alt="{{ banner.alt }}" {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %}>
                         {% endif %}
                     </div>
                 {% endfor %}
@@ -117,7 +177,7 @@
             {% endif %}
 
             <!-- 메인 콘텐츠 그리드 -->
-            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
+            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; min-height: 0;">
             <!-- 왼쪽 컬럼: 검색 및 게시글 목록 -->
             <div class="community-left-column" style="display: flex; flex-direction: column; gap: 24px;">
                 <!-- 검색 기능 및 글쓰기 버튼 -->
@@ -159,11 +219,7 @@
                                     </div>
                                     <h3 class="community-post-title">{{ post.title }}</h3>
                                     <p class="community-post-excerpt">
-                                        {% if post.content|striptags|length > 80 %}
-                                            {{ post.content|striptags|truncatewords:15 }}
-                                        {% else %}
-                                            {{ post.content|striptags }}
-                                        {% endif %}
+                                        {{ post.excerpt }}
                                     </p>
                                     <div class="community-post-meta">
                                         <span class="community-post-author">{{ post.author.activity_name }}</span>
@@ -207,10 +263,10 @@
                                 <div class="community-post-image">
                                     {% if post.images.all %}
                                         {% with first_image=post.images.all.0 %}
-                                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
                                         {% endwith %}
-                                    {% elif post.content|extract_first_image %}
-                                        <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                    {% elif post.content_image_url %}
+                                        <img src="{{ post.content_image_url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
                                     {% else %}
                                         <div class="community-post-no-image">이미지 없음</div>
                                     {% endif %}
@@ -222,7 +278,7 @@
 
                     <!-- 페이지네이션 -->
                     {% if is_paginated %}
-                        <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                        <div style="margin-top: 32px; display: flex; justify-content: center; align-items: center; gap: 4px; flex-wrap: wrap;">
                             {% if page_obj.has_previous %}
                                 <a href="?page=1{% if active_tab %}&tab={{ active_tab }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
                                    class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
@@ -230,9 +286,18 @@
                                    class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
                             {% endif %}
 
-                            <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
-                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                            </span>
+                            {% if pagination_page_range %}
+                                {% for page_num in pagination_page_range %}
+                                    {% if page_num == None %}
+                                        <span style="padding: 8px 4px; color: #64748b;">...</span>
+                                    {% elif page_num == page_obj.number %}
+                                        <span class="btn btn-primary" style="padding: 8px 12px; cursor: default;">{{ page_num }}</span>
+                                    {% else %}
+                                        <a href="?page={{ page_num }}{% if active_tab %}&tab={{ active_tab }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                           class="btn btn-ghost" style="padding: 8px 12px;">{{ page_num }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
 
                             {% if page_obj.has_next %}
                                 <a href="?page={{ page_obj.next_page_number }}{% if active_tab %}&tab={{ active_tab }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
@@ -331,11 +396,7 @@
                                     </div>
                                     <h3 class="community-post-title">{{ post.title }}</h3>
                                     <p class="community-post-excerpt">
-                                        {% if post.content|striptags|length > 80 %}
-                                            {{ post.content|striptags|truncatewords:15 }}
-                                        {% else %}
-                                            {{ post.content|striptags }}
-                                        {% endif %}
+                                        {{ post.excerpt }}
                                     </p>
                                     <div class="community-post-meta">
                                         <span class="community-post-author">{{ post.author.activity_name }}</span>
@@ -379,10 +440,10 @@
                                 <div class="community-post-image">
                                     {% if post.images.all %}
                                         {% with first_image=post.images.all.0 %}
-                                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
                                         {% endwith %}
-                                    {% elif post.content|extract_first_image %}
-                                        <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                    {% elif post.content_image_url %}
+                                        <img src="{{ post.content_image_url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
                                     {% else %}
                                         <div class="community-post-no-image">이미지 없음</div>
                                     {% endif %}
@@ -394,7 +455,7 @@
 
                     <!-- 페이지네이션 -->
                     {% if is_paginated %}
-                        <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                        <div style="margin-top: 32px; display: flex; justify-content: center; align-items: center; gap: 4px; flex-wrap: wrap;">
                             {% if page_obj.has_previous %}
                                 <a href="?tab=hot&page=1" 
                                    class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
@@ -402,9 +463,18 @@
                                    class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
                             {% endif %}
 
-                            <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
-                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                            </span>
+                            {% if pagination_page_range %}
+                                {% for page_num in pagination_page_range %}
+                                    {% if page_num == None %}
+                                        <span style="padding: 8px 4px; color: #64748b;">...</span>
+                                    {% elif page_num == page_obj.number %}
+                                        <span class="btn btn-primary" style="padding: 8px 12px; cursor: default;">{{ page_num }}</span>
+                                    {% else %}
+                                        <a href="?tab=hot&page={{ page_num }}" 
+                                           class="btn btn-ghost" style="padding: 8px 12px;">{{ page_num }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
 
                             {% if page_obj.has_next %}
                                 <a href="?tab=hot&page={{ page_obj.next_page_number }}" 
@@ -483,7 +553,7 @@
             {% endif %}
 
             <!-- 메인 콘텐츠 그리드 -->
-            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
+            <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; min-height: 0;">
                 <!-- 왼쪽 컬럼: 검색 및 게시글 목록 -->
                 <div class="community-left-column" style="display: flex; flex-direction: column; gap: 24px;">
                     <!-- 검색 기능 및 글쓰기 버튼 -->
@@ -573,8 +643,8 @@
                                             {% with first_image=post.images.all.0 %}
                                                 <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail">
                                             {% endwith %}
-                                        {% elif post.content|extract_first_image %}
-                                            <img src="{{ post.content|extract_first_image }}" alt="{{ post.title }}" class="community-post-thumbnail">
+                                        {% elif post.content_image_url %}
+                                            <img src="{{ post.content_image_url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
                                         {% else %}
                                             <div class="community-post-no-image">이미지 없음</div>
                                         {% endif %}
@@ -586,7 +656,7 @@
 
                         <!-- 페이지네이션 -->
                         {% if is_paginated %}
-                            <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
+                            <div style="margin-top: 32px; display: flex; justify-content: center; align-items: center; gap: 4px; flex-wrap: wrap;">
                                 {% if page_obj.has_previous %}
                                     <a href="?tab=reviews&page=1{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
                                        class="btn btn-ghost" style="padding: 8px 12px;">처음</a>
@@ -594,9 +664,18 @@
                                        class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
                                 {% endif %}
 
-                                <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
-                                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                                </span>
+                                {% if pagination_page_range %}
+                                    {% for page_num in pagination_page_range %}
+                                        {% if page_num == None %}
+                                            <span style="padding: 8px 4px; color: #64748b;">...</span>
+                                        {% elif page_num == page_obj.number %}
+                                            <span class="btn btn-primary" style="padding: 8px 12px; cursor: default;">{{ page_num }}</span>
+                                        {% else %}
+                                            <a href="?tab=reviews&page={{ page_num }}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                                               class="btn btn-ghost" style="padding: 8px 12px;">{{ page_num }}</a>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
 
                                 {% if page_obj.has_next %}
                                     <a href="?tab=reviews&page={{ page_obj.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
@@ -679,6 +758,8 @@
         scroll-behavior: smooth;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE/Edge */
+        /* 초기 높이 확보로 레이아웃 시프트 방지 */
+        min-height: 0;
     }
 
     .badmintok-banners::-webkit-scrollbar {
@@ -694,27 +775,29 @@
         border-radius: 12px;
         overflow: hidden;
         background: #e2e8f0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        /* 초기 높이 확보로 레이아웃 시프트 방지 */
+        flex-shrink: 0;
+        height: 100%;
     }
 
     .badmintok-banner-item img {
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
-        height: auto;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
+        /* 이미지 로딩 중 레이아웃 안정화 */
         display: block;
-        margin: 0 auto;
     }
+
 
     .banner-nav {
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        width: 24px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
         border: none;
         border-radius: 50%;
         background: rgba(0, 0, 0, 0.5);
@@ -724,7 +807,7 @@
         align-items: center;
         justify-content: center;
         transition: background 0.2s ease;
-        z-index: 10;
+        z-index: 20;
     }
 
     .banner-nav:hover {
@@ -736,11 +819,11 @@
     }
 
     .banner-nav-prev {
-        left: 8px;
+        left: 12px;
     }
 
     .banner-nav-next {
-        right: 8px;
+        right: 12px;
     }
 
     .community-tab.active {
@@ -766,6 +849,7 @@
         text-decoration: none;
         transition: all 0.2s ease;
         align-items: flex-start;
+        min-height: 152px;
     }
     
     .community-post-item:hover {
@@ -822,14 +906,18 @@
         width: 120px;
         height: 120px;
         min-width: 120px;
+        min-height: 120px;
         border-radius: 8px;
         overflow: hidden;
         background: #f1f5f9;
         flex-shrink: 0;
         position: relative;
     }
-    
+
     .community-post-thumbnail {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -887,6 +975,13 @@
     /* 데스크톱에서 모바일 인기글 배너 숨기기 */
     .mobile-hot-posts-banner {
         display: none;
+    }
+
+    /* 그리드 레이아웃 안정화 */
+    .community-main-grid {
+        /* 초기 렌더링 시 레이아웃 안정화 */
+        contain: layout;
+        will-change: contents;
     }
 
     /* 사이드바 반응형 */
@@ -1037,7 +1132,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextBtn = wrapper.querySelector('[data-banner-next]');
 
         if (items.length <= 1) {
-            // 배너가 1개 이하면 버튼 숨기기
             if (prevBtn) prevBtn.style.display = 'none';
             if (nextBtn) nextBtn.style.display = 'none';
             return;
@@ -1048,7 +1142,6 @@ document.addEventListener('DOMContentLoaded', function() {
         function slideToBanner(index) {
             const item = items[index];
             if (item) {
-                // scrollIntoView 대신 컨테이너의 scrollLeft를 직접 조작
                 const scrollPosition = item.offsetLeft;
                 container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
             }
@@ -1064,7 +1157,6 @@ document.addEventListener('DOMContentLoaded', function() {
             slideToBanner(currentIndex);
         }
 
-        // 버튼 클릭 이벤트
         if (prevBtn) {
             prevBtn.addEventListener('click', function() {
                 prevBanner();
@@ -1077,15 +1169,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 5초마다 자동 슬라이드
         const autoSlideInterval = setInterval(nextBanner, 5000);
 
-        // 사용자가 수동으로 스크롤하면 인터벌 초기화
         let scrollTimeout;
         container.addEventListener('scroll', function() {
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(function() {
-                // 현재 보이는 배너의 인덱스를 업데이트
                 const containerRect = container.getBoundingClientRect();
                 items.forEach(function(item, index) {
                     const itemRect = item.getBoundingClientRect();

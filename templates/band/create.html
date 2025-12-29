@@ -98,20 +98,58 @@
                         <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
                             날짜/시간
                         </label>
-                        <div style="display: grid; grid-template-columns: 4fr 3fr 3fr; gap: 12px; align-items: start;">
+                        <!-- 날짜 -->
+                        <div style="margin-bottom: 12px;">
                             <div style="position: relative;">
                                 <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">📅</span>
                                 <input type="date" id="meeting_date" name="meeting_date" required class="form-input-with-icon" value="{% if is_update and schedule %}{{ schedule.start_datetime|date:'Y-m-d' }}{% endif %}" style="box-sizing: border-box; padding-left: 40px;">
                             </div>
-                            <div style="position: relative;">
-                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">🕐</span>
-                                <input type="time" id="meeting_time" name="meeting_time" required class="form-input-with-icon" value="{% if is_update and schedule %}{{ schedule.start_datetime|time:'H:i' }}{% endif %}" style="box-sizing: border-box; padding-left: 40px;">
-                            </div>
-                            <div style="position: relative;">
-                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; z-index: 1; pointer-events: none;">🕐</span>
-                                <input type="time" id="meeting_end_time" name="meeting_end_time" class="form-input-with-icon" value="{% if is_update and schedule and schedule.end_datetime %}{{ schedule.end_datetime|time:'H:i' }}{% endif %}" style="box-sizing: border-box; padding-left: 40px;">
+                        </div>
+                        <!-- 시작 시간 -->
+                        <div style="margin-bottom: 8px;">
+                            <label style="display: block; margin-bottom: 6px; font-size: 13px; color: #64748b;">시작 시간</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <select id="meeting_hour" name="meeting_hour" required class="form-input" style="box-sizing: border-box; cursor: pointer;">
+                                    <option value="">시</option>
+                                    {% for h in "012345678901234567890123"|make_list %}
+                                        <option value="{{ forloop.counter0|stringformat:'02d' }}" {% if is_update and schedule and schedule.start_datetime|date:'H' == forloop.counter0|stringformat:'02d' %}selected{% endif %}>{{ forloop.counter0|stringformat:'02d' }}시</option>
+                                    {% endfor %}
+                                </select>
+                                <select id="meeting_minute" name="meeting_minute" required class="form-input" style="box-sizing: border-box; cursor: pointer;">
+                                    <option value="">분</option>
+                                    <option value="00" {% if is_update and schedule and schedule.start_datetime|date:'i' == '00' %}selected{% endif %}>00분</option>
+                                    <option value="10" {% if is_update and schedule and schedule.start_datetime|date:'i' == '10' %}selected{% endif %}>10분</option>
+                                    <option value="20" {% if is_update and schedule and schedule.start_datetime|date:'i' == '20' %}selected{% endif %}>20분</option>
+                                    <option value="30" {% if is_update and schedule and schedule.start_datetime|date:'i' == '30' %}selected{% endif %}>30분</option>
+                                    <option value="40" {% if is_update and schedule and schedule.start_datetime|date:'i' == '40' %}selected{% endif %}>40분</option>
+                                    <option value="50" {% if is_update and schedule and schedule.start_datetime|date:'i' == '50' %}selected{% endif %}>50분</option>
+                                </select>
                             </div>
                         </div>
+                        <!-- 종료 시간 -->
+                        <div>
+                            <label style="display: block; margin-bottom: 6px; font-size: 13px; color: #64748b;">종료 시간 (선택)</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <select id="meeting_end_hour" name="meeting_end_hour" class="form-input" style="box-sizing: border-box; cursor: pointer;">
+                                    <option value="">시</option>
+                                    {% for h in "012345678901234567890123"|make_list %}
+                                        <option value="{{ forloop.counter0|stringformat:'02d' }}" {% if is_update and schedule and schedule.end_datetime and schedule.end_datetime|date:'H' == forloop.counter0|stringformat:'02d' %}selected{% endif %}>{{ forloop.counter0|stringformat:'02d' }}시</option>
+                                    {% endfor %}
+                                </select>
+                                <select id="meeting_end_minute" name="meeting_end_minute" class="form-input" style="box-sizing: border-box; cursor: pointer;">
+                                    <option value="">분</option>
+                                    <option value="00" {% if is_update and schedule and schedule.end_datetime and schedule.end_datetime|date:'i' == '00' %}selected{% endif %}>00분</option>
+                                    <option value="10" {% if is_update and schedule and schedule.end_datetime and schedule.end_datetime|date:'i' == '10' %}selected{% endif %}>10분</option>
+                                    <option value="20" {% if is_update and schedule and schedule.end_datetime and schedule.end_datetime|date:'i' == '20' %}selected{% endif %}>20분</option>
+                                    <option value="30" {% if is_update and schedule and schedule.end_datetime and schedule.end_datetime|date:'i' == '30' %}selected{% endif %}>30분</option>
+                                    <option value="40" {% if is_update and schedule and schedule.end_datetime and schedule.end_datetime|date:'i' == '40' %}selected{% endif %}>40분</option>
+                                    <option value="50" {% if is_update and schedule and schedule.end_datetime and schedule.end_datetime|date:'i' == '50' %}selected{% endif %}>50분</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Hidden inputs for form submission -->
+                        <input type="hidden" id="meeting_time" name="meeting_time" value="">
+                        <input type="hidden" id="meeting_end_time" name="meeting_end_time" value="">
                     </div>
                     
                     <!-- 위치 -->
@@ -567,6 +605,7 @@
     // 번개 이미지 업로드 처리 (최대 5장, 3:4 비율)
     let scheduleImages = [];
     let deletedImageIds = [];
+    let imageIdCounter = 0; // 고유 ID 생성용 카운터
     const maxImages = 5;
     
     // 기존 이미지 개수 확인
@@ -642,19 +681,38 @@
             files.splice(remainingSlots);
         }
 
-        files.forEach(file => {
-            const currentTotal = existingCount + scheduleImages.length;
-            if (currentTotal >= maxImages) return;
+        // 모든 파일을 읽은 후 한 번만 프리뷰 업데이트
+        const readPromises = files.map((file, fileIndex) => {
+            const currentTotal = existingCount + scheduleImages.length + fileIndex;
+            if (currentTotal >= maxImages) {
+                return Promise.resolve(null);
+            }
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                scheduleImages.push({
-                    file: file,
-                    preview: e.target.result
-                });
-                updateScheduleImagePreview();
-            };
-            reader.readAsDataURL(file);
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // 고유 ID 생성 (타임스탬프 + 카운터 + 파일명)
+                    const uniqueId = `new_${Date.now()}_${imageIdCounter++}_${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    resolve({
+                        id: uniqueId,
+                        file: file,
+                        preview: e.target.result
+                    });
+                };
+                reader.onerror = function() {
+                    resolve(null);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        Promise.all(readPromises).then((newImages) => {
+            // null이 아닌 이미지만 추가
+            const validImages = newImages.filter(img => img !== null);
+            scheduleImages.push(...validImages);
+            
+            // 모든 파일이 처리된 후 한 번만 프리뷰 업데이트
+            updateScheduleImagePreview();
         });
 
         // 파일 입력 초기화 (같은 파일 다시 선택 가능하도록)
@@ -665,14 +723,24 @@
         const container = document.getElementById('scheduleImagesContainer');
         const uploadArea = document.getElementById('imageUploadArea');
         const imageCount = document.getElementById('imageCount');
-        
+
         // 기존 이미지는 유지하고 새 이미지만 추가
         const existingImages = container.querySelectorAll('div[data-existing-image]');
         const existingCount = existingImages.length;
-        
+
+        // 새로 추가된 이미지 프리뷰 제거 (기존 이미지는 유지)
+        const newImagePreviews = container.querySelectorAll('div:not([data-existing-image])');
+        newImagePreviews.forEach(preview => preview.remove());
+
         // 새 이미지만 추가
         scheduleImages.forEach((imgData, index) => {
+            // ID가 없으면 생성 (기존 데이터 호환성)
+            if (!imgData.id) {
+                imgData.id = `fallback_${Date.now()}_${index}`;
+            }
+            
             const imageDiv = document.createElement('div');
+            imageDiv.setAttribute('data-new-image-id', imgData.id);
             imageDiv.style.position = 'relative';
             imageDiv.style.aspectRatio = '3/4';
             imageDiv.style.borderRadius = '8px';
@@ -703,9 +771,15 @@
             deleteBtn.style.alignItems = 'center';
             deleteBtn.style.justifyContent = 'center';
             deleteBtn.style.lineHeight = '1';
+            
+            // ID 기반으로 삭제하여 클로저 문제 해결
+            const imageId = imgData.id;
             deleteBtn.onclick = () => {
-                scheduleImages.splice(index, 1);
-                updateScheduleImagePreview();
+                const removeIndex = scheduleImages.findIndex(img => img.id === imageId);
+                if (removeIndex !== -1) {
+                    scheduleImages.splice(removeIndex, 1);
+                    updateScheduleImagePreview();
+                }
             };
             
             imageDiv.appendChild(img);
@@ -797,7 +871,7 @@
                 // 기존 schedule_images 입력 제거
                 const existingInputs = form.querySelectorAll('input[name="schedule_images"]');
                 existingInputs.forEach(input => input.remove());
-                
+
                 // 새로 추가된 이미지가 있는 경우에만 파일 입력 추가
                 if (scheduleImages.length > 0) {
                     const fileInput = document.createElement('input');
@@ -805,15 +879,44 @@
                     fileInput.name = 'schedule_images';
                     fileInput.multiple = true;
                     fileInput.style.display = 'none';
-                    
+
                     // DataTransfer를 사용하여 모든 파일을 하나의 input에 추가
                     const dataTransfer = new DataTransfer();
                     scheduleImages.forEach((imgData) => {
                         dataTransfer.items.add(imgData.file);
                     });
                     fileInput.files = dataTransfer.files;
-                    
+
                     form.appendChild(fileInput);
+                }
+
+                // 시간 select 값을 hidden input에 동기화 (번개 타입만)
+                const meetingHour = document.getElementById('meeting_hour');
+                const meetingMinute = document.getElementById('meeting_minute');
+                const meetingTime = document.getElementById('meeting_time');
+
+                if (meetingHour && meetingMinute && meetingTime) {
+                    const hour = meetingHour.value;
+                    const minute = meetingMinute.value;
+
+                    if (hour && minute) {
+                        meetingTime.value = `${hour}:${minute}`;
+                    }
+                }
+
+                // 종료 시간 동기화 (선택사항)
+                const meetingEndHour = document.getElementById('meeting_end_hour');
+                const meetingEndMinute = document.getElementById('meeting_end_minute');
+                const meetingEndTime = document.getElementById('meeting_end_time');
+
+                if (meetingEndHour && meetingEndMinute && meetingEndTime) {
+                    const endHour = meetingEndHour.value;
+                    const endMinute = meetingEndMinute.value;
+
+                    // 둘 다 선택되어 있을 때만 값 설정
+                    if (endHour && endMinute) {
+                        meetingEndTime.value = `${endHour}:${endMinute}`;
+                    }
                 }
             });
         }

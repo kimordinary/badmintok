@@ -119,7 +119,7 @@ class ContestListView(ListView):
             sponsor_list or
             region_list
         )
-        
+
         if not has_any_filter:
             from django.utils import timezone
             from django.db.models import Q

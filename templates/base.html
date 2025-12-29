@@ -140,7 +140,7 @@
     {% if messages %}
         <div class="messages-banner">
             {% for message in messages %}
-                <div class="message-banner message-banner-{{ message.tags }}">
+                <div class="message-banner message-banner-{{ message.tags }}" data-auto-dismiss="{% if message.tags == 'success' or message.tags == 'info' %}true{% else %}false{% endif %}">
                     <div class="message-banner-content">
                         <span class="message-banner-icon">
                             {% if message.tags == 'error' %}⚠️
@@ -215,9 +215,10 @@
                 if (siteHeader) {
                     const headerHeight = siteHeader.offsetHeight;
                     scrollProgress.style.top = headerHeight + 'px';
-                    // main에 헤더 높이만큼 padding-top 추가
-                    if (main) {
+                    // main에 헤더 높이만큼 padding-top 추가 (한 번만)
+                    if (main && !main.dataset.paddingSet) {
                         main.style.paddingTop = headerHeight + 'px';
+                        main.dataset.paddingSet = 'true';
                     }
                 }
             }
@@ -233,12 +234,16 @@
             }
 
             // 헤더 높이에 맞춰 진행바 위치 및 main padding 설정
-            setProgressBarPosition();
+            // DOM이 완전히 로드된 후에 실행
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setProgressBarPosition);
+            } else {
+                setProgressBarPosition();
+            }
 
             // 스크롤 이벤트 리스너 추가
             window.addEventListener('scroll', updateScrollProgress);
             window.addEventListener('resize', function() {
-                setProgressBarPosition();
                 updateScrollProgress();
             });
 
@@ -320,6 +325,28 @@
                 item.addEventListener('click', function() {
                     closeMobileMenu();
                 });
+            });
+        })();
+
+        // 메시지 배너 자동 닫기
+        (function() {
+            const messageBanners = document.querySelectorAll('.message-banner');
+            messageBanners.forEach(function(banner) {
+                const autoDismiss = banner.getAttribute('data-auto-dismiss') === 'true';
+
+                if (autoDismiss) {
+                    // 3초 후 페이드아웃 시작
+                    setTimeout(function() {
+                        banner.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                        banner.style.opacity = '0';
+                        banner.style.transform = 'translateY(-10px)';
+
+                        // 애니메이션 완료 후 제거
+                        setTimeout(function() {
+                            banner.remove();
+                        }, 300);
+                    }, 3000);
+                }
             });
         })();
     </script>

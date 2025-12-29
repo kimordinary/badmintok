@@ -108,7 +108,7 @@ class Contest(models.Model):
     updated_at = models.DateTimeField("수정일", auto_now=True)
 
     class Meta:
-        ordering = ["-schedule_start", "-created_at"]
+        ordering = ["schedule_start", "-created_at"]
         verbose_name = "전국 배드민턴 대회"
         verbose_name_plural = "전국 배드민턴 대회"
 
