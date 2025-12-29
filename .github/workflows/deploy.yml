@@ -83,34 +83,37 @@ jobs:
             exit 1
           fi
           
-          # 필요한 파일들만 포함하여 tar 압축 파일 생성
-          tar --exclude='.git' \
-              --exclude='__pycache__' \
-              --exclude='*.pyc' \
-              --exclude='*.log' \
-              --exclude='.DS_Store' \
-              --exclude='db.sqlite3' \
-              --exclude='staticfiles' \
-              --exclude='media' \
-              --exclude='.env' \
-              --exclude='.env.*' \
-              --exclude='!.env.prod' \
-              --exclude='!.env.prod.example' \
-              -czf deploy.tar.gz \
-              accounts/ badmintok/ band/ community/ contests/ \
-              templates/ static/ nginx/ mysql/ \
-              Dockerfile docker-compose.prod.yml entrypoint.sh \
-              requirements.txt manage.py .env.prod env.prod.example
+          echo "Creating deployment package..."
+          
+          # 임시 디렉토리에 필요한 파일들 복사
+          mkdir -p deploy-temp
+          cp -r accounts badmintok band community contests templates static nginx mysql deploy-temp/ 2>/dev/null || true
+          cp Dockerfile docker-compose.prod.yml entrypoint.sh requirements.txt manage.py deploy-temp/ 2>/dev/null || true
+          cp .env.prod env.prod.example deploy-temp/ 2>/dev/null || true
+          
+          # 불필요한 파일 제거
+          find deploy-temp -name "*.pyc" -delete 2>/dev/null || true
+          find deploy-temp -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find deploy-temp -name "*.log" -delete 2>/dev/null || true
+          find deploy-temp -name ".DS_Store" -delete 2>/dev/null || true
+          find deploy-temp -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+          find deploy-temp -name ".env" -not -name ".env.prod" -not -name "env.prod.example" -delete 2>/dev/null || true
+          
+          # tar 압축 파일 생성
+          cd deploy-temp
+          tar -czf ../deploy.tar.gz .
+          cd ..
           
           # .env.prod 파일이 tar에 포함되었는지 확인
-          if ! tar -tzf deploy.tar.gz | grep -q '^\.env\.prod$'; then
+          if ! tar -tzf deploy.tar.gz | grep -q '\.env\.prod$'; then
             echo "ERROR: .env.prod file not found in deploy.tar.gz!"
             echo "Files in archive:"
-            tar -tzf deploy.tar.gz | head -20
+            tar -tzf deploy.tar.gz | grep -E '(\.env|env\.prod)' || echo "No .env files found"
             exit 1
           fi
           
           echo ".env.prod file successfully included in deploy.tar.gz"
+          rm -rf deploy-temp
 
       - name: Copy files to server
         uses: appleboy/scp-action@v0.1.7
