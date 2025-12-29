@@ -143,47 +143,53 @@ jobs:
             fi
             
             mkdir -p $USER_HOME/badmintok
+            cd $USER_HOME/badmintok
             
-            if [ -f $USER_HOME/badmintok/docker-compose.prod.yml ]; then
+            if [ -f docker-compose.prod.yml ]; then
               echo "Stopping existing containers..."
-              cd $USER_HOME/badmintok
-              docker-compose -f docker-compose.prod.yml down || true
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod down || true
             fi
             
             echo "Extracting deployment package..."
-            cd $USER_HOME/badmintok
             tar -xzf /tmp/deploy.tar.gz
             rm -f /tmp/deploy.tar.gz
             
-            if [ -f .env.prod ]; then
-              echo ".env.prod file found and ready"
-              chmod 600 .env.prod
-            else
+            if [ ! -f .env.prod ]; then
               echo "ERROR: .env.prod file not found!"
               echo "Please check GitHub Secrets configuration."
               exit 1
             fi
             
+            echo ".env.prod file found and ready"
+            chmod 600 .env.prod
+            
+            # .env.prod 파일 내용 확인 (비밀번호 제외)
+            echo "Verifying .env.prod file..."
+            if ! grep -q "DJANGO_SECRET_KEY=" .env.prod || ! grep -q "MYSQL_ROOT_PASSWORD=" .env.prod; then
+              echo "ERROR: .env.prod file is missing required variables!"
+              exit 1
+            fi
+            
             echo "Building Docker images..."
-            docker-compose -f docker-compose.prod.yml build --no-cache
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod build --no-cache
             
             echo "Starting containers..."
-            docker-compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
             
             echo "Waiting for services to be healthy..."
             sleep 15
             
             echo "Checking service health..."
-            docker-compose -f docker-compose.prod.yml ps
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod ps
             
             echo "Running database migrations..."
-            docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput || true
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py migrate --noinput || true
             
             echo "Collecting static files..."
-            docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput --clear || true
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py collectstatic --noinput --clear || true
             
             echo "Restarting Nginx..."
-            docker-compose -f docker-compose.prod.yml restart nginx || true
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx || true
             
             echo "Cleaning up unused Docker images..."
             docker image prune -f || true
