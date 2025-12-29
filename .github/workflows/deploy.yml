@@ -15,7 +15,7 @@ jobs:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
 
       # AWS credentials는 S3 사용 시에만 필요 (선택사항)
       - name: Configure AWS credentials (optional)
-        if: secrets.AWS_ACCESS_KEY_ID != ''
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -177,7 +177,7 @@ jobs:
             docker image prune -f || true
             
             echo "=== Deployment completed! ==="
-            
+
       - name: Verify deployment
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -201,4 +201,3 @@ jobs:
             curl -f http://localhost/health/ || echo "Health check failed, but deployment may still be in progress"
             
             echo "=== Verification completed ==="
-
