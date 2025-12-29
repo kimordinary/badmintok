@@ -191,6 +191,10 @@ jobs:
             echo "Checking web container logs..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod logs web | tail -100 || true
             
+            # Nginx 로그 확인 (문제 진단용)
+            echo "Checking Nginx logs..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod logs nginx | tail -50 || true
+            
             # 웹 컨테이너가 실행 중인지 확인
             if ! docker ps | grep -q "badmintok-web-prod"; then
               echo "ERROR: Web container is not running!"
@@ -198,9 +202,26 @@ jobs:
               exit 1
             fi
             
-            # Nginx 시작 (healthcheck 실패해도 계속 진행)
+            # Nginx 시작
             echo "Starting Nginx..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx || true
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx
+            
+            echo "Waiting for Nginx to start..."
+            sleep 5
+            
+            # Nginx 로그 확인
+            echo "Checking Nginx logs..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod logs nginx | tail -50 || true
+            
+            # Nginx 컨테이너 상태 확인
+            if ! docker ps | grep -q "badmintok-nginx-prod"; then
+              echo "ERROR: Nginx container is not running!"
+              echo "Checking Nginx logs for errors..."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod logs nginx
+              echo "Checking if port 80 is in use..."
+              sudo netstat -tulpn | grep :80 || sudo ss -tulpn | grep :80 || true
+              exit 1
+            fi
             
             echo "Waiting for all services..."
             sleep 10
