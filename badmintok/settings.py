@@ -37,6 +37,11 @@ else:
 ALLOWED_HOSTS_ENV = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
 if ALLOWED_HOSTS_ENV:
     ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',')]
+    # healthcheck를 위해 localhost와 127.0.0.1 항상 추가
+    if 'localhost' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('localhost')
+    if '127.0.0.1' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('127.0.0.1')
 else:
     # 개발 환경 기본값: 모든 호스트 허용 + 내부 컨테이너 이름
     ALLOWED_HOSTS = ['*', 'badmintok-web', 'badmintok-web-prod', 'localhost', '127.0.0.1']
