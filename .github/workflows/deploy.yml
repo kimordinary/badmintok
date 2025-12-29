@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 env:
   AWS_REGION: ap-northeast-2
@@ -22,7 +22,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
 
       # AWS credentials는 S3 사용 시에만 필요 (선택사항)
       - name: Configure AWS credentials (optional)
@@ -73,7 +72,6 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          # 필요한 파일들만 포함하여 tar 압축 파일 생성
           tar --exclude='.git' \
               --exclude='__pycache__' \
               --exclude='*.pyc' \
@@ -110,27 +108,27 @@ jobs:
           port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
           script: |
             set -e
-
+            
             echo "=== Starting deployment ==="
-
+            
             USER_HOME="/home/${{ secrets.LIGHTSAIL_USER }}"
             if [ "${{ secrets.LIGHTSAIL_USER }}" = "ec2-user" ]; then
               USER_HOME="/home/ec2-user"
             fi
-
+            
             mkdir -p $USER_HOME/badmintok
-
+            
             if [ -f $USER_HOME/badmintok/docker-compose.prod.yml ]; then
               echo "Stopping existing containers..."
               cd $USER_HOME/badmintok
               docker-compose -f docker-compose.prod.yml down || true
             fi
-
+            
             echo "Extracting deployment package..."
             cd $USER_HOME/badmintok
             tar -xzf /tmp/deploy.tar.gz
             rm -f /tmp/deploy.tar.gz
-
+            
             if [ -f .env.prod ]; then
               echo ".env.prod file found and ready"
               chmod 600 .env.prod
@@ -139,31 +137,31 @@ jobs:
               echo "Please check GitHub Secrets configuration."
               exit 1
             fi
-
+            
             echo "Building Docker images..."
             docker-compose -f docker-compose.prod.yml build --no-cache
-
+            
             echo "Starting containers..."
             docker-compose -f docker-compose.prod.yml up -d
-
+            
             echo "Waiting for services to be healthy..."
             sleep 15
-
+            
             echo "Checking service health..."
             docker-compose -f docker-compose.prod.yml ps
-
+            
             echo "Running database migrations..."
             docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput || true
-
+            
             echo "Collecting static files..."
             docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput --clear || true
-
+            
             echo "Restarting Nginx..."
             docker-compose -f docker-compose.prod.yml restart nginx || true
-
+            
             echo "Cleaning up unused Docker images..."
             docker image prune -f || true
-
+            
             echo "=== Deployment completed! ==="
 
       - name: Verify deployment
@@ -175,16 +173,16 @@ jobs:
           port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
           script: |
             echo "=== Verifying deployment ==="
-
+            
             USER_HOME="/home/${{ secrets.LIGHTSAIL_USER }}"
             if [ "${{ secrets.LIGHTSAIL_USER }}" = "ec2-user" ]; then
               USER_HOME="/home/ec2-user"
             fi
             cd $USER_HOME/badmintok
-
+            
             docker-compose -f docker-compose.prod.yml ps
-
+            
             sleep 5
             curl -f http://localhost/health/ || echo "Health check failed, but deployment may still be in progress"
-
+            
             echo "=== Verification completed ==="
