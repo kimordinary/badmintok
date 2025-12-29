@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 env:
   AWS_REGION: ap-northeast-2
@@ -109,32 +109,27 @@ jobs:
           port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
           script: |
             set -e
-            
+
             echo "=== Starting deployment ==="
-            
-            # 프로젝트 디렉토리로 이동 (Amazon Linux 2023: ec2-user)
+
             USER_HOME="/home/${{ secrets.LIGHTSAIL_USER }}"
             if [ "${{ secrets.LIGHTSAIL_USER }}" = "ec2-user" ]; then
               USER_HOME="/home/ec2-user"
             fi
-            
-            # 프로젝트 디렉토리 생성
+
             mkdir -p $USER_HOME/badmintok
-            
-            # 기존 컨테이너 중지 (다운타임 최소화)
+
             if [ -f $USER_HOME/badmintok/docker-compose.prod.yml ]; then
               echo "Stopping existing containers..."
               cd $USER_HOME/badmintok
               docker-compose -f docker-compose.prod.yml down || true
             fi
-            
-            # 배포 패키지 압축 해제
+
             echo "Extracting deployment package..."
             cd $USER_HOME/badmintok
             tar -xzf /tmp/deploy.tar.gz
             rm -f /tmp/deploy.tar.gz
-            
-            # .env.prod 파일 확인 및 권한 설정
+
             if [ -f .env.prod ]; then
               echo ".env.prod file found and ready"
               chmod 600 .env.prod
@@ -143,39 +138,31 @@ jobs:
               echo "Please check GitHub Secrets configuration."
               exit 1
             fi
-            
-            # Docker 이미지 빌드
+
             echo "Building Docker images..."
             docker-compose -f docker-compose.prod.yml build --no-cache
-            
-            # 컨테이너 시작
+
             echo "Starting containers..."
             docker-compose -f docker-compose.prod.yml up -d
-            
-            # 서비스 상태 확인
+
             echo "Waiting for services to be healthy..."
             sleep 15
-            
-            # 헬스체크
+
             echo "Checking service health..."
             docker-compose -f docker-compose.prod.yml ps
-            
-            # 마이그레이션 실행 (필요한 경우)
+
             echo "Running database migrations..."
             docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput || true
-            
-            # 정적 파일 수집
+
             echo "Collecting static files..."
             docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput --clear || true
-            
-            # Nginx 재시작 (설정 변경 시)
+
             echo "Restarting Nginx..."
             docker-compose -f docker-compose.prod.yml restart nginx || true
-            
-            # 불필요한 이미지 정리
+
             echo "Cleaning up unused Docker images..."
             docker image prune -f || true
-            
+
             echo "=== Deployment completed! ==="
 
       - name: Verify deployment
@@ -187,17 +174,16 @@ jobs:
           port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
           script: |
             echo "=== Verifying deployment ==="
-            
-            # 컨테이너 상태 확인
+
             USER_HOME="/home/${{ secrets.LIGHTSAIL_USER }}"
             if [ "${{ secrets.LIGHTSAIL_USER }}" = "ec2-user" ]; then
               USER_HOME="/home/ec2-user"
             fi
             cd $USER_HOME/badmintok
+
             docker-compose -f docker-compose.prod.yml ps
-            
-            # 웹 서버 응답 확인
+
             sleep 5
             curl -f http://localhost/health/ || echo "Health check failed, but deployment may still be in progress"
-            
+
             echo "=== Verification completed ==="
