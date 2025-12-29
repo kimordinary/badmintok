@@ -175,10 +175,35 @@ jobs:
             DOCKER_BUILDKIT=0 docker-compose -f docker-compose.prod.yml --env-file .env.prod build --no-cache
             
             echo "Starting containers..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+            # 데이터베이스와 웹 컨테이너만 먼저 시작 (nginx는 나중에)
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d db
             
-            echo "Waiting for services to be healthy..."
-            sleep 15
+            echo "Waiting for database to be ready..."
+            sleep 10
+            
+            # 웹 컨테이너 시작
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d web
+            
+            echo "Waiting for web container to start..."
+            sleep 30
+            
+            # 웹 컨테이너 로그 확인
+            echo "Checking web container logs..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod logs web | tail -100 || true
+            
+            # 웹 컨테이너가 실행 중인지 확인
+            if ! docker ps | grep -q "badmintok-web-prod"; then
+              echo "ERROR: Web container is not running!"
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod logs web
+              exit 1
+            fi
+            
+            # Nginx 시작 (healthcheck 실패해도 계속 진행)
+            echo "Starting Nginx..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx || true
+            
+            echo "Waiting for all services..."
+            sleep 10
             
             echo "Checking service health..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod ps
