@@ -171,7 +171,8 @@ jobs:
             fi
             
             echo "Building Docker images..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod build --no-cache
+            # Buildx 없이 빌드하도록 DOCKER_BUILDKIT=0 설정
+            DOCKER_BUILDKIT=0 docker-compose -f docker-compose.prod.yml --env-file .env.prod build --no-cache
             
             echo "Starting containers..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
