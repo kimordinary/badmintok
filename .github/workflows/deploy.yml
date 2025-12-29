@@ -8,7 +8,6 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: ap-northeast-2
   DOCKER_BUILDKIT: 1
 
 jobs:
@@ -23,33 +22,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # AWS credentials는 S3 사용 시에만 필요 (선택사항)
-      - name: Configure AWS credentials (optional)
-        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
       - name: Create .env.prod file
         run: |
           cat > .env.prod << EOF
           # Django 설정
           DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-          DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG || 'False' }}
+          DJANGO_DEBUG=${DJANGO_DEBUG:-False}
           DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}
           
           # 데이터베이스 설정
           MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE || 'badmintok' }}
-          MYSQL_USER=${{ secrets.MYSQL_USER || 'badmintok_user' }}
+          MYSQL_DATABASE=${MYSQL_DATABASE:-badmintok}
+          MYSQL_USER=${MYSQL_USER:-badmintok_user}
           MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
           
-          DB_HOST=${{ secrets.DB_HOST || 'db' }}
-          DB_PORT=${{ secrets.DB_PORT || '3306' }}
-          DB_NAME=${{ secrets.DB_NAME || 'badmintok' }}
-          DB_USER=${{ secrets.DB_USER || 'badmintok_user' }}
+          DB_HOST=${DB_HOST:-db}
+          DB_PORT=${DB_PORT:-3306}
+          DB_NAME=${DB_NAME:-badmintok}
+          DB_USER=${DB_USER:-badmintok_user}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           
           # 카카오 로그인 설정
@@ -57,18 +47,33 @@ jobs:
           KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}
           
           # Nginx 설정
-          NGINX_HTTP_PORT=${{ secrets.NGINX_HTTP_PORT || '80' }}
+          NGINX_HTTP_PORT=${NGINX_HTTP_PORT:-80}
           
           # Gunicorn 설정
-          GUNICORN_WORKERS=${{ secrets.GUNICORN_WORKERS || '3' }}
-          GUNICORN_TIMEOUT=${{ secrets.GUNICORN_TIMEOUT || '120' }}
-          GUNICORN_LOG_LEVEL=${{ secrets.GUNICORN_LOG_LEVEL || 'info' }}
-          GUNICORN_MAX_REQUESTS=${{ secrets.GUNICORN_MAX_REQUESTS || '1000' }}
-          GUNICORN_MAX_REQUESTS_JITTER=${{ secrets.GUNICORN_MAX_REQUESTS_JITTER || '50' }}
+          GUNICORN_WORKERS=${GUNICORN_WORKERS:-3}
+          GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-120}
+          GUNICORN_LOG_LEVEL=${GUNICORN_LOG_LEVEL:-info}
+          GUNICORN_MAX_REQUESTS=${GUNICORN_MAX_REQUESTS:-1000}
+          GUNICORN_MAX_REQUESTS_JITTER=${GUNICORN_MAX_REQUESTS_JITTER:-50}
           
           # 시간대
-          TZ=${{ secrets.TZ || 'Asia/Seoul' }}
+          TZ=${TZ:-Asia/Seoul}
           EOF
+        env:
+          DJANGO_DEBUG: ${{ secrets.DJANGO_DEBUG }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          NGINX_HTTP_PORT: ${{ secrets.NGINX_HTTP_PORT }}
+          GUNICORN_WORKERS: ${{ secrets.GUNICORN_WORKERS }}
+          GUNICORN_TIMEOUT: ${{ secrets.GUNICORN_TIMEOUT }}
+          GUNICORN_LOG_LEVEL: ${{ secrets.GUNICORN_LOG_LEVEL }}
+          GUNICORN_MAX_REQUESTS: ${{ secrets.GUNICORN_MAX_REQUESTS }}
+          GUNICORN_MAX_REQUESTS_JITTER: ${{ secrets.GUNICORN_MAX_REQUESTS_JITTER }}
+          TZ: ${{ secrets.TZ }}
 
       - name: Prepare deployment package
         run: |
@@ -95,7 +100,7 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
+          port: ${{ secrets.LIGHTSAIL_SSH_PORT }}
           source: "deploy.tar.gz"
           target: "/tmp/"
 
@@ -105,7 +110,7 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
+          port: ${{ secrets.LIGHTSAIL_SSH_PORT }}
           script: |
             set -e
             
@@ -170,7 +175,7 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          port: ${{ secrets.LIGHTSAIL_SSH_PORT || 22 }}
+          port: ${{ secrets.LIGHTSAIL_SSH_PORT }}
           script: |
             echo "=== Verifying deployment ==="
             
