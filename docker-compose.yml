@@ -79,8 +79,10 @@ services:
       web:
         condition: service_healthy
     volumes:
-      # Nginx 설정 (개발 환경용 badmintok.conf만 마운트)
+      # Nginx 설정 (개발 환경용)
       - ./nginx/conf.d/badmintok.conf:/etc/nginx/conf.d/badmintok.conf:ro
+      # 기본 default.conf 덮어쓰기 (빈 파일로)
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
       # 정적/미디어 파일 (web 컨테이너와 공유된 볼륨)
       - static_data:/usr/share/nginx/html/static:ro
       - media_data:/usr/share/nginx/html/media:ro
