@@ -25,7 +25,7 @@ jobs:
 
       # AWS credentials는 S3 사용 시에만 필요 (선택사항)
       - name: Configure AWS credentials (optional)
-        if: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        if: secrets.AWS_ACCESS_KEY_ID != ''
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
