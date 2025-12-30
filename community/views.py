@@ -392,6 +392,14 @@ class PostCreateView(LoginRequiredMixin, CreateView):
                 # 하위 카테고리도 포함
                 child_categories = Category.objects.filter(parent=tab.category, is_active=True)
                 allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+            else:
+                # 카테고리가 없는 탭(예: hot, free, contest-review)의 경우 탭 slug와 동일한 카테고리도 포함
+                # 자유주제, 대회 후기 같은 독립 카테고리도 포함
+                try:
+                    independent_cat = Category.objects.get(slug=tab.slug, is_active=True)
+                    allowed_category_slugs.add(independent_cat.slug)
+                except Category.DoesNotExist:
+                    pass
 
         # hot 카테고리는 제외하고, allowed_category_slugs가 비어있으면 모든 카테고리 허용
         if allowed_category_slugs:
@@ -427,6 +435,14 @@ class PostCreateView(LoginRequiredMixin, CreateView):
                 # 하위 카테고리도 포함
                 child_categories = Category.objects.filter(parent=tab.category, is_active=True)
                 allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+            else:
+                # 카테고리가 없는 탭(예: hot, free, contest-review)의 경우 탭 slug와 동일한 카테고리도 포함
+                # 자유주제, 대회 후기 같은 독립 카테고리도 포함
+                try:
+                    independent_cat = Category.objects.get(slug=tab.slug, is_active=True)
+                    allowed_category_slugs.add(independent_cat.slug)
+                except Category.DoesNotExist:
+                    pass
 
         # allowed_category_slugs가 비어있으면 모든 카테고리 허용
         if allowed_category_slugs:

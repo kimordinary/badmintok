@@ -371,9 +371,62 @@ def badmintok_create(request):
         form = BadmintokPostForm()
         form.fields["category"].queryset = Category.objects.filter(is_active=True).order_by("display_order", "name")
     
+    # 배드민톡 관련 카테고리 계층 구조 생성
+    # 배드민톡 탭에서 사용하는 카테고리만 포함
+    badmintok_tabs = Tab.objects.filter(
+        source=Tab.Source.BADMINTOK,
+        is_active=True
+    ).select_related('category')
+    
+    # 탭에서 사용하는 카테고리 slug 목록 생성
+    allowed_category_slugs = set()
+    for tab in badmintok_tabs:
+        if tab.category:  # 카테고리가 연결된 탭만 처리
+            allowed_category_slugs.add(tab.category.slug)
+            # 하위 카테고리도 포함
+            child_categories = Category.objects.filter(parent=tab.category, is_active=True)
+            allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+    
+    # allowed_category_slugs가 비어있으면 모든 카테고리 허용
+    if allowed_category_slugs:
+        all_categories = list(Category.objects.filter(
+            slug__in=allowed_category_slugs,
+            is_active=True
+        ).select_related('parent').order_by("display_order", "name"))
+    else:
+        all_categories = list(Category.objects.filter(
+            is_active=True
+        ).select_related('parent').order_by("display_order", "name"))
+    
+    def build_hierarchy():
+        """계층 구조 리스트 생성"""
+        hierarchy = []
+        parents = [c for c in all_categories if c.parent is None]
+        
+        for parent in parents:
+            # 해당 parent의 children 찾기
+            children = [c for c in all_categories if c.parent_id == parent.id]
+            
+            if children:
+                # children이 있으면 parent를 상위 카테고리로 표시
+                parent.has_children = True
+                hierarchy.append(parent)
+                for child in children:
+                    child.has_children = False
+                hierarchy.extend(children)
+            else:
+                # children이 없으면 선택 가능한 일반 카테고리로 표시
+                parent.has_children = False
+                hierarchy.append(parent)
+        
+        return hierarchy
+    
+    categories_hierarchical = build_hierarchy()
+    
     return render(request, "community/post_form.html", {
         "form": form,
         "is_badmintok": True,
+        "categories_hierarchical": categories_hierarchical,
     })
 
 

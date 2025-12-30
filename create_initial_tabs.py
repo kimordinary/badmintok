@@ -1,7 +1,23 @@
 """
 초기 탭 데이터 생성 스크립트
 배드민톡과 동호인톡의 기본 탭을 생성합니다.
+
+사용 방법:
+1. Django shell에서 실행:
+   python manage.py shell < create_initial_tabs.py
+
+2. 또는 Django shell에 직접 입력:
+   python manage.py shell
+   (그 다음 스크립트 내용을 복사해서 붙여넣기)
 """
+
+import os
+import django
+
+# Django 설정 초기화 (스크립트를 직접 실행할 때 필요)
+if __name__ == '__main__':
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'badmintok.settings')
+    django.setup()
 
 from community.models import Category, Tab
 

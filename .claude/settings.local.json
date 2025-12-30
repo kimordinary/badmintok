@@ -29,7 +29,11 @@
       "Bash(timeout 10 bash -c \"while ! curl -s http://127.0.0.1/badminton-tournament/ > /dev/null; do sleep 0.5; done && echo ''Server is ready''\")",
       "Bash(tasklist:*)",
       "Bash(cmd.exe //c taskkill //F //PID 37076)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "WebFetch(domain:badmintok.com)",
+      "Bash(docker logs:*)",
+      "Bash(nslookup:*)",
+      "Bash(ping:*)"
     ],
     "deny": [],
     "ask": []
