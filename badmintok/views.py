@@ -350,27 +350,6 @@ def badmintok_create(request):
             model = Post
             fields = ["title", "category", "content"]
     
-    if request.method == "POST":
-        form = BadmintokPostForm(request.POST, request.FILES)
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.source = Post.Source.BADMINTOK  # 배드민톡 글로 설정
-            post.save()
-            
-            # 이미지 저장
-            images = request.FILES.getlist("images")
-            for idx, image in enumerate(images):
-                PostImage.objects.create(post=post, image=image, order=idx)
-            
-            messages.success(request, "게시글이 작성되었습니다.")
-            # 탭 정보 유지하면서 리다이렉트
-            tab = request.GET.get("tab", "news")
-            return redirect(f"{reverse('badmintok')}?tab={tab}")
-    else:
-        form = BadmintokPostForm()
-        form.fields["category"].queryset = Category.objects.filter(is_active=True).order_by("display_order", "name")
-    
     # 배드민톡 관련 카테고리 계층 구조 생성
     # 배드민톡 탭에서 사용하는 카테고리만 포함
     badmintok_tabs = Tab.objects.filter(
@@ -397,6 +376,43 @@ def badmintok_create(request):
         all_categories = list(Category.objects.filter(
             is_active=True
         ).select_related('parent').order_by("display_order", "name"))
+    
+    if request.method == "POST":
+        form = BadmintokPostForm(request.POST, request.FILES)
+        # form의 queryset 설정 (POST 요청 실패 시 재렌더링을 위해)
+        if allowed_category_slugs:
+            form.fields["category"].queryset = Category.objects.filter(
+                slug__in=allowed_category_slugs,
+                is_active=True
+            ).order_by("display_order", "name")
+        else:
+            form.fields["category"].queryset = Category.objects.filter(is_active=True).order_by("display_order", "name")
+        
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.source = Post.Source.BADMINTOK  # 배드민톡 글로 설정
+            post.save()
+            
+            # 이미지 저장
+            images = request.FILES.getlist("images")
+            for idx, image in enumerate(images):
+                PostImage.objects.create(post=post, image=image, order=idx)
+            
+            messages.success(request, "게시글이 작성되었습니다.")
+            # 탭 정보 유지하면서 리다이렉트
+            tab = request.GET.get("tab", "news")
+            return redirect(f"{reverse('badmintok')}?tab={tab}")
+    else:
+        form = BadmintokPostForm()
+        # form의 queryset 설정
+        if allowed_category_slugs:
+            form.fields["category"].queryset = Category.objects.filter(
+                slug__in=allowed_category_slugs,
+                is_active=True
+            ).order_by("display_order", "name")
+        else:
+            form.fields["category"].queryset = Category.objects.filter(is_active=True).order_by("display_order", "name")
     
     def build_hierarchy():
         """계층 구조 리스트 생성"""

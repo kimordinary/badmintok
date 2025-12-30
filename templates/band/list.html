@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load band_filters %}
 
 {% block title %}웹민턴 - 배드민톡{% endblock %}
 
@@ -990,10 +991,9 @@
                                     </svg>
                                 </button>
                             </form>
-                            {% if user.is_authenticated %}
+                            {% if user.is_authenticated and current_type != 'flash' %}
                                 <a href="{% url 'band:create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="btn btn-primary">
-                                    {% if current_type == 'flash' %}번개 만들기
-                                    {% elif current_type == 'club' %}동호회 만들기
+                                    {% if current_type == 'club' %}동호회 만들기
                                     {% else %}모임 만들기{% endif %}
                                 </a>
                             {% endif %}
@@ -1014,20 +1014,8 @@
                                                     <span style="font-size: 15px; font-weight: 700; color: {% if band.d_day_is_past %}#1e293b{% else %}var(--brand){% endif %}; white-space: nowrap; flex-shrink: 0;">[{{ band.d_day_text }}]</span>
                                                 {% endif %}
                                                 <h3 style="margin: 0; font-size: 15px; font-weight: 500; color: #1e293b; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">
-                                                    {% if band.first_schedule %}{{ band.first_schedule.title }}{% else %}{{ band.name }}{% endif %}
+                                                    {% if band.first_schedule %}{{ band.first_schedule.title|remove_datetime }}{% else %}{{ band.name }}{% endif %}
                                                 </h3>
-                                                <span class="band-parent-name" style="font-size: 13px; color: #64748b; white-space: nowrap; flex-shrink: 0;" 
-                                                      data-band-name="{{ band.name|escapejs }}"
-                                                      data-parent-name="{% if band.parent_band_name %}{{ band.parent_band_name|escapejs }}{% endif %}"
-                                                      data-schedule-date="{% if band.first_schedule %}{{ band.first_schedule.start_datetime|date:'Y.m.d' }}{% else %}{{ band.created_at|date:'Y.m.d' }}{% endif %}">
-                                                    {% if band.parent_band_name and band.parent_band_name|length > 0 %}
-                                                        {{ band.parent_band_name }}
-                                                    {% elif band.first_schedule %}
-                                                        {{ band.first_schedule.start_datetime|date:"Y.m.d" }}
-                                                    {% else %}
-                                                        {{ band.created_at|date:"Y.m.d" }}
-                                                    {% endif %}
-                                                </span>
                                                 <span class="participant-count-mobile-hide" style="font-size: 13px; color: #64748b; white-space: nowrap; flex-shrink: 0;">참가 {% if band.first_schedule %}{{ band.first_schedule.current_participants }}{% if band.first_schedule.max_participants %}/{{ band.first_schedule.max_participants }}{% endif %}{% else %}{{ band.total_members|default:band.member_count }}{% endif %}</span>
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; color: #64748b; font-size: 13px; white-space: nowrap; flex-shrink: 0;">
@@ -1057,9 +1045,6 @@
                         {% else %}
                             <div style="padding: 48px; text-align: center; color: #64748b;">
                                 <p>게시글이 없습니다.</p>
-                                {% if user.is_authenticated %}
-                                    <a href="{% url 'band:create' %}?type=flash" class="btn btn-primary" style="margin-top: 16px;">첫 번개 만들기</a>
-                                {% endif %}
                             </div>
                         {% endif %}
                     {% elif bands %}
@@ -1166,10 +1151,9 @@
                                 {% elif current_type == 'club' %}동호회가 없습니다.
                                 {% else %}모임이 없습니다.{% endif %}
                             </p>
-                            {% if user.is_authenticated %}
+                            {% if user.is_authenticated and current_type != 'flash' %}
                                 <a href="{% url 'band:create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="btn btn-primary" style="margin-top: 16px;">
-                                    {% if current_type == 'flash' %}첫 번개 만들기
-                                    {% elif current_type == 'club' %}첫 동호회 만들기
+                                    {% if current_type == 'club' %}첫 동호회 만들기
                                     {% else %}첫 모임 만들기{% endif %}
                                 </a>
                             {% endif %}
@@ -1182,50 +1166,6 @@
 </section>
 
 <script>
-(function() {
-    // 번개 이름에서 모임 이름 추출하여 표시
-    function updateParentNames() {
-        const parentNameElements = document.querySelectorAll('.band-parent-name');
-        parentNameElements.forEach(function(element) {
-            const parentName = element.getAttribute('data-parent-name');
-            
-            // parent_band_name이 없거나 빈 문자열이면 번개 이름에서 추출
-            if (!parentName || parentName.trim() === '') {
-                // h3 태그에서 번개 이름 가져오기 (더 확실함)
-                const h3Element = element.closest('a')?.querySelector('h3');
-                let bandName = element.getAttribute('data-band-name');
-                
-                // h3에서 번개 이름 가져오기 시도
-                if (h3Element && h3Element.textContent) {
-                    bandName = h3Element.textContent.trim();
-                }
-                
-                if (bandName) {
-                    // " - " 또는 " -" 또는 "- " 패턴으로 분리
-                    const separatorPattern = /\s*-\s*/;
-                    if (separatorPattern.test(bandName)) {
-                        const parts = bandName.split(separatorPattern);
-                        if (parts.length > 0 && parts[0].trim()) {
-                            element.textContent = parts[0].trim();
-                            return;
-                        }
-                    }
-                }
-            } else {
-                // parent_band_name이 있으면 그것을 사용
-                element.textContent = parentName;
-            }
-        });
-    }
-    
-    // DOMContentLoaded와 즉시 실행 모두 지원
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', updateParentNames);
-    } else {
-        updateParentNames();
-    }
-})();
-
 document.addEventListener('DOMContentLoaded', function() {
     const bannerWrappers = document.querySelectorAll('.banner-wrapper');
 
@@ -1331,10 +1271,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span>내 모임/동호회</span>
             </a>
         {% endif %}
-        <a href="{% url 'band:create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="fab-menu-item">
-            <span class="fab-menu-item-icon">➕</span>
-            <span>모임 만들기</span>
-        </a>
+        {% if current_type != 'flash' %}
+            <a href="{% url 'band:create' %}{% if current_type %}?type={{ current_type }}{% endif %}" class="fab-menu-item">
+                <span class="fab-menu-item-icon">➕</span>
+                <span>{% if current_type == 'club' %}동호회 만들기{% else %}모임 만들기{% endif %}</span>
+            </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

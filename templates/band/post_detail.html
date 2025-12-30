@@ -39,9 +39,9 @@
             {% endif %}
             
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
-                <img src="{{ post.author.profile_image_url }}" alt="{{ post.author.activity_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <img src="{{ post.author.profile_image_url }}" alt="{{ post.author.real_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                 <div>
-                    <div style="font-weight: 700; color: #1e293b;">{{ post.author.activity_name }}</div>
+                    <div style="font-weight: 700; color: #1e293b;">{{ post.author.real_name }}</div>
                     <div style="font-size: 13px; color: #64748b;">{{ post.created_at|date:"Y년 m월 d일 H:i" }}</div>
                 </div>
             </div>
@@ -139,8 +139,8 @@
                     <div id="comment-{{ comment.id }}" style="padding: 12px; background: #f8fafc; border-radius: 8px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <img src="{{ comment.author.profile_image_url }}" alt="{{ comment.author.activity_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-                                <span style="font-weight: 700; font-size: 14px;">{{ comment.author.activity_name }}</span>
+                                <img src="{{ comment.author.profile_image_url }}" alt="{{ comment.author.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                <span style="font-weight: 700; font-size: 14px;">{{ comment.author.real_name }}</span>
                                 <span style="font-size: 12px; color: #94a3b8;">{{ comment.created_at|date:"m.d H:i" }}</span>
                                 {% if comment.updated_at != comment.created_at %}
                                     <span style="font-size: 11px; color: #94a3b8;">(수정됨)</span>
@@ -195,8 +195,8 @@
                             <div style="margin-left: 40px; margin-top: 12px; padding: 12px; background: white; border-radius: 6px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                                     <div style="display: flex; align-items: center; gap: 8px;">
-                                        <img src="{{ reply.author.profile_image_url }}" alt="{{ reply.author.activity_name }}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
-                                        <span style="font-weight: 700; font-size: 13px;">{{ reply.author.activity_name }}</span>
+                                        <img src="{{ reply.author.profile_image_url }}" alt="{{ reply.author.real_name }}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                                        <span style="font-weight: 700; font-size: 13px;">{{ reply.author.real_name }}</span>
                                         <span style="font-size: 11px; color: #94a3b8;">{{ reply.created_at|date:"m.d H:i" }}</span>
                                         {% if reply.updated_at != reply.created_at %}
                                             <span style="font-size: 10px; color: #94a3b8;">(수정됨)</span>
@@ -236,9 +236,9 @@
 <!-- DEBUG BandPost author/current user
      postId={{ post.id }}
      author_id={{ post.author.id }}
-     author_name="{{ post.author.activity_name }}"
+     author_name="{{ post.author.real_name }}"
      current_user_id={{ request.user.id }}
-     current_user_name="{{ request.user.activity_name }}"
+     current_user_name="{{ request.user.real_name }}"
 -->
 {% endif %}
 

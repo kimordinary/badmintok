@@ -94,11 +94,11 @@
                     {% for app in approved_participants %}
                         <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
                             {% if app.user.profile_image %}
-                                <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.activity_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
                             {% else %}
-                                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">{{ app.user.activity_name|first }}</div>
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">{{ app.user.real_name|first }}</div>
                             {% endif %}
-                            <span style="font-size: 14px; font-weight: 500; color: #1e293b;">{{ app.user.activity_name }}</span>
+                            <span style="font-size: 14px; font-weight: 500; color: #1e293b;">{{ app.user.real_name }}</span>
                         </div>
                     {% endfor %}
                 </div>
@@ -171,12 +171,12 @@
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     {% if app.user.profile_image %}
-                                        <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.activity_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                        <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.real_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                                     {% else %}
-                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">{{ app.user.activity_name|first }}</div>
+                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">{{ app.user.real_name|first }}</div>
                                     {% endif %}
                                     <div>
-                                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ app.user.activity_name }}</div>
+                                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ app.user.real_name }}</div>
                                         <div style="font-size: 12px; color: #64748b;">{{ app.applied_at|date:"Y.m.d H:i" }}</div>
                                     </div>
                                 </div>

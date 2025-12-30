@@ -1153,6 +1153,103 @@ def band_leave(request, band_id):
 
 
 @login_required
+def member_management(request, band_id):
+    """멤버 관리 페이지 (모임장만 접근 가능)"""
+    band = get_object_or_404(Band, id=band_id)
+    member = band.members.filter(user=request.user).first()
+
+    # 모임장만 접근 가능
+    if not member or member.role != "owner":
+        messages.error(request, "모임장만 멤버 관리를 할 수 있습니다.")
+        return redirect("band:detail", band_id=band_id)
+
+    # 가입 대기 중인 멤버 목록
+    pending_members = band.members.filter(status="pending").select_related('user').order_by('-joined_at')
+
+    # 활성 멤버 목록
+    active_members = band.members.filter(status="active").select_related('user').order_by('-joined_at')
+
+    context = {
+        'band': band,
+        'pending_members': pending_members,
+        'active_members': active_members,
+    }
+
+    return render(request, 'band/member_management.html', context)
+
+
+@login_required
+def member_approve(request, band_id, member_id):
+    """가입 신청 승인"""
+    band = get_object_or_404(Band, id=band_id)
+    owner_member = band.members.filter(user=request.user).first()
+
+    # 모임장만 승인 가능
+    if not owner_member or owner_member.role != "owner":
+        messages.error(request, "모임장만 가입 신청을 승인할 수 있습니다.")
+        return redirect("band:detail", band_id=band_id)
+
+    # 승인할 멤버
+    member = get_object_or_404(BandMember, id=member_id, band=band, status="pending")
+
+    # 승인 처리
+    member.status = "active"
+    member.save()
+
+    messages.success(request, f"{member.user.activity_name}님의 가입을 승인했습니다.")
+    return redirect("band:member_management", band_id=band_id)
+
+
+@login_required
+def member_reject(request, band_id, member_id):
+    """가입 신청 거부"""
+    band = get_object_or_404(Band, id=band_id)
+    owner_member = band.members.filter(user=request.user).first()
+
+    # 모임장만 거부 가능
+    if not owner_member or owner_member.role != "owner":
+        messages.error(request, "모임장만 가입 신청을 거부할 수 있습니다.")
+        return redirect("band:detail", band_id=band_id)
+
+    # 거부할 멤버
+    member = get_object_or_404(BandMember, id=member_id, band=band, status="pending")
+
+    # 거부 처리 (삭제)
+    user_name = member.user.activity_name
+    member.delete()
+
+    messages.success(request, f"{user_name}님의 가입 신청을 거부했습니다.")
+    return redirect("band:member_management", band_id=band_id)
+
+
+@login_required
+def member_kick(request, band_id, member_id):
+    """멤버 강제 탈퇴"""
+    band = get_object_or_404(Band, id=band_id)
+    owner_member = band.members.filter(user=request.user).first()
+
+    # 모임장만 강제 탈퇴 가능
+    if not owner_member or owner_member.role != "owner":
+        messages.error(request, "모임장만 멤버를 탈퇴시킬 수 있습니다.")
+        return redirect("band:detail", band_id=band_id)
+
+    # 탈퇴시킬 멤버
+    member = get_object_or_404(BandMember, id=member_id, band=band, status="active")
+
+    # 모임장은 자신을 탈퇴시킬 수 없음
+    if member.role == "owner":
+        messages.error(request, "모임장은 탈퇴시킬 수 없습니다.")
+        return redirect("band:member_management", band_id=band_id)
+
+    # 탈퇴 처리 (삭제)
+    user_name = member.user.activity_name
+    member.delete()
+
+    messages.success(request, f"{user_name}님을 탈퇴시켰습니다.")
+    return redirect("band:member_management", band_id=band_id)
+
+
+@login_required
 def band_delete_request(request, band_id):
     """모임 삭제 신청 (관리자만 가능)"""
     from django.utils import timezone

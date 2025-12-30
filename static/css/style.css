@@ -154,12 +154,35 @@ main > section {
     display: flex;
     align-items: center;
     gap: 10px;
+    position: relative;
+    z-index: 10001;
 }
+
 
 .profile-preview {
     display: flex;
     align-items: center;
     gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    padding: 4px 8px;
+    margin: -4px -8px;
+    border-radius: 8px;
+    position: relative;
+    z-index: 10002;
+    pointer-events: auto;
+}
+
+.profile-preview:hover {
+    opacity: 0.8;
+    background: rgba(49, 170, 96, 0.05);
+}
+
+.profile-preview:active {
+    opacity: 0.7;
+    background: rgba(49, 170, 96, 0.1);
 }
 
 .profile-avatar {
@@ -2210,6 +2233,35 @@ main > section {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+}
+
+/* 데스크톱에서 모바일 오버레이가 클릭을 막지 않도록 */
+@media (min-width: 1025px) {
+    .mobile-menu-overlay,
+    .mobile-menu-overlay.active {
+        display: none !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    .mobile-menu,
+    .mobile-menu.active {
+        pointer-events: none !important;
+        z-index: -9999 !important;
+    }
+    
+    .profile-preview {
+        position: relative;
+        z-index: 10002 !important;
+        pointer-events: auto !important;
+    }
+    
+    .auth-actions {
+        z-index: 10001 !important;
+        pointer-events: auto !important;
+    }
 }
 
 /* 안전장치: 모바일에서 오버레이가 클릭을 막지 않도록 하는 전역 규칙 */

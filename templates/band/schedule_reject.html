@@ -10,7 +10,7 @@
         </div>
         
         <h1>신청 거부</h1>
-        <p style="color: #64748b; margin-bottom: 24px;">{{ application.user.activity_name }}님의 신청을 거부하시겠습니까?</p>
+        <p style="color: #64748b; margin-bottom: 24px;">{{ application.user.real_name }}님의 신청을 거부하시겠습니까?</p>
         
         <form method="post">
             {% csrf_token %}

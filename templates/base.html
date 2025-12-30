@@ -38,10 +38,10 @@
                     <a href="{% url 'accounts:mypage' %}" class="mobile-profile-btn" aria-label="마이페이지">
                         <img src="{{ user.profile_image_url }}" alt="{{ user.activity_name }} 프로필" class="profile-avatar-mobile" width="32" height="32">
                     </a>
-                    <div class="profile-preview">
+                    <a href="{% url 'accounts:mypage' %}" class="profile-preview">
                         <img src="{{ user.profile_image_url }}" alt="{{ user.activity_name }} 프로필" class="profile-avatar" width="36" height="36">
                         <span class="welcome">{{ user.activity_name }} 님</span>
-                    </div>
+                    </a>
                     <form action="{% url 'accounts:logout' %}" method="post">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-ghost">로그아웃</button>
@@ -349,6 +349,7 @@
                 }
             });
         })();
+
     </script>
 </body>
 </html>

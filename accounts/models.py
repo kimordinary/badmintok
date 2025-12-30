@@ -69,6 +69,14 @@ class User(AbstractUser):
         return bool(self.auth_provider)
 
     @property
+    def real_name(self):
+        """실명 반환 (웹민턴용)"""
+        profile = getattr(self, "profile", None)
+        if profile and profile.name:
+            return profile.name
+        return self.activity_name  # 실명이 없으면 활동명 반환
+
+    @property
     def profile_image_url(self):
         default_url = static("images/userprofile/user.png")
         profile = getattr(self, "profile", None)

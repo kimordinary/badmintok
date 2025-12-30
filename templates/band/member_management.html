@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}멤버 관리 - {{ band.name }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 900px;">
+        <!-- 헤더 -->
+        <div style="margin-bottom: 32px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1e293b;">멤버 관리</h1>
+                <a href="{% url 'band:detail' band.id %}" class="btn btn-ghost">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    뒤로가기
+                </a>
+            </div>
+            <p style="color: #64748b; font-size: 16px; margin: 0;">{{ band.name }}</p>
+        </div>
+
+        <!-- 가입 대기 중인 멤버 -->
+        <div style="margin-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                가입 신청
+                {% if pending_members %}
+                    <span style="background: var(--brand); color: white; padding: 2px 8px; border-radius: 12px; font-size: 14px; font-weight: 600;">{{ pending_members|length }}</span>
+                {% endif %}
+            </h2>
+
+            {% if pending_members %}
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for member in pending_members %}
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 16px; color: #1e293b;">{{ member.user.real_name }}</div>
+                                    <div style="font-size: 14px; color: #64748b;">신청일: {{ member.joined_at|date:"Y.m.d H:i" }}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <a href="{% url 'band:member_approve' band.id member.id %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;" onclick="return confirm('{{ member.user.real_name }}님의 가입을 승인하시겠습니까?')">승인</a>
+                                <a href="{% url 'band:member_reject' band.id member.id %}" class="btn btn-ghost" style="padding: 8px 16px; font-size: 14px; color: #dc2626; border-color: #dc2626;" onclick="return confirm('{{ member.user.real_name }}님의 가입 신청을 거부하시겠습니까?')">거부</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="padding: 48px; text-align: center; background: #f8fafc; border-radius: 8px; color: #64748b;">
+                    가입 대기 중인 멤버가 없습니다.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 활성 멤버 목록 -->
+        <div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                전체 멤버
+                <span style="background: #e2e8f0; color: #64748b; padding: 2px 8px; border-radius: 12px; font-size: 14px; font-weight: 600;">{{ active_members|length }}</span>
+            </h2>
+
+            {% if active_members %}
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for member in active_members %}
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-weight: 600; font-size: 16px; color: #1e293b;">{{ member.user.real_name }}</span>
+                                        {% if member.role == "owner" %}
+                                            <span style="background: var(--brand); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">모임장</span>
+                                        {% elif member.role == "admin" %}
+                                            <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">관리자</span>
+                                        {% endif %}
+                                    </div>
+                                    <div style="font-size: 14px; color: #64748b;">가입일: {{ member.joined_at|date:"Y.m.d" }}</div>
+                                </div>
+                            </div>
+                            {% if member.role != "owner" %}
+                                <a href="{% url 'band:member_kick' band.id member.id %}" class="btn btn-ghost" style="padding: 8px 16px; font-size: 14px; color: #dc2626; border-color: #dc2626;" onclick="return confirm('{{ member.user.real_name }}님을 탈퇴시키시겠습니까?')">탈퇴</a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="padding: 48px; text-align: center; background: #f8fafc; border-radius: 8px; color: #64748b;">
+                    활성 멤버가 없습니다.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<style>
+    /* 모바일 반응형 */
+    @media (max-width: 767px) {
+        .container {
+            padding: 0 16px !important;
+        }
+
+        h1 {
+            font-size: 24px !important;
+        }
+
+        h2 {
+            font-size: 18px !important;
+        }
+
+        .btn {
+            padding: 6px 12px !important;
+            font-size: 13px !important;
+        }
+
+        div[style*="padding: 16px"] {
+            padding: 12px !important;
+        }
+
+        div[style*="width: 48px"] {
+            width: 40px !important;
+            height: 40px !important;
+        }
+    }
+</style>
+{% endblock %}

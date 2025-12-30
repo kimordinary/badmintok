@@ -867,9 +867,9 @@
                                                     {% if schedule.applications.all %}
                                                         {% with schedule.applications.all|first as first_app %}
                                                             {% if first_app.user.profile_image %}
-                                                                <img src="{{ first_app.user.profile_image.url }}" alt="{{ first_app.user.activity_name }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                                                <img src="{{ first_app.user.profile_image.url }}" alt="{{ first_app.user.real_name }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
                                                             {% else %}
-                                                                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600;">{{ first_app.user.activity_name|first }}</div>
+                                                                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600;">{{ first_app.user.real_name|first }}</div>
                                                             {% endif %}
                                                         {% endwith %}
                                                     {% endif %}
@@ -958,7 +958,7 @@
                                                 {% endif %}
                                             </p>
                                             <div class="community-post-meta" style="display: flex; align-items: center; gap: clamp(4px, 1.5vw, 8px); font-size: clamp(10px, 2.5vw, 12px); color: #94a3b8; flex-wrap: wrap; min-width: 0; width: 100%;">
-                                                <span class="community-post-author" style="color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; flex-shrink: 0;">{{ post.author.activity_name }}</span>
+                                                <span class="community-post-author" style="color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; flex-shrink: 0;">{{ post.author.real_name }}</span>
                                                 <span class="community-post-separator" style="color: #cbd5e1; flex-shrink: 0;">|</span>
                                                 <span class="community-post-time" style="color: #94a3b8; white-space: nowrap; flex-shrink: 0;">
                                                     {% now "Y-m-d" as today %}
@@ -1042,7 +1042,7 @@
                                                         {% for comment in post.comments.all %}
                                                             <div style="padding: 10px 12px; background: #f8fafc; border-radius: 6px; margin-bottom: 6px; box-sizing: border-box; width: 100%;">
                                                                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
-                                                                    <span style="font-size: 12px; font-weight: 600; color: #1e293b;">{{ comment.author.activity_name }}</span>
+                                                                    <span style="font-size: 12px; font-weight: 600; color: #1e293b;">{{ comment.author.real_name }}</span>
                                                                     <span style="font-size: 11px; color: #94a3b8;">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
                                                                     {% if comment.author == band.created_by %}
                                                                         <span style="font-size: 10px; padding: 2px 5px; background: var(--brand); color: white; border-radius: 3px;">운영자</span>
@@ -1164,9 +1164,9 @@
                                                     {% if schedule.applications.all %}
                                                         {% with schedule.applications.all|first as first_app %}
                                                             {% if first_app.user.profile_image %}
-                                                                <img src="{{ first_app.user.profile_image.url }}" alt="{{ first_app.user.activity_name }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                                                <img src="{{ first_app.user.profile_image.url }}" alt="{{ first_app.user.real_name }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
                                                             {% else %}
-                                                                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600;">{{ first_app.user.activity_name|first }}</div>
+                                                                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600;">{{ first_app.user.real_name|first }}</div>
                                                             {% endif %}
                                                         {% endwith %}
                                                     {% endif %}
@@ -1283,7 +1283,7 @@
                                     {% endif %}
                                         </p>
                                         <div class="community-post-meta" style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
-                                            <span class="community-post-author" style="color: #64748b;">{{ post.author.activity_name }}</span>
+                                            <span class="community-post-author" style="color: #64748b;">{{ post.author.real_name }}</span>
                                             <span class="community-post-separator" style="color: #cbd5e1;">|</span>
                                             <span class="community-post-time" style="color: #94a3b8;">
                                                 {% now "Y-m-d" as today %}
@@ -1419,7 +1419,7 @@
                                                 {% for comment in post.comments.all %}
                                                     <div style="padding: 10px 12px 4px 12px; background: #f8fafc; border-radius: 6px; box-sizing: border-box; width: 100%;">
                                                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
-                                                            <span style="font-size: 12px; font-weight: 600; color: #1e293b;">{{ comment.author.activity_name }}</span>
+                                                            <span style="font-size: 12px; font-weight: 600; color: #1e293b;">{{ comment.author.real_name }}</span>
                                                             <span style="font-size: 11px; color: #94a3b8;">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
                                                             {% if comment.author == band.created_by %}
                                                                 <span style="font-size: 10px; padding: 2px 5px; background: var(--brand); color: white; border-radius: 3px;">운영자</span>
@@ -1510,8 +1510,8 @@
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         {% for member in members %}
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <img src="{{ member.user.profile_image_url }}" alt="{{ member.user.activity_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
-                                <span style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ member.user.activity_name }}</span>
+                                <img src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                                <span style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ member.user.real_name }}</span>
                                 {% if member.role == "owner" %}
                                     <span style="font-size: 11px; color: var(--brand); flex-shrink: 0;">모임장</span>
                                 {% elif member.role == "admin" %}
@@ -1536,6 +1536,7 @@
                     <div class="band-header-actions">
                         {% if is_creator %}
                             <a href="{% url 'band:update' band.id %}" class="btn btn-primary band-action-btn">모임 수정</a>
+                            <a href="{% url 'band:member_management' band.id %}" class="btn btn-primary band-action-btn">멤버 관리</a>
                         {% endif %}
                         {% if is_member %}
                             {% if member.role == "owner" or member.role == "admin" %}
