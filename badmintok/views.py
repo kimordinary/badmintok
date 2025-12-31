@@ -204,7 +204,7 @@ def badmintok(request):
 
     # 활성화된 배드민톡 탭 가져오기 (상위 카테고리 = 탭)
     tabs = Category.objects.filter(
-        source='badmintok',
+        source=Category.Source.BADMINTOK,
         parent__isnull=True,
         is_active=True
     ).order_by('display_order')
@@ -386,7 +386,7 @@ def badmintok_create(request):
     # 배드민톡 관련 카테고리 계층 구조 생성
     # 배드민톡 카테고리만 포함 (상위 카테고리 = 탭)
     badmintok_categories = Category.objects.filter(
-        source='badmintok',
+        source=Category.Source.BADMINTOK,
         parent__isnull=True,
         is_active=True
     )

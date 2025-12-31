@@ -88,7 +88,7 @@ class PostListView(ListView):
                 # 상위 카테고리(탭) 찾기
                 current_category = Category.objects.filter(
                     slug=active_tab,
-                    source='community',
+                    source=Category.Source.COMMUNITY,
                     parent__isnull=True,
                     is_active=True
                 ).first()
@@ -145,7 +145,7 @@ class PostListView(ListView):
 
         # 활성화된 동호인톡 탭 가져오기 (상위 카테고리 = 탭)
         tabs = Category.objects.filter(
-            source='community',
+            source=Category.Source.COMMUNITY,
             parent__isnull=True,
             is_active=True
         ).order_by('display_order')
@@ -394,7 +394,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         form = super().get_form(form_class)
         # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
         community_categories = Category.objects.filter(
-            source='community',
+            source=Category.Source.COMMUNITY,
             parent__isnull=True,
             is_active=True
         )
@@ -429,7 +429,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         # 계층 구조로 카테고리 정리
         # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
         community_categories = Category.objects.filter(
-            source='community',
+            source=Category.Source.COMMUNITY,
             parent__isnull=True,
             is_active=True
         )
@@ -525,7 +525,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         form = super().get_form(form_class)
         # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
         community_categories = Category.objects.filter(
-            source='community',
+            source=Category.Source.COMMUNITY,
             parent__isnull=True,
             is_active=True
         )
@@ -560,7 +560,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         # 계층 구조로 카테고리 정리
         # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
         community_categories = Category.objects.filter(
-            source='community',
+            source=Category.Source.COMMUNITY,
             parent__isnull=True,
             is_active=True
         )
@@ -835,7 +835,7 @@ def badmintok_post_editor(request, post_id=None):
     # 카테고리 목록 (계층 구조)
     # Category 기반으로 동적으로 카테고리 가져오기 (상위 카테고리 = 탭)
     badmintok_categories = Category.objects.filter(
-        source='badmintok',
+        source=Category.Source.BADMINTOK,
         parent__isnull=True,
         is_active=True
     )
