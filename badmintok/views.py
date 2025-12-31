@@ -5,26 +5,49 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from band.models import Band
-from community.models import Post, Category, PostImage, Tab
+from community.models import Post, Category, PostImage
 from .models import BadmintokBanner, Notice
 
 
 def home(request):
     """홈페이지 뷰"""
-    # 인기 모임 (멤버 수가 많은 순서대로)
-    popular_bands = Band.objects.filter(is_public=True).annotate(
-        total_members=Count("members", filter=Q(members__status="active"))
-    ).order_by("-total_members", "-created_at")[:5]
-    
-    # 최신 모임
-    recent_bands = Band.objects.filter(is_public=True).annotate(
-        total_members=Count("members", filter=Q(members__status="active"))
-    ).order_by("-created_at")[:5]
-    
-    return render(request, "home.html", {
-        "popular_bands": popular_bands,
-        "recent_bands": recent_bands,
-    })
+    import re
+
+    # 배드민톡 최신 게시물 5개 가져오기
+    now = timezone.now()
+    latest_posts = Post.objects.filter(
+        source=Post.Source.BADMINTOK,
+        is_deleted=False,
+        is_draft=False,
+        published_at__lte=now
+    ).select_related('author', 'category').prefetch_related('images').order_by('-created_at')[:5]
+
+    # 각 게시물에 발췌문과 이미지 URL 추가
+    for post in latest_posts:
+        # 발췌문 생성 (HTML 태그 제거)
+        if post.content:
+            # HTML 태그 제거
+            clean_text = re.sub(r'<[^>]+>', '', post.content)
+            # 줄바꿈 제거 및 공백 정리
+            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            # 80자로 제한
+            post.excerpt = clean_text[:80] + '...' if len(clean_text) > 80 else clean_text
+
+            # 본문에서 첫 번째 이미지 찾기
+            pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
+            match = re.search(pattern, post.content, re.IGNORECASE)
+            if match:
+                post.content_image_url = match.group(1)
+            else:
+                post.content_image_url = None
+        else:
+            post.excerpt = ""
+            post.content_image_url = None
+
+    context = {
+        'latest_posts': latest_posts,
+    }
+    return render(request, "home.html", context)
 
 
 def badmintok_detail(request, slug):
@@ -179,11 +202,21 @@ def badmintok(request):
     """배드민톡 통합 페이지 (뉴스 & 리뷰 & 피드)"""
     from django.utils import timezone
 
-    # 활성화된 배드민톡 탭 가져오기
-    tabs = Tab.objects.filter(
-        source=Tab.Source.BADMINTOK,
+    # 활성화된 배드민톡 탭 가져오기 (상위 카테고리 = 탭)
+    tabs = Category.objects.filter(
+        source='badmintok',
+        parent__isnull=True,
         is_active=True
-    ).select_related('category').order_by('display_order')
+    ).order_by('display_order')
+
+    # 각 탭의 하위 카테고리를 가져오기 (부모별 독립적인 display_order로 정렬)
+    tab_children = {}
+    for tab in tabs:
+        children = Category.objects.filter(
+            parent=tab,
+            is_active=True
+        ).order_by('display_order')  # 부모 내에서 display_order로 정렬
+        tab_children[tab.slug] = children
 
     # 기본 탭 설정 (첫 번째 탭 또는 없으면 'news')
     default_tab = tabs[0].slug if tabs.exists() else "news"
@@ -248,14 +281,13 @@ def badmintok(request):
             # 2차 카테고리 필터링 (카테고리 선택 시)
             if category:
                 posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
-        # 카테고리가 연결된 탭인 경우
-        elif current_tab.category:
-            # 현재 탭의 카테고리와 그 하위 카테고리들을 가져옴
-            tab_category = current_tab.category
-            category_slugs = [tab_category.slug]
+        # 기타 탭인 경우 (상위 카테고리)
+        else:
+            # 현재 탭(상위 카테고리)와 그 하위 카테고리들을 가져옴
+            category_slugs = [current_tab.slug]
 
             # 하위 카테고리 추가
-            child_categories = Category.objects.filter(parent=tab_category, is_active=True)
+            child_categories = Category.objects.filter(parent=current_tab, is_active=True)
             category_slugs.extend([cat.slug for cat in child_categories])
 
             # 카테고리 필터링
@@ -317,6 +349,7 @@ def badmintok(request):
 
     return render(request, "badmintok/index.html", {
         "tabs": tabs,
+        "tab_children": tab_children,
         "active_tab": active_tab,
         "category": category,
         "banner_images": banner_images,
@@ -351,20 +384,20 @@ def badmintok_create(request):
             fields = ["title", "category", "content"]
     
     # 배드민톡 관련 카테고리 계층 구조 생성
-    # 배드민톡 탭에서 사용하는 카테고리만 포함
-    badmintok_tabs = Tab.objects.filter(
-        source=Tab.Source.BADMINTOK,
+    # 배드민톡 카테고리만 포함 (상위 카테고리 = 탭)
+    badmintok_categories = Category.objects.filter(
+        source='badmintok',
+        parent__isnull=True,
         is_active=True
-    ).select_related('category')
-    
-    # 탭에서 사용하는 카테고리 slug 목록 생성
+    )
+
+    # 상위 카테고리(탭)와 하위 카테고리 slug 목록 생성
     allowed_category_slugs = set()
-    for tab in badmintok_tabs:
-        if tab.category:  # 카테고리가 연결된 탭만 처리
-            allowed_category_slugs.add(tab.category.slug)
-            # 하위 카테고리도 포함
-            child_categories = Category.objects.filter(parent=tab.category, is_active=True)
-            allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+    for category in badmintok_categories:
+        allowed_category_slugs.add(category.slug)
+        # 하위 카테고리도 포함
+        child_categories = Category.objects.filter(parent=category, is_active=True)
+        allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
     
     # allowed_category_slugs가 비어있으면 모든 카테고리 허용
     if allowed_category_slugs:

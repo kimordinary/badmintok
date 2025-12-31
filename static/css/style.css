@@ -2224,7 +2224,7 @@ main > section {
     background: rgba(0, 0, 0, 0.5);
     opacity: 0;
     visibility: hidden;
-    pointer-events: none;
+    pointer-events: none !important;
     transition: opacity 0.3s ease, visibility 0.3s ease;
     z-index: 1000;
 }
@@ -2232,11 +2232,17 @@ main > section {
 .mobile-menu-overlay.active {
     opacity: 1;
     visibility: visible;
-    pointer-events: auto;
 }
 
-/* 데스크톱에서 모바일 오버레이가 클릭을 막지 않도록 */
-@media (min-width: 1025px) {
+/* 모바일에서만 오버레이 클릭 활성화 */
+@media (max-width: 768px) {
+    .mobile-menu-overlay.active {
+        pointer-events: auto !important;
+    }
+}
+
+/* 데스크톱 및 태블릿에서 모바일 오버레이가 클릭을 막지 않도록 */
+@media (min-width: 769px) {
     .mobile-menu-overlay,
     .mobile-menu-overlay.active {
         display: none !important;
@@ -2245,19 +2251,19 @@ main > section {
         opacity: 0 !important;
         visibility: hidden !important;
     }
-    
+
     .mobile-menu,
     .mobile-menu.active {
         pointer-events: none !important;
         z-index: -9999 !important;
     }
-    
+
     .profile-preview {
         position: relative;
         z-index: 10002 !important;
         pointer-events: auto !important;
     }
-    
+
     .auth-actions {
         z-index: 10001 !important;
         pointer-events: auto !important;

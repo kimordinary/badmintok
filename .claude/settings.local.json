@@ -33,7 +33,11 @@
       "WebFetch(domain:badmintok.com)",
       "Bash(docker logs:*)",
       "Bash(nslookup:*)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(git log:*)",
+      "Bash(dir:*)",
+      "Bash(echo:*)",
+      "Bash(start msedge:*)"
     ],
     "deny": [],
     "ask": []

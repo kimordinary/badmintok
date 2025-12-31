@@ -37,7 +37,7 @@ def mask_email(value):
     """이메일 주소를 마스킹 (예: now_68@example.com -> now_68***)"""
     if not value:
         return ""
-    
+
     email_str = str(value)
     if '@' in email_str:
         # @ 앞부분만 추출하고 *** 추가
@@ -45,3 +45,11 @@ def mask_email(value):
         return f"{local_part}***"
     # @가 없으면 처음 3글자만
     return f"{email_str[:3]}***"
+
+
+@register.filter
+def get_item(dictionary, key):
+    """딕셔너리에서 키로 값을 가져오는 필터"""
+    if not dictionary:
+        return None
+    return dictionary.get(key)

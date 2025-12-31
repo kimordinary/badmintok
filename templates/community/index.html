@@ -116,7 +116,25 @@
 
         <!-- 전체 탭 및 일반 카테고리 탭 컨텐츠 -->
         {% if not active_tab or active_tab != 'hot' and active_tab != 'reviews' %}
-        <div id="all-content" style="margin-top: 20px;">
+        <div id="all-content">
+            <!-- 하위 카테고리 필터 탭 (동적) -->
+            {% if tab_children|get_item:active_tab %}
+            <div class="community-tabs" style="margin-top: 0; margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+                <a href="{% url 'community:list' %}?tab={{ active_tab }}"
+                   class="community-tab {% if not current_category or current_category == 'all' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    전체
+                </a>
+                {% for child in tab_children|get_item:active_tab %}
+                <a href="{% url 'community:list' %}?tab={{ active_tab }}&category={{ child.slug }}"
+                   class="community-tab {% if current_category == child.slug %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    {{ child.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- 공지사항 배너 -->
             {% if pinned_notice %}
             <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
@@ -365,7 +383,7 @@
 
         <!-- Hot 탭 컨텐츠 -->
         {% if active_tab == 'hot' %}
-        <div id="hot-content" style="margin-top: 20px;">
+        <div id="hot-content">
             <!-- 공지사항 배너 -->
             {% if pinned_notice %}
             <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
@@ -496,44 +514,23 @@
         <!-- 리뷰 탭 컨텐츠 -->
         {% if active_tab == 'reviews' %}
         <div id="reviews-content">
-            <!-- 리뷰 카테고리 필터 탭 -->
-            <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
-                <a href="{% url 'community:list' %}?tab=reviews"
+            <!-- 하위 카테고리 필터 탭 (동적) -->
+            {% if tab_children|get_item:active_tab %}
+            <div class="community-tabs" style="margin-top: 0; margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+                <a href="{% url 'community:list' %}?tab={{ active_tab }}"
                    class="community-tab {% if not current_category or current_category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     전체
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=community-racket"
-                   class="community-tab {% if current_category == 'community-racket' %}active{% endif %}"
+                {% for child in tab_children|get_item:active_tab %}
+                <a href="{% url 'community:list' %}?tab={{ active_tab }}&category={{ child.slug }}"
+                   class="community-tab {% if current_category == child.slug %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    라켓
+                    {{ child.name }}
                 </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=community-shoes"
-                   class="community-tab {% if current_category == 'community-shoes' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    신발/가방
-                </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=community-apparel"
-                   class="community-tab {% if current_category == 'community-apparel' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    의류
-                </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=community-shuttlecock"
-                   class="community-tab {% if current_category == 'community-shuttlecock' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    셔틀콕
-                </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=community-protective"
-                   class="community-tab {% if current_category == 'community-protective' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    보호대
-                </a>
-                <a href="{% url 'community:list' %}?tab=reviews&category=community-accessories"
-                   class="community-tab {% if current_category == 'community-accessories' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    기타/용품
-                </a>
+                {% endfor %}
             </div>
+            {% endif %}
 
             <!-- 공지사항 배너 -->
             {% if pinned_notice %}

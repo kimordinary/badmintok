@@ -56,10 +56,18 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = False  # Nginx에서 처리하므로 False
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # CSRF Trusted Origins 설정 (배포 도메인 추가)
+    CSRF_TRUSTED_ORIGINS_ENV = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+    if CSRF_TRUSTED_ORIGINS_ENV:
+        CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS_ENV.split(',')]
+    else:
+        # 기본값 (실제 배포 도메인으로 변경 필요)
+        CSRF_TRUSTED_ORIGINS = ['https://badmintok.com', 'https://www.badmintok.com']
 else:
     SECURE_PROXY_SSL_HEADER = None
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    CSRF_TRUSTED_ORIGINS = []
 
 
 # Application definition
@@ -72,7 +80,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # 프로젝트 앱
-    'badmintok',
+    'badmintok.apps.BadmintokConfig',
     # 도메인 앱
     'accounts',
     'contests',
@@ -199,7 +207,7 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = False  # JavaScript에서 CSRF 토큰 접근 가능하도록 설정
     CSRF_COOKIE_SAMESITE = 'Lax'
     
     # 로깅 설정

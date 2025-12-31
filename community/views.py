@@ -17,7 +17,7 @@ import logging
 import os
 import uuid
 
-from .models import Category, Tab, Post, Comment, PostImage
+from .models import Category, Post, Comment, PostImage
 from badmintok.models import BadmintokBanner, Notice
 
 logger = logging.getLogger(__name__)
@@ -83,29 +83,32 @@ class PostListView(ListView):
                 # 2차 카테고리 필터링 (카테고리 선택 시)
                 if category:
                     queryset = queryset.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
-            # 동적 탭 필터링
+            # 동적 탭 필터링 (Category 기반)
             else:
-                current_tab = Tab.objects.filter(slug=active_tab, source=Tab.Source.COMMUNITY, is_active=True).first()
-                if current_tab:
-                    # 카테고리가 연결된 탭인 경우
-                    if current_tab.category:
-                        # 현재 탭의 카테고리와 그 하위 카테고리들을 가져옴
-                        tab_category = current_tab.category
-                        category_slugs = [tab_category.slug]
+                # 상위 카테고리(탭) 찾기
+                current_category = Category.objects.filter(
+                    slug=active_tab,
+                    source='community',
+                    parent__isnull=True,
+                    is_active=True
+                ).first()
 
-                        # 하위 카테고리 추가
-                        child_categories = Category.objects.filter(parent=tab_category, is_active=True)
-                        category_slugs.extend([cat.slug for cat in child_categories])
+                if current_category:
+                    # 현재 카테고리와 그 하위 카테고리들을 가져옴
+                    category_slugs = [current_category.slug]
 
-                        # 카테고리 필터링
-                        queryset = queryset.filter(
-                            Q(category__slug__in=category_slugs) | Q(categories__slug__in=category_slugs)
-                        ).distinct()
+                    # 하위 카테고리 추가
+                    child_categories = Category.objects.filter(parent=current_category, is_active=True)
+                    category_slugs.extend([cat.slug for cat in child_categories])
 
-                        # 2차 카테고리 필터링 (카테고리 선택 시)
-                        if category:
-                            queryset = queryset.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
-                    # 카테고리가 없는 탭인 경우 모든 글 표시 (필터링 없음)
+                    # 카테고리 필터링
+                    queryset = queryset.filter(
+                        Q(category__slug__in=category_slugs) | Q(categories__slug__in=category_slugs)
+                    ).distinct()
+
+                    # 2차 카테고리 필터링 (카테고리 선택 시)
+                    if category:
+                        queryset = queryset.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
         else:
             # 탭이 없는 경우 일반 카테고리 필터링
             if category:
@@ -140,12 +143,23 @@ class PostListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 활성화된 동호인톡 탭 가져오기
-        tabs = Tab.objects.filter(
-            source=Tab.Source.COMMUNITY,
+        # 활성화된 동호인톡 탭 가져오기 (상위 카테고리 = 탭)
+        tabs = Category.objects.filter(
+            source='community',
+            parent__isnull=True,
             is_active=True
-        ).select_related('category').order_by('display_order')
+        ).order_by('display_order')
         context["tabs"] = tabs
+
+        # 각 탭의 하위 카테고리를 가져오기 (부모별 독립적인 display_order로 정렬)
+        tab_children = {}
+        for tab in tabs:
+            children = Category.objects.filter(
+                parent=tab,
+                is_active=True
+            ).order_by('display_order')  # 부모 내에서 display_order로 정렬
+            tab_children[tab.slug] = children
+        context["tab_children"] = tab_children
 
         context["active_tab"] = self.request.GET.get("tab", "")
         context["current_category"] = self.request.GET.get("category", "")
@@ -378,28 +392,20 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # 동호인톡 활성 탭의 카테고리만 포함
-        community_tabs = Tab.objects.filter(
-            source=Tab.Source.COMMUNITY,
+        # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
+        community_categories = Category.objects.filter(
+            source='community',
+            parent__isnull=True,
             is_active=True
-        ).select_related('category')
+        )
 
-        # 탭에서 사용하는 카테고리 slug 목록 생성
+        # 상위 카테고리(탭)와 하위 카테고리 slug 목록 생성
         allowed_category_slugs = set()
-        for tab in community_tabs:
-            if tab.category:  # 카테고리가 연결된 탭만 처리
-                allowed_category_slugs.add(tab.category.slug)
-                # 하위 카테고리도 포함
-                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
-                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
-            else:
-                # 카테고리가 없는 탭(예: hot, free, contest-review)의 경우 탭 slug와 동일한 카테고리도 포함
-                # 자유주제, 대회 후기 같은 독립 카테고리도 포함
-                try:
-                    independent_cat = Category.objects.get(slug=tab.slug, is_active=True)
-                    allowed_category_slugs.add(independent_cat.slug)
-                except Category.DoesNotExist:
-                    pass
+        for category in community_categories:
+            allowed_category_slugs.add(category.slug)
+            # 하위 카테고리도 포함
+            child_categories = Category.objects.filter(parent=category, is_active=True)
+            allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
 
         # hot 카테고리는 제외하고, allowed_category_slugs가 비어있으면 모든 카테고리 허용
         if allowed_category_slugs:
@@ -410,7 +416,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
                 slug='hot'
             ).order_by("display_order", "name")
         else:
-            # 카테고리가 없는 탭만 있는 경우 모든 활성 카테고리 허용
+            # 카테고리가 없는 경우 모든 활성 카테고리 허용
             form.fields["category"].queryset = Category.objects.filter(
                 is_active=True
             ).exclude(
@@ -421,28 +427,20 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # 계층 구조로 카테고리 정리
-        # 동호인톡 활성 탭의 카테고리만 포함
-        community_tabs = Tab.objects.filter(
-            source=Tab.Source.COMMUNITY,
+        # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
+        community_categories = Category.objects.filter(
+            source='community',
+            parent__isnull=True,
             is_active=True
-        ).select_related('category')
+        )
 
-        # 탭에서 사용하는 카테고리 slug 목록 생성
+        # 상위 카테고리(탭)와 하위 카테고리 slug 목록 생성
         allowed_category_slugs = set()
-        for tab in community_tabs:
-            if tab.category:  # 카테고리가 연결된 탭만 처리
-                allowed_category_slugs.add(tab.category.slug)
-                # 하위 카테고리도 포함
-                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
-                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
-            else:
-                # 카테고리가 없는 탭(예: hot, free, contest-review)의 경우 탭 slug와 동일한 카테고리도 포함
-                # 자유주제, 대회 후기 같은 독립 카테고리도 포함
-                try:
-                    independent_cat = Category.objects.get(slug=tab.slug, is_active=True)
-                    allowed_category_slugs.add(independent_cat.slug)
-                except Category.DoesNotExist:
-                    pass
+        for category in community_categories:
+            allowed_category_slugs.add(category.slug)
+            # 하위 카테고리도 포함
+            child_categories = Category.objects.filter(parent=category, is_active=True)
+            allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
 
         # allowed_category_slugs가 비어있으면 모든 카테고리 허용
         if allowed_category_slugs:
@@ -525,20 +523,20 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # 동호인톡 활성 탭의 카테고리만 포함
-        community_tabs = Tab.objects.filter(
-            source=Tab.Source.COMMUNITY,
+        # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
+        community_categories = Category.objects.filter(
+            source='community',
+            parent__isnull=True,
             is_active=True
-        ).select_related('category')
+        )
 
-        # 탭에서 사용하는 카테고리 slug 목록 생성
+        # 상위 카테고리(탭)와 하위 카테고리 slug 목록 생성
         allowed_category_slugs = set()
-        for tab in community_tabs:
-            if tab.category:  # 카테고리가 연결된 탭만 처리
-                allowed_category_slugs.add(tab.category.slug)
-                # 하위 카테고리도 포함
-                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
-                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+        for category in community_categories:
+            allowed_category_slugs.add(category.slug)
+            # 하위 카테고리도 포함
+            child_categories = Category.objects.filter(parent=category, is_active=True)
+            allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
 
         # hot 카테고리는 제외하고, allowed_category_slugs가 비어있으면 모든 카테고리 허용
         if allowed_category_slugs:
@@ -549,7 +547,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
                 slug='hot'
             ).order_by("display_order", "name")
         else:
-            # 카테고리가 없는 탭만 있는 경우 모든 활성 카테고리 허용
+            # 카테고리가 없는 경우 모든 활성 카테고리 허용
             form.fields["category"].queryset = Category.objects.filter(
                 is_active=True
             ).exclude(
@@ -560,20 +558,20 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # 계층 구조로 카테고리 정리
-        # 동호인톡 활성 탭의 카테고리만 포함
-        community_tabs = Tab.objects.filter(
-            source=Tab.Source.COMMUNITY,
+        # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
+        community_categories = Category.objects.filter(
+            source='community',
+            parent__isnull=True,
             is_active=True
-        ).select_related('category')
+        )
 
-        # 탭에서 사용하는 카테고리 slug 목록 생성
+        # 상위 카테고리(탭)와 하위 카테고리 slug 목록 생성
         allowed_category_slugs = set()
-        for tab in community_tabs:
-            if tab.category:  # 카테고리가 연결된 탭만 처리
-                allowed_category_slugs.add(tab.category.slug)
-                # 하위 카테고리도 포함
-                child_categories = Category.objects.filter(parent=tab.category, is_active=True)
-                allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+        for category in community_categories:
+            allowed_category_slugs.add(category.slug)
+            # 하위 카테고리도 포함
+            child_categories = Category.objects.filter(parent=category, is_active=True)
+            allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
 
         # allowed_category_slugs가 비어있으면 모든 카테고리 허용
         if allowed_category_slugs:
@@ -835,21 +833,21 @@ def badmintok_post_editor(request, post_id=None):
             messages.error(request, f'게시글 저장 중 오류가 발생했습니다: {str(e)}')
 
     # 카테고리 목록 (계층 구조)
-    # Tab 기반으로 동적으로 카테고리 가져오기
-    badmintok_tabs = Tab.objects.filter(
-        source=Tab.Source.BADMINTOK,
+    # Category 기반으로 동적으로 카테고리 가져오기 (상위 카테고리 = 탭)
+    badmintok_categories = Category.objects.filter(
+        source='badmintok',
+        parent__isnull=True,
         is_active=True
-    ).select_related('category')
+    )
 
-    # Tab에 연결된 상위 카테고리와 그 하위 카테고리들을 모두 수집
+    # 상위 카테고리(탭)와 그 하위 카테고리들을 모두 수집
     category_ids = set()
-    for tab in badmintok_tabs:
-        if tab.category:
-            # 상위 카테고리 추가
-            category_ids.add(tab.category.id)
-            # 하위 카테고리들 추가
-            child_categories = Category.objects.filter(parent=tab.category, is_active=True)
-            category_ids.update(child_categories.values_list('id', flat=True))
+    for category in badmintok_categories:
+        # 상위 카테고리 추가
+        category_ids.add(category.id)
+        # 하위 카테고리들 추가
+        child_categories = Category.objects.filter(parent=category, is_active=True)
+        category_ids.update(child_categories.values_list('id', flat=True))
 
     # 수집한 카테고리들을 가져옴
     all_categories = Category.objects.filter(
@@ -997,19 +995,43 @@ class CommentDeleteView(LoginRequiredMixin, View):
     """댓글 삭제 뷰"""
 
     def post(self, request, comment_id):
-        comment = get_object_or_404(Comment, id=comment_id, author=request.user, is_deleted=False)
-        post_slug = comment.post.slug
+        try:
+            comment = get_object_or_404(Comment, id=comment_id, author=request.user, is_deleted=False)
+            post_slug = comment.post.slug
+            post_source = comment.post.source
 
-        # 소프트 삭제
-        comment.is_deleted = True
-        comment.save()
+            # 소프트 삭제
+            comment.is_deleted = True
+            comment.save()
 
-        messages.success(request, "댓글이 삭제되었습니다.")
-        # post의 source에 따라 적절한 URL로 리다이렉트
-        if comment.post.source == Post.Source.BADMINTOK:
-            return redirect("badmintok_detail", slug=post_slug)
-        else:
-            return redirect("community:detail", slug=post_slug)
+            logger.info(f"Comment {comment_id} deleted by user {request.user.id}")
+
+            # AJAX 요청인 경우 JSON 응답
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': '댓글이 삭제되었습니다.'
+                })
+
+            messages.success(request, "댓글이 삭제되었습니다.")
+            # post의 source에 따라 적절한 URL로 리다이렉트
+            if post_source == Post.Source.BADMINTOK:
+                return redirect("badmintok_detail", slug=post_slug)
+            else:
+                return redirect("community:detail", slug=post_slug)
+
+        except Exception as e:
+            logger.error(f"Error deleting comment {comment_id}: {str(e)}", exc_info=True)
+
+            # AJAX 요청인 경우 JSON 응답
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': '댓글 삭제 중 오류가 발생했습니다.'
+                }, status=500)
+
+            messages.error(request, "댓글 삭제 중 오류가 발생했습니다.")
+            return redirect("community:list")
 
 
 class CommentLikeView(LoginRequiredMixin, View):

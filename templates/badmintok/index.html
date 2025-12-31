@@ -43,37 +43,26 @@
             </div>
         </div>
 
-        <!-- 뉴스 탭 컨텐츠 -->
-        {% if active_tab == 'news' or not active_tab %}
-        <div id="news-content">
-            <!-- 뉴스 카테고리 필터 탭 -->
+        <!-- 탭 컨텐츠 -->
+        {% if active_tab != 'reviews' and active_tab != 'brand' and active_tab != 'feed' %}
+        <div id="tab-content">
+            <!-- 하위 카테고리 필터 탭 (동적) -->
+            {% if tab_children|get_item:active_tab %}
             <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
-                <a href="{% url 'badmintok' %}?tab=news"
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
                    class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     전체
                 </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=tournament"
-                   class="community-tab {% if category == 'tournament' %}active{% endif %}"
+                {% for child in tab_children|get_item:active_tab %}
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}&category={{ child.slug }}"
+                   class="community-tab {% if category == child.slug %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    대회 소식
+                    {{ child.name }}
                 </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=player"
-                   class="community-tab {% if category == 'player' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    선수 소식
-                </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=equipment"
-                   class="community-tab {% if category == 'equipment' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    장비 뉴스
-                </a>
-                <a href="{% url 'badmintok' %}?tab=news&category=community"
-                   class="community-tab {% if category == 'community' %}active{% endif %}"
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    동호인 소식
-                </a>
+                {% endfor %}
             </div>
+            {% endif %}
 
             <!-- 공지사항 배너 -->
             {% if pinned_notice %}
@@ -313,44 +302,23 @@
         <!-- 리뷰 탭 컨텐츠 -->
         {% if active_tab == 'reviews' %}
         <div id="reviews-content">
-            <!-- 리뷰 카테고리 필터 탭 -->
+            <!-- 하위 카테고리 필터 탭 (동적) -->
+            {% if tab_children|get_item:active_tab %}
             <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
-                <a href="{% url 'badmintok' %}?tab=reviews" 
-                   class="community-tab {% if not category or category == 'all' %}active{% endif %}" 
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
+                   class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     전체
                 </a>
-                <a href="{% url 'badmintok' %}?tab=reviews&category=racket" 
-                   class="community-tab {% if category == 'racket' %}active{% endif %}" 
+                {% for child in tab_children|get_item:active_tab %}
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}&category={{ child.slug }}"
+                   class="community-tab {% if category == child.slug %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    라켓
+                    {{ child.name }}
                 </a>
-                <a href="{% url 'badmintok' %}?tab=reviews&category=shoes" 
-                   class="community-tab {% if category == 'shoes' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    신발/가방
-                </a>
-                <a href="{% url 'badmintok' %}?tab=reviews&category=apparel" 
-                   class="community-tab {% if category == 'apparel' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    의류
-                </a>
-                <a href="{% url 'badmintok' %}?tab=reviews&category=shuttlecock" 
-                   class="community-tab {% if category == 'shuttlecock' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    셔틀콕
-                </a>
-                <a href="{% url 'badmintok' %}?tab=reviews&category=protective" 
-                   class="community-tab {% if category == 'protective' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    보호대
-                </a>
-                <a href="{% url 'badmintok' %}?tab=reviews&category=accessories" 
-                   class="community-tab {% if category == 'accessories' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    기타/용품
-                </a>
+                {% endfor %}
             </div>
+            {% endif %}
 
             <!-- 메인 콘텐츠 그리드 -->
             <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
@@ -567,64 +535,23 @@
             </div>
             {% endif %}
 
-            <!-- 브랜드 카테고리 필터 탭 -->
+            <!-- 하위 카테고리 필터 탭 (동적) -->
+            {% if tab_children|get_item:active_tab %}
             <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
-                <a href="{% url 'badmintok' %}?tab=brand" 
-                   class="community-tab {% if not category or category == 'all' %}active{% endif %}" 
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
+                   class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                     전체
                 </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=yonex" 
-                   class="community-tab {% if category == 'yonex' %}active{% endif %}" 
+                {% for child in tab_children|get_item:active_tab %}
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}&category={{ child.slug }}"
+                   class="community-tab {% if category == child.slug %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    요넥스
+                    {{ child.name }}
                 </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=lining" 
-                   class="community-tab {% if category == 'lining' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    리닝
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=victor" 
-                   class="community-tab {% if category == 'victor' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    빅터
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=mizuno" 
-                   class="community-tab {% if category == 'mizuno' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    미즈노
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=technist" 
-                   class="community-tab {% if category == 'technist' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    테크니스트
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=strokus" 
-                   class="community-tab {% if category == 'strokus' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    스트로커스
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=redsun" 
-                   class="community-tab {% if category == 'redsun' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    레드선
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=trion" 
-                   class="community-tab {% if category == 'trion' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    트라이온
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=tricore" 
-                   class="community-tab {% if category == 'tricore' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    트리코어
-                </a>
-                <a href="{% url 'badmintok' %}?tab=brand&category=apacs" 
-                   class="community-tab {% if category == 'apacs' %}active{% endif %}" 
-                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
-                    아펙스
-                </a>
+                {% endfor %}
             </div>
+            {% endif %}
 
             <!-- 메인 콘텐츠 그리드 -->
             <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; margin-top: 20px;">
@@ -807,6 +734,24 @@
         <!-- 피드 탭 컨텐츠 -->
         {% if active_tab == 'feed' %}
         <div id="feed-content" style="margin-top: 20px;">
+            <!-- 하위 카테고리 필터 탭 (동적) -->
+            {% if tab_children|get_item:active_tab %}
+            <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
+                   class="community-tab {% if not category or category == 'all' %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    전체
+                </a>
+                {% for child in tab_children|get_item:active_tab %}
+                <a href="{% url 'badmintok' %}?tab={{ active_tab }}&category={{ child.slug }}"
+                   class="community-tab {% if category == child.slug %}active{% endif %}"
+                   style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                    {{ child.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- 메인 콘텐츠 그리드 -->
             <div class="community-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
                 <!-- 왼쪽 컬럼: 검색 및 게시글 목록 -->

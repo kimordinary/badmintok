@@ -6,8 +6,19 @@ from django.utils.translation import gettext_lazy as _
 class Category(models.Model):
     """게시글 카테고리 모델 (계층 구조 지원)"""
 
+    class Source(models.TextChoices):
+        COMMUNITY = "community", _("동호인톡")
+        BADMINTOK = "badmintok", _("배드민톡")
+
     name = models.CharField(_("카테고리명"), max_length=50, unique=True)
     slug = models.SlugField(_("슬러그"), max_length=50, unique=True, help_text=_("URL에 사용될 고유 식별자"))
+    source = models.CharField(
+        _("출처"),
+        max_length=20,
+        choices=Source.choices,
+        default=Source.COMMUNITY,
+        help_text=_("배드민톡 또는 동호인톡")
+    )
     parent = models.ForeignKey(
         'self',
         on_delete=models.CASCADE,
@@ -28,8 +39,9 @@ class Category(models.Model):
         ordering = ["display_order", "name"]
         indexes = [
             models.Index(fields=["slug"]),
-            models.Index(fields=["is_active", "display_order"]),
+            models.Index(fields=["source", "is_active", "display_order"]),
             models.Index(fields=["parent"]),
+            models.Index(fields=["source", "parent"]),
         ]
 
     def __str__(self):
@@ -47,47 +59,23 @@ class Category(models.Model):
         return " > ".join(path)
 
 
-class Tab(models.Model):
-    """배드민톡/동호인톡 탭 모델"""
+class CategoryManager(models.Manager):
+    """카테고리 기본 Manager"""
+    pass
 
-    class Source(models.TextChoices):
-        COMMUNITY = "community", _("동호인톡")
-        BADMINTOK = "badmintok", _("배드민톡")
 
-    name = models.CharField(_("탭 이름"), max_length=50)
-    slug = models.SlugField(_("슬러그"), max_length=50, help_text=_("URL에 사용될 고유 식별자"))
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='tabs',
-        verbose_name=_("연결된 카테고리"),
-        help_text=_("이 탭에서 표시할 카테고리 (선택사항)")
-    )
-    source = models.CharField(
-        _("출처"),
-        max_length=20,
-        choices=Source.choices,
-        help_text=_("배드민톡 또는 동호인톡")
-    )
-    display_order = models.PositiveIntegerField(_("표시 순서"), default=0, help_text=_("작은 숫자일수록 먼저 표시됩니다"))
-    is_active = models.BooleanField(_("활성화"), default=True)
-    created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
-    updated_at = models.DateTimeField(_("수정일"), auto_now=True)
+class BadmintokCategoryManager(models.Manager):
+    """배드민톡 카테고리만 필터링하는 Manager"""
+    def get_queryset(self):
+        # 배드민톡 소스 카테고리들 (부모 + 자식 모두)
+        return super().get_queryset().filter(source='badmintok')
 
-    class Meta:
-        verbose_name = _("탭")
-        verbose_name_plural = _("탭")
-        ordering = ["source", "display_order", "name"]
-        unique_together = [["slug", "source"]]  # 같은 source 내에서 slug 중복 방지
-        indexes = [
-            models.Index(fields=["source", "is_active", "display_order"]),
-            models.Index(fields=["slug", "source"]),
-        ]
 
-    def __str__(self):
-        return f"[{self.get_source_display()}] {self.name}"
+class CommunityCategoryManager(models.Manager):
+    """동호인톡 카테고리만 필터링하는 Manager"""
+    def get_queryset(self):
+        # 동호인톡 소스 카테고리들 (부모 + 자식 모두)
+        return super().get_queryset().filter(source='community')
 
 
 class Post(models.Model):
@@ -226,22 +214,51 @@ class Post(models.Model):
         super().save(*args, **kwargs)
 
 
-class BadmintokPost(Post):
-    """배드민톡 게시글 Proxy 모델"""
-    
+# Proxy 모델들 - Admin에서 분리 표시를 위함
+
+
+class BadmintokCategory(Category):
+    """배드민톡 카테고리 Proxy 모델"""
+    objects = BadmintokCategoryManager()
+
     class Meta:
         proxy = True
-        verbose_name = "배드민톡 게시글"
-        verbose_name_plural = "배드민톡 게시글"
+        app_label = 'badmintok'
+        verbose_name = "카테고리"
+        verbose_name_plural = "카테고리"
+        ordering = []  # Category의 기본 ordering 비활성화 - Admin의 get_queryset() 순서 사용
+
+
+class CommunityCategory(Category):
+    """동호인톡 카테고리 Proxy 모델"""
+    objects = CommunityCategoryManager()
+
+    class Meta:
+        proxy = True
+        app_label = 'community'
+        verbose_name = "카테고리"
+        verbose_name_plural = "카테고리"
+        ordering = []  # Category의 기본 ordering 비활성화 - Admin의 get_queryset() 순서 사용
+
+
+class BadmintokPost(Post):
+    """배드민톡 게시글 Proxy 모델"""
+
+    class Meta:
+        proxy = True
+        app_label = 'badmintok'
+        verbose_name = "게시글"
+        verbose_name_plural = "게시글"
 
 
 class CommunityPost(Post):
     """동호인톡 게시글 Proxy 모델 (커뮤니티 + 동호인 리뷰)"""
-    
+
     class Meta:
         proxy = True
-        verbose_name = "동호인톡 게시글"
-        verbose_name_plural = "동호인톡 게시글"
+        app_label = 'community'
+        verbose_name = "게시글"
+        verbose_name_plural = "게시글"
 
 
 class PostImage(models.Model):
@@ -409,3 +426,5 @@ def update_comment_like_count_on_save(sender, instance, **kwargs):
 def update_comment_like_count_on_delete(sender, instance, **kwargs):
     """댓글 좋아요 제거 시 댓글 좋아요 수 업데이트"""
     instance.comment.update_like_count()
+
+

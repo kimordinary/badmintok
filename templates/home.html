@@ -1,190 +1,1341 @@
 {% extends "base.html" %}
 {% load static %}
+{% load community_filters %}
 
 {% block title %}배드민톡 - 온라인 배드민턴 커뮤니티{% endblock %}
 
 {% block content %}
-    <section class="hero" aria-labelledby="hero-title" style="background-image: url('{% static 'images/landing/badmintok.png' %}');">
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-            <h1 id="hero-title">온라인 배드민턴장 배드민톡</h1>
-            <p class="hero-sub">동호인 1등 커뮤니티</p>
+<!-- 메인 배너 섹션 -->
+<section class="main-banner-section">
+    <div class="main-banner-container">
+        <div class="banner-image-wrapper order-2">
+            <img class="banner-image" src="{% static 'images/landing/badmintok homepage.png' %}" alt="배드민톡 메인 배너">
         </div>
-    </section>
+        <div class="banner-text-wrapper">
+            <div class="banner-title">
+                <div>온라인 배드민턴장</div>
+                <div><span class="text-highlight">배드민톡</span></div>
+            </div>
+            <div class="banner-description-wrapper">
+                <div class="banner-description">
+                    <p>배드민톡(badmintok)은, 전국 배드민턴 대회 일정과 생생한 리뷰, 최신 뉴스부터 소통과 모임까지 한눈에 확인하는 동호인 필수 올인원 플랫폼입니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-    <section class="features" aria-labelledby="feature-title">
-        <div class="container">
-            <h2 id="feature-title">배드민톡은 동호인을 위해 만들어졌습니다</h2>
-            <p class="feature-lead">전국 배드민턴 대회 일정, 배드민턴 커뮤니티, 동호인 배드민턴 뉴스를 한 곳에서.</p>
-            <div class="feature-extra">
-                <h3>배드민톡 리뷰</h3>
-                <p>어디에도 없는 리뷰를 볼 수 있습니다.</p>
-                <div class="review-grid">
-                    <a href="#" class="review-card" aria-label="배드민턴 라켓 리뷰">
-                        <span class="emoji">🏸</span>
-                        <strong>배드민턴 라켓</strong>
-                    </a>
-                    <a href="#" class="review-card" aria-label="신발 리뷰">
-                        <span class="emoji">👟</span>
-                        <strong>신발</strong>
-                    </a>
-                    <a href="#" class="review-card" aria-label="보호대 리뷰">
-                        <span class="emoji">🛡️</span>
-                        <strong>보호대</strong>
-                    </a>
-                    <a href="#" class="review-card" aria-label="의류 리뷰">
-                        <span class="emoji">👕</span>
-                        <strong>의류</strong>
-                    </a>
-                    <a href="#" class="review-card" aria-label="셔틀콕 리뷰">
-                        <span class="emoji">🥎</span>
-                        <strong>셔틀콕</strong>
+<!-- 두 번째 섹션 - 서비스 소개 -->
+<section class="services-section">
+    <h1 class="services-title">BADMINTOK</h1>
+
+    <div class="services-container">
+        <!-- 큰 카드 - 크로스워드 -->
+        <div class="service-card-large">
+            <div class="card-icons">
+                <img src="{% static 'images/landing/badminton tournament.png' %}" class="icon-large" alt="배드민턴 대회">
+            </div>
+            <div class="card-content-large">
+                <div class="card-text-large">
+                    <h1 class="card-title-large">전국 배드민턴 대회</h1>
+                    <p class="card-description-large">전국에 있는 모든 배드민턴 대회를 한눈에 확인해보세요!<br>지역·날짜별로 흩어진 대회 정보를 한데 모아<br>누구나 쉽고 빠르게 검색할 수 있는 최적의 환경을 제공합니다.</p>
+                </div>
+                <div class="card-button-wrapper">
+                    <a href="{% url 'contests:list' %}" class="play-button play-button-purple">
+                        <span class="button-content">
+                            <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" height="1em" width="1em">
+                                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+                            </svg>
+                            바로가기
+                        </span>
                     </a>
                 </div>
             </div>
-            <div class="feature-grid">
-                <article class="feature-card">
-                    <h3>전국 대회 일정</h3>
-                    <p>지역별·급수별 공식·아마추어 대회를 한 눈에 확인하고, 참가 신청과 결과까지 간편하게 확인하세요.</p>
-                </article>
-                <article class="feature-card">
-                    <h3>배드민톡 커뮤니티</h3>
-                    <p>코트 메이트 찾기, 팀 매칭, 장비 토론 등 동호인들이 활발히 소통하는 커뮤니티에서 함께 성장하세요.</p>
-                </article>
-                <article class="feature-card">
-                    <h3>동호인 뉴스</h3>
-                    <p>전국 대회 소식, 선수 인터뷰, 동호인 트렌드를 빠르게 전달합니다. 관심 카테고리를 팔로우해보세요.</p>
-                </article>
+        </div>
+
+        <!-- 작은 카드들 -->
+        <div class="service-cards-wrapper">
+            <!-- 배드민톡 -->
+            <div class="service-card-small card-blue">
+                <div class="card-image-wrapper">
+                    <img src="{% static 'images/landing/badmintok main.png' %}" class="card-image" alt="배드민톡">
+                </div>
+                <div class="card-text-small">
+                    <h1 class="card-title-small">배드민톡</h1>
+                    <p class="card-description-small">배드민턴 리뷰 뉴스 소식을 전해요.</p>
+                </div>
+                <a href="{% url 'badmintok' %}" class="play-button play-button-blue">
+                    <span class="button-content">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" height="1em" width="1em">
+                            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+                        </svg>
+                        바로가기
+                    </span>
+                </a>
+            </div>
+
+            <!-- 동호인톡 -->
+            <div class="service-card-small card-teal">
+                <div class="card-image-wrapper">
+                    <img src="{% static 'images/landing/community.png' %}" class="card-image" alt="동호인톡">
+                </div>
+                <div class="card-text-small">
+                    <h1 class="card-title-small">동호인톡</h1>
+                    <p class="card-description-small">배드민턴 동호인끼리 다양한 소통해요.</p>
+                </div>
+                <a href="{% url 'community:list' %}" class="play-button play-button-teal">
+                    <span class="button-content">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" height="1em" width="1em">
+                            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+                        </svg>
+                        바로가기
+                    </span>
+                </a>
+            </div>
+
+            <!-- 웹민턴 -->
+            <div class="service-card-small card-orange">
+                <div class="card-image-wrapper">
+                    <img src="{% static 'images/landing/webminton (band).png' %}" class="card-image" alt="웹민턴">
+                </div>
+                <div class="card-text-small">
+                    <h1 class="card-title-small">웹민턴</h1>
+                    <p class="card-description-small">모임, 동호회, 번개 참가하고 신청해요.</p>
+                </div>
+                <a href="{% url 'band:list' %}" class="play-button play-button-orange">
+                    <span class="button-content">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" height="1em" width="1em">
+                            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+                        </svg>
+                        바로가기
+                    </span>
+                </a>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="mall-popular" aria-labelledby="band-popular-title">
-        <div class="container">
-            <div class="section-head">
-                <h2 id="band-popular-title">인기 모임</h2>
-                <a class="section-more" href="{% url 'band:list' %}">더보기</a>
-            </div>
-            <p class="section-sub">배드민턴 동호인들이 함께하는 소모임을 만나보세요</p>
-            <div class="product-scroller" aria-label="인기 모임">
-                <div class="product-track">
-                    {% if popular_bands %}
-                        {% for band in popular_bands %}
-                            <a class="product-card" href="{% url 'band:detail' band.id %}">
-                                {% if band.profile_image %}
-                                    <div class="p-thumb" style="background-image: url('{{ band.profile_image.url }}'); background-size: cover; background-position: center;"></div>
-                                {% else %}
-                                    <div class="p-thumb" style="background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700;">{{ band.name|first }}</div>
-                                {% endif %}
-                                <div class="p-title">{{ band.name }}</div>
-                                <div class="p-meta" style="font-size: 12px; color: #64748b; margin-top: 4px;">멤버 {{ band.total_members|default:band.member_count }}명</div>
-                            </a>
-                        {% endfor %}
+<!-- 최신글 섹션 -->
+<section class="latest-posts-section">
+    <h1 class="latest-posts-title">What's New</h1>
+
+    <div class="latest-posts-container">
+        {% if latest_posts %}
+        <div class="community-post-list">
+            {% for post in latest_posts %}
+            {% if post.slug %}
+            <a href="{% url 'badmintok_detail' post.slug %}" class="community-post-item">
+                <div class="community-post-content">
+                    <div class="community-post-header">
+                        <span class="community-post-category community-post-category-primary">{{ post.get_category_display }}</span>
+                    </div>
+                    <h3 class="community-post-title">{{ post.title }}</h3>
+                    <p class="community-post-excerpt">
+                        {{ post.excerpt }}
+                    </p>
+                    <div class="community-post-meta">
+                        <span class="community-post-author">{{ post.author.activity_name }}</span>
+                        <span class="community-post-separator">|</span>
+                        <span class="community-post-time">
+                            {% now "Y-m-d" as today %}
+                            {% if post.created_at|date:"Y-m-d" == today %}
+                                {{ post.created_at|timesince|timesince_simple }} 전
+                            {% else %}
+                                {{ post.created_at|date:"m.d" }}
+                            {% endif %}
+                        </span>
+                        <span class="community-post-separator">|</span>
+                        <span class="community-post-action">
+                            <span class="community-post-action-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                            </span>
+                            <span class="community-post-action-count">{{ post.like_count }}</span>
+                        </span>
+                        <span class="community-post-action">
+                            <span class="community-post-action-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                            </span>
+                            <span class="community-post-action-count">{{ post.comment_count }}</span>
+                        </span>
+                        <span class="community-post-action">
+                            <span class="community-post-action-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </span>
+                            <span class="community-post-action-count">{{ post.view_count }}</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="community-post-image">
+                    {% if post.thumbnail %}
+                        <img src="{{ post.thumbnail.url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
+                    {% elif post.images.all %}
+                        {% with first_image=post.images.all.0 %}
+                            <img src="{{ first_image.image.url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
+                        {% endwith %}
+                    {% elif post.content_image_url %}
+                        <img src="{{ post.content_image_url }}" alt="{{ post.title }}" class="community-post-thumbnail" loading="lazy" width="120" height="120">
                     {% else %}
-                        <a class="product-card" href="{% url 'band:list' %}">
-                            <div class="p-thumb" style="background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">🏸</div>
-                            <div class="p-title">모임 둘러보기</div>
-                        </a>
-                        {% if user.is_authenticated %}
-                            <a class="product-card" href="{% url 'band:create' %}">
-                                <div class="p-thumb" style="background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">👥</div>
-                                <div class="p-title">새 모임 만들기</div>
-                            </a>
-                        {% endif %}
+                        <div class="community-post-no-image">이미지 없음</div>
                     {% endif %}
                 </div>
-            </div>
+            </a>
+            {% endif %}
+            {% endfor %}
         </div>
-    </section>
 
-    <section class="videos" aria-labelledby="videos-title">
-        <div class="container">
-            <h2 id="videos-title">최신 유튜브 영상</h2>
-            <div class="videos-grid">
-                <a class="video-card" href="#" aria-label="아스트록스 88리뷰">
-                    <div class="thumb minimal"></div>
-                    <h3>아스트록스 88리뷰</h3>
-                </a>
-                <a class="video-card" href="#" aria-label="리닝 하버텍 리뷰">
-                    <div class="thumb minimal"></div>
-                    <h3>리닝 하버텍 리뷰</h3>
-                </a>
-                <a class="video-card" href="#" aria-label="빅터 kfc 라켓 리뷰">
-                    <div class="thumb minimal"></div>
-                    <h3>빅터 kfc 라켓 리뷰</h3>
-                </a>
-                <a class="video-card" href="#" aria-label="스트로커스 옵티머스 리뷰">
-                    <div class="thumb minimal"></div>
-                    <h3>스트로커스 옵티머스 리뷰</h3>
-                </a>
-            </div>
+        <!-- 더보기 버튼 -->
+        <div class="latest-posts-more">
+            <a href="{% url 'badmintok' %}" class="more-button">
+                <span class="more-text-mobile-hide">더보기 </span>
+                <span style="font-size: 16px; line-height: 1;">+</span>
+            </a>
         </div>
-    </section>
-
-    <section class="board board-list" aria-labelledby="board-title-tournaments">
-        <div class="container">
-            <h2 id="board-title-tournaments">전국 대회 일정</h2>
-            <ul class="posts">
-                <li>
-                    <a href="#" class="post-link">[대전] 2025 대전광역시 배드민턴 생활체육대회 참가 모집</a>
-                    <span class="meta">접수 D-7 · 남복/여복/혼복 · 초급~상급</span>
-                </li>
-                <li>
-                    <a href="#" class="post-link">[서울] 제12회 한강배 전국배드민턴대회 공지</a>
-                    <span class="meta">6/15(일) · 잠실실내체육관 · 참가선물 제공</span>
-                </li>
-                <li>
-                    <a href="#" class="post-link">[부산] 부산 시민배 2025 일정 및 신청 안내</a>
-                    <span class="meta">예선 리그 · 본선 토너먼트 · 상금 300만원</span>
-                </li>
-                <li>
-                    <a href="#" class="post-link">[광주] 빛고을 오픈 배드민턴 대회</a>
-                    <span class="meta">혼합복식 특화 · 초중급 대상 · 7/6(일)</span>
-                </li>
-                <li>
-                    <a href="#" class="post-link">[온라인] 전국 래더 리그 3분기 참가자 모집</a>
-                    <span class="meta">지역 제한 없음 · 개인전 · 랭킹 반영</span>
-                </li>
-            </ul>
+        {% else %}
+        <div class="no-posts-message">
+            <p>아직 게시글이 없습니다.</p>
         </div>
-    </section>
+        {% endif %}
+    </div>
+</section>
 
-    <section class="board board-grid" aria-labelledby="board-title-community">
-        <div class="container">
-            <h2 id="board-title-community">사람들이 사용하고 있는 게시판</h2>
-            <div class="board-columns">
-                <aside class="board-cats" aria-label="게시판 카테고리">
-                    <h3>카테고리</h3>
-                    <ul>
-                        <li><a href="#" class="active">자유게시판</a></li>
-                        <li><a href="#">일기</a></li>
-                        <li><a href="#">배드민턴 번개</a></li>
-                        <li><a href="#">중고장터</a></li>
-                        <li><a href="#">코치/레슨</a></li>
-                        <li><a href="#">장비 리뷰</a></li>
-                    </ul>
-                </aside>
-                <div class="board-posts">
-                    <ul class="posts">
-                        <li>
-                            <a href="#" class="post-link">오늘 처음 드롭샷이 제대로 들어갔어요! 팁 공유합니다</a>
-                            <span class="meta">자유게시판 · 5분 전 · 23댓글</span>
-                        </li>
-                        <li>
-                            <a href="#" class="post-link">[번개/강남] 오늘 20시 역삼 문화센터 2자리</a>
-                            <span class="meta">배드민턴 번개 · 1시간 전 · 12신청</span>
-                        </li>
-                        <li>
-                            <a href="#" class="post-link">초급에서 중급 넘어갈 때 꼭 연습했던 루틴</a>
-                            <span class="meta">일기 · 3시간 전 · 17공감</span>
-                        </li>
-                        <li>
-                            <a href="#" class="post-link">아스트록스 77 매물 올립니다 (거의 새것)</a>
-                            <span class="meta">중고장터 · 1일 전 · 4관심</span>
-                        </li>
-                    </ul>
+<!-- 카테고리별 게임 섹션 -->
+<section class="category-section">
+    <h1 class="category-title">Channel</h1>
+
+    <div class="category-grid">
+        <!-- 대회 정보 -->
+        <div class="category-card card-pink">
+            <div class="category-card-inner">
+                <div class="category-image-wrapper">
+                    <img src="{% static 'images/landing/instagram logo.png' %}" class="category-icon" alt="인스타그램">
                 </div>
+                <div class="category-title-absolute">
+                    <h1 class="category-title-text">인스타그램</h1>
+                </div>
+                <a href="https://www.instagram.com/badmintok_korea/" target="_blank" rel="noopener noreferrer" class="category-play-button category-play-button-pink">
+                    <span class="category-button-content">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" height="1em" width="1em">
+                            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+                        </svg>
+                        바로가기
+                    </span>
+                </a>
             </div>
         </div>
-    </section>
+
+        <!-- 리뷰 -->
+        <div class="category-card card-blue">
+            <div class="category-card-inner">
+                <div class="category-image-wrapper">
+                    <img src="{% static 'images/landing/cafe logo.png' %}" class="category-icon" alt="네이버 카페">
+                </div>
+                <div class="category-title-absolute">
+                    <h1 class="category-title-text">네이버 카페</h1>
+                </div>
+                <a href="https://cafe.naver.com/badmintokcafe" target="_blank" rel="noopener noreferrer" class="category-play-button category-play-button-blue">
+                    <span class="category-button-content">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" height="1em" width="1em">
+                            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+                        </svg>
+                        바로가기
+                    </span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 용품 -->
+        <div class="category-card card-teal">
+            <div class="category-card-inner">
+                <div class="category-image-wrapper">
+                    <img src="{% static 'images/landing/youtube logo.png' %}" class="category-icon" alt="유튜브">
+                </div>
+                <div class="category-title-absolute">
+                    <h1 class="category-title-text">유튜브</h1>
+                </div>
+                <a href="https://www.youtube.com/@badmintok_korea" target="_blank" rel="noopener noreferrer" class="category-play-button category-play-button-teal">
+                    <span class="category-button-content">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" height="1em" width="1em">
+                            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+                        </svg>
+                        바로가기
+                    </span>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<style>
+    /* 메인 배너 스타일 */
+    .main-banner-section {
+        width: 100%;
+        padding: 40px 20px;
+        background: #ffffff;
+    }
+
+    .main-banner-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .banner-image-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        order: 2;
+    }
+
+    .banner-image {
+        height: 200px;
+        max-width: 100%;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .banner-text-wrapper {
+        max-width: 620px;
+        line-height: 1;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .banner-title {
+        width: fit-content;
+        padding: 0 16px;
+        margin: 40px 0;
+        font-size: 36px;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.3;
+    }
+
+    .text-highlight {
+        color: var(--brand);
+    }
+
+    .banner-description-wrapper {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .banner-description {
+        border-left: 2px solid #d1d5db;
+        padding: 0 16px;
+        width: 85%;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #444444;
+        word-break: keep-all;
+    }
+
+    .banner-description p {
+        margin: 0 0 8px 0;
+    }
+
+    /* 태블릿 및 PC */
+    @media (min-width: 768px) {
+        .main-banner-container {
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .banner-image-wrapper {
+            order: 2;
+        }
+
+        .banner-image {
+            height: 694px;
+            max-width: 1100px;
+        }
+
+        .banner-text-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .banner-title {
+            font-size: 60px;
+        }
+
+        .banner-description {
+            width: 100%;
+            font-size: 14px;
+        }
+    }
+
+    /* 기존 애니메이션 */
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-20px);
+        }
+    }
+
+    /* 모바일 최적화 */
+    @media (max-width: 768px) {
+        section h1 {
+            font-size: 36px !important;
+        }
+
+        section p {
+            font-size: 18px !important;
+        }
+
+        section svg {
+            width: 80px !important;
+            height: 80px !important;
+        }
+
+        /* 버튼 내부 SVG는 작게 유지 */
+        .play-button svg,
+        .button-content svg,
+        .category-play-button svg,
+        .category-button-content svg {
+            width: 1em !important;
+            height: 1em !important;
+        }
+
+        section a {
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .main-banner-section {
+            padding: 20px 16px;
+        }
+
+        .banner-title {
+            font-size: 36px;
+            margin: 40px 0;
+        }
+
+        .banner-description {
+            width: 85%;
+            font-size: 12px;
+        }
+
+        .banner-image {
+            height: 360px;
+        }
+
+        .banner-image-wrapper {
+            justify-content: flex-end;
+        }
+    }
+
+    /* 두 번째 섹션 - 서비스 소개 스타일 */
+    .services-section {
+        width: 100%;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        padding: 80px 0;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        z-index: 3;
+    }
+
+    .services-title {
+        font-size: 24px;
+        font-weight: 600;
+        min-width: 80px;
+        color: var(--brand);
+        border-bottom: 4px solid var(--brand);
+        padding: 12px 6px;
+        text-align: center;
+        margin: 0;
+    }
+
+    .services-container {
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        padding: 0 16px;
+        gap: 40px;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* 큰 카드 */
+    .service-card-large {
+        background: var(--brand);
+        padding: 0;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(49, 170, 96, 0.5);
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .card-icons {
+        width: 100%;
+        height: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .icon-large {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        max-height: 300px;
+    }
+
+    .icon-small {
+        width: 33.33%;
+        min-width: 33.33%;
+        height: auto;
+        object-fit: fill;
+        vertical-align: top;
+    }
+
+    .card-content-large {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 24px 20px;
+        margin-right: 0;
+    }
+
+    .card-text-large {
+        color: white;
+        text-align: right;
+    }
+
+    .card-title-large {
+        font-size: 36px;
+        font-weight: 700;
+        margin: 0 0 16px 0;
+        text-align: right;
+        line-height: 1.3;
+    }
+
+    .card-description-large {
+        font-size: 15px;
+        min-width: 0;
+        width: 100%;
+        margin-left: auto;
+        margin-bottom: 0;
+        word-break: keep-all;
+        line-height: 1.7;
+        text-align: right;
+    }
+
+    .card-button-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: auto;
+    }
+
+    /* 작은 카드들 */
+    .service-cards-wrapper {
+        width: 100%;
+        display: flex;
+        gap: 20px;
+        overflow-x: scroll;
+    }
+
+    .service-card-small {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding: 20px;
+        padding-top: 6px;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        height: auto;
+        width: 100%;
+        min-width: 260px;
+    }
+
+    .card-blue {
+        background: #57BBF5;
+        box-shadow: 0 4px 6px rgba(87, 187, 245, 0.5);
+    }
+
+    .card-teal {
+        background: #36C0C0;
+        box-shadow: 0 4px 6px rgba(54, 192, 192, 0.5);
+    }
+
+    .card-orange {
+        background: #F17F46;
+        box-shadow: 0 4px 6px rgba(241, 127, 70, 0.5);
+    }
+
+    .card-image-wrapper {
+        width: 100%;
+        height: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-image {
+        height: 140px;
+        object-fit: contain;
+        width: 90%;
+        max-width: 90%;
+    }
+
+    .card-text-small {
+        color: white;
+        text-align: right;
+        width: 100%;
+    }
+
+    .card-title-small {
+        font-size: 28px;
+        font-weight: 600;
+        margin: 8px 0 4px 0;
+    }
+
+    .card-description-small {
+        font-size: 15px;
+        line-height: 1.5;
+        margin: 0 0 12px 0;
+        color: rgba(255, 255, 255, 0.9);
+        word-break: keep-all;
+    }
+
+    /* Play 버튼 */
+    .play-button {
+        width: 100px;
+        height: 48px;
+        border-radius: 999px;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+
+    .play-button-purple {
+        background: #279254;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .play-button-purple:hover {
+        background: #1f7343;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .play-button-blue {
+        background: #2BA7F0;
+    }
+
+    .play-button-blue:hover {
+        background: #0997EB;
+    }
+
+    .play-button-teal {
+        background: #13ABAB;
+    }
+
+    .play-button-teal:hover {
+        background: #009999;
+    }
+
+    .play-button-orange {
+        background: #E66B2E;
+    }
+
+    .play-button-orange:hover {
+        background: #E65209;
+    }
+
+    .button-content {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 모바일 스타일 */
+    @media (max-width: 767px) {
+        .services-section {
+            padding: 40px 0;
+        }
+
+        .services-container {
+            padding: 0 16px;
+            gap: 32px;
+        }
+
+        .card-title-large {
+            font-size: 28px;
+        }
+
+        .card-description-large {
+            font-size: 14px;
+        }
+
+        .card-content-large {
+            padding: 20px 16px;
+            gap: 16px;
+        }
+
+        .service-card-small {
+            min-width: 240px;
+        }
+
+        .card-title-small {
+            font-size: 24px;
+        }
+
+        .card-description-small {
+            font-size: 14px;
+        }
+    }
+
+    /* PC 스타일 */
+    @media (min-width: 768px) {
+        .services-section {
+            padding: 120px 0;
+        }
+
+        .services-container {
+            max-width: 1104px;
+            padding: 0 20px;
+        }
+
+        .service-card-large {
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0;
+            box-shadow: 0 10px 15px rgba(49, 170, 96, 0.5);
+        }
+
+        .card-icons {
+            flex: 1;
+            max-width: 50%;
+        }
+
+        .card-content-large {
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        .icon-large {
+            max-height: 400px;
+        }
+
+        .card-title-large {
+            font-size: 60px;
+        }
+
+        .card-description-large {
+            min-width: 420px;
+            width: 450px;
+            font-size: 18px;
+        }
+
+        .service-cards-wrapper {
+            overflow: visible;
+            gap: 36px;
+        }
+
+        .service-card-small {
+            max-width: 340px;
+            padding-top: 20px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            min-width: auto;
+        }
+
+        .card-blue {
+            box-shadow: 0 10px 15px rgba(87, 187, 245, 0.5);
+        }
+
+        .card-teal {
+            box-shadow: 0 10px 15px rgba(54, 192, 192, 0.5);
+        }
+
+        .card-orange {
+            box-shadow: 0 10px 15px rgba(241, 127, 70, 0.5);
+        }
+
+        .card-image {
+            height: 260px;
+            max-width: 100%;
+        }
+
+        .card-title-small {
+            margin: 20px 0 8px 0;
+        }
+
+        .card-description-small {
+            font-size: 15px;
+            margin: 0 0 16px 0;
+        }
+
+        .play-button {
+            width: 130px;
+            height: 60px;
+        }
+    }
+
+    /* 최신글 섹션 스타일 */
+    .latest-posts-section {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px;
+        padding: 80px 20px;
+        background: #ffffff;
+    }
+
+    .latest-posts-title {
+        font-size: 24px;
+        font-weight: 600;
+        min-width: 80px;
+        color: var(--brand);
+        border-bottom: 4px solid var(--brand);
+        padding: 12px 6px;
+        text-align: center;
+        margin: 0;
+    }
+
+    .latest-posts-container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .latest-posts-section .community-post-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .latest-posts-section .community-post-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        background: #fff;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        align-items: flex-start;
+        min-height: 152px;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .latest-posts-section .community-post-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .latest-posts-section .community-post-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .latest-posts-section .community-post-header {
+        margin-bottom: 4px;
+    }
+
+    .latest-posts-section .community-post-category {
+        display: inline-block;
+        padding: 4px 10px;
+        background: #EFEFEF;
+        color: var(--brand);
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .latest-posts-section .community-post-category-primary {
+        background: #EFEFEF;
+        color: var(--brand);
+    }
+
+    .latest-posts-section .community-post-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .latest-posts-section .community-post-excerpt {
+        margin: 4px 0;
+        font-size: 14px;
+        color: #1e293b;
+        line-height: 1.6;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+    }
+
+    .latest-posts-section .community-post-image {
+        width: 120px;
+        height: 120px;
+        min-width: 120px;
+        min-height: 120px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f1f5f9;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .latest-posts-section .community-post-thumbnail {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .latest-posts-section .community-post-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+        flex-wrap: wrap;
+    }
+
+    .latest-posts-section .community-post-separator {
+        color: #cbd5e1;
+    }
+
+    .latest-posts-section .community-post-action {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .latest-posts-section .community-post-action-icon {
+        font-size: 14px;
+    }
+
+    .latest-posts-section .community-post-action-count {
+        font-size: 13px;
+    }
+
+    .latest-posts-section .community-post-no-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 12px;
+        background: #f8fafc;
+    }
+
+    /* 더보기 버튼 */
+    .latest-posts-more {
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .more-button {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        color: #64748b;
+        font-size: 16px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .more-button:hover {
+        color: var(--brand);
+    }
+
+    .more-text-mobile-hide {
+        display: inline;
+    }
+
+    /* 게시글 없음 메시지 */
+    .no-posts-message {
+        padding: 48px 24px;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .no-posts-message p {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    /* 최신글 섹션의 SVG 아이콘은 작게 유지 */
+    .latest-posts-section svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    /* 모바일 최적화 */
+    @media (max-width: 767px) {
+        .latest-posts-section {
+            padding: 40px 16px !important;
+        }
+
+        .latest-posts-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+
+        .latest-posts-section .community-post-item {
+            padding: 12px !important;
+            gap: 12px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .latest-posts-section .community-post-image {
+            width: 80px !important;
+            height: 80px !important;
+            min-width: 80px !important;
+            min-height: 80px !important;
+        }
+
+        .latest-posts-section .community-post-title {
+            font-size: 14px !important;
+        }
+
+        .latest-posts-section .community-post-excerpt {
+            font-size: 13px !important;
+        }
+
+        .latest-posts-section .community-post-meta {
+            font-size: 12px !important;
+        }
+
+        .latest-posts-section .community-post-action-count {
+            font-size: 12px !important;
+        }
+
+        .latest-posts-section .latest-posts-more {
+            margin-top: 12px !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+        }
+
+        .latest-posts-section .more-button {
+            padding: 8px 16px !important;
+            font-size: 14px !important;
+            display: flex !important;
+            align-items: center !important;
+            width: auto !important;
+            max-width: none !important;
+        }
+
+        .latest-posts-section .more-text-mobile-hide {
+            display: inline !important;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .latest-posts-section {
+            padding: 120px 20px;
+        }
+    }
+
+
+    /* 카테고리 섹션 스타일 */
+    .category-section {
+        width: 100%;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        padding: 80px 20px;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+    }
+
+    .category-title {
+        font-size: 24px;
+        font-weight: 600;
+        min-width: 80px;
+        color: var(--brand);
+        border-bottom: 4px solid var(--brand);
+        padding: 12px 6px;
+        text-align: center;
+        margin: 0;
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        width: 100%;
+        max-width: 100%;
+        padding: 0 16px;
+    }
+
+    .category-card {
+        border-radius: 16px;
+        padding: 10px;
+        height: 200px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .category-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .category-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
+    }
+
+    .category-image-wrapper {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-start;
+    }
+
+    .category-icon {
+        width: 80px;
+        height: auto;
+        object-fit: fill;
+    }
+
+    .category-title-absolute {
+        position: static;
+        color: white;
+        text-align: left;
+        margin-bottom: 0;
+        order: 1;
+    }
+
+    .category-title-text {
+        font-size: 28px;
+        font-weight: 600;
+        margin: 0;
+        color: white;
+    }
+
+    .category-play-button {
+        width: 100px;
+        height: 48px;
+        border-radius: 999px;
+        border: none;
+        outline: none;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+        transition: background 0.2s ease;
+        text-decoration: none;
+        margin-top: 16px;
+        align-self: flex-start;
+        order: 2;
+    }
+
+    .category-button-content {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .category-play-button-pink {
+        background: #F05684;
+    }
+
+    .category-play-button-pink:hover {
+        background: #F02663;
+    }
+
+    .category-play-button-blue {
+        background: #3BC269;
+    }
+
+    .category-play-button-blue:hover {
+        background: #2FA85A;
+    }
+
+    .category-play-button-teal {
+        background: #FF3333;
+    }
+
+    .category-play-button-teal:hover {
+        background: #FF1A1A;
+    }
+
+    /* 카테고리별 색상 */
+    .category-card.card-pink {
+        background: #ec4899;
+        box-shadow: 0 4px 6px rgba(236, 72, 153, 0.5);
+    }
+
+    .category-card.card-blue {
+        background: #4DD777;
+        box-shadow: 0 4px 6px rgba(77, 215, 119, 0.5);
+    }
+
+    .category-card.card-teal {
+        background: #FF4D4D;
+        box-shadow: 0 4px 6px rgba(255, 77, 77, 0.5);
+    }
+
+    .category-card.card-purple {
+        background: #a855f7;
+        box-shadow: 0 4px 6px rgba(168, 85, 247, 0.5);
+    }
+
+    .category-card.card-orange {
+        background: #F17F46;
+        box-shadow: 0 4px 6px rgba(241, 127, 70, 0.5);
+    }
+
+    .category-card.card-green {
+        background: #10b981;
+        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.5);
+    }
+
+    /* 모바일 스타일 */
+    @media (max-width: 767px) {
+        .category-section {
+            padding: 40px 16px;
+        }
+
+        .category-grid {
+            gap: 12px;
+            padding: 0;
+        }
+
+        .category-card {
+            height: 160px;
+            padding: 10px;
+        }
+
+        .category-icon {
+            width: 60px;
+        }
+
+        .category-title-text {
+            font-size: 20px !important;
+        }
+
+        .category-play-button {
+            width: 85px;
+            height: 40px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+    }
+
+    /* 태블릿 및 PC */
+    @media (min-width: 768px) {
+        .category-section {
+            padding: 120px 20px;
+        }
+
+        .category-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1104px;
+        }
+
+        .category-card {
+            padding: 20px;
+            height: 260px;
+            gap: 0;
+        }
+
+        .category-icon {
+            width: 120px;
+        }
+
+        .category-play-button {
+            width: 130px;
+            height: 60px;
+            font-size: 16px;
+        }
+
+        .category-card.card-pink {
+            box-shadow: 0 10px 15px rgba(236, 72, 153, 0.5);
+        }
+
+        .category-card.card-blue {
+            box-shadow: 0 10px 15px rgba(77, 215, 119, 0.5);
+        }
+
+        .category-card.card-teal {
+            box-shadow: 0 10px 15px rgba(255, 77, 77, 0.5);
+        }
+
+        .category-card.card-purple {
+            box-shadow: 0 10px 15px rgba(168, 85, 247, 0.5);
+        }
+
+        .category-card.card-orange {
+            box-shadow: 0 10px 15px rgba(241, 127, 70, 0.5);
+        }
+
+        .category-card.card-green {
+            box-shadow: 0 10px 15px rgba(16, 185, 129, 0.5);
+        }
+    }
+</style>
 {% endblock %}

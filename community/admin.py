@@ -1,35 +1,170 @@
 from django.contrib import admin
 from django import forms
+from django.db.models import Q, Case, When
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import Category, Tab, Post, PostImage, Comment, PostShare, BadmintokPost, CommunityPost
+from .models import (
+    Category, Post, PostImage, Comment, PostShare,
+    BadmintokCategory, CommunityCategory,
+    BadmintokPost, CommunityPost
+)
 from .widgets import EditorJSWidget
 
 
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "slug", "display_order", "is_active", "created_at"]
-    list_filter = ["is_active", "created_at"]
+# 기본 Category Admin 클래스 (계층 구조 로직 공유용)
+class BaseCategoryAdmin(admin.ModelAdmin):
+    list_display = ["id", "hierarchy_name", "slug", "source", "parent", "display_order", "is_active", "created_at"]
+    list_filter = ["is_active", "source", "parent", "created_at"]
     search_fields = ["name", "slug"]
     list_editable = ["display_order", "is_active"]
     prepopulated_fields = {"slug": ("name",)}
-    ordering = ["display_order", "name"]
+    list_per_page = 100  # 계층 구조를 한 페이지에서 볼 수 있도록
+    ordering = []  # get_queryset의 정렬을 사용하도록 admin 자동 정렬 비활성화
+
+    fieldsets = (
+        ("기본 정보", {
+            "fields": ("name", "slug", "source")
+        }),
+        ("계층 구조", {
+            "fields": ("parent",)
+        }),
+        ("설정", {
+            "fields": ("display_order", "is_active")
+        }),
+        ("날짜", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
+        }),
+    )
+    readonly_fields = ["created_at", "updated_at"]
+
+    def get_ordering(self, request):
+        """Admin의 자동 정렬을 비활성화하고 get_queryset의 정렬 사용"""
+        return []
+
+    def changelist_view(self, request, extra_context=None):
+        """URL의 정렬 파라미터를 무시하고 계층 구조 유지"""
+        # URL에서 정렬 파라미터 제거
+        request.GET = request.GET.copy()
+        if 'o' in request.GET:
+            del request.GET['o']
+
+        # 부모 클래스의 changelist_view 호출
+        response = super().changelist_view(request, extra_context)
+
+        # TemplateResponse인 경우 context_data의 result_list를 정렬된 순서로 유지
+        if hasattr(response, 'context_data') and 'cl' in response.context_data:
+            cl = response.context_data['cl']
+            # cl.result_list는 이미 get_queryset()의 순서를 유지하고 있어야 함
+            # 하지만 Django Admin이 다시 정렬할 수 있으므로 강제로 순서 유지
+            result_list = list(cl.result_list)  # QuerySet을 list로 변환하여 순서 고정
+            cl.result_list = result_list
+
+        return response
+
+    def hierarchy_name(self, obj):
+        """계층 구조를 시각적으로 표시 (WordPress 스타일)"""
+        if obj.parent:
+            # 하위 카테고리는 들여쓰기와 구분선 표시 (WordPress 스타일)
+            return format_html(
+                '<span style="display: inline-block; padding-left: 30px; color: #666;">'
+                '<span style="color: #999;">— </span>{}'
+                '</span>',
+                obj.name
+            )
+        else:
+            # 상위 카테고리는 굵게 표시
+            return format_html(
+                '<strong style="color: #2c3338; font-weight: 600;">{}</strong>',
+                obj.name
+            )
+    hierarchy_name.short_description = "카테고리명"
+    # admin_order_field 제거 - 계층 구조 유지를 위해 컬럼 정렬 비활성화
 
 
-@admin.register(Tab)
-class TabAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "slug", "category", "source", "display_order", "is_active", "created_at"]
-    list_filter = ["source", "is_active", "created_at"]
-    search_fields = ["name", "slug"]
-    list_editable = ["display_order", "is_active"]
-    prepopulated_fields = {"slug": ("name",)}
-    ordering = ["source", "display_order", "name"]
+# 배드민톡 카테고리 Admin
+@admin.register(BadmintokCategory)
+class BadmintokCategoryAdmin(BaseCategoryAdmin):
+
+    def get_queryset(self, request):
+        """배드민톡 카테고리만 계층 구조로 표시"""
+        from community.models import Category
+
+        # 배드민톡 소스 카테고리들
+        all_categories = Category.objects.filter(source='badmintok')
+
+        # 계층 구조로 정렬
+        ordered_pks = []
+        parents = all_categories.filter(parent__isnull=True).order_by('display_order', 'name')
+
+        for parent in parents:
+            ordered_pks.append(parent.pk)
+            children = all_categories.filter(parent=parent).order_by('display_order', 'name')
+            ordered_pks.extend([child.pk for child in children])
+
+        if not ordered_pks:
+            return all_categories
+
+        # pk 순서를 Case/When으로 강제
+        preserved_order = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(ordered_pks)])
+        return all_categories.filter(pk__in=ordered_pks).order_by(preserved_order)
+
+    def get_form(self, request, obj=None, **kwargs):
+        """source를 badmintok으로 자동 설정"""
+        form = super().get_form(request, obj, **kwargs)
+        if 'source' in form.base_fields:
+            form.base_fields['source'].initial = 'badmintok'
+            form.base_fields['source'].widget = forms.HiddenInput()
+        return form
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """카테고리 선택 시 활성화된 카테고리만 표시"""
-        if db_field.name == "category":
-            kwargs["queryset"] = Category.objects.filter(is_active=True)
+        """parent 선택 시 배드민톡 카테고리만 표시"""
+        if db_field.name == "parent":
+            from community.models import Category
+            kwargs["queryset"] = Category.objects.filter(source='badmintok', parent__isnull=True, is_active=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+# 동호인톡 카테고리 Admin
+@admin.register(CommunityCategory)
+class CommunityCategoryAdmin(BaseCategoryAdmin):
+
+    def get_queryset(self, request):
+        """동호인톡 카테고리만 계층 구조로 표시"""
+        from community.models import Category
+
+        # 동호인톡 소스 카테고리들
+        all_categories = Category.objects.filter(source='community')
+
+        # 계층 구조로 정렬
+        ordered_pks = []
+        parents = all_categories.filter(parent__isnull=True).order_by('display_order', 'name')
+
+        for parent in parents:
+            ordered_pks.append(parent.pk)
+            children = all_categories.filter(parent=parent).order_by('display_order', 'name')
+            ordered_pks.extend([child.pk for child in children])
+
+        if not ordered_pks:
+            return all_categories
+
+        preserved_order = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(ordered_pks)])
+        return all_categories.filter(pk__in=ordered_pks).order_by(preserved_order)
+
+    def get_form(self, request, obj=None, **kwargs):
+        """source를 community로 자동 설정"""
+        form = super().get_form(request, obj, **kwargs)
+        if 'source' in form.base_fields:
+            form.base_fields['source'].initial = 'community'
+            form.base_fields['source'].widget = forms.HiddenInput()
+        return form
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """parent 선택 시 동호인톡 카테고리만 표시"""
+        if db_field.name == "parent":
+            from community.models import Category
+            kwargs["queryset"] = Category.objects.filter(source='community', parent__isnull=True, is_active=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
