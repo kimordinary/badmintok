@@ -45,9 +45,7 @@ class NoticeSitemap(Sitemap):
     
     def items(self):
         """모든 공지사항 포함"""
-        return Notice.objects.select_related('author').only(
-            'id', 'updated_at', 'created_at'
-        ).order_by('-created_at')
+        return Notice.objects.order_by('-created_at')
     
     def location(self, obj):
         """공지사항 상세 URL"""

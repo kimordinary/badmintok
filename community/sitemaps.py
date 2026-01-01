@@ -17,9 +17,7 @@ class CommunityPostSitemap(Sitemap):
             is_deleted=False,
             is_draft=False,
             published_at__lte=now
-        ).select_related('author', 'category').only(
-            'slug', 'updated_at', 'published_at', 'created_at'
-        ).order_by('-created_at')
+        ).select_related('author', 'category').order_by('-created_at')
     
     def location(self, obj):
         """게시글 상세 URL"""
@@ -43,9 +41,7 @@ class BadmintokPostSitemap(Sitemap):
             is_deleted=False,
             is_draft=False,
             published_at__lte=now
-        ).select_related('author', 'category').only(
-            'slug', 'updated_at', 'published_at', 'created_at'
-        ).order_by('-created_at')
+        ).select_related('author', 'category').order_by('-created_at')
     
     def location(self, obj):
         """배드민톡 게시글 상세 URL"""
@@ -69,9 +65,7 @@ class MemberReviewPostSitemap(Sitemap):
             is_deleted=False,
             is_draft=False,
             published_at__lte=now
-        ).select_related('author', 'category').only(
-            'slug', 'updated_at', 'published_at', 'created_at'
-        ).order_by('-created_at')
+        ).select_related('author', 'category').order_by('-created_at')
     
     def location(self, obj):
         """동호인 리뷰 게시글 상세 URL"""

@@ -14,9 +14,7 @@ class BandSitemap(Sitemap):
             is_public=True,
             is_approved=True,
             deletion_requested=False
-        ).select_related('created_by').only(
-            'id', 'updated_at', 'created_at'
-        ).order_by('-created_at')
+        ).select_related('created_by').order_by('-created_at')
     
     def location(self, obj):
         """밴드 상세 URL"""
@@ -38,9 +36,7 @@ class BandPostSitemap(Sitemap):
             band__is_public=True,
             band__is_approved=True,
             band__deletion_requested=False
-        ).select_related('band', 'author').only(
-            'band_id', 'id', 'updated_at', 'created_at'
-        ).order_by('-created_at')
+        ).select_related('band', 'author').order_by('-created_at')
     
     def location(self, obj):
         """밴드 게시글 상세 URL"""

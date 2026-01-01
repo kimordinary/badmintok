@@ -10,9 +10,7 @@ class ContestSitemap(Sitemap):
     
     def items(self):
         """모든 대회 포함"""
-        return Contest.objects.select_related('category', 'sponsor').only(
-            'slug', 'updated_at', 'created_at'
-        ).order_by('-created_at')
+        return Contest.objects.select_related('category', 'sponsor').order_by('-created_at')
     
     def location(self, obj):
         """대회 상세 URL"""
