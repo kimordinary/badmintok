@@ -14,6 +14,17 @@
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <meta name="theme-color" content="#31AA60">
+    <!-- 검색 엔진 사이트 검증 -->
+    <meta name="google-site-verification" content="3GKxaCC4B7n8hJKWECJj2a56RtEiufHDCSmgIe34Dcg" />
+    <meta name="naver-site-verification" content="32d5f1c3fdac130baa3f598c4061dac1ca605bbb" />
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-74RFKMWB0C"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-74RFKMWB0C');
+    </script>
     {% block extra_head %}{% endblock %}
     <!-- 모바일 오버레이 클릭 차단 방지 유틸리티 (가장 먼저 로드) -->
     <script src="{% static 'js/mobile-overlay-fix.js' %}"></script>

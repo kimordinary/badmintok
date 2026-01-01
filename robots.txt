@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# 사이트맵 위치
+Sitemap: https://yourdomain.com/sitemap.xml
+
+# 관리자 페이지 제외 (선택사항)
+Disallow: /admin/
+Disallow: /accounts/
+

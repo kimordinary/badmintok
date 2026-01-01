@@ -37,7 +37,11 @@
       "Bash(git log:*)",
       "Bash(dir:*)",
       "Bash(echo:*)",
-      "Bash(start msedge:*)"
+      "Bash(start msedge:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

@@ -79,6 +79,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
+    'django.contrib.syndication',
     # 프로젝트 앱
     'badmintok.apps.BadmintokConfig',
     # 도메인 앱

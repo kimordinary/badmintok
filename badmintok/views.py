@@ -3,6 +3,7 @@ from django.db.models import Count, Q, F, Case, When, ExpressionWrapper, FloatFi
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.utils import timezone
+from django.http import HttpResponse
 from datetime import timedelta
 from band.models import Band
 from community.models import Post, Category, PostImage
@@ -643,3 +644,26 @@ def notice_detail(request, notice_id):
     return render(request, "notices/detail.html", {
         "notice": notice,
     })
+
+
+def robots_txt(request):
+    """robots.txt 파일 서빙"""
+    from django.conf import settings
+    
+    # 실제 도메인을 가져오기 (프로덕션에서는 환경 변수나 settings에서 가져옴)
+    domain = request.get_host()
+    if not domain.startswith('http'):
+        protocol = 'https' if not settings.DEBUG else 'http'
+        domain = f"{protocol}://{domain}"
+    
+    robots_content = f"""User-agent: *
+Allow: /
+
+# 사이트맵 위치
+Sitemap: {domain}/sitemap.xml
+
+# 관리자 페이지 제외 (선택사항)
+Disallow: /admin/
+Disallow: /accounts/
+"""
+    return HttpResponse(robots_content, content_type='text/plain')

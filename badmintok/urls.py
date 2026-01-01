@@ -17,11 +17,17 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
+from django.contrib.syndication.views import Feed
 from django.urls import include, path
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
 from . import views
+from .sitemaps import sitemaps
 from community import admin_uploads
+from community.feeds import CommunityPostFeed, BadmintokPostFeed, MemberReviewPostFeed
+from band.feeds import BandFeed, BandPostFeed
+from contests.feeds import ContestFeed
 from accounts.views import privacy_policy, terms_of_service
 
 urlpatterns = [
@@ -52,6 +58,16 @@ urlpatterns = [
     path("notices/", views.notice_list, name="notice_list"),
     path("notices/<int:notice_id>/", views.notice_detail, name="notice_detail"),
     path("accounts/", include("accounts.urls", namespace="accounts")),
+    # SEO 관련
+    path("robots.txt", views.robots_txt, name="robots_txt"),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
+    # RSS 피드
+    path("rss/community/", CommunityPostFeed(), name="rss_community"),
+    path("rss/badmintok/", BadmintokPostFeed(), name="rss_badmintok"),
+    path("rss/member-reviews/", MemberReviewPostFeed(), name="rss_member_reviews"),
+    path("rss/band/", BandFeed(), name="rss_band"),
+    path("rss/band-posts/", BandPostFeed(), name="rss_band_posts"),
+    path("rss/contests/", ContestFeed(), name="rss_contests"),
 ]
 
 if settings.DEBUG:
