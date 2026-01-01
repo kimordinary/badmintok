@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}배드민톡{% endblock %}</title>
+    {% block og_title_meta %}<meta property="og:title" content="배드민톡">{% endblock %}
     <!-- 파비콘 -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon/favicon.ico' %}">
     <!-- 추가 파비콘 (선택사항) - 필요시 주석 해제하고 파일 추가 -->
@@ -17,6 +18,15 @@
     <!-- 검색 엔진 사이트 검증 -->
     <meta name="google-site-verification" content="3GKxaCC4B7n8hJKWECJj2a56RtEiufHDCSmgIe34Dcg" />
     <meta name="naver-site-verification" content="32d5f1c3fdac130baa3f598c4061dac1ca605bbb" />
+    <!-- Open Graph 기본 태그 -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="배드민톡">
+    <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    {% block og_tags %}{% endblock %}
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-74RFKMWB0C"></script>
     <script>
