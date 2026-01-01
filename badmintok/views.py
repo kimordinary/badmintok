@@ -666,4 +666,5 @@ Sitemap: {domain}/sitemap.xml
 Disallow: /admin/
 Disallow: /accounts/
 """
-    return HttpResponse(robots_content, content_type='text/plain')
+    response = HttpResponse(robots_content, content_type='text/plain; charset=utf-8')
+    return response
