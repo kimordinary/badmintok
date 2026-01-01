@@ -28,6 +28,7 @@ from community import admin_uploads
 from community.feeds import CommunityPostFeed, BadmintokPostFeed, MemberReviewPostFeed
 from band.feeds import BandFeed, BandPostFeed
 from contests.feeds import ContestFeed
+from .feeds import AllPostsFeed
 from accounts.views import privacy_policy, terms_of_service
 
 urlpatterns = [
@@ -62,6 +63,7 @@ urlpatterns = [
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
     # RSS 피드
+    path("rss", AllPostsFeed(), name="rss_all"),  # 통합 RSS 피드
     path("rss/community/", CommunityPostFeed(), name="rss_community"),
     path("rss/badmintok/", BadmintokPostFeed(), name="rss_badmintok"),
     path("rss/member-reviews/", MemberReviewPostFeed(), name="rss_member_reviews"),
