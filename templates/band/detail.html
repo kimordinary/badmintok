@@ -10,6 +10,9 @@
         position: relative;
         min-height: 400px;
         margin-top: 24px;
+        overflow-x: hidden;
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .band-cover-wrapper {
@@ -70,15 +73,18 @@
     
     .band-content-grid {
         display: grid;
-        grid-template-columns: 1fr 300px;
+        grid-template-columns: 1fr 280px;
         gap: 24px;
         align-items: start;
         width: 100%;
         box-sizing: border-box;
+        overflow-x: hidden;
     }
     
     .band-content-grid > * {
         min-width: 0;
+        width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
     }
     
@@ -99,7 +105,10 @@
         display: flex;
         align-items: flex-start;
         gap: 16px;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     
     .band-header-actions-wrapper {
@@ -135,8 +144,8 @@
     }
     
     .band-header-text {
-        flex: 1;
-        min-width: 0;
+        flex: 1 1 auto;
+        min-width: 200px;
         overflow: hidden;
     }
     
@@ -163,6 +172,8 @@
         gap: 4px;
         align-items: center;
         flex-shrink: 0;
+        flex-basis: 100%;
+        width: 100%;
     }
     
     .band-badge {
@@ -236,6 +247,9 @@
         border-bottom: 2px solid #e2e8f0;
         margin-bottom: 24px;
         margin-top: 24px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     
     .band-tab {
@@ -266,6 +280,7 @@
     .band-tab-content {
         display: none;
         width: 100%;
+        max-width: 100%;
         min-width: 0;
         box-sizing: border-box;
     }
@@ -286,7 +301,7 @@
         gap: 16px;
         height: fit-content;
         width: 100%;
-        max-width: 300px;
+        max-width: 280px;
         box-sizing: border-box;
     }
     
@@ -347,6 +362,13 @@
             margin-top: 16px;
         }
 
+        .band-cover-wrapper {
+            margin-left: -16px;
+            margin-right: -16px;
+            width: calc(100% + 32px);
+            padding: 0 16px;
+        }
+
         .band-cover-image {
             max-width: 100%;
         }
@@ -369,12 +391,24 @@
             gap: 16px;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
+            width: 100%;
         }
         
         .band-header-info {
             gap: 12px;
         }
-        
+
+        .band-header-text {
+            width: 100%;
+            min-width: 0;
+            flex-basis: 100%;
+        }
+
+        .band-header-badges {
+            width: 100%;
+        }
+
         .band-profile-image,
         .band-profile-placeholder {
             width: 64px;
@@ -411,6 +445,14 @@
             margin-top: 0 !important;
         }
         
+        .band-cover-wrapper {
+            margin-left: -16px;
+            margin-right: -16px;
+            width: calc(100% + 32px);
+            padding: 0 16px;
+            margin-bottom: 12px;
+        }
+        
         .band-cover-image {
             max-width: 100%;
             border-radius: 8px;
@@ -422,10 +464,6 @@
             max-width: 100%;
             aspect-ratio: 8/3;
             object-fit: contain;
-        }
-        
-        .band-cover-wrapper {
-            margin-bottom: 12px;
         }
         
         .band-image-grid {
@@ -441,12 +479,21 @@
             grid-template-columns: 1fr;
             gap: 16px;
         }
-        
+
         .band-header-info {
             gap: 12px;
-            flex-wrap: wrap;
         }
-        
+
+        .band-header-text {
+            width: 100%;
+            min-width: 0;
+            flex-basis: 100%;
+        }
+
+        .band-header-badges {
+            width: 100%;
+        }
+
         .band-profile-image,
         .band-profile-placeholder {
             width: 56px;
@@ -534,6 +581,21 @@
         .band-sidebar-actions {
             margin-top: 0;
             order: 1;
+        }
+    }
+    
+    /* 모바일 (560px 이하) - 더 작은 패딩 */
+    @media (max-width: 560px) {
+        .band-cover-wrapper {
+            margin-left: -12px;
+            margin-right: -12px;
+            width: calc(100% + 24px);
+            padding: 0 12px;
+        }
+        
+        .band-content-grid {
+            padding-left: 12px;
+            padding-right: 12px;
         }
     }
     
@@ -673,13 +735,89 @@
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
         }
-        
+
         .community-post-meta {
             font-size: clamp(10px, 2.5vw, 12px) !important;
             gap: clamp(4px, 1.5vw, 8px) !important;
             flex-wrap: wrap !important;
         }
-        
+
+        /* 멤버 섹션 모바일 최적화 */
+        .band-member-section {
+            padding: 14px !important;
+        }
+
+        .band-member-header {
+            margin-bottom: 12px !important;
+        }
+
+        .band-member-title {
+            font-size: 16px !important;
+        }
+
+        .band-member-count {
+            font-size: 13px !important;
+        }
+
+        .band-member-list {
+            gap: 6px !important;
+        }
+
+        .band-member-item {
+            gap: 6px !important;
+        }
+
+        .band-member-avatar {
+            width: 28px !important;
+            height: 28px !important;
+        }
+
+        .band-member-name {
+            font-size: 13px !important;
+        }
+
+        .band-member-role {
+            font-size: 10px !important;
+        }
+
+        /* 번개 카드 모바일 최적화 */
+        .flash-card {
+            padding: 14px !important;
+        }
+
+        .flash-card-inner {
+            gap: 10px !important;
+            flex-direction: row !important;
+        }
+
+        .flash-card-content {
+            min-width: 0 !important;
+        }
+
+        .flash-card-image {
+            width: 90px !important;
+            height: 120px !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* 게시판 글 이미지 모바일 최적화 */
+        .community-post-image {
+            width: 90px !important;
+            height: 90px !important;
+            min-width: 90px !important;
+        }
+
+        /* 모든 콘텐츠 영역이 화면을 넘지 않도록 */
+        .band-content-grid > * {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+
+        .flash-card, .community-post-item {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+
         .community-post-action-icon {
             font-size: clamp(12px, 3vw, 14px) !important;
         }
@@ -837,9 +975,9 @@
                     {% if home_schedules %}
                         <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
                             {% for schedule in home_schedules %}
-                                <div class="flash-card" style="position: relative; padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                <div style="flex: 1;">
+                                <div class="flash-card" style="position: relative; padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-sizing: border-box;">
+                                    <div class="flash-card-inner" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px;">
+                <div class="flash-card-content" style="flex: 1; min-width: 0;">
                                             <div style="display: flex; align-items: center; gap: clamp(6px, 2vw, 12px); margin-bottom: 12px; min-width: 0; width: 100%;">
                                                 {% if schedule.d_day_text %}
                                                     <span class="d-day-badge" style="display: inline-block; padding: clamp(4px, 1.5vw, 6px) clamp(8px, 2.5vw, 12px); background: {% if schedule.d_day_is_past %}#94a3b8{% else %}#64748b{% endif %}; color: white; border-radius: 6px; font-size: clamp(11px, 2.8vw, 13px); font-weight: 600; white-space: nowrap; flex-shrink: 0;">{{ schedule.d_day_text }}</span>
@@ -882,7 +1020,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div style="width: 120px; height: 160px; flex-shrink: 0; position: relative; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
+                                        <div class="flash-card-image" style="width: 120px; height: 160px; flex-shrink: 0; position: relative; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
                                             {% if schedule.images.all %}
                                                 {% if schedule.images.all|length > 1 %}
                                                     <!-- 슬라이드 형식 (2장 이상) -->
@@ -1134,9 +1272,9 @@
                     {% if schedules_page %}
                         <div style="display: flex; flex-direction: column; gap: 16px;">
                             {% for schedule in schedules_page %}
-                                <div class="flash-card" style="position: relative; padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                                        <div style="flex: 1;">
+                                <div class="flash-card" style="position: relative; padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-sizing: border-box;">
+                                    <div class="flash-card-inner" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px;">
+                                        <div class="flash-card-content" style="flex: 1; min-width: 0;">
                                             <div style="display: flex; align-items: center; gap: clamp(6px, 2vw, 12px); margin-bottom: 12px; min-width: 0; width: 100%;">
                                                 {% if schedule.d_day_text %}
                                                     <span class="d-day-badge" style="display: inline-block; padding: clamp(4px, 1.5vw, 6px) clamp(8px, 2.5vw, 12px); background: {% if schedule.d_day_is_past %}#94a3b8{% else %}#64748b{% endif %}; color: white; border-radius: 6px; font-size: clamp(11px, 2.8vw, 13px); font-weight: 600; white-space: nowrap; flex-shrink: 0;">{{ schedule.d_day_text }}</span>
@@ -1179,7 +1317,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div style="width: 120px; height: 160px; flex-shrink: 0; position: relative; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
+                                        <div class="flash-card-image" style="width: 120px; height: 160px; flex-shrink: 0; position: relative; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
                                             {% if schedule.images.all %}
                                                 {% if schedule.images.all|length > 1 %}
                                                     <!-- 슬라이드 형식 (2장 이상) -->
@@ -1502,20 +1640,20 @@
             
             <!-- 사이드바 -->
             <div class="band-sidebar">
-                <div style="padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                        <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">멤버</h3>
-                        <span style="font-size: 14px; color: #64748b; font-weight: 600;">{{ total_member_count }}명</span>
+                <div class="band-member-section" style="padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; width: 100%; box-sizing: border-box;">
+                    <div class="band-member-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                        <h3 class="band-member-title" style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">멤버</h3>
+                        <span class="band-member-count" style="font-size: 14px; color: #64748b; font-weight: 600;">{{ total_member_count }}명</span>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="band-member-list" style="display: flex; flex-direction: column; gap: 8px;">
                         {% for member in members %}
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <img src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
-                                <span style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ member.user.real_name }}</span>
+                            <div class="band-member-item" style="display: flex; align-items: center; gap: 8px;">
+                                <img class="band-member-avatar" src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                                <span class="band-member-name" style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ member.user.real_name }}</span>
                                 {% if member.role == "owner" %}
-                                    <span style="font-size: 11px; color: var(--brand); flex-shrink: 0;">모임장</span>
+                                    <span class="band-member-role" style="font-size: 11px; color: var(--brand); flex-shrink: 0;">모임장</span>
                                 {% elif member.role == "admin" %}
-                                    <span style="font-size: 11px; color: #64748b; flex-shrink: 0;">관리자</span>
+                                    <span class="band-member-role" style="font-size: 11px; color: #64748b; flex-shrink: 0;">관리자</span>
                                 {% endif %}
                             </div>
                         {% endfor %}
