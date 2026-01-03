@@ -1534,7 +1534,7 @@
                     {% endif %}
                     
                     <div class="band-header-actions">
-                        {% if is_creator %}
+                        {% if is_member and member.role == "owner" %}
                             <a href="{% url 'band:update' band.id %}" class="btn btn-primary band-action-btn">모임 수정</a>
                             <a href="{% url 'band:member_management' band.id %}" class="btn btn-primary band-action-btn">멤버 관리</a>
                         {% endif %}
@@ -1690,10 +1690,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="fab-menu-item-icon">✍️</span>
                 <span>게시판 글쓰기</span>
             </a>
-            {% if is_creator %}
+            {% if member.role == "owner" %}
                 <a href="{% url 'band:update' band.id %}" class="fab-menu-item">
                     <span class="fab-menu-item-icon">✏️</span>
                     <span>모임 수정</span>
+                </a>
+                <a href="{% url 'band:member_management' band.id %}" class="fab-menu-item">
+                    <span class="fab-menu-item-icon">👥</span>
+                    <span>멤버 관리</span>
                 </a>
             {% endif %}
             {% if member.role == "owner" or member.role == "admin" %}
