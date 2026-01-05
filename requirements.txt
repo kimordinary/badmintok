@@ -5,3 +5,6 @@ cryptography
 pillow
 requests
 urllib3
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers

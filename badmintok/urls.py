@@ -59,6 +59,9 @@ urlpatterns = [
     path("notices/", views.notice_list, name="notice_list"),
     path("notices/<int:notice_id>/", views.notice_detail, name="notice_detail"),
     path("accounts/", include("accounts.urls", namespace="accounts")),
+    # API
+    path("api/auth/", include("accounts.api.urls", namespace="accounts_api")),
+    path("api/badmintok/", include("badmintok.api.urls", namespace="badmintok_api")),
     # SEO 관련
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
