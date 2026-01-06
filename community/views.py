@@ -826,6 +826,8 @@ def badmintok_post_editor(request, post_id=None):
                     messages.success(request, '게시글이 작성되었습니다.')
 
             # admin 페이지로 리다이렉트
+            # Django admin URL 이름은 Proxy 모델의 app_label을 사용
+            # BadmintokPost의 app_label이 'badmintok'이므로 badmintok_badmintokpost
             return redirect('admin:badmintok_badmintokpost_changelist')
 
         except Exception as e:

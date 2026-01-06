@@ -67,12 +67,15 @@ def badmintok_detail(request, slug):
     if not request.user.is_authenticated or not request.user.is_staff:
         base_filter &= Q(is_draft=False, published_at__lte=now)
 
-    post = get_object_or_404(
-        Post.objects.filter(base_filter)
-        .select_related("author", "category")
-        .prefetch_related("images", "likes", "categories"),
-        slug=slug
-    )
+    # slug로 게시글 조회 (같은 slug가 여러 개 있을 수 있으므로 최신 것 우선)
+    queryset = Post.objects.filter(base_filter).filter(slug=slug).order_by('-created_at')
+    
+    # 같은 slug가 여러 개일 경우 최신 글을 가져옴
+    post = queryset.select_related("author", "category").prefetch_related("images", "likes", "categories").first()
+    
+    if not post:
+        from django.http import Http404
+        raise Http404("게시글을 찾을 수 없습니다.")
 
     # 세션 기반 조회수 중복 방지 (3시간 제한)
     session_key = 'viewed_posts'

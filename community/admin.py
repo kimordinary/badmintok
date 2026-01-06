@@ -369,8 +369,10 @@ class BadmintokPostAdmin(BasePostAdmin):
     def actions_column(self, obj):
         """수정/삭제 버튼 컬럼"""
         if obj.pk:
-            change_url = reverse('admin:community_badmintokpost_change', args=[obj.pk])
-            delete_url = reverse('admin:community_badmintokpost_delete', args=[obj.pk])
+            # Django admin URL 이름은 Proxy 모델의 app_label을 사용
+            # BadmintokPost의 app_label이 'badmintok'이므로 badmintok_badmintokpost
+            change_url = reverse('admin:badmintok_badmintokpost_change', args=[obj.pk])
+            delete_url = reverse('admin:badmintok_badmintokpost_delete', args=[obj.pk])
             return format_html(
                 '<div style="display: flex; gap: 8px;">'
                 '<a href="{}" class="button" style="padding: 6px 12px; background: #417690; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">수정</a>'
