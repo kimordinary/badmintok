@@ -546,6 +546,10 @@ main > section {
     background: #3b82f6;
 }
 
+.contest-event-badge.event-badge-single {
+    background: #a855f7;
+}
+
 .contest-event-badge.event-badge-default {
     background: #475569;
 }

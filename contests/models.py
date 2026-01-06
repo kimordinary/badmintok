@@ -225,6 +225,7 @@ class ContestSchedule(models.Model):
         ("혼복", "혼복"),
         ("여복", "여복"),
         ("남복", "남복"),
+        ("단식", "단식"),
     )
     AGE_CHOICES = (
         ("10대", "10대"),

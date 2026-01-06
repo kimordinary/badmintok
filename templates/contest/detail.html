@@ -88,7 +88,7 @@
                                                 <span style="min-width: 120px;">{{ entry.date|date:"n월 j일 (D)" }}</span>
                                                 {% for event in entry.get_events_display %}
                                                     <span class="contest-event-badge
-                                                        {% if event == '여복' %}event-badge-female{% elif event == '혼복' %}event-badge-mixed{% elif event == '남복' %}event-badge-male{% else %}event-badge-default{% endif %}
+                                                        {% if event == '여복' %}event-badge-female{% elif event == '혼복' %}event-badge-mixed{% elif event == '남복' %}event-badge-male{% elif event == '단식' %}event-badge-single{% else %}event-badge-default{% endif %}
                                                     ">{{ event }}</span>
                                                 {% endfor %}
                                                 {% if entry.get_age_display %}
