@@ -826,7 +826,7 @@ def badmintok_post_editor(request, post_id=None):
                     messages.success(request, '게시글이 작성되었습니다.')
 
             # admin 페이지로 리다이렉트
-            return redirect('admin:community_badmintokpost_changelist')
+            return redirect('admin:badmintok_badmintokpost_changelist')
 
         except Exception as e:
             logger.error(f'게시글 저장 실패: {str(e)}')
