@@ -89,7 +89,7 @@ class ContestAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     autocomplete_fields = ("category", "sponsor")
     fieldsets = (
-        (None, {"fields": ("category", "is_qualifying", "title", "slug", "description")}),
+        (None, {"fields": ("category", "is_qualifying", "title", "slug", "description", "pdf_file")}),
         # 인라인(경기 일정) 바로 위에 오도록 일정/접수를 가운데로 배치
         ("일정 및 접수", {"fields": ("schedule_start", "schedule_end", "registration_start", "registration_end")}),
         ("참가 대상 (종목 / 연령 / 급수)", {"fields": ("participant_target",)}),

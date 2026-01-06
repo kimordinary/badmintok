@@ -32,6 +32,15 @@ def contest_image_upload_to(instance, filename):
     return f"contest_images/{unique_filename}"
 
 
+def contest_pdf_upload_to(instance, filename):
+    """대회 요강 PDF 파일명 생성 함수 - 파일명을 안전하게 처리"""
+    # 파일 확장자 추출
+    ext = os.path.splitext(filename)[1].lower()
+    # UUID를 사용하여 고유 파일명 생성 (한글/특수문자 문제 해결)
+    unique_filename = f"{uuid.uuid4().hex[:12]}{ext}"
+    return f"contest_pdfs/{unique_filename}"
+
+
 class Sponsor(models.Model):
     name = models.CharField("스폰서명", max_length=100, unique=True)
 
@@ -101,6 +110,7 @@ class Contest(models.Model):
     registration_name = models.CharField("접수처 이름", max_length=200, blank=True, help_text="접수처 이름을 입력하세요. 예: 배드민톡, 네이버 등")
     registration_link = models.URLField("접수 링크", blank=True)
     description = models.TextField("대회 요강 AI 요약", blank=True)
+    pdf_file = models.FileField("대회 요강 PDF", upload_to=contest_pdf_upload_to, blank=True, null=True, help_text="대회 요강 원본 PDF 파일을 업로드하세요.")
     participant_target = models.TextField("참가 대상 (종목 / 연령 / 급수)", blank=True, help_text="참가 대상, 종목, 연령, 급수 정보를 입력하세요.")
     award_reward_text = models.TextField("입상상품", blank=True, help_text="입상상품에 대한 상세 정보를 입력하세요.")
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="liked_contests", blank=True, verbose_name="좋아요")
