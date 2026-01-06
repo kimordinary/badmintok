@@ -96,7 +96,7 @@
             font-size: 14px;
             font-weight: 500;
             padding: 8px 12px;
-            border-radius: 6px;
+            border-radius: 20px;
             transition: all 0.2s;
         }
 
@@ -112,7 +112,7 @@
             width: 36px;
             height: 36px;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border-radius: 20px;
             background: #fff;
             color: #64748b;
             cursor: pointer;
@@ -273,6 +273,22 @@
             fill: #1e293b;
         }
 
+        /* 버튼 툴바 아이콘 커스텀 */
+        .ql-toolbar .ql-button {
+            position: relative;
+        }
+
+        .ql-toolbar .ql-button:before {
+            content: '';
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='8' width='18' height='8' rx='2'/%3E%3Cpath d='M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
         /* 사이드바 스타일 */
         .wp-sidebar-section {
             margin-bottom: 24px;
@@ -309,7 +325,7 @@
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border-radius: 20px;
             font-size: 14px;
             color: #334155;
             background: #fff;
@@ -332,7 +348,7 @@
             align-items: center;
             gap: 10px;
             padding: 10px;
-            border-radius: 6px;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -358,7 +374,7 @@
         /* 버튼 스타일 */
         .wp-btn {
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: 20px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -649,7 +665,7 @@
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            border-radius: 20px;
             font-size: 14px;
             font-family: inherit;
             transition: all 0.2s;
@@ -668,6 +684,587 @@
             margin-top: 24px;
             padding-top: 20px;
             border-top: 1px solid #e2e8f0;
+        }
+
+        /* 버튼 블롯 스타일 */
+        .ql-button-container {
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .ql-button-wrapper {
+            display: inline-block;
+            position: relative;
+        }
+
+        .ql-button-wrapper:hover .ql-button-edit,
+        .ql-button-wrapper:hover .ql-button-delete {
+            opacity: 1;
+        }
+
+        .ql-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            width: 70%;
+            max-width: 100%;
+            margin: 16px auto; /* 중앙 정렬, 상하 여백 추가 */
+            padding: 12px 24px;
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+            background: #31AA60; /* 브랜드 컬러 */
+            color: white !important; /* 항상 흰색으로 고정 */
+            position: relative;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .ql-button {
+                font-size: 18px;
+                padding: 10px 20px;
+            }
+        }
+
+        /* 링크 스타일 무시 */
+        .ql-button:link,
+        .ql-button:visited,
+        .ql-button:hover,
+        .ql-button:active {
+            color: white !important;
+            text-decoration: none !important;
+        }
+
+        .ql-button:hover {
+            background: #279254; /* 브랜드 컬러 hover (--brand-700) */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(49, 170, 96, 0.3);
+        }
+
+        /* 버튼 텍스트 */
+        .ql-button-text {
+            display: inline-block;
+            line-height: 1.5;
+        }
+
+        /* 버튼 화살표 아이콘 */
+        .ql-button-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            height: 1em;
+            width: 1em;
+            margin-left: 6px;
+            vertical-align: baseline;
+        }
+
+        .ql-button-icon svg {
+            height: 1em;
+            width: 1em;
+            fill: currentColor;
+            display: block;
+        }
+
+        /* 스타일 옵션들도 브랜드 컬러로 통일 */
+        .ql-button-primary {
+            background: #31AA60;
+            color: white !important;
+        }
+
+        .ql-button-primary:hover {
+            background: #279254;
+            color: white !important;
+        }
+
+        .ql-button-secondary {
+            background: #31AA60;
+            color: white !important;
+        }
+
+        .ql-button-secondary:hover {
+            background: #279254;
+            color: white !important;
+        }
+
+        .ql-button-outline {
+            background: transparent;
+            color: #31AA60 !important;
+            border: 2px solid #31AA60;
+        }
+
+        .ql-button-outline:hover {
+            background: #31AA60;
+            color: white !important;
+        }
+
+        .ql-button-outline .ql-button-icon {
+            color: inherit;
+        }
+
+        .ql-button-ghost {
+            background: transparent;
+            color: #31AA60 !important;
+            border: 2px solid #31AA60;
+        }
+
+        .ql-button-ghost:hover {
+            background: #31AA60;
+            color: white !important;
+        }
+
+        .ql-button-ghost .ql-button-icon {
+            color: inherit;
+        }
+
+        .ql-button-edit,
+        .ql-button-delete {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .ql-button-delete {
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .ql-button-edit {
+            right: 20px;
+            background: #3b82f6;
+            color: white;
+        }
+
+        .ql-button-edit:hover {
+            background: #2563eb;
+        }
+
+        .ql-button-delete:hover {
+            background: #dc2626;
+        }
+
+        /* 버튼 설정 모달 */
+        .button-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10002;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button-modal.active {
+            display: flex;
+        }
+
+        .button-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .button-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .button-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .button-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .button-modal-close:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .button-modal-form-group {
+            margin-bottom: 16px;
+        }
+
+        .button-modal-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .button-modal-label .required {
+            color: #ef4444;
+        }
+
+        .button-modal-input,
+        .button-modal-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .button-modal-input:focus,
+        .button-modal-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .button-modal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .button-modal-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+
+        .button-modal-preview {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .button-modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* 이미지 크기 조정 모달 */
+        .resize-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .resize-modal.active {
+            display: flex;
+        }
+
+        .resize-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .resize-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .resize-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .resize-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .resize-modal-close:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .resize-preview {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .resize-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .resize-input-group {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .resize-input-wrapper {
+            flex: 1;
+        }
+
+        .resize-input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .resize-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .resize-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .resize-unit {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .resize-presets {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .resize-preset-btn {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #fff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .resize-preset-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .resize-preset-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* 에디터 내 이미지 크기 조정 핸들 */
+        .ql-editor img {
+            cursor: pointer;
+            transition: all 0.2s;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .ql-editor img:hover {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        .ql-editor img.resizing {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* 이미지 크기 표시 배지 */
+        .image-size-badge {
+            position: absolute;
+            top: -24px;
+            left: 0;
+            background: #1e293b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .ql-editor figure {
+            position: relative;
+            display: inline-block;
+        }
+
+        .ql-editor figure:hover .image-size-badge {
+            opacity: 1;
+        }
+
+        /* 에디터 내부 버튼 스타일 */
+        .ql-editor .ql-button-container {
+            margin: 24px 0;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .ql-editor .ql-button-wrapper {
+            display: inline-block;
+            position: relative;
+            width: 70%;
+        }
+
+        .ql-editor .ql-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            width: 100%;
+            margin: 0 auto;
+            padding: 12px 24px;
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+            background: #31AA60;
+            color: white !important;
+            position: relative;
+        }
+
+        .ql-editor .ql-button:link,
+        .ql-editor .ql-button:visited,
+        .ql-editor .ql-button:hover,
+        .ql-editor .ql-button:active {
+            color: white !important;
+            text-decoration: none !important;
+        }
+
+        .ql-editor .ql-button:hover {
+            background: #279254;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(49, 170, 96, 0.3);
+        }
+
+        .ql-editor .ql-button-text {
+            display: inline-block;
+            line-height: 1.5;
+        }
+
+        .ql-editor .ql-button-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            height: 1em;
+            width: 1em;
+            margin-left: 6px;
+            vertical-align: baseline;
+        }
+
+        .ql-editor .ql-button-icon svg {
+            height: 1em;
+            width: 1em;
+            fill: currentColor;
+            display: block;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .ql-editor .ql-button {
+                font-size: 18px;
+                padding: 10px 20px;
+            }
         }
     </style>
 </head>
@@ -1099,6 +1696,69 @@
             </div>
         </div>
 
+        <!-- 버튼 설정 모달 -->
+        <div class="button-modal" id="buttonModal">
+            <div class="button-modal-content">
+                <div class="button-modal-header">
+                    <h3 class="button-modal-title">버튼 설정</h3>
+                    <button type="button" class="button-modal-close" id="buttonModalClose">
+                        <span class="material-symbols-outlined" style="font-size: 24px;">close</span>
+                    </button>
+                </div>
+
+                <div class="button-modal-form-group">
+                    <label class="button-modal-label">
+                        버튼 텍스트 <span class="required">*</span>
+                    </label>
+                    <input type="text" id="buttonModalText" class="button-modal-input" placeholder="예: 자세히 보기" required>
+                </div>
+
+                <div class="button-modal-form-group">
+                    <label class="button-modal-label">
+                        링크 URL <span class="required">*</span>
+                    </label>
+                    <input type="url" id="buttonModalUrl" class="button-modal-input" placeholder="https://example.com" required>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        내부 링크는 /로 시작하는 경로를 입력하세요
+                    </p>
+                </div>
+
+                <div class="button-modal-form-group">
+                    <label class="button-modal-label">버튼 스타일</label>
+                    <select id="buttonModalStyle" class="button-modal-select">
+                        <option value="ql-button-primary">Primary (기본 - 브랜드 컬러)</option>
+                        <option value="ql-button-secondary">Secondary (브랜드 컬러)</option>
+                        <option value="ql-button-outline">Outline (테두리)</option>
+                        <option value="ql-button-ghost">Ghost (투명 테두리)</option>
+                    </select>
+                </div>
+
+                <div class="button-modal-form-group">
+                    <label class="button-modal-checkbox">
+                        <input type="checkbox" id="buttonModalNewTab">
+                        <span style="font-size: 13px; color: #475569;">새 탭에서 열기</span>
+                    </label>
+                </div>
+
+                <div class="button-modal-preview" id="buttonModalPreview">
+                    <a href="#" class="ql-button ql-button-primary" id="buttonPreviewButton" style="color: white !important; text-decoration: none !important;">
+                        <span class="ql-button-text">미리보기</span>
+                        <span class="ql-button-icon"><svg aria-hidden="true" role="img" height="1em" width="1em" viewBox="0 0 256 512" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"></path></svg></span>
+                    </a>
+                </div>
+
+                <div class="button-modal-footer">
+                    <button type="button" class="wp-btn wp-btn-secondary" id="buttonModalCancel">
+                        취소
+                    </button>
+                    <button type="button" class="wp-btn wp-btn-primary" id="buttonModalSave">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                        적용
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- 이미지 Alt 텍스트 모달 -->
         <div class="alt-modal" id="altModal">
             <div class="alt-modal-content">
@@ -1152,10 +1812,169 @@
                 </div>
             </div>
         </div>
+
+        <!-- 이미지 크기 조정 모달 -->
+        <div class="resize-modal" id="resizeModal">
+            <div class="resize-modal-content">
+                <div class="resize-modal-header">
+                    <h3 class="resize-modal-title">이미지 크기 조정</h3>
+                    <button type="button" class="resize-modal-close" id="resizeModalClose">
+                        <span class="material-symbols-outlined" style="font-size: 24px;">close</span>
+                    </button>
+                </div>
+
+                <div class="resize-preview" id="resizePreview">
+                    <img id="resizePreviewImage" src="" alt="미리보기" style="max-width: 100%; height: auto;">
+                </div>
+
+                <div class="resize-presets">
+                    <button type="button" class="resize-preset-btn" data-size="25">25%</button>
+                    <button type="button" class="resize-preset-btn" data-size="50">50%</button>
+                    <button type="button" class="resize-preset-btn" data-size="75">75%</button>
+                    <button type="button" class="resize-preset-btn" data-size="100">100%</button>
+                    <button type="button" class="resize-preset-btn active" data-size="original">원본</button>
+                    <button type="button" class="resize-preset-btn" data-size="fit">적응형</button>
+                </div>
+
+                <div class="resize-input-group">
+                    <div class="resize-input-wrapper">
+                        <label class="resize-input-label">너비</label>
+                        <input type="number" id="resizeWidth" class="resize-input" min="1" step="1">
+                        <div class="resize-unit" id="resizeWidthUnit">px</div>
+                    </div>
+                    <div class="resize-input-wrapper">
+                        <label class="resize-input-label">높이</label>
+                        <input type="number" id="resizeHeight" class="resize-input" min="1" step="1">
+                        <div class="resize-unit" id="resizeHeightUnit">px</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="resizeMaintainAspect" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-size: 13px; color: #475569; font-weight: 500;">비율 유지</span>
+                    </label>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="resizeUnit" value="px" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-size: 13px; color: #475569; font-weight: 500;">픽셀 (px)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
+                        <input type="radio" name="resizeUnit" value="%" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-size: 13px; color: #475569; font-weight: 500;">퍼센트 (%)</span>
+                    </label>
+                </div>
+
+                <div class="alt-modal-footer">
+                    <button type="button" class="wp-btn wp-btn-secondary" id="resizeModalCancel">
+                        취소
+                    </button>
+                    <button type="button" class="wp-btn wp-btn-primary" id="resizeModalSave">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                        적용
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Quill Editor -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        // ========== Quill 커스텀 Button Blot 정의 ==========
+        const BlockEmbed = Quill.import('blots/block/embed');
+        
+        class ButtonBlot extends BlockEmbed {
+            static create(value) {
+                const node = super.create();
+                node.setAttribute('contenteditable', 'false');
+                
+                // 버튼 요소 생성
+                const button = document.createElement('a');
+                button.href = value.url || '#';
+                button.className = 'ql-button ' + (value.style || 'ql-button-primary');
+                
+                // 링크 스타일 무시 (항상 흰색 텍스트)
+                button.style.color = 'white';
+                button.style.textDecoration = 'none';
+                button.style.cssText = (value.customStyle || '') + 'color: white !important; text-decoration: none !important;';
+                
+                // 버튼 내용 구조 생성 (텍스트 + 아이콘)
+                const buttonText = document.createElement('span');
+                buttonText.className = 'ql-button-text';
+                buttonText.textContent = value.text || '버튼';
+                
+                // SVG 화살표 아이콘 생성
+                const buttonIcon = document.createElement('span');
+                buttonIcon.className = 'ql-button-icon';
+                buttonIcon.innerHTML = '<svg aria-hidden="true" role="img" height="1em" width="1em" viewBox="0 0 256 512" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"></path></svg>';
+                
+                // 버튼에 텍스트와 아이콘 추가
+                button.appendChild(buttonText);
+                button.appendChild(buttonIcon);
+                
+                // 새 탭에서 열기 설정
+                if (value.openInNewTab) {
+                    button.target = '_blank';
+                    button.rel = 'noopener noreferrer';
+                }
+                
+                // 버튼 편집을 위한 wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'ql-button-wrapper';
+                wrapper.appendChild(button);
+                
+                // 편집 버튼
+                const editBtn = document.createElement('button');
+                editBtn.className = 'ql-button-edit';
+                editBtn.innerHTML = '✎';
+                editBtn.title = '버튼 편집';
+                editBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const buttonData = ButtonBlot.value(node);
+                    showButtonModal(buttonData, function(newData) {
+                        const newButton = ButtonBlot.create(newData);
+                        node.parentNode.replaceChild(newButton, node);
+                    });
+                };
+                wrapper.appendChild(editBtn);
+                
+                // 삭제 버튼
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'ql-button-delete';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = '버튼 삭제';
+                deleteBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    node.remove();
+                };
+                wrapper.appendChild(deleteBtn);
+                
+                node.appendChild(wrapper);
+                node.setAttribute('data-button-data', JSON.stringify(value));
+                
+                return node;
+            }
+            
+            static value(node) {
+                try {
+                    return JSON.parse(node.getAttribute('data-button-data') || '{}');
+                } catch (e) {
+                    return {};
+                }
+            }
+            
+            static blotName = 'button';
+            static tagName = 'div';
+            static className = 'ql-button-container';
+        }
+        
+        Quill.register(ButtonBlot);
+    </script>
     <script>
         // 이미지 업로드 핸들러 (Quill 초기화 전에 정의)
         async function imageHandler() {
@@ -1230,10 +2049,18 @@
                         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                         ['blockquote', 'code-block'],
                         ['link', 'image', 'video'],
+                        ['button'],
                         ['clean']
                     ],
                     handlers: {
-                        'image': imageHandler
+                        'image': imageHandler,
+                        'button': function() {
+                            showButtonModal({}, function(buttonData) {
+                                const range = quill.getSelection(true);
+                                quill.insertEmbed(range.index, 'button', buttonData, 'user');
+                                quill.setSelection(range.index + 1, 'user');
+                            });
+                        }
                     }
                 }
             },
@@ -1244,6 +2071,172 @@
         const hiddenContent = document.getElementById('hidden_content');
         if (hiddenContent && hiddenContent.value) {
             quill.root.innerHTML = hiddenContent.value;
+        }
+
+        // ========== 스크롤 방지 기능 ==========
+        // 툴바 버튼 및 드롭다운 클릭 시 스크롤 방지
+        const toolbarElement = document.querySelector('.ql-toolbar');
+        
+        if (toolbarElement && quill) {
+            // 현재 스크롤 위치를 저장하는 변수
+            let savedScrollY = null;
+            
+            // 툴바의 모든 클릭 이벤트 처리 (버튼 + 드롭다운)
+            toolbarElement.addEventListener('mousedown', function(e) {
+                const button = e.target.closest('button');
+                const pickerLabel = e.target.closest('.ql-picker-label');
+                const pickerItem = e.target.closest('.ql-picker-item');
+                
+                // 버튼 또는 드롭다운 클릭 시
+                if (button || pickerLabel || pickerItem) {
+                    // 현재 스크롤 위치 저장
+                    savedScrollY = window.scrollY;
+                    
+                    // 드롭다운 옵션 선택 시
+                    if (pickerItem) {
+                        // 옵션 선택 후 스크롤 위치 복원
+                        setTimeout(() => {
+                            requestAnimationFrame(() => {
+                                if (savedScrollY !== null) {
+                                    window.scrollTo(0, savedScrollY);
+                                    savedScrollY = null;
+                                }
+                            });
+                        }, 10);
+                    }
+                    // 드롭다운 버튼 클릭 시
+                    else if (pickerLabel) {
+                        // 드롭다운이 열린 후 스크롤 위치 복원
+                        setTimeout(() => {
+                            requestAnimationFrame(() => {
+                                if (savedScrollY !== null) {
+                                    window.scrollTo(0, savedScrollY);
+                                }
+                            });
+                        }, 10);
+                    }
+                    // 일반 버튼 클릭 시
+                    else if (button) {
+                        // 버튼에 포커스가 가지 않도록 방지
+                        e.preventDefault();
+                        
+                        // 에디터로 포커스 이동 (스크롤 없이)
+                        setTimeout(() => {
+                            // 현재 선택 영역 유지 또는 에디터 끝으로 이동
+                            const selection = quill.getSelection();
+                            if (selection && selection.index >= 0) {
+                                // 기존 선택 영역 유지
+                                quill.setSelection(selection.index, selection.length, 'user');
+                            } else {
+                                // 선택 영역이 없으면 에디터 끝으로
+                                const length = quill.getLength();
+                                quill.setSelection(length - 1, 0, 'user');
+                            }
+                            
+                            // 포커스 이동 후 스크롤 위치 복원
+                            requestAnimationFrame(() => {
+                                if (savedScrollY !== null) {
+                                    window.scrollTo(0, savedScrollY);
+                                    savedScrollY = null;
+                                }
+                            });
+                        }, 0);
+                    }
+                }
+            }, true); // capture phase에서 먼저 처리
+            
+            // 드롭다운 옵션 클릭 이벤트 추가 처리
+            toolbarElement.addEventListener('click', function(e) {
+                const pickerItem = e.target.closest('.ql-picker-item');
+                const pickerLabel = e.target.closest('.ql-picker-label');
+                
+                if (pickerItem || pickerLabel) {
+                    const scrollY = window.scrollY;
+                    
+                    // 클릭 처리 후 스크롤 위치 복원
+                    setTimeout(() => {
+                        requestAnimationFrame(() => {
+                            window.scrollTo(0, scrollY);
+                        });
+                    }, 20);
+                }
+            }, true);
+            
+            // 포커스 이벤트 차단 (버튼 및 드롭다운)
+            toolbarElement.addEventListener('focusin', function(e) {
+                const target = e.target;
+                if (target.tagName === 'BUTTON' || 
+                    target.classList.contains('ql-picker-label') ||
+                    target.classList.contains('ql-picker-item')) {
+                    // 포커스 이벤트는 차단하지 않고, 스크롤만 방지
+                    if (savedScrollY !== null) {
+                        requestAnimationFrame(() => {
+                            window.scrollTo(0, savedScrollY);
+                        });
+                    }
+                }
+            }, true);
+            
+            // 드롭다운이 열릴 때 스크롤 방지
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const target = mutation.target;
+                        if (target.classList.contains('ql-expanded')) {
+                            // 드롭다운이 열렸을 때 스크롤 위치 복원
+                            if (savedScrollY !== null) {
+                                requestAnimationFrame(() => {
+                                    window.scrollTo(0, savedScrollY);
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // 모든 드롭다운 감시
+            const pickers = toolbarElement.querySelectorAll('.ql-picker');
+            pickers.forEach(function(picker) {
+                observer.observe(picker, { attributes: true, attributeFilter: ['class'] });
+            });
+        }
+
+        // 붙여넣기 시 스크롤 방지
+        if (quill) {
+            const editorRoot = quill.root;
+            
+            // 붙여넣기 이벤트 처리
+            editorRoot.addEventListener('paste', function(e) {
+                const scrollY = window.scrollY;
+                
+                // 붙여넣기 처리 후 스크롤 위치 복원
+                setTimeout(() => {
+                    requestAnimationFrame(() => {
+                        window.scrollTo(0, scrollY);
+                    });
+                }, 0);
+            }, true);
+            
+            // 에디터 포커스 시 스크롤 방지 (툴바에서 온 경우만)
+            let isToolbarClick = false;
+            
+            if (toolbarElement) {
+                toolbarElement.addEventListener('mousedown', function() {
+                    isToolbarClick = true;
+                    setTimeout(() => {
+                        isToolbarClick = false;
+                    }, 100);
+                }, true);
+            }
+            
+            editorRoot.addEventListener('focus', function(e) {
+                if (isToolbarClick) {
+                    const scrollY = window.scrollY;
+                    requestAnimationFrame(() => {
+                        window.scrollTo(0, scrollY);
+                    });
+                }
+            }, true);
         }
 
         // 드래그 앤 드롭 이미지 업로드
@@ -2135,6 +3128,11 @@
 
                         // SEO 분석 다시 실행
                         performSEOAnalysis();
+
+                        // 이미지 크기 조정 핸들러 설정 (약간의 지연을 두어 DOM이 완전히 렌더링되도록)
+                        setTimeout(() => {
+                            setupImageResizeHandlers();
+                        }, 200);
                     }
                 }, 100);
 
@@ -2181,6 +3179,604 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && altModal.classList.contains('active')) {
                 closeAltModal();
+            }
+        });
+
+        // ========== 이미지 크기 조정 기능 ==========
+        const resizeModal = document.getElementById('resizeModal');
+        const resizeModalClose = document.getElementById('resizeModalClose');
+        const resizeModalCancel = document.getElementById('resizeModalCancel');
+        const resizeModalSave = document.getElementById('resizeModalSave');
+        const resizePreviewImage = document.getElementById('resizePreviewImage');
+        const resizeWidth = document.getElementById('resizeWidth');
+        const resizeHeight = document.getElementById('resizeHeight');
+        const resizeMaintainAspect = document.getElementById('resizeMaintainAspect');
+        const resizeWidthUnit = document.getElementById('resizeWidthUnit');
+        const resizeHeightUnit = document.getElementById('resizeHeightUnit');
+        const resizePresetBtns = document.querySelectorAll('.resize-preset-btn');
+        const resizeUnitRadios = document.querySelectorAll('input[name="resizeUnit"]');
+
+        let currentImageElement = null;
+        let originalImageWidth = 0;
+        let originalImageHeight = 0;
+        let originalImageSrc = '';
+
+        // 이미지 클릭/더블클릭 이벤트 처리
+        function setupImageResizeHandlers() {
+            if (!quill) return;
+            
+            const editor = quill.root;
+            
+            // 기존 이미지에 이벤트 리스너 추가
+            const images = editor.querySelectorAll('img');
+            images.forEach(img => {
+                // 이미 핸들러가 설정된 이미지는 건너뛰기 (중복 방지)
+                if (img.dataset.resizeHandlerAdded === 'true') {
+                    return;
+                }
+
+                // 더블클릭으로 크기 조정 모달 열기
+                img.addEventListener('dblclick', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openResizeModal(this);
+                });
+
+                // 이미지 로드 완료 후 배지 설정 (DOM 구조 변경 방지)
+                if (img.complete) {
+                    // 이미 로드된 경우
+                    setTimeout(() => updateImageSizeBadge(img), 100);
+                } else {
+                    // 아직 로드 중인 경우
+                    img.addEventListener('load', function() {
+                        setTimeout(() => updateImageSizeBadge(this), 100);
+                    }, { once: true });
+                }
+
+                // 핸들러가 설정되었음을 표시
+                img.dataset.resizeHandlerAdded = 'true';
+            });
+        }
+
+        // 이미지 크기 배지 업데이트 (DOM 구조 변경 없이 안전하게)
+        function updateImageSizeBadge(img) {
+            if (!img || !img.parentElement || !img.complete) {
+                // 이미지가 아직 로드되지 않았으면 나중에 시도
+                if (img && !img.complete) {
+                    img.addEventListener('load', function() {
+                        updateImageSizeBadge(this);
+                    }, { once: true });
+                }
+                return;
+            }
+            
+            // 배지는 나중에 호버 시 동적으로 표시하도록 변경 (DOM 변경 최소화)
+            // 여기서는 단순히 이미지에 데이터만 저장
+            const width = img.offsetWidth || img.naturalWidth || 0;
+            const height = img.offsetHeight || img.naturalHeight || 0;
+            
+            if (width > 0 && height > 0) {
+                img.dataset.imageWidth = width;
+                img.dataset.imageHeight = height;
+                
+                // 호버 시 배지 표시
+                if (!img.dataset.badgeHoverAdded) {
+                    img.addEventListener('mouseenter', function() {
+                        showImageSizeBadge(this);
+                    });
+                    img.addEventListener('mouseleave', function() {
+                        hideImageSizeBadge(this);
+                    });
+                    img.dataset.badgeHoverAdded = 'true';
+                }
+            }
+        }
+
+        // 이미지 크기 배지 표시 (DOM 구조 변경 없이 오버레이로만 표시)
+        function showImageSizeBadge(img) {
+            if (!img || !img.parentElement) return;
+            
+            // 기존 배지 제거
+            const existingBadge = document.querySelector('.image-size-badge[data-for-img]');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+
+            const width = img.dataset.imageWidth || img.offsetWidth || img.naturalWidth || 0;
+            const height = img.dataset.imageHeight || img.offsetHeight || img.naturalHeight || 0;
+            
+            if (width === 0 || height === 0) return;
+
+            // 스타일에서 크기 확인
+            let displayWidth = width;
+            let displayHeight = height;
+            
+            if (img.style.width) {
+                displayWidth = img.style.width;
+            }
+            if (img.style.height && img.style.height !== 'auto') {
+                displayHeight = img.style.height;
+            }
+
+            // 배지 생성 (fixed position으로 화면에 오버레이)
+            const badge = document.createElement('div');
+            badge.className = 'image-size-badge';
+            badge.setAttribute('data-for-img', '');
+            badge.textContent = `${displayWidth} × ${displayHeight}`;
+            
+            // 이미지의 위치 계산
+            const rect = img.getBoundingClientRect();
+            badge.style.position = 'fixed';
+            badge.style.top = (rect.top - 24) + 'px';
+            badge.style.left = rect.left + 'px';
+            badge.style.zIndex = '10002';
+            
+            document.body.appendChild(badge);
+        }
+
+        // 이미지 크기 배지 숨김
+        function hideImageSizeBadge(img) {
+            const badge = document.querySelector('.image-size-badge[data-for-img]');
+            if (badge) {
+                badge.remove();
+            }
+        }
+
+        // 크기 조정 모달 열기
+        function openResizeModal(img) {
+            currentImageElement = img;
+            originalImageSrc = img.src;
+            
+            // 원본 이미지 크기 가져오기
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                originalImageWidth = this.naturalWidth;
+                originalImageHeight = this.naturalHeight;
+
+                // 현재 적용된 크기 가져오기
+                let currentWidth = img.offsetWidth || originalImageWidth;
+                let currentHeight = img.offsetHeight || originalImageHeight;
+
+                // 스타일에서 크기 확인
+                if (img.style.width) {
+                    if (img.style.width.includes('%')) {
+                        resizeWidth.value = parseFloat(img.style.width);
+                        resizeWidthUnit.textContent = '%';
+                        document.querySelector('input[name="resizeUnit"][value="%"]').checked = true;
+                    } else {
+                        resizeWidth.value = parseInt(img.style.width) || currentWidth;
+                        resizeWidthUnit.textContent = 'px';
+                        document.querySelector('input[name="resizeUnit"][value="px"]').checked = true;
+                    }
+                } else {
+                    resizeWidth.value = currentWidth;
+                    resizeWidthUnit.textContent = 'px';
+                    document.querySelector('input[name="resizeUnit"][value="px"]').checked = true;
+                }
+
+                if (img.style.height) {
+                    if (img.style.height.includes('%')) {
+                        resizeHeight.value = parseFloat(img.style.height);
+                        resizeHeightUnit.textContent = '%';
+                    } else {
+                        resizeHeight.value = parseInt(img.style.height) || currentHeight;
+                        resizeHeightUnit.textContent = 'px';
+                    }
+                } else {
+                    resizeHeight.value = currentHeight;
+                    resizeHeightUnit.textContent = 'px';
+                }
+
+                // 미리보기 이미지 설정
+                resizePreviewImage.src = originalImageSrc;
+                updateResizePreview();
+
+                // 모달 표시
+                resizeModal.classList.add('active');
+                resizeWidth.focus();
+            };
+            tempImg.src = originalImageSrc;
+        }
+
+        // 크기 조정 모달 닫기
+        function closeResizeModal() {
+            resizeModal.classList.remove('active');
+            currentImageElement = null;
+        }
+
+        // 크기 조정 미리보기 업데이트
+        function updateResizePreview() {
+            if (!resizePreviewImage || !currentImageElement) return;
+
+            const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
+            let width = resizeWidth.value;
+            let height = resizeHeight.value;
+
+            if (width && height) {
+                if (unit === 'px') {
+                    resizePreviewImage.style.width = width + 'px';
+                    resizePreviewImage.style.height = height + 'px';
+                } else {
+                    resizePreviewImage.style.width = width + '%';
+                    resizePreviewImage.style.height = 'auto'; // 퍼센트일 때는 높이 자동
+                }
+            }
+        }
+
+        // 비율 유지하면서 크기 조정
+        function adjustAspectRatio(changedInput) {
+            if (!resizeMaintainAspect.checked || !originalImageWidth || !originalImageHeight) return;
+
+            const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
+            const aspectRatio = originalImageWidth / originalImageHeight;
+
+            if (changedInput === 'width') {
+                const newWidth = parseFloat(resizeWidth.value);
+                if (!isNaN(newWidth) && newWidth > 0) {
+                    if (unit === 'px') {
+                        resizeHeight.value = Math.round(newWidth / aspectRatio);
+                    } else {
+                        // 퍼센트일 때는 높이를 비율에 맞춰 계산 (복잡하므로 자동 높이 유지)
+                    }
+                }
+            } else if (changedInput === 'height') {
+                const newHeight = parseFloat(resizeHeight.value);
+                if (!isNaN(newHeight) && newHeight > 0) {
+                    if (unit === 'px') {
+                        resizeWidth.value = Math.round(newHeight * aspectRatio);
+                    }
+                }
+            }
+        }
+
+        // 크기 조정 적용
+        function applyResize() {
+            if (!currentImageElement) return;
+
+            const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
+            const width = resizeWidth.value;
+            const height = resizeHeight.value;
+
+            if (!width || !height) {
+                alert('너비와 높이를 모두 입력해주세요.');
+                return;
+            }
+
+            // 이미지 스타일 적용
+            if (unit === 'px') {
+                currentImageElement.style.width = width + 'px';
+                if (resizeMaintainAspect.checked) {
+                    currentImageElement.style.height = 'auto';
+                } else {
+                    currentImageElement.style.height = height + 'px';
+                }
+            } else {
+                currentImageElement.style.width = width + '%';
+                currentImageElement.style.height = 'auto';
+            }
+
+            // 이미지 크기 배지 업데이트
+            updateImageSizeBadge(currentImageElement);
+
+            // SEO 분석 다시 실행
+            performSEOAnalysis();
+
+            // 모달 닫기
+            closeResizeModal();
+            updateSaveStatus('saved', '저장됨');
+        }
+
+        // 프리셋 버튼 클릭
+        resizePresetBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 모든 버튼에서 active 제거
+                resizePresetBtns.forEach(b => b.classList.remove('active'));
+                // 클릭한 버튼에 active 추가
+                this.classList.add('active');
+
+                const size = this.dataset.size;
+                const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
+
+                if (size === 'original') {
+                    resizeWidth.value = originalImageWidth;
+                    resizeHeight.value = originalImageHeight;
+                    resizeWidthUnit.textContent = unit;
+                    resizeHeightUnit.textContent = unit;
+                } else if (size === 'fit') {
+                    currentImageElement.style.width = '100%';
+                    currentImageElement.style.height = 'auto';
+                    resizeWidth.value = 100;
+                    resizeHeight.value = 'auto';
+                    resizeWidthUnit.textContent = '%';
+                    resizeHeightUnit.textContent = '%';
+                    document.querySelector('input[name="resizeUnit"][value="%"]').checked = true;
+                } else {
+                    const percentage = parseInt(size);
+                    if (unit === 'px') {
+                        resizeWidth.value = Math.round((originalImageWidth * percentage) / 100);
+                        resizeHeight.value = Math.round((originalImageHeight * percentage) / 100);
+                    } else {
+                        resizeWidth.value = percentage;
+                        resizeHeight.value = 'auto';
+                    }
+                }
+
+                updateResizePreview();
+            });
+        });
+
+        // 크기 입력 필드 이벤트
+        resizeWidth.addEventListener('input', function() {
+            adjustAspectRatio('width');
+            updateResizePreview();
+        });
+
+        resizeHeight.addEventListener('input', function() {
+            adjustAspectRatio('height');
+            updateResizePreview();
+        });
+
+        resizeMaintainAspect.addEventListener('change', function() {
+            if (this.checked) {
+                adjustAspectRatio('width');
+            }
+            updateResizePreview();
+        });
+
+        // 단위 변경 이벤트
+        resizeUnitRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const unit = this.value;
+                resizeWidthUnit.textContent = unit;
+                resizeHeightUnit.textContent = unit;
+
+                // 픽셀에서 퍼센트로 변경
+                if (unit === '%') {
+                    if (resizeWidth.value && originalImageWidth) {
+                        resizeWidth.value = Math.round((parseInt(resizeWidth.value) / originalImageWidth) * 100);
+                    }
+                    resizeHeight.value = 'auto';
+                    resizeHeightUnit.textContent = '';
+                } else {
+                    // 퍼센트에서 픽셀으로 변경
+                    if (resizeWidth.value && originalImageWidth) {
+                        resizeWidth.value = Math.round((parseInt(resizeWidth.value) / 100) * originalImageWidth);
+                    }
+                    if (originalImageHeight) {
+                        resizeHeight.value = Math.round((parseInt(resizeHeight.value) / 100) * originalImageHeight) || originalImageHeight;
+                        resizeHeightUnit.textContent = 'px';
+                    }
+                }
+                updateResizePreview();
+            });
+        });
+
+        // 모달 닫기 이벤트
+        if (resizeModalClose) {
+            resizeModalClose.addEventListener('click', closeResizeModal);
+        }
+
+        if (resizeModalCancel) {
+            resizeModalCancel.addEventListener('click', closeResizeModal);
+        }
+
+        if (resizeModalSave) {
+            resizeModalSave.addEventListener('click', applyResize);
+        }
+
+        // 모달 배경 클릭 시 닫기
+        resizeModal.addEventListener('click', (e) => {
+            if (e.target === resizeModal) {
+                closeResizeModal();
+            }
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && resizeModal.classList.contains('active')) {
+                closeResizeModal();
+            }
+        });
+
+        // 에디터 내용 변경 시 이미지 핸들러 재설정 (이미지가 추가되었을 때만)
+        if (quill) {
+            let previousImageCount = 0;
+            
+            quill.on('text-change', function() {
+                // 이미지 개수 확인
+                const currentImageCount = quill.root.querySelectorAll('img').length;
+                
+                // 새 이미지가 추가된 경우에만 핸들러 설정
+                if (currentImageCount > previousImageCount) {
+                    setTimeout(() => {
+                        setupImageResizeHandlers();
+                    }, 300);
+                }
+                
+                previousImageCount = currentImageCount;
+            });
+
+            // 초기 설정 (페이지 로드 후)
+            setTimeout(() => {
+                setupImageResizeHandlers();
+                previousImageCount = quill.root.querySelectorAll('img').length;
+            }, 500);
+        }
+
+        // ========== 버튼 모달 기능 ==========
+        const buttonModal = document.getElementById('buttonModal');
+        const buttonModalClose = document.getElementById('buttonModalClose');
+        const buttonModalCancel = document.getElementById('buttonModalCancel');
+        const buttonModalSave = document.getElementById('buttonModalSave');
+        const buttonModalText = document.getElementById('buttonModalText');
+        const buttonModalUrl = document.getElementById('buttonModalUrl');
+        const buttonModalStyle = document.getElementById('buttonModalStyle');
+        const buttonModalNewTab = document.getElementById('buttonModalNewTab');
+        const buttonModalPreview = document.getElementById('buttonModalPreview');
+        const buttonPreviewButton = document.getElementById('buttonPreviewButton');
+
+        let buttonModalCallback = null;
+
+        // 버튼 모달 표시
+        function showButtonModal(buttonData, callback) {
+            buttonModalCallback = callback;
+
+            // 기존 데이터가 있으면 입력 필드에 설정
+            if (buttonData && Object.keys(buttonData).length > 0) {
+                buttonModalText.value = buttonData.text || '';
+                buttonModalUrl.value = buttonData.url || '';
+                buttonModalStyle.value = buttonData.style || 'ql-button-primary';
+                buttonModalNewTab.checked = buttonData.openInNewTab || false;
+            } else {
+                // 새 버튼인 경우 기본값
+                buttonModalText.value = '';
+                buttonModalUrl.value = '';
+                buttonModalStyle.value = 'ql-button-primary';
+                buttonModalNewTab.checked = false;
+            }
+
+            // 미리보기 업데이트
+            updateButtonPreview();
+
+            // 모달 표시
+            buttonModal.classList.add('active');
+            
+            // 첫 번째 입력 필드에 포커스
+            setTimeout(() => buttonModalText.focus(), 100);
+        }
+
+        // 버튼 모달 닫기
+        function closeButtonModal() {
+            buttonModal.classList.remove('active');
+            buttonModalCallback = null;
+        }
+
+        // 버튼 미리보기 업데이트
+        function updateButtonPreview() {
+            const text = buttonModalText.value || '버튼';
+            const url = buttonModalUrl.value || '#';
+            const style = buttonModalStyle.value;
+            const openInNewTab = buttonModalNewTab.checked;
+
+            // 기존 내용 제거
+            buttonPreviewButton.innerHTML = '';
+            
+            // 텍스트 생성
+            const buttonText = document.createElement('span');
+            buttonText.className = 'ql-button-text';
+            buttonText.textContent = text;
+            
+            // SVG 아이콘 생성
+            const buttonIcon = document.createElement('span');
+            buttonIcon.className = 'ql-button-icon';
+            buttonIcon.innerHTML = '<svg aria-hidden="true" role="img" height="1em" width="1em" viewBox="0 0 256 512" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"></path></svg>';
+            
+            // 버튼에 텍스트와 아이콘 추가
+            buttonPreviewButton.appendChild(buttonText);
+            buttonPreviewButton.appendChild(buttonIcon);
+            
+            buttonPreviewButton.href = url;
+            buttonPreviewButton.className = 'ql-button ' + style;
+            
+            // 항상 흰색 텍스트 유지
+            buttonPreviewButton.style.color = 'white';
+            buttonPreviewButton.style.textDecoration = 'none';
+            
+            if (openInNewTab) {
+                buttonPreviewButton.target = '_blank';
+                buttonPreviewButton.rel = 'noopener noreferrer';
+            } else {
+                buttonPreviewButton.removeAttribute('target');
+                buttonPreviewButton.removeAttribute('rel');
+            }
+        }
+
+        // 입력 필드 변경 시 미리보기 업데이트
+        if (buttonModalText) {
+            buttonModalText.addEventListener('input', updateButtonPreview);
+        }
+        if (buttonModalUrl) {
+            buttonModalUrl.addEventListener('input', updateButtonPreview);
+        }
+        if (buttonModalStyle) {
+            buttonModalStyle.addEventListener('change', updateButtonPreview);
+        }
+        if (buttonModalNewTab) {
+            buttonModalNewTab.addEventListener('change', updateButtonPreview);
+        }
+
+        // 버튼 저장
+        function saveButton() {
+            const text = buttonModalText.value.trim();
+            const url = buttonModalUrl.value.trim();
+            const style = buttonModalStyle.value;
+            const openInNewTab = buttonModalNewTab.checked;
+
+            if (!text) {
+                alert('버튼 텍스트를 입력해주세요.');
+                buttonModalText.focus();
+                return;
+            }
+
+            if (!url) {
+                alert('링크 URL을 입력해주세요.');
+                buttonModalUrl.focus();
+                return;
+            }
+
+            const buttonData = {
+                text: text,
+                url: url,
+                style: style,
+                openInNewTab: openInNewTab
+            };
+
+            if (buttonModalCallback) {
+                buttonModalCallback(buttonData);
+            }
+
+            closeButtonModal();
+            updateSaveStatus('saved', '저장됨');
+        }
+
+        // 모달 이벤트 리스너
+        if (buttonModalClose) {
+            buttonModalClose.addEventListener('click', closeButtonModal);
+        }
+
+        if (buttonModalCancel) {
+            buttonModalCancel.addEventListener('click', closeButtonModal);
+        }
+
+        if (buttonModalSave) {
+            buttonModalSave.addEventListener('click', saveButton);
+        }
+
+        // Enter 키로 저장
+        if (buttonModalText && buttonModalUrl) {
+            [buttonModalText, buttonModalUrl].forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && buttonModal.classList.contains('active')) {
+                        e.preventDefault();
+                        saveButton();
+                    }
+                });
+            });
+        }
+
+        // 모달 배경 클릭 시 닫기
+        if (buttonModal) {
+            buttonModal.addEventListener('click', (e) => {
+                if (e.target === buttonModal) {
+                    closeButtonModal();
+                }
+            });
+        }
+
+        // ESC 키로 버튼 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && buttonModal && buttonModal.classList.contains('active')) {
+                closeButtonModal();
             }
         });
     </script>

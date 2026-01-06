@@ -629,6 +629,94 @@
                 font-weight: 500;
                 color: #0f172a;
             }
+
+            /* 버튼 스타일 (Quill 에디터 버튼) */
+            .post-content .ql-button-container {
+                margin: 24px 0;
+                position: relative;
+                display: flex;
+                justify-content: center;
+            }
+
+            .post-content .ql-button-wrapper {
+                display: inline-block;
+                position: relative;
+                width: 70%;
+            }
+
+            /* 콘텐츠 영역에서는 편집/삭제 버튼 숨김 */
+            .post-content .ql-button-edit,
+            .post-content .ql-button-delete {
+                display: none !important;
+            }
+
+            .post-content .ql-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0;
+                width: 100%;
+                margin: 0 auto;
+                padding: 12px 24px;
+                font-size: 22px;
+                font-weight: 600;
+                line-height: 1.5;
+                text-align: center;
+                text-decoration: none;
+                border-radius: 20px;
+                cursor: pointer;
+                transition: all 0.2s;
+                border: none;
+                outline: none;
+                background: #31AA60;
+                color: white !important;
+                position: relative;
+            }
+
+            .post-content .ql-button:link,
+            .post-content .ql-button:visited,
+            .post-content .ql-button:hover,
+            .post-content .ql-button:active {
+                color: white !important;
+                text-decoration: none !important;
+            }
+
+            .post-content .ql-button:hover {
+                background: #279254;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(49, 170, 96, 0.3);
+            }
+
+            .post-content .ql-button-text {
+                display: inline-block;
+                line-height: 1.5;
+            }
+
+            .post-content .ql-button-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                height: 1em;
+                width: 1em;
+                margin-left: 6px;
+                vertical-align: baseline;
+            }
+
+            .post-content .ql-button-icon svg {
+                height: 1em;
+                width: 1em;
+                fill: currentColor;
+                display: block;
+            }
+
+            /* 모바일 반응형 */
+            @media (max-width: 768px) {
+                .post-content .ql-button {
+                    font-size: 18px;
+                    padding: 10px 20px;
+                }
+            }
         </style>
 
     <script>
