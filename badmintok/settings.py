@@ -98,6 +98,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'badmintok.middleware.VisitorTrackingMiddleware',  # 방문자 추적
 ]
 
 ROOT_URLCONF = 'badmintok.urls'

@@ -71,3 +71,58 @@ class Notice(models.Model):
         """조회수 증가"""
         self.view_count += 1
         self.save(update_fields=["view_count"])
+
+
+class VisitorLog(models.Model):
+    """사이트 방문 로그 - 젯팩 스타일 통계를 위한 모델"""
+
+    # 방문자 정보
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="visitor_logs",
+        verbose_name=_("사용자")
+    )
+    session_key = models.CharField(_("세션 키"), max_length=40, db_index=True)
+    ip_address = models.GenericIPAddressField(_("IP 주소"), null=True, blank=True)
+
+    # 페이지 정보
+    url_path = models.CharField(_("URL 경로"), max_length=500, db_index=True)
+    page_title = models.CharField(_("페이지 제목"), max_length=200, blank=True)
+
+    # 접속 경로 정보
+    referer = models.CharField(_("리퍼러"), max_length=500, blank=True, help_text="유입 경로")
+    referer_domain = models.CharField(_("리퍼러 도메인"), max_length=200, blank=True, db_index=True)
+
+    # 브라우저/디바이스 정보
+    user_agent = models.CharField(_("User Agent"), max_length=500, blank=True)
+    device_type = models.CharField(
+        _("디바이스 유형"),
+        max_length=20,
+        choices=[
+            ("desktop", "데스크톱"),
+            ("mobile", "모바일"),
+            ("tablet", "태블릿"),
+            ("bot", "봇"),
+        ],
+        default="desktop"
+    )
+
+    # 시간 정보
+    visited_at = models.DateTimeField(_("방문 시각"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = _("방문 로그")
+        verbose_name_plural = _("방문 로그")
+        ordering = ["-visited_at"]
+        indexes = [
+            models.Index(fields=["-visited_at"]),
+            models.Index(fields=["session_key", "-visited_at"]),
+            models.Index(fields=["url_path", "-visited_at"]),
+            models.Index(fields=["referer_domain", "-visited_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.url_path} - {self.visited_at.strftime('%Y-%m-%d %H:%M')}"

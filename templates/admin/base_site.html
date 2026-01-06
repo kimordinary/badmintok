@@ -39,6 +39,7 @@
 
 {% block nav-global %}
   <div class="admin-top-links">
+    <a href="{% url 'admin:statistics' %}" class="admin-top-link" style="background: rgba(255,255,255,0.15); font-weight: 700;">📊 통계</a>
     <a href="{% url 'home' %}" class="admin-top-link">사이트 홈</a>
     <a href="{% url 'contests:list' %}" class="admin-top-link">전국 대회</a>
     <a href="{% url 'community:list' %}" class="admin-top-link">동호인톡</a>
