@@ -4,6 +4,16 @@
 
 {% block title %}{{ band.name }} - 배드민톡{% endblock %}
 
+{% block og_title_meta %}<meta property="og:title" content="{{ band.name }} - 배드민톡">{% endblock %}
+
+{% block og_image %}{% if band.cover_image %}{{ request.scheme }}://{{ request.get_host }}{{ band.cover_image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}{% endif %}{% endblock %}
+
+{% block og_tags %}
+{% if band.description %}
+<meta property="og:description" content="{{ band.description|striptags|truncatewords:30 }}">
+{% endif %}
+{% endblock %}
+
 {% block extra_head %}
 <style>
     .band-detail-container {

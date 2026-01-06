@@ -1926,32 +1926,20 @@
                 wrapper.className = 'ql-button-wrapper';
                 wrapper.appendChild(button);
                 
-                // 편집 버튼
+                // 편집 버튼 (data 속성으로 식별)
                 const editBtn = document.createElement('button');
                 editBtn.className = 'ql-button-edit';
+                editBtn.setAttribute('data-button-edit', 'true');
                 editBtn.innerHTML = '✎';
                 editBtn.title = '버튼 편집';
-                editBtn.onclick = function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const buttonData = ButtonBlot.value(node);
-                    showButtonModal(buttonData, function(newData) {
-                        const newButton = ButtonBlot.create(newData);
-                        node.parentNode.replaceChild(newButton, node);
-                    });
-                };
                 wrapper.appendChild(editBtn);
                 
-                // 삭제 버튼
+                // 삭제 버튼 (data 속성으로 식별)
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'ql-button-delete';
+                deleteBtn.setAttribute('data-button-delete', 'true');
                 deleteBtn.innerHTML = '×';
                 deleteBtn.title = '버튼 삭제';
-                deleteBtn.onclick = function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    node.remove();
-                };
                 wrapper.appendChild(deleteBtn);
                 
                 node.appendChild(wrapper);
@@ -3458,6 +3446,21 @@
             // 이미지 크기 배지 업데이트
             updateImageSizeBadge(currentImageElement);
 
+            // 이미지 핸들러 플래그 리셋하여 다시 조정 가능하도록 함
+            delete currentImageElement.dataset.resizeHandlerAdded;
+            delete currentImageElement.dataset.badgeHoverAdded;
+            
+            // 이벤트 리스너 재설정 (더블클릭 핸들러 다시 추가)
+            if (currentImageElement.dblclick) {
+                currentImageElement.removeEventListener('dblclick', currentImageElement.dblclick);
+            }
+            currentImageElement.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openResizeModal(this);
+            });
+            currentImageElement.dataset.resizeHandlerAdded = 'true';
+
             // SEO 분석 다시 실행
             performSEOAnalysis();
 
@@ -3737,6 +3740,91 @@
 
             closeButtonModal();
             updateSaveStatus('saved', '저장됨');
+        }
+
+        // 버튼 편집/삭제 이벤트 위임 (에디터 레벨에서 처리)
+        if (quill && quill.root) {
+            quill.root.addEventListener('click', function(e) {
+                // 편집 버튼 클릭
+                const editBtn = e.target.closest('[data-button-edit="true"]');
+                if (editBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const buttonContainer = editBtn.closest('.ql-button-container');
+                    if (buttonContainer) {
+                        // data 속성에서 버튼 데이터 읽기
+                        let buttonData = {};
+                        try {
+                            const dataAttr = buttonContainer.getAttribute('data-button-data');
+                            if (dataAttr) {
+                                buttonData = JSON.parse(dataAttr);
+                            } else {
+                                // data 속성이 없으면 DOM에서 추출
+                                const button = buttonContainer.querySelector('.ql-button');
+                                if (button) {
+                                    const textSpan = button.querySelector('.ql-button-text');
+                                    buttonData = {
+                                        text: textSpan ? textSpan.textContent : '버튼',
+                                        url: button.href || '#',
+                                        style: button.className.replace('ql-button ', '').trim() || 'ql-button-primary',
+                                        openInNewTab: button.target === '_blank'
+                                    };
+                                }
+                            }
+                        } catch (err) {
+                            console.error('버튼 데이터 파싱 오류:', err);
+                        }
+                        
+                        showButtonModal(buttonData, function(newData) {
+                            // 기존 노드의 data 속성 업데이트
+                            buttonContainer.setAttribute('data-button-data', JSON.stringify(newData));
+                            
+                            // wrapper 내부의 버튼 요소 업데이트
+                            const wrapper = buttonContainer.querySelector('.ql-button-wrapper');
+                            if (wrapper) {
+                                const button = wrapper.querySelector('.ql-button');
+                                if (button) {
+                                    button.href = newData.url || '#';
+                                    button.className = 'ql-button ' + (newData.style || 'ql-button-primary');
+                                    
+                                    // 텍스트 업데이트
+                                    const textSpan = button.querySelector('.ql-button-text');
+                                    if (textSpan) {
+                                        textSpan.textContent = newData.text || '버튼';
+                                    }
+                                    
+                                    // 새 탭 열기 설정
+                                    if (newData.openInNewTab) {
+                                        button.target = '_blank';
+                                        button.rel = 'noopener noreferrer';
+                                    } else {
+                                        button.removeAttribute('target');
+                                        button.removeAttribute('rel');
+                                    }
+                                }
+                            }
+                            
+                            // Quill에 변경 사항 알림
+                            quill.update('user');
+                            updateSaveStatus('saved', '저장됨');
+                        });
+                    }
+                    return;
+                }
+                
+                // 삭제 버튼 클릭
+                const deleteBtn = e.target.closest('[data-button-delete="true"]');
+                if (deleteBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const buttonContainer = deleteBtn.closest('.ql-button-container');
+                    if (buttonContainer) {
+                        buttonContainer.remove();
+                        updateSaveStatus('saved', '저장됨');
+                    }
+                    return;
+                }
+            });
         }
 
         // 모달 이벤트 리스너
