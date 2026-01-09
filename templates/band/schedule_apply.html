@@ -23,10 +23,37 @@
                 {% endif %}
             </div>
         </div>
-        
-        <form method="post">
+
+        {% if not is_member %}
+        <!-- 모임 미가입 안내 배너 -->
+        <div style="padding: 16px; background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 1px solid #FCD34D; border-radius: 8px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: start; gap: 12px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #92400E;">모임 가입이 필요합니다</h3>
+                    <p style="margin: 0 0 12px 0; font-size: 14px; color: #78350F; line-height: 1.6;">
+                        번개에 참석하려면 <strong>{{ band.name }}</strong> 모임에 먼저 가입해야 합니다.<br>
+                        아래 버튼을 클릭하면 자동으로 가입하고 번개 신청을 진행할 수 있습니다.
+                    </p>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button type="button" onclick="autoJoinAndApply()" class="btn btn-primary" style="background: #92400E; border: none; padding: 8px 16px; font-size: 14px;">
+                            모임 가입하고 신청하기
+                        </button>
+                        <a href="{% url 'band:detail' band.id %}" style="font-size: 14px; color: #92400E; text-decoration: underline;">모임 정보 보기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="post" id="applyForm">
             {% csrf_token %}
-            
+            <input type="hidden" name="auto_join" id="autoJoinInput" value="">
+
             {% if form.errors %}
                 <div class="form-errors" style="margin-bottom: 20px;">
                     {% for field, errors in form.errors.items %}
@@ -49,5 +76,14 @@
         </form>
     </div>
 </section>
+
+<script>
+function autoJoinAndApply() {
+    // auto_join 플래그 설정
+    document.getElementById('autoJoinInput').value = '1';
+    // 폼 제출
+    document.getElementById('applyForm').submit();
+}
+</script>
 {% endblock %}
 
