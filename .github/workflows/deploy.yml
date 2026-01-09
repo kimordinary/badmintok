@@ -44,7 +44,18 @@ jobs:
           
           # 카카오 로그인 설정
           KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
           KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}
+          
+          # 네이버 로그인 설정
+          NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}
+          NAVER_REDIRECT_URI=${{ secrets.NAVER_REDIRECT_URI }}
+          
+          # 구글 로그인 설정
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
           
           # Nginx 설정
           NGINX_HTTP_PORT=${NGINX_HTTP_PORT:-80}
