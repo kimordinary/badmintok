@@ -69,23 +69,23 @@
         <!-- 소셜 로그인 버튼 -->
         <div id="socialLoginButtons" style="display: flex; flex-direction: column; gap: 12px;">
             <!-- 카카오 로그인 -->
-            <a href="{% url 'accounts:kakao_login' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #FEE500; border: none; border-radius: 6px; text-decoration: none; color: #000000; font-size: 14px; font-weight: 500; transition: background 0.2s;">
+            <button type="button" onclick="kakaoLogin()" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #FEE500; border: none; border-radius: 6px; color: #000000; font-size: 14px; font-weight: 500; transition: background 0.2s; cursor: pointer;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 2.625-1.724 4.95-4.326 6.379l1.05 3.936-4.05-2.625c-1.05.15-2.1.225-3.174.225-5.799 0-10.5-3.664-10.5-8.185C1.5 6.664 6.201 3 12 3z"/>
                 </svg>
                 <span>카카오로 로그인</span>
-            </a>
+            </button>
 
             <!-- 네이버 로그인 -->
-            <a href="{% url 'accounts:naver_login' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #03C75A; border: none; border-radius: 6px; text-decoration: none; color: #ffffff; font-size: 14px; font-weight: 500; transition: background 0.2s;">
+            <button type="button" onclick="naverLogin()" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #03C75A; border: none; border-radius: 6px; color: #ffffff; font-size: 14px; font-weight: 500; transition: background 0.2s; cursor: pointer;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M16.273 12.845L7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
                 </svg>
                 <span>네이버로 로그인</span>
-            </a>
+            </button>
 
             <!-- 구글 로그인 -->
-            <a href="{% url 'accounts:google_login' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #ffffff; border: 1px solid #dadce0; border-radius: 6px; text-decoration: none; color: #3c4043; font-size: 14px; font-weight: 500; transition: background 0.2s;">
+            <button type="button" onclick="googleLogin()" id="googleLoginButton" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #ffffff; border: 1px solid #dadce0; border-radius: 6px; color: #3c4043; font-size: 14px; font-weight: 500; transition: background 0.2s; cursor: pointer;">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -93,7 +93,7 @@
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
                 <span>Google로 로그인</span>
-            </a>
+            </button>
         </div>
 
         <!-- 관리자 로그인 링크 -->
@@ -104,15 +104,15 @@
 </div>
 
 <style>
-    a[href*="kakao"]:hover {
+    #socialLoginButtons button[style*="#FEE500"]:hover {
         background: #FDD835 !important;
     }
 
-    a[style*="#03C75A"]:hover {
+    #socialLoginButtons button[style*="#03C75A"]:hover {
         background: #02B350 !important;
     }
 
-    a[style*="border: 1px solid #dadce0"]:hover {
+    #googleLoginButton:hover {
         background: #f8f9fa !important;
     }
 
@@ -190,6 +190,72 @@
         if (formErrors || document.querySelector('#emailLoginForm small[style*="dc2626"]')) {
             toggleLoginMode();
         }
+
+        // SDK 초기화
+        initSocialLogin();
     });
+
+    // 소셜 로그인 SDK 초기화
+    function initSocialLogin() {
+        // 카카오 SDK 초기화
+        if (window.Kakao && !Kakao.isInitialized()) {
+            Kakao.init('{{ KAKAO_CLIENT_ID }}');
+        }
+
+        // 구글 SDK 초기화
+        if (window.google) {
+            google.accounts.id.initialize({
+                client_id: '{{ GOOGLE_CLIENT_ID }}',
+                callback: handleGoogleCallback,
+                ux_mode: 'redirect',
+                login_uri: '{{ GOOGLE_REDIRECT_URI }}'
+            });
+        }
+    }
+
+    // 카카오 로그인
+    function kakaoLogin() {
+        if (!window.Kakao) {
+            alert('카카오 SDK를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        Kakao.Auth.authorize({
+            redirectUri: '{{ KAKAO_REDIRECT_URI }}',
+            prompt: 'login'
+        });
+    }
+
+    // 네이버 로그인
+    function naverLogin() {
+        const state = Math.random().toString(36).substring(2);
+        const clientId = '{{ NAVER_CLIENT_ID }}';
+        const redirectUri = encodeURIComponent('{{ NAVER_REDIRECT_URI }}');
+        const url = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
+        window.location.href = url;
+    }
+
+    // 구글 로그인
+    function googleLogin() {
+        const clientId = '{{ GOOGLE_CLIENT_ID }}';
+        const redirectUri = encodeURIComponent('{{ GOOGLE_REDIRECT_URI }}');
+        const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid email profile&access_type=offline&prompt=select_account`;
+        window.location.href = url;
+    }
+
+    // 구글 콜백 처리
+    function handleGoogleCallback(response) {
+        // 구글 로그인은 redirect 방식을 사용하므로 이 함수는 호출되지 않음
+        // 서버의 Google callback view에서 처리됨
+    }
 </script>
+
+<!-- 카카오 SDK -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+        integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
+        crossorigin="anonymous"></script>
+
+<!-- 구글 SDK -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 {% endblock %}

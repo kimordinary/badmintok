@@ -1890,11 +1890,12 @@ def schedule_create(request, band_id):
                 "parent_band": band,
             })
         
-        # 번개 이름 생성 (모임 이름 + 날짜 + 시간) - 중복 방지를 위해 시간도 포함
-        schedule_title = f"{band.name} - {meeting_date} {meeting_time}"
-        
+        # 번개 이름 생성 (모임 이름만)
+        schedule_title = band.name
+
         # 참가비 정보를 description에 포함
-        description = flash_description
+        # 줄바꿈 정규화 (\r\n -> \n, \r -> \n)
+        description = flash_description.replace('\r\n', '\n').replace('\r', '\n') if flash_description else ""
         if meeting_cost:
             description += f"\n참가비: {meeting_cost}원"
 
@@ -2003,13 +2004,14 @@ def schedule_update(request, band_id, schedule_id):
         if flash_name:
             schedule_title = flash_name
         else:
-            schedule_title = f"{band.name} - {meeting_date} {meeting_time}"
-        
+            schedule_title = band.name
+
         # 참가비 정보를 description에 포함
-        description = flash_description
+        # 줄바꿈 정규화 (\r\n -> \n, \r -> \n)
+        description = flash_description.replace('\r\n', '\n').replace('\r', '\n') if flash_description else ""
         if meeting_cost:
             description += f"\n참가비: {meeting_cost}원"
-        
+
         # 스케줄 업데이트
         schedule.title = schedule_title
         schedule.description = description
@@ -2150,21 +2152,19 @@ def schedule_detail(request, band_id, schedule_id):
     
     # 멤버 확인
     member = band.members.filter(user=request.user, status="active").first()
-    if not member:
-        messages.error(request, "밴드 멤버만 볼 수 있습니다.")
-        return redirect("band:detail", band_id=band_id)
-    
+    is_member = member is not None
+
     # 사용자 신청 여부
     user_application = None
     if request.user.is_authenticated:
         user_application = schedule.applications.filter(user=request.user).first()
-    
+
     # 승인된 참가자 목록
     approved_participants = schedule.applications.filter(status="approved").select_related("user").order_by("applied_at")
-    
+
     # 대기 중인 신청자 목록 (방장/관리자만)
     pending_applications = None
-    can_manage = member.role in ["owner", "admin"]
+    can_manage = is_member and member.role in ["owner", "admin"]
     if can_manage:
         pending_applications = schedule.applications.filter(status="pending").select_related("user").order_by("-applied_at")
     

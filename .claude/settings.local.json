@@ -41,7 +41,8 @@
       "WebFetch(domain:localhost)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(del fix_schedule_titles.py)"
     ],
     "deny": [],
     "ask": []

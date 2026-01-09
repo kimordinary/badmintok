@@ -252,8 +252,8 @@
         const descEl = document.getElementById('scheduleDescription');
         if (descEl) {
             const raw = descEl.dataset.descriptionOriginal || '';
-            // \u000A를 실제 줄바꿈으로 변환
-            const normalized = raw.replace(/\\u000A/g, '\n').replace(/\\n/g, '\n');
+            // \u000D\u000A, \u000D, \u000A를 모두 실제 줄바꿈으로 변환
+            const normalized = raw.replace(/\\u000D\\u000A/g, '\n').replace(/\\u000D/g, '').replace(/\\u000A/g, '\n').replace(/\\n/g, '\n');
             // 줄바꿈으로 분리하고 참가비 관련 줄 제거
             const lines = normalized.split(/\r?\n/);
             const cleaned = lines

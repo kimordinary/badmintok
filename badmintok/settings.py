@@ -114,6 +114,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'badmintok.context_processors.community_categories',
+                'accounts.context_processors.social_login_settings',
             ],
         },
     },
