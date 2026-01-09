@@ -206,6 +206,24 @@
                 </a>
             </div>
 
+            <!-- 관리자 기능 (staff만 표시) -->
+            {% if user.is_staff %}
+            <div style="border-bottom: 1px solid #e2e8f0;">
+                <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">관리자 기능</h2>
+                </div>
+                <a href="{% url 'accounts:signup' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px;">👤</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">계정 생성</span>
+                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </a>
+            </div>
+            {% endif %}
+
             <!-- 차단 관리 -->
             <div>
                 <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">

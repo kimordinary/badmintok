@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}회원가입 - 배드민톡{% endblock %}
+{% block title %}계정 생성 - 배드민톡{% endblock %}
 
 {% block content %}
 <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 20px;">
     <div style="width: 100%; max-width: 400px;">
         <!-- 제목 -->
-        <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1e293b; text-align: center;">회원가입</h1>
-        <p style="margin: 0 0 32px 0; font-size: 14px; color: #64748b; text-align: center;">이메일을 입력하여 계정을 만드세요</p>
+        <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1e293b; text-align: center;">계정 생성</h1>
+        <p style="margin: 0 0 32px 0; font-size: 14px; color: #64748b; text-align: center;">새로운 사용자 계정을 생성합니다</p>
 
         <!-- 회원가입 폼 -->
         <form method="post" novalidate style="display: flex; flex-direction: column; gap: 20px;">
@@ -144,43 +144,17 @@
                 {% endfor %}
             </div>
 
-            <!-- 회원가입 버튼 -->
+            <!-- 계정 생성 버튼 -->
             <button type="submit" style="width: 100%; padding: 12px; background: var(--brand); color: #ffffff; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
-                가입하기
+                계정 생성
             </button>
         </form>
-
-        <!-- 구분선 -->
-        <div style="margin: 24px 0; position: relative; text-align: center;">
-            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #e2e8f0;"></div>
-            <span style="position: relative; background: #ffffff; padding: 0 12px; font-size: 14px; color: #94a3b8;">또는 다음으로 계속</span>
-        </div>
-
-        <!-- 소셜 로그인 버튼 -->
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-            <!-- 카카오 로그인 -->
-            <a href="{% url 'accounts:kakao_login' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #FEE500; border: none; border-radius: 6px; text-decoration: none; color: #000000; font-size: 14px; font-weight: 500; transition: background 0.2s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 2.625-1.724 4.95-4.326 6.379l1.05 3.936-4.05-2.625c-1.05.15-2.1.225-3.174.225-5.799 0-10.5-3.664-10.5-8.185C1.5 6.664 6.201 3 12 3z"/>
-                </svg>
-                <span>카카오로 회원가입</span>
-            </a>
-        </div>
-
-        <!-- 로그인 링크 -->
-        <p style="margin: 24px 0 0 0; text-align: center; font-size: 14px; color: #1e293b;">
-            이미 계정이 있으신가요? <a href="{% url 'accounts:login' %}" style="color: #1e293b; text-decoration: underline;">로그인</a>
-        </p>
     </div>
 </div>
 
 <style>
     button[type="submit"]:hover {
         background: var(--brand-700) !important;
-    }
-
-    a[href*="kakao"]:hover {
-        background: #FDD835 !important;
     }
 
     input[type="checkbox"] {

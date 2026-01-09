@@ -33,6 +33,13 @@ class SignupView(CreateView):
     form_class = UserSignupForm
     success_url = reverse_lazy("accounts:signup_success")
 
+    def dispatch(self, request, *args, **kwargs):
+        # staff 권한이 없으면 접근 불가
+        if not request.user.is_authenticated or not request.user.is_staff:
+            messages.error(request, "계정 생성 권한이 없습니다.")
+            return redirect("accounts:login")
+        return super().dispatch(request, *args, **kwargs)
+
 
 class SignupSuccessView(TemplateView):
     template_name = "accounts/signup_success.html"
