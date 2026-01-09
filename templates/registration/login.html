@@ -215,32 +215,20 @@
 
     // 카카오 로그인
     function kakaoLogin() {
-        if (!window.Kakao) {
-            alert('카카오 SDK를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-            return;
-        }
-
-        Kakao.Auth.authorize({
-            redirectUri: '{{ KAKAO_REDIRECT_URI }}',
-            prompt: 'login'
-        });
+        // 서버 뷰를 통해 카카오 로그인 시작 (세션 state 관리 + SDK 사용으로 모바일 앱 전환 지원)
+        window.location.href = '{% url "accounts:kakao_login" %}';
     }
 
     // 네이버 로그인
     function naverLogin() {
-        const state = Math.random().toString(36).substring(2);
-        const clientId = '{{ NAVER_CLIENT_ID }}';
-        const redirectUri = encodeURIComponent('{{ NAVER_REDIRECT_URI }}');
-        const url = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
-        window.location.href = url;
+        // 서버 뷰를 통해 네이버 로그인 시작 (세션 state 관리)
+        window.location.href = '{% url "accounts:naver_login" %}';
     }
 
     // 구글 로그인
     function googleLogin() {
-        const clientId = '{{ GOOGLE_CLIENT_ID }}';
-        const redirectUri = encodeURIComponent('{{ GOOGLE_REDIRECT_URI }}');
-        const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid email profile&access_type=offline&prompt=select_account`;
-        window.location.href = url;
+        // 서버 뷰를 통해 구글 로그인 시작 (세션 state 관리)
+        window.location.href = '{% url "accounts:google_login" %}';
     }
 
     // 구글 콜백 처리

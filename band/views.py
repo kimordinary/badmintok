@@ -1074,8 +1074,8 @@ def band_detail(request, band_id):
             Prefetch("comments", queryset=BandComment.objects.select_related("author").order_by("created_at"))
         ).order_by("-created_at")[:20]
     
-    # 멤버 목록
-    members = band.members.filter(status="active").select_related("user").order_by(
+    # 멤버 목록 (프로필도 함께 가져오기)
+    members = band.members.filter(status="active").select_related("user", "user__profile").order_by(
         "-role", "joined_at"
     )[:10]
     
@@ -1160,10 +1160,10 @@ def member_management(request, band_id):
         return redirect("band:detail", band_id=band_id)
 
     # 가입 대기 중인 멤버 목록
-    pending_members = band.members.filter(status="pending").select_related('user').order_by('-joined_at')
+    pending_members = band.members.filter(status="pending").select_related('user', 'user__profile').order_by('-joined_at')
 
     # 활성 멤버 목록
-    active_members = band.members.filter(status="active").select_related('user').order_by('-joined_at')
+    active_members = band.members.filter(status="active").select_related('user', 'user__profile').order_by('-joined_at')
 
     context = {
         'band': band,
@@ -2159,14 +2159,14 @@ def schedule_detail(request, band_id, schedule_id):
     if request.user.is_authenticated:
         user_application = schedule.applications.filter(user=request.user).first()
 
-    # 승인된 참가자 목록
-    approved_participants = schedule.applications.filter(status="approved").select_related("user").order_by("applied_at")
+    # 승인된 참가자 목록 (프로필도 함께 가져오기)
+    approved_participants = schedule.applications.filter(status="approved").select_related("user", "user__profile").order_by("applied_at")
 
-    # 대기 중인 신청자 목록 (방장/관리자만)
+    # 대기 중인 신청자 목록 (방장/관리자만, 프로필도 함께 가져오기)
     pending_applications = None
     can_manage = is_member and member.role in ["owner", "admin"]
     if can_manage:
-        pending_applications = schedule.applications.filter(status="pending").select_related("user").order_by("-applied_at")
+        pending_applications = schedule.applications.filter(status="pending").select_related("user", "user__profile").order_by("-applied_at")
     
     # description에서 참가비 추출
     meeting_cost = ""

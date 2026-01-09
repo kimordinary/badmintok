@@ -98,7 +98,9 @@
                             {% else %}
                                 <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">{{ app.user.real_name|first }}</div>
                             {% endif %}
-                            <span style="font-size: 14px; font-weight: 500; color: #1e293b;">{{ app.user.real_name }}</span>
+                            <span style="font-size: 14px; font-weight: 500; color: #1e293b;">
+                                {{ app.user.real_name }}{% if app.user.profile and app.user.profile.badminton_level %} / {{ app.user.profile.get_badminton_level_display }}{% endif %}
+                            </span>
                         </div>
                     {% endfor %}
                 </div>
@@ -176,7 +178,9 @@
                                         <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">{{ app.user.real_name|first }}</div>
                                     {% endif %}
                                     <div>
-                                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ app.user.real_name }}</div>
+                                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">
+                                            {{ app.user.real_name }}{% if app.user.profile and app.user.profile.badminton_level %} / {{ app.user.profile.get_badminton_level_display }}{% endif %}
+                                        </div>
                                         <div style="font-size: 12px; color: #64748b;">{{ app.applied_at|date:"Y.m.d H:i" }}</div>
                                     </div>
                                 </div>

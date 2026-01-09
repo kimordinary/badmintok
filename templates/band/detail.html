@@ -1659,7 +1659,9 @@
                         {% for member in members %}
                             <div class="band-member-item" style="display: flex; align-items: center; gap: 8px;">
                                 <img class="band-member-avatar" src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
-                                <span class="band-member-name" style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ member.user.real_name }}</span>
+                                <span class="band-member-name" style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ member.user.real_name }}{% if member.user.profile and member.user.profile.badminton_level %} / {{ member.user.profile.get_badminton_level_display }}{% endif %}
+                                </span>
                                 {% if member.role == "owner" %}
                                     <span class="band-member-role" style="font-size: 11px; color: var(--brand); flex-shrink: 0;">모임장</span>
                                 {% elif member.role == "admin" %}

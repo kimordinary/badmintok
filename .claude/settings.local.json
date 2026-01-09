@@ -42,7 +42,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(del fix_schedule_titles.py)"
+      "Bash(del fix_schedule_titles.py)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

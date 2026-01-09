@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카카오 로그인 중...</title>
+</head>
+<body>
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+            integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
+            crossorigin="anonymous"></script>
+    <script>
+        // 카카오 SDK 초기화
+        if (window.Kakao && !Kakao.isInitialized()) {
+            Kakao.init('{{ client_id }}');
+        }
+        
+        // redirectUri에 state를 포함시켜 서버 세션 state와 매칭
+        // 카카오 SDK는 state를 자동으로 관리하지 않으므로, redirectUri에 포함시킴
+        const baseRedirectUri = '{{ redirect_uri }}';
+        const redirectUriWithState = baseRedirectUri + (baseRedirectUri.includes('?') ? '&' : '?') + 'state={{ state }}';
+        
+        // SDK를 사용하여 카카오 로그인 시작 (모바일 앱 자동 전환 지원)
+        Kakao.Auth.authorize({
+            redirectUri: redirectUriWithState,
+            prompt: 'login'
+        });
+    </script>
+</body>
+</html>

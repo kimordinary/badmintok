@@ -36,7 +36,9 @@
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <img src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
                                 <div>
-                                    <div style="font-weight: 600; font-size: 16px; color: #1e293b;">{{ member.user.real_name }}</div>
+                                    <div style="font-weight: 600; font-size: 16px; color: #1e293b;">
+                                        {{ member.user.real_name }}{% if member.user.profile and member.user.profile.badminton_level %} / {{ member.user.profile.get_badminton_level_display }}{% endif %}
+                                    </div>
                                     <div style="font-size: 14px; color: #64748b;">신청일: {{ member.joined_at|date:"Y.m.d H:i" }}</div>
                                 </div>
                             </div>
@@ -69,7 +71,9 @@
                                 <img src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
                                 <div>
                                     <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span style="font-weight: 600; font-size: 16px; color: #1e293b;">{{ member.user.real_name }}</span>
+                                        <span style="font-weight: 600; font-size: 16px; color: #1e293b;">
+                                            {{ member.user.real_name }}{% if member.user.profile and member.user.profile.badminton_level %} / {{ member.user.profile.get_badminton_level_display }}{% endif %}
+                                        </span>
                                         {% if member.role == "owner" %}
                                             <span style="background: var(--brand); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">모임장</span>
                                         {% elif member.role == "admin" %}

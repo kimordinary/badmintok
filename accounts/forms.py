@@ -153,13 +153,14 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = [
-            "profile_image", "name", "gender", "age_range", "birthday",
+            "profile_image", "name", "badminton_level", "gender", "age_range", "birthday",
             "birth_year", "phone_number",
             "shipping_receiver", "shipping_phone_number", "shipping_address"
         ]
         widgets = {
             "profile_image": forms.FileInput(attrs={"class": "form-input", "accept": "image/*"}),
             "name": forms.TextInput(attrs={"class": "form-input", "placeholder": "이름을 입력하세요"}),
+            "badminton_level": forms.Select(attrs={"class": "form-input"}),
             "gender": forms.Select(attrs={"class": "form-input"}),
             "age_range": forms.TextInput(attrs={"class": "form-input", "placeholder": "연령대를 입력하세요"}),
             "birthday": forms.DateInput(attrs={"class": "form-input", "type": "date"}),
@@ -204,6 +205,70 @@ class PasswordChangeFormCustom(PasswordChangeForm):
         self.fields["old_password"].label = "현재 비밀번호"
         self.fields["new_password1"].label = "새 비밀번호"
         self.fields["new_password2"].label = "새 비밀번호 확인"
+
+
+class RealNameForm(forms.Form):
+    """실명 입력 폼 (소셜 로그인 후)"""
+    name = forms.CharField(
+        label="실명",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={
+            "class": "form-input",
+            "placeholder": "실명을 입력하세요",
+            "autofocus": True
+        }),
+        help_text="웹민턴 서비스에서 번개 참가 및 모임 관리에 사용됩니다."
+    )
+    
+    activity_name = forms.CharField(
+        label="활동명",
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={
+            "class": "form-input",
+            "placeholder": "활동명을 입력하세요"
+        }),
+        help_text="서비스에서 표시될 활동명입니다."
+    )
+    
+    badminton_level = forms.ChoiceField(
+        label="배드민턴 급수",
+        choices=UserProfile.BadmintonLevel.choices,
+        required=True,
+        widget=forms.Select(attrs={"class": "form-input"}),
+        help_text="필수 선택사항입니다. 나중에 마이페이지에서 수정할 수 있습니다."
+    )
+    
+    terms_agreed = forms.BooleanField(
+        label="이용약관 동의",
+        required=True,
+        error_messages={"required": "이용약관에 동의해주세요."},
+        widget=forms.CheckboxInput(attrs={"class": "form-checkbox"})
+    )
+    
+    privacy_agreed = forms.BooleanField(
+        label="개인정보처리방침 동의",
+        required=True,
+        error_messages={"required": "개인정보처리방침에 동의해주세요."},
+        widget=forms.CheckboxInput(attrs={"class": "form-checkbox"})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        
+        # 활동명 초기값 설정
+        if self.user:
+            self.fields["activity_name"].initial = self.user.activity_name
+        
+        # 배드민턴 급수는 필수이므로 미입력 옵션 제거
+        level_choices = [
+            (choice[0], choice[1]) 
+            for choice in UserProfile.BadmintonLevel.choices 
+            if choice[0] != ""  # 미입력 옵션 제외
+        ]
+        self.fields["badminton_level"].choices = level_choices
 
 
 class InquiryForm(forms.ModelForm):

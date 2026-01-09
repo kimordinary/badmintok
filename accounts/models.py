@@ -113,6 +113,25 @@ class UserProfile(models.Model):
         default="images/userprofile/user.png",
     )
     name = models.CharField(_("이름"), max_length=100, blank=True)
+    
+    class BadmintonLevel(models.TextChoices):
+        BEGINNER = "beginner", _("왕초심")
+        D = "d", _("D")
+        C = "c", _("C")
+        B = "b", _("B")
+        A = "a", _("A")
+        S = "s", _("S")
+        MASTER = "master", _("자강")
+        NONE = "", _("미입력")
+    
+    badminton_level = models.CharField(
+        _("배드민턴 급수"),
+        max_length=20,
+        choices=BadmintonLevel.choices,
+        blank=True,
+        default="",
+        help_text="배드민턴 실력 급수"
+    )
     gender = models.CharField(_("성별"), max_length=10, choices=Gender.choices, default=Gender.UNKNOWN)
     age_range = models.CharField(_("연령대"), max_length=50, blank=True)
     birthday = models.DateField(_("생일"), blank=True, null=True)

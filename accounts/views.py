@@ -18,7 +18,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
 
-from .forms import UserSignupForm, UserProfileForm, PasswordChangeFormCustom, InquiryForm
+from .forms import UserSignupForm, UserProfileForm, PasswordChangeFormCustom, InquiryForm, RealNameForm
 from .models import User, UserProfile, UserBlock, Report, Inquiry
 from band.models import (
     Band, BandPost, BandComment, BandPostLike,
@@ -328,6 +328,7 @@ def mypage_liked_contests(request):
 
 
 class KakaoLoginView(View):
+    """카카오 로그인 시작 - SDK 사용을 위한 state 생성 및 페이지 렌더링"""
     def get(self, request):
         try:
             client_id = settings.KAKAO_CLIENT_ID
@@ -341,26 +342,22 @@ class KakaoLoginView(View):
                 messages.error(request, "카카오 리다이렉트 URI가 설정되지 않았습니다. 관리자에게 문의하세요.")
                 return redirect("accounts:login")
             
+            # state 생성 및 세션에 저장
             state = uuid.uuid4().hex
             request.session["kakao_oauth_state"] = state
-            request.session.save()  # 세션을 명시적으로 저장
-            # 디버깅: 세션 저장 확인
+            request.session.save()
+            
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"카카오 로그인 시작 - state: {state}, session_key: {request.session.session_key}, get_host: {request.get_host()}")
-            scope = "account_email profile_nickname"
+            logger.error(f"카카오 로그인 시작 - state: {state}, session_key: {request.session.session_key}")
             
-            # URL 인코딩 - urlencode를 사용하여 안전하게 인코딩
-            from urllib.parse import urlencode
-            params = {
+            # SDK를 사용하여 카카오 로그인 시작하는 페이지 렌더링
+            from django.shortcuts import render
+            return render(request, 'accounts/kakao_sdk_login.html', {
                 'client_id': client_id,
                 'redirect_uri': redirect_uri,
-                'response_type': 'code',
                 'state': state,
-                'scope': scope
-            }
-            kakao_authorize_url = f"https://kauth.kakao.com/oauth/authorize?{urlencode(params)}"
-            return redirect(kakao_authorize_url)
+            })
         except Exception as e:
             import traceback
             print(f"카카오 로그인 오류: {e}")
@@ -459,6 +456,10 @@ class KakaoCallbackView(View):
 
         kakao_account = user_info.get("kakao_account", {})
         email = kakao_account.get("email")
+        # legal_name: 법적 이름 (실제 본명, 별도 동의 필요)
+        # name: 카카오계정에 등록된 이름 (사용자가 설정한 이름일 수 있음)
+        legal_name = kakao_account.get("legal_name")  # 실제 본명
+        account_name = kakao_account.get("name")  # 카카오계정 이름 (본명이 아닐 수 있음)
         profile = kakao_account.get("profile", {})
         nickname = profile.get("nickname")
         profile_image_url = profile.get("profile_image_url")
@@ -494,8 +495,9 @@ class KakaoCallbackView(View):
                 user.save(update_fields=update_fields)
 
         profile_defaults = {}
-        if nickname:
-            profile_defaults["name"] = nickname
+        # 소셜 로그인에서 받은 이름은 실명으로 인정하지 않음
+        # 사용자가 직접 실명을 입력하도록 실명 입력 화면을 항상 보여줌
+        # 따라서 name 필드는 저장하지 않음
 
         if gender:
             gender_map = {
@@ -562,6 +564,11 @@ class KakaoCallbackView(View):
 
         auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         messages.success(request, "카카오 계정으로 로그인되었습니다.")
+        
+        # 실명이 없으면 실명 입력 페이지로 리다이렉트
+        if not profile_obj.name:
+            return redirect("accounts:enter_real_name")
+        
         redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
         return redirect(redirect_to)
 
@@ -596,6 +603,16 @@ class NaverLoginView(View):
                 'state': state
             }
             naver_authorize_url = f"https://nid.naver.com/oauth2.0/authorize?{urlencode(params)}"
+            
+            # 모바일 환경 감지 및 네이버 앱 전환 지원
+            user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+            is_mobile = 'mobile' in user_agent or 'android' in user_agent or 'iphone' in user_agent or 'ipad' in user_agent
+            
+            if is_mobile:
+                # 모바일에서는 네이버 앱으로 전환될 수 있도록 처리
+                # 네이버 앱이 설치되어 있으면 자동으로 앱으로 전환됨
+                pass
+            
             return redirect(naver_authorize_url)
         except Exception as e:
             import traceback
@@ -630,8 +647,17 @@ class NaverCallbackView(View):
 
         if session_state != state:
             logger.error(f"네이버 콜백: state 불일치 - session_state: {session_state}, state: {state}")
+            logger.error(f"네이버 콜백: request.get_host()={request.get_host()}, request.META.get('HTTP_HOST')={request.META.get('HTTP_HOST')}")
+            logger.error(f"네이버 콜백: request.META.get('HTTP_X_FORWARDED_HOST')={request.META.get('HTTP_X_FORWARDED_HOST')}")
+            logger.error(f"네이버 콜백: 세션 키={request.session.session_key}, 세션 전체={dict(request.session)}")
+            # 세션 쿠키 정보 로깅
+            if hasattr(request, 'COOKIES'):
+                logger.error(f"네이버 콜백: 쿠키={dict(request.COOKIES)}")
+            
+            # 세션이 없을 경우: 네이버 콜백이 Nginx를 거치지 않고 직접 들어온 경우
             if session_state is None and state:
-                messages.error(request, "네이버 로그인에 실패했습니다. 세션이 만료되었습니다.")
+                logger.error("네이버 콜백: 세션이 없음 - 네이버 개발자 콘솔의 Redirect URI가 올바르게 설정되어야 함")
+                messages.error(request, "네이버 로그인에 실패했습니다. 세션이 만료되었습니다. 네이버 개발자 콘솔의 Redirect URI를 확인해주세요.")
             else:
                 messages.error(request, "네이버 로그인에 실패했습니다. 세션이 만료되었거나 보안 검증에 실패했습니다.")
             return redirect("accounts:login")
@@ -709,10 +735,9 @@ class NaverCallbackView(View):
                 user.save(update_fields=update_fields)
 
         profile_defaults = {}
-        if name:
-            profile_defaults["name"] = name
-        elif nickname:
-            profile_defaults["name"] = nickname
+        # 소셜 로그인에서 받은 이름은 실명으로 인정하지 않음
+        # 사용자가 직접 실명을 입력하도록 실명 입력 화면을 항상 보여줌
+        # 따라서 name 필드는 저장하지 않음
 
         if gender:
             gender_map = {
@@ -764,6 +789,11 @@ class NaverCallbackView(View):
 
         auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         messages.success(request, "네이버 계정으로 로그인되었습니다.")
+        
+        # 실명이 없으면 실명 입력 페이지로 리다이렉트
+        if not profile_obj.name:
+            return redirect("accounts:enter_real_name")
+        
         redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
         return redirect(redirect_to)
 
@@ -834,8 +864,17 @@ class GoogleCallbackView(View):
 
         if session_state != state:
             logger.error(f"구글 콜백: state 불일치 - session_state: {session_state}, state: {state}")
+            logger.error(f"구글 콜백: request.get_host()={request.get_host()}, request.META.get('HTTP_HOST')={request.META.get('HTTP_HOST')}")
+            logger.error(f"구글 콜백: request.META.get('HTTP_X_FORWARDED_HOST')={request.META.get('HTTP_X_FORWARDED_HOST')}")
+            logger.error(f"구글 콜백: 세션 키={request.session.session_key}, 세션 전체={dict(request.session)}")
+            # 세션 쿠키 정보 로깅
+            if hasattr(request, 'COOKIES'):
+                logger.error(f"구글 콜백: 쿠키={dict(request.COOKIES)}")
+            
+            # 세션이 없을 경우: 구글 콜백이 Nginx를 거치지 않고 직접 들어온 경우
             if session_state is None and state:
-                messages.error(request, "구글 로그인에 실패했습니다. 세션이 만료되었습니다.")
+                logger.error("구글 콜백: 세션이 없음 - 구글 클라우드 콘솔의 Redirect URI가 올바르게 설정되어야 함")
+                messages.error(request, "구글 로그인에 실패했습니다. 세션이 만료되었습니다. 구글 클라우드 콘솔의 Redirect URI를 확인해주세요.")
             else:
                 messages.error(request, "구글 로그인에 실패했습니다. 세션이 만료되었거나 보안 검증에 실패했습니다.")
             return redirect("accounts:login")
@@ -916,8 +955,9 @@ class GoogleCallbackView(View):
                 user.save(update_fields=update_fields)
 
         profile_defaults = {}
-        if name:
-            profile_defaults["name"] = name
+        # 소셜 로그인에서 받은 이름은 실명으로 인정하지 않음
+        # 사용자가 직접 실명을 입력하도록 실명 입력 화면을 항상 보여줌
+        # 따라서 name 필드는 저장하지 않음
 
         profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
 
@@ -947,6 +987,11 @@ class GoogleCallbackView(View):
 
         auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         messages.success(request, "구글 계정으로 로그인되었습니다.")
+        
+        # 실명이 없으면 실명 입력 페이지로 리다이렉트
+        if not profile_obj.name:
+            return redirect("accounts:enter_real_name")
+        
         redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
         return redirect(redirect_to)
 
@@ -1061,6 +1106,44 @@ def password_change(request):
         form = PasswordChangeFormCustom(request.user)
     
     return render(request, "accounts/password_change.html", {
+        "form": form,
+    })
+
+
+@login_required
+def enter_real_name(request):
+    """실명 입력 페이지 (소셜 로그인 후)"""
+    user = request.user
+    
+    # 이미 실명이 있으면 마이페이지로 리다이렉트
+    try:
+        profile = user.profile
+        if profile.name:
+            messages.info(request, "이미 실명이 등록되어 있습니다.")
+            return redirect("accounts:mypage")
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=user)
+    
+    if request.method == "POST":
+        form = RealNameForm(request.POST, user=user)
+        if form.is_valid():
+            # 실명과 급수 저장
+            profile.name = form.cleaned_data["name"]
+            profile.badminton_level = form.cleaned_data["badminton_level"]
+            profile.save()
+            
+            # 활동명 저장
+            if form.cleaned_data.get("activity_name"):
+                user.activity_name = form.cleaned_data["activity_name"]
+                user.save()
+            
+            messages.success(request, "실명이 등록되었습니다.")
+            redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
+            return redirect(redirect_to)
+    else:
+        form = RealNameForm(user=user)
+    
+    return render(request, "accounts/enter_real_name.html", {
         "form": form,
     })
 
