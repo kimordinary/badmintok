@@ -559,6 +559,391 @@ class KakaoCallbackView(View):
         return redirect(redirect_to)
 
 
+class NaverLoginView(View):
+    def get(self, request):
+        try:
+            client_id = settings.NAVER_CLIENT_ID
+            redirect_uri = settings.NAVER_REDIRECT_URI
+
+            if not client_id:
+                messages.error(request, "네이버 로그인 설정이 올바르지 않습니다. 관리자에게 문의하세요.")
+                return redirect("accounts:login")
+
+            if not redirect_uri:
+                messages.error(request, "네이버 리다이렉트 URI가 설정되지 않았습니다. 관리자에게 문의하세요.")
+                return redirect("accounts:login")
+
+            state = uuid.uuid4().hex
+            request.session["naver_oauth_state"] = state
+            request.session.save()
+
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"네이버 로그인 시작 - state: {state}, session_key: {request.session.session_key}")
+
+            from urllib.parse import urlencode
+            params = {
+                'response_type': 'code',
+                'client_id': client_id,
+                'redirect_uri': redirect_uri,
+                'state': state
+            }
+            naver_authorize_url = f"https://nid.naver.com/oauth2.0/authorize?{urlencode(params)}"
+            return redirect(naver_authorize_url)
+        except Exception as e:
+            import traceback
+            print(f"네이버 로그인 오류: {e}")
+            print(traceback.format_exc())
+            messages.error(request, f"네이버 로그인 중 오류가 발생했습니다: {str(e)}")
+            return redirect("accounts:login")
+
+
+class NaverCallbackView(View):
+    def get(self, request):
+        state = request.GET.get("state")
+        code = request.GET.get("code")
+        error = request.GET.get("error")
+        error_description = request.GET.get("error_description")
+
+        session_state = request.session.pop("naver_oauth_state", None)
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"네이버 콜백 - state: {state}, code: {code}, error: {error}, session_state: {session_state}")
+
+        if error:
+            logger.error(f"네이버 콜백 에러: {error} - {error_description}")
+            messages.error(request, f"네이버 로그인에 실패했습니다: {error_description or error}")
+            return redirect("accounts:login")
+
+        if not code:
+            logger.error("네이버 콜백: code가 없음")
+            messages.error(request, "네이버 로그인에 실패했습니다. 인증 코드를 받지 못했습니다.")
+            return redirect("accounts:login")
+
+        if session_state != state:
+            logger.error(f"네이버 콜백: state 불일치 - session_state: {session_state}, state: {state}")
+            if session_state is None and state:
+                messages.error(request, "네이버 로그인에 실패했습니다. 세션이 만료되었습니다.")
+            else:
+                messages.error(request, "네이버 로그인에 실패했습니다. 세션이 만료되었거나 보안 검증에 실패했습니다.")
+            return redirect("accounts:login")
+
+        token_data = {
+            "grant_type": "authorization_code",
+            "client_id": settings.NAVER_CLIENT_ID,
+            "client_secret": settings.NAVER_CLIENT_SECRET,
+            "code": code,
+            "state": state
+        }
+
+        try:
+            logger.error(f"네이버 토큰 요청 - redirect_uri: {settings.NAVER_REDIRECT_URI}")
+            token_response = requests.post(
+                "https://nid.naver.com/oauth2.0/token", data=token_data, timeout=5
+            )
+            logger.error(f"네이버 토큰 응답 상태: {token_response.status_code}")
+            token_response.raise_for_status()
+            token_json = token_response.json()
+            logger.error(f"네이버 토큰 응답: {token_json}")
+        except requests.RequestException as e:
+            logger.error(f"네이버 토큰 요청 실패: {str(e)}, 응답: {token_response.text if 'token_response' in locals() else 'N/A'}")
+            messages.error(request, "네이버 로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+            return redirect("accounts:login")
+
+        access_token = token_json.get("access_token")
+        if not access_token:
+            messages.error(request, "네이버 인증 토큰을 가져오지 못했습니다.")
+            return redirect("accounts:login")
+
+        try:
+            user_info_response = requests.get(
+                "https://openapi.naver.com/v1/nid/me",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=5,
+            )
+            user_info_response.raise_for_status()
+            user_info = user_info_response.json()
+        except requests.RequestException:
+            messages.error(request, "네이버 사용자 정보를 가져오는 데 실패했습니다.")
+            return redirect("accounts:login")
+
+        response = user_info.get("response", {})
+        email = response.get("email")
+        name = response.get("name")
+        nickname = response.get("nickname")
+        profile_image = response.get("profile_image")
+        gender = response.get("gender")  # M or F
+        birthday = response.get("birthday")  # MM-DD
+        birthyear = response.get("birthyear")  # YYYY
+        mobile = response.get("mobile")
+
+        if not email:
+            messages.error(request, "네이버 계정에서 이메일 정보를 제공하지 않았습니다. 네이버 설정을 확인해주세요.")
+            return redirect("accounts:login")
+
+        defaults = {
+            "activity_name": nickname or name or email.split("@")[0],
+            "auth_provider": "naver"
+        }
+        user, created = User.objects.get_or_create(email=email, defaults=defaults)
+        if created:
+            user.set_unusable_password()
+            user.save()
+        else:
+            update_fields = []
+            if not user.auth_provider:
+                user.auth_provider = "naver"
+                update_fields.append("auth_provider")
+            if nickname and user.activity_name != nickname:
+                user.activity_name = nickname
+                update_fields.append("activity_name")
+            if update_fields:
+                user.save(update_fields=update_fields)
+
+        profile_defaults = {}
+        if name:
+            profile_defaults["name"] = name
+        elif nickname:
+            profile_defaults["name"] = nickname
+
+        if gender:
+            gender_map = {
+                "M": UserProfile.Gender.MALE,
+                "F": UserProfile.Gender.FEMALE,
+            }
+            profile_defaults["gender"] = gender_map.get(gender, UserProfile.Gender.OTHER)
+
+        if birthyear and birthyear.isdigit():
+            profile_defaults["birth_year"] = int(birthyear)
+        if birthday and birthyear:
+            try:
+                birth_month = int(birthday.split("-")[0])
+                birth_day = int(birthday.split("-")[1])
+                birth_year_value = int(birthyear) if birthyear.isdigit() else 1900
+                profile_defaults["birthday"] = datetime.date(birth_year_value, birth_month, birth_day)
+            except (ValueError, IndexError):
+                pass
+        if mobile:
+            profile_defaults["phone_number"] = mobile
+
+        profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
+
+        update_fields = set()
+        if not created_profile:
+            for field, value in profile_defaults.items():
+                if value and getattr(profile_obj, field) != value:
+                    setattr(profile_obj, field, value)
+                    update_fields.add(field)
+
+        default_profile_path = "images/userprofile/user.png"
+
+        if profile_image:
+            try:
+                image_response = requests.get(profile_image, timeout=5)
+                image_response.raise_for_status()
+                file_name = f"naver_{user.id}.jpg"
+                storage = profile_obj.profile_image.field.storage
+                save_path = f"images/userprofile/{file_name}"
+                stored_path = storage.save(save_path, ContentFile(image_response.content))
+                if profile_obj.profile_image.name != stored_path:
+                    profile_obj.profile_image.name = stored_path
+                    update_fields.add("profile_image")
+            except requests.RequestException:
+                pass
+
+        if update_fields:
+            profile_obj.save(update_fields=list(update_fields))
+
+        auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        messages.success(request, "네이버 계정으로 로그인되었습니다.")
+        redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
+        return redirect(redirect_to)
+
+
+class GoogleLoginView(View):
+    def get(self, request):
+        try:
+            client_id = settings.GOOGLE_CLIENT_ID
+            redirect_uri = settings.GOOGLE_REDIRECT_URI
+
+            if not client_id:
+                messages.error(request, "구글 로그인 설정이 올바르지 않습니다. 관리자에게 문의하세요.")
+                return redirect("accounts:login")
+
+            if not redirect_uri:
+                messages.error(request, "구글 리다이렉트 URI가 설정되지 않았습니다. 관리자에게 문의하세요.")
+                return redirect("accounts:login")
+
+            state = uuid.uuid4().hex
+            request.session["google_oauth_state"] = state
+            request.session.save()
+
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"구글 로그인 시작 - state: {state}, session_key: {request.session.session_key}")
+
+            from urllib.parse import urlencode
+            params = {
+                'client_id': client_id,
+                'redirect_uri': redirect_uri,
+                'response_type': 'code',
+                'scope': 'openid email profile',
+                'state': state,
+                'access_type': 'offline',
+                'prompt': 'consent'
+            }
+            google_authorize_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+            return redirect(google_authorize_url)
+        except Exception as e:
+            import traceback
+            print(f"구글 로그인 오류: {e}")
+            print(traceback.format_exc())
+            messages.error(request, f"구글 로그인 중 오류가 발생했습니다: {str(e)}")
+            return redirect("accounts:login")
+
+
+class GoogleCallbackView(View):
+    def get(self, request):
+        state = request.GET.get("state")
+        code = request.GET.get("code")
+        error = request.GET.get("error")
+
+        session_state = request.session.pop("google_oauth_state", None)
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"구글 콜백 - state: {state}, code: {code}, error: {error}, session_state: {session_state}")
+
+        if error:
+            logger.error(f"구글 콜백 에러: {error}")
+            messages.error(request, f"구글 로그인에 실패했습니다: {error}")
+            return redirect("accounts:login")
+
+        if not code:
+            logger.error("구글 콜백: code가 없음")
+            messages.error(request, "구글 로그인에 실패했습니다. 인증 코드를 받지 못했습니다.")
+            return redirect("accounts:login")
+
+        if session_state != state:
+            logger.error(f"구글 콜백: state 불일치 - session_state: {session_state}, state: {state}")
+            if session_state is None and state:
+                messages.error(request, "구글 로그인에 실패했습니다. 세션이 만료되었습니다.")
+            else:
+                messages.error(request, "구글 로그인에 실패했습니다. 세션이 만료되었거나 보안 검증에 실패했습니다.")
+            return redirect("accounts:login")
+
+        token_data = {
+            "code": code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code"
+        }
+
+        try:
+            logger.error(f"구글 토큰 요청 - redirect_uri: {settings.GOOGLE_REDIRECT_URI}")
+            token_response = requests.post(
+                "https://oauth2.googleapis.com/token", data=token_data, timeout=5
+            )
+            logger.error(f"구글 토큰 응답 상태: {token_response.status_code}")
+            token_response.raise_for_status()
+            token_json = token_response.json()
+            logger.error(f"구글 토큰 응답: {token_json}")
+        except requests.RequestException as e:
+            logger.error(f"구글 토큰 요청 실패: {str(e)}, 응답: {token_response.text if 'token_response' in locals() else 'N/A'}")
+            messages.error(request, "구글 로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+            return redirect("accounts:login")
+
+        access_token = token_json.get("access_token")
+        id_token = token_json.get("id_token")
+
+        if not access_token:
+            messages.error(request, "구글 인증 토큰을 가져오지 못했습니다.")
+            return redirect("accounts:login")
+
+        try:
+            user_info_response = requests.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=5,
+            )
+            user_info_response.raise_for_status()
+            user_info = user_info_response.json()
+        except requests.RequestException:
+            messages.error(request, "구글 사용자 정보를 가져오는 데 실패했습니다.")
+            return redirect("accounts:login")
+
+        email = user_info.get("email")
+        name = user_info.get("name")
+        given_name = user_info.get("given_name")
+        family_name = user_info.get("family_name")
+        picture = user_info.get("picture")
+        verified_email = user_info.get("verified_email", False)
+
+        if not email:
+            messages.error(request, "구글 계정에서 이메일 정보를 제공하지 않았습니다.")
+            return redirect("accounts:login")
+
+        if not verified_email:
+            messages.error(request, "구글 계정의 이메일이 인증되지 않았습니다.")
+            return redirect("accounts:login")
+
+        defaults = {
+            "activity_name": name or email.split("@")[0],
+            "auth_provider": "google"
+        }
+        user, created = User.objects.get_or_create(email=email, defaults=defaults)
+        if created:
+            user.set_unusable_password()
+            user.save()
+        else:
+            update_fields = []
+            if not user.auth_provider:
+                user.auth_provider = "google"
+                update_fields.append("auth_provider")
+            if name and user.activity_name != name:
+                user.activity_name = name
+                update_fields.append("activity_name")
+            if update_fields:
+                user.save(update_fields=update_fields)
+
+        profile_defaults = {}
+        if name:
+            profile_defaults["name"] = name
+
+        profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
+
+        update_fields = set()
+        if not created_profile:
+            for field, value in profile_defaults.items():
+                if value and getattr(profile_obj, field) != value:
+                    setattr(profile_obj, field, value)
+                    update_fields.add(field)
+
+        if picture:
+            try:
+                image_response = requests.get(picture, timeout=5)
+                image_response.raise_for_status()
+                file_name = f"google_{user.id}.jpg"
+                storage = profile_obj.profile_image.field.storage
+                save_path = f"images/userprofile/{file_name}"
+                stored_path = storage.save(save_path, ContentFile(image_response.content))
+                if profile_obj.profile_image.name != stored_path:
+                    profile_obj.profile_image.name = stored_path
+                    update_fields.add("profile_image")
+            except requests.RequestException:
+                pass
+
+        if update_fields:
+            profile_obj.save(update_fields=list(update_fields))
+
+        auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        messages.success(request, "구글 계정으로 로그인되었습니다.")
+        redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
+        return redirect(redirect_to)
+
+
 # 설정 및 기타 페이지 뷰들
 @login_required
 def notification_settings(request):

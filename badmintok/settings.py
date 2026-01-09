@@ -262,3 +262,13 @@ KAKAO_CLIENT_ID = os.environ.get('KAKAO_REST_API_KEY', '90b3d0426d0273b8e9d1113e
 KAKAO_CLIENT_SECRET = os.environ.get('KAKAO_CLIENT_SECRET', '')
 # 카카오 리다이렉트 URI
 KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI', 'http://127.0.0.1:8000/accounts/kakao')
+
+# 네이버 OAuth 설정
+NAVER_CLIENT_ID = os.environ.get('NAVER_CLIENT_ID', '')
+NAVER_CLIENT_SECRET = os.environ.get('NAVER_CLIENT_SECRET', '')
+NAVER_REDIRECT_URI = os.environ.get('NAVER_REDIRECT_URI', 'http://localhost/accounts/naver')
+
+# 구글 OAuth 설정
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost/accounts/google')

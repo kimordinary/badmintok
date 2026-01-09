@@ -3,7 +3,9 @@ from django.contrib.auth import views as auth_views
 
 from .forms import UserLoginForm
 from .views import (
-    KakaoCallbackView, KakaoLoginView, SignupSuccessView, SignupView,
+    KakaoCallbackView, KakaoLoginView, NaverCallbackView, NaverLoginView,
+    GoogleCallbackView, GoogleLoginView,
+    SignupSuccessView, SignupView,
     mypage, profile_edit,
     mypage_bands, mypage_created_bands, mypage_band_posts, mypage_band_comments,
     mypage_liked_band_posts, mypage_schedule_applications, mypage_vote_choices,
@@ -24,6 +26,12 @@ urlpatterns = [
     path("login/kakao/", KakaoLoginView.as_view(), name="kakao_login"),
     path("kakao/", KakaoCallbackView.as_view(), name="kakao_callback"),
     path("kakao", KakaoCallbackView.as_view(), name="kakao_callback_no_slash"),
+    path("login/naver/", NaverLoginView.as_view(), name="naver_login"),
+    path("naver/", NaverCallbackView.as_view(), name="naver_callback"),
+    path("naver", NaverCallbackView.as_view(), name="naver_callback_no_slash"),
+    path("login/google/", GoogleLoginView.as_view(), name="google_login"),
+    path("google/", GoogleCallbackView.as_view(), name="google_callback"),
+    path("google", GoogleCallbackView.as_view(), name="google_callback_no_slash"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("mypage/", mypage, name="mypage"),
     path("profile/edit/", profile_edit, name="profile_edit"),
