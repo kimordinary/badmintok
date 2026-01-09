@@ -8,10 +8,76 @@
     <div style="width: 100%; max-width: 400px;">
         <!-- 제목 -->
         <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1e293b; text-align: center;">로그인</h1>
-        <p style="margin: 0 0 32px 0; font-size: 14px; color: #64748b; text-align: center;">소셜 계정으로 간편하게 로그인하세요.</p>
+        <p id="loginDescription" style="margin: 0 0 32px 0; font-size: 14px; color: #64748b; text-align: center;">소셜 계정으로 간편하게 로그인하세요.</p>
+
+        <!-- 이메일/비밀번호 로그인 폼 (기본 숨김) -->
+        <form id="emailLoginForm" method="post" novalidate style="display: none; flex-direction: column; gap: 20px;">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div style="padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; color: #dc2626; font-size: 14px;">
+                    {% for error in form.non_field_errors %}
+                        <p style="margin: 0;">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Email 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.username.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">이메일</label>
+                <input type="text"
+                       name="{{ form.username.name }}"
+                       id="{{ form.username.id_for_label }}"
+                       placeholder="m@example.com"
+                       value="{{ form.username.value|default:'' }}"
+                       required
+                       style="width: 100%; padding: 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                {% for error in form.username.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- Password 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.password.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">비밀번호</label>
+                <div style="position: relative;">
+                    <input type="password"
+                           name="{{ form.password.name }}"
+                           id="{{ form.password.id_for_label }}"
+                           required
+                           style="width: 100%; padding: 12px 45px 12px 12px; background: #f5f5f5; border: none; border-radius: 6px; font-size: 14px; color: #1e293b; font-family: inherit; box-sizing: border-box;">
+                    <button type="button" onclick="togglePassword('{{ form.password.id_for_label }}')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">
+                        <svg id="{{ form.password.id_for_label }}-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <svg id="{{ form.password.id_for_label }}-eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>
+                    </button>
+                </div>
+                {% for error in form.password.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- Login 버튼 -->
+            <button type="submit" style="width: 100%; padding: 12px; background: var(--brand); color: #ffffff; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                로그인
+            </button>
+
+            <!-- 소셜 로그인으로 돌아가기 -->
+            <button type="button" onclick="toggleLoginMode()" style="width: 100%; padding: 10px; background: transparent; color: #64748b; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                <span>소셜 로그인으로 돌아가기</span>
+            </button>
+        </form>
 
         <!-- 소셜 로그인 버튼 -->
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div id="socialLoginButtons" style="display: flex; flex-direction: column; gap: 12px;">
             <!-- 카카오 로그인 -->
             <a href="{% url 'accounts:kakao_login' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #FEE500; border: none; border-radius: 6px; text-decoration: none; color: #000000; font-size: 14px; font-weight: 500; transition: background 0.2s;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -39,6 +105,11 @@
                 <span>Google로 로그인</span>
             </a>
         </div>
+
+        <!-- 관리자 로그인 링크 -->
+        <p id="adminLoginToggle" style="margin: 24px 0 0 0; text-align: center; font-size: 14px; color: #64748b;">
+            관리자이신가요? <button type="button" onclick="toggleLoginMode()" style="background: none; border: none; color: var(--brand); text-decoration: underline; cursor: pointer; font-size: 14px; padding: 0;">이메일로 로그인</button>
+        </p>
     </div>
 </div>
 
@@ -54,5 +125,56 @@
     a[style*="border: 1px solid #dadce0"]:hover {
         background: #f8f9fa !important;
     }
+
+    button[type="submit"]:hover {
+        background: var(--brand-700) !important;
+    }
 </style>
+
+<script>
+    function toggleLoginMode() {
+        const emailForm = document.getElementById('emailLoginForm');
+        const socialButtons = document.getElementById('socialLoginButtons');
+        const adminToggle = document.getElementById('adminLoginToggle');
+        const description = document.getElementById('loginDescription');
+
+        if (emailForm.style.display === 'none' || emailForm.style.display === '') {
+            // 이메일 로그인 모드로 전환
+            emailForm.style.display = 'flex';
+            socialButtons.style.display = 'none';
+            adminToggle.style.display = 'none';
+            description.textContent = '관리자 계정으로 로그인하세요.';
+        } else {
+            // 소셜 로그인 모드로 전환
+            emailForm.style.display = 'none';
+            socialButtons.style.display = 'flex';
+            adminToggle.style.display = 'block';
+            description.textContent = '소셜 계정으로 간편하게 로그인하세요.';
+        }
+    }
+
+    function togglePassword(fieldId) {
+        const passwordInput = document.getElementById(fieldId);
+        const eyeOpen = document.getElementById(fieldId + '-eye-open');
+        const eyeClosed = document.getElementById(fieldId + '-eye-closed');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeOpen.style.display = 'none';
+            eyeClosed.style.display = 'block';
+        } else {
+            passwordInput.type = 'password';
+            eyeOpen.style.display = 'block';
+            eyeClosed.style.display = 'none';
+        }
+    }
+
+    // 페이지 로드 시 폼 에러가 있으면 이메일 로그인 모드로 전환
+    document.addEventListener('DOMContentLoaded', function() {
+        const formErrors = document.querySelector('#emailLoginForm .fee2e2');
+        if (formErrors || document.querySelector('#emailLoginForm small[style*="dc2626"]')) {
+            toggleLoginMode();
+        }
+    });
+</script>
 {% endblock %}
