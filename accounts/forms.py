@@ -79,8 +79,66 @@ class UserLoginForm(AuthenticationForm):
 
         if "username" in self.fields:
             self.fields["username"].label = "이메일"
+            # username 필드를 email로 처리하도록 설정
+            self.fields["username"].widget.attrs.update({"type": "email", "autocomplete": "email"})
         if "password" in self.fields:
             self.fields["password"].label = "비밀번호"
+
+    def clean_username(self):
+        """username 필드를 email로 처리"""
+        username = self.cleaned_data.get("username")
+        if username:
+            # 이메일 형식 검증
+            from django.core.validators import validate_email
+            from django.core.exceptions import ValidationError
+            try:
+                validate_email(username)
+            except ValidationError:
+                raise forms.ValidationError("올바른 이메일 주소를 입력해주세요.")
+        return username
+
+    def clean(self):
+        """소셜 로그인 사용자 체크 및 인증"""
+        username = self.cleaned_data.get("username")
+        password = self.cleaned_data.get("password")
+
+        # 먼저 Django의 기본 인증 로직 실행
+        cleaned_data = super().clean()
+        
+        # 인증이 성공한 경우에만 소셜 로그인 사용자 체크
+        # (인증 실패 시에는 cleaned_data에 user가 없음)
+        if username and password and 'user' in cleaned_data:
+            user = cleaned_data.get('user')
+            if user:
+                # 소셜 로그인 사용자인 경우
+                if user.auth_provider:
+                    # 인증 성공했지만 소셜 로그인 사용자이므로 에러
+                    raise forms.ValidationError(
+                        f"이 계정은 {user.auth_provider.upper()} 소셜 로그인으로 가입된 계정입니다. "
+                        "소셜 로그인을 사용해주세요.",
+                        code='social_login_required'
+                    )
+                # 비밀번호가 없는 사용자 (소셜 로그인 사용자)
+                if not user.has_usable_password():
+                    raise forms.ValidationError(
+                        "이 계정은 소셜 로그인으로 가입된 계정입니다. 소셜 로그인을 사용해주세요.",
+                        code='social_login_required'
+                    )
+        elif username and password:
+            # 인증 실패 전에 소셜 로그인 사용자인지 미리 체크 (더 나은 에러 메시지)
+            try:
+                user = User.objects.get(email=username)
+                if user.auth_provider or not user.has_usable_password():
+                    raise forms.ValidationError(
+                        f"이 계정은 {user.auth_provider.upper() if user.auth_provider else '소셜'} 로그인으로 가입된 계정입니다. "
+                        "소셜 로그인을 사용해주세요.",
+                        code='social_login_required'
+                    )
+            except User.DoesNotExist:
+                # 사용자가 없으면 기본 인증 에러 메시지 사용
+                pass
+
+        return cleaned_data
 
 
 class UserProfileForm(forms.ModelForm):
