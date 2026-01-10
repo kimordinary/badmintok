@@ -10,19 +10,18 @@
             integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
             crossorigin="anonymous"></script>
     <script>
-        // 카카오 SDK 초기화
+        // 카카오 SDK 초기화 (JavaScript 키 사용)
         if (window.Kakao && !Kakao.isInitialized()) {
-            Kakao.init('{{ client_id }}');
+            Kakao.init('{{ javascript_key }}');
         }
-        
-        // redirectUri에 state를 포함시켜 서버 세션 state와 매칭
-        // 카카오 SDK는 state를 자동으로 관리하지 않으므로, redirectUri에 포함시킴
-        const baseRedirectUri = '{{ redirect_uri }}';
-        const redirectUriWithState = baseRedirectUri + (baseRedirectUri.includes('?') ? '&' : '?') + 'state={{ state }}';
-        
+
+        // state를 localStorage에 저장 (콜백에서 검증용)
+        // redirectUri에는 state를 포함시키지 않음 (카카오 콘솔 등록 URI와 정확히 일치해야 함)
+        localStorage.setItem('kakao_oauth_state', '{{ state }}');
+
         // SDK를 사용하여 카카오 로그인 시작 (모바일 앱 자동 전환 지원)
         Kakao.Auth.authorize({
-            redirectUri: redirectUriWithState,
+            redirectUri: '{{ redirect_uri }}',
             prompt: 'login'
         });
     </script>

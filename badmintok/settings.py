@@ -261,8 +261,9 @@ SESSION_COOKIE_NAME = 'sessionid'
 
 KAKAO_CLIENT_ID = os.environ.get('KAKAO_REST_API_KEY', '90b3d0426d0273b8e9d1113e6184ba6a')
 KAKAO_CLIENT_SECRET = os.environ.get('KAKAO_CLIENT_SECRET', '')
+KAKAO_JAVASCRIPT_KEY = os.environ.get('KAKAO_JAVASCRIPT_KEY', 'd371bd2ec21840433003759185c1fbe5')
 # 카카오 리다이렉트 URI
-KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI', 'http://127.0.0.1:8000/accounts/kakao')
+KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI', 'http://localhost/accounts/kakao')
 
 # 네이버 OAuth 설정
 NAVER_CLIENT_ID = os.environ.get('NAVER_CLIENT_ID', '')

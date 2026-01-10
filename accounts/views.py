@@ -355,6 +355,7 @@ class KakaoLoginView(View):
             from django.shortcuts import render
             return render(request, 'accounts/kakao_sdk_login.html', {
                 'client_id': client_id,
+                'javascript_key': settings.KAKAO_JAVASCRIPT_KEY,
                 'redirect_uri': redirect_uri,
                 'state': state,
             })
@@ -372,7 +373,16 @@ class KakaoCallbackView(View):
         code = request.GET.get("code")
         error = request.GET.get("error")
 
-        session_state = request.session.pop("kakao_oauth_state", None)
+        # code는 있지만 state가 없으면 JavaScript가 localStorage에서 state를 추가하도록 템플릿 렌더링
+        # (세션은 유지 - JavaScript가 state 추가 후 다시 요청할 때 사용)
+        if code and not state:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("카카오 콜백: code는 있지만 state 없음 - JavaScript로 처리")
+            return render(request, "accounts/kakao_callback.html")
+
+        # state 검증을 위해 세션에서 가져오기 (검증 성공 후 삭제)
+        session_state = request.session.get("kakao_oauth_state")
 
         # 디버깅 로그
         import logging
@@ -411,6 +421,9 @@ class KakaoCallbackView(View):
             else:
                 messages.error(request, "카카오 로그인에 실패했습니다. 세션이 만료되었거나 보안 검증에 실패했습니다.")
             return redirect("accounts:login")
+
+        # state 검증 성공 - 세션에서 삭제
+        request.session.pop("kakao_oauth_state", None)
 
         token_data = {
             "grant_type": "authorization_code",

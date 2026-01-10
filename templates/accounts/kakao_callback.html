@@ -1,18 +1,72 @@
-{% extends "base.html" %}
-
-{% block title %}카카오 로그인 연동 - 배드민톡{% endblock %}
-
-{% block content %}
-<section class="auth-section">
-    <div class="container auth-success">
-        <div class="auth-card auth-success-card">
-            <h2>카카오 로그인 연동 정보가 없습니다.</h2>
-            <p>카카오 로그인 요청이 확인되지 않았습니다. 아래 버튼을 눌러 다시 시도해주세요.</p>
-            <div class="success-actions">
-                <a href="{% url 'accounts:login' %}" class="btn btn-primary">로그인 페이지로 이동</a>
-                <a href="{% url 'home' %}" class="btn btn-ghost">홈으로 돌아가기</a>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카카오 로그인 처리 중...</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FEE500;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <div class="spinner"></div>
+        <p>카카오 로그인 처리 중입니다...</p>
     </div>
-</section>
-{% endblock %}
+
+    <script>
+        // URL에서 code와 error 추출
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+
+        // localStorage에서 state 가져오기
+        const state = localStorage.getItem('kakao_oauth_state');
+
+        // state 사용 후 삭제
+        localStorage.removeItem('kakao_oauth_state');
+
+        // state와 code를 포함한 새 URL 생성
+        const callbackUrl = new URL(window.location.href);
+
+        // 이미 state가 있으면 패스, 없으면 추가
+        if (state && !urlParams.has('state')) {
+            callbackUrl.searchParams.set('state', state);
+            // 서버로 다시 요청 (이번엔 state 포함)
+            window.location.href = callbackUrl.toString();
+        } else if (!code && !error && !state) {
+            // 모든 정보가 없으면 로그인 페이지로
+            window.location.href = '/accounts/login/';
+        }
+        // else: state가 이미 있거나 code/error가 있으면 Django view가 처리
+    </script>
+</body>
+</html>
