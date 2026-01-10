@@ -8,7 +8,7 @@ from django.db.models import Q
 from .models import (
     Band, BandMember, BandPost, BandPostImage, BandComment,
     BandPostLike, BandCommentLike, BandVote, BandVoteOption, BandVoteChoice,
-    BandSchedule, BandScheduleApplication
+    BandSchedule, BandScheduleApplication, BandBookmark
 )
 
 
@@ -487,4 +487,12 @@ class BandScheduleApplicationAdmin(admin.ModelAdmin):
     list_filter = ["status", "applied_at", "reviewed_at"]
     search_fields = ["schedule__title", "user__activity_name", "user__email"]
     readonly_fields = ["applied_at", "reviewed_at"]
+
+
+@admin.register(BandBookmark)
+class BandBookmarkAdmin(admin.ModelAdmin):
+    list_display = ["band", "user", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["band__name", "user__activity_name", "user__email"]
+    readonly_fields = ["created_at"]
 

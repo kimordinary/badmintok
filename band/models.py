@@ -94,6 +94,10 @@ class Band(models.Model):
         return self.members.filter(status="active").count()
 
     @property
+    def bookmark_count(self):
+        return self.bookmarks.count()
+
+    @property
     def post_count(self):
         return self.posts.count()
 
@@ -634,4 +638,34 @@ class BandScheduleImage(models.Model):
 
     def __str__(self):
         return f"{self.schedule.title} - 이미지 {self.order + 1}"
+
+
+class BandBookmark(models.Model):
+    """밴드 북마크 (관심 모임) 모델"""
+    band = models.ForeignKey(
+        Band,
+        on_delete=models.CASCADE,
+        related_name="bookmarks",
+        verbose_name=_("밴드")
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="band_bookmarks",
+        verbose_name=_("사용자")
+    )
+    created_at = models.DateTimeField(_("북마크 일시"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("밴드 북마크")
+        verbose_name_plural = _("밴드 북마크")
+        unique_together = [["band", "user"]]
+        indexes = [
+            models.Index(fields=["band"]),
+            models.Index(fields=["user"]),
+            models.Index(fields=["-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.activity_name} - {self.band.name}"
 

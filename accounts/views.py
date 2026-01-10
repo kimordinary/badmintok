@@ -22,7 +22,7 @@ from .forms import UserSignupForm, UserProfileForm, PasswordChangeFormCustom, In
 from .models import User, UserProfile, UserBlock, Report, Inquiry
 from band.models import (
     Band, BandPost, BandComment, BandPostLike,
-    BandScheduleApplication, BandVoteChoice
+    BandScheduleApplication, BandVoteChoice, BandBookmark
 )
 from community.models import Post, Comment, PostShare
 from contests.models import Contest
@@ -61,8 +61,9 @@ def mypage(request):
         members__user=user,
         members__status="active"
     ).count()
-    
+
     created_bands_count = Band.objects.filter(created_by=user).count()
+    bookmarked_bands_count = BandBookmark.objects.filter(user=user).count()
     band_posts_count = BandPost.objects.filter(author=user).count()
     band_comments_count = BandComment.objects.filter(author=user).count()
     liked_band_posts_count = BandPost.objects.filter(likes__user=user).distinct().count()
@@ -73,11 +74,12 @@ def mypage(request):
     comments_count = Comment.objects.filter(author=user).count()
     shared_posts_count = Post.objects.filter(shares__user=user).distinct().count()
     liked_contests_count = Contest.objects.filter(likes=user).distinct().count()
-    
+
     return render(request, "accounts/mypage.html", {
         "profile": profile,
         "my_bands_count": my_bands_count,
         "created_bands_count": created_bands_count,
+        "bookmarked_bands_count": bookmarked_bands_count,
         "band_posts_count": band_posts_count,
         "band_comments_count": band_comments_count,
         "liked_band_posts_count": liked_band_posts_count,
@@ -146,14 +148,35 @@ def mypage_created_bands(request):
     user = request.user
     per_page = 20
     page = request.GET.get('page', 1)
-    
+
     created_bands = Band.objects.filter(created_by=user).order_by("-created_at")
     paginator = Paginator(created_bands, per_page)
     bands_page = paginator.get_page(page)
-    
+
     return render(request, "accounts/mypage_bands.html", {
         "bands_page": bands_page,
         "title": "내가 만든 모임",
+    })
+
+
+@login_required
+def mypage_bookmarked_bands(request):
+    """관심 모임 상세"""
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+
+    # 북마크한 모임 조회 (북마크 생성일 기준 정렬)
+    bookmarked_bands = Band.objects.filter(
+        bookmarks__user=user
+    ).order_by("-bookmarks__created_at")
+
+    paginator = Paginator(bookmarked_bands, per_page)
+    bands_page = paginator.get_page(page)
+
+    return render(request, "accounts/mypage_bands.html", {
+        "bands_page": bands_page,
+        "title": "관심 모임",
     })
 
 

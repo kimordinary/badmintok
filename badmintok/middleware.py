@@ -52,6 +52,16 @@ class VisitorTrackingMiddleware:
             if path.startswith(exclude_path):
                 return False
 
+        # localhost 및 내부 IP 제외
+        ip_address = self._get_client_ip(request)
+        if self._is_internal_ip(ip_address):
+            return False
+
+        # referer가 localhost인 경우 제외
+        referer = request.META.get('HTTP_REFERER', '')
+        if referer and ('localhost' in referer or '127.0.0.1' in referer):
+            return False
+
         return True
 
     def _log_visit(self, request):
@@ -109,6 +119,35 @@ class VisitorTrackingMiddleware:
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
+    def _is_internal_ip(self, ip):
+        """내부 IP인지 확인 (localhost, 사설 IP 등)"""
+        if not ip:
+            return False
+
+        # localhost 및 루프백
+        if ip in ['localhost', '127.0.0.1', '::1']:
+            return True
+
+        # 사설 IP 대역 체크
+        # 10.x.x.x
+        if ip.startswith('10.'):
+            return True
+
+        # 172.16.x.x ~ 172.31.x.x
+        if ip.startswith('172.'):
+            try:
+                second_octet = int(ip.split('.')[1])
+                if 16 <= second_octet <= 31:
+                    return True
+            except (IndexError, ValueError):
+                pass
+
+        # 192.168.x.x
+        if ip.startswith('192.168.'):
+            return True
+
+        return False
 
     def _detect_device_type(self, user_agent):
         """User-Agent로부터 디바이스 타입 판별"""

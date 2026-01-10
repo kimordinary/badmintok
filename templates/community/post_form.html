@@ -74,6 +74,9 @@
 
             <form method="post" enctype="multipart/form-data" id="postForm" style="display: flex; flex-direction: column; gap: 20px;">
                 {% csrf_token %}
+                {% if submit_token %}
+                    <input type="hidden" name="submit_token" value="{{ submit_token }}">
+                {% endif %}
                 
                 <!-- 카테고리 -->
                 <div>
@@ -211,9 +214,18 @@
         quill.root.innerHTML = hiddenContent.value;
     }
 
-    // 폼 제출 시 에디터 내용을 textarea에 복사
+    // 폼 제출 시 에디터 내용을 textarea에 복사 및 중복 제출 방지
     const postForm = document.getElementById('postForm');
+    let isSubmitting = false;
+    
     postForm.addEventListener('submit', function(e) {
+        // 이미 제출 중이면 중복 제출 방지
+        if (isSubmitting) {
+            e.preventDefault();
+            alert('게시글을 저장 중입니다. 잠시만 기다려주세요.');
+            return false;
+        }
+        
         // 에디터 내용을 가져옴
         const editorContent = quill.root.innerHTML;
         const editorText = quill.getText().trim(); // 실제 텍스트만 추출
@@ -228,6 +240,16 @@
         
         // 에디터 내용을 textarea에 저장
         hiddenContent.value = editorContent;
+        
+        // 제출 상태로 설정 및 버튼 비활성화
+        isSubmitting = true;
+        const submitButton = postForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = '저장 중...';
+            submitButton.style.opacity = '0.6';
+            submitButton.style.cursor = 'not-allowed';
+        }
     });
 
     // 기존 이미지 삭제 (수정 시)

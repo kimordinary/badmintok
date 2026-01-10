@@ -7,7 +7,7 @@ from .views import (
     GoogleCallbackView, GoogleLoginView,
     SignupSuccessView, SignupView,
     mypage, profile_edit, enter_real_name,
-    mypage_bands, mypage_created_bands, mypage_band_posts, mypage_band_comments,
+    mypage_bands, mypage_created_bands, mypage_bookmarked_bands, mypage_band_posts, mypage_band_comments,
     mypage_liked_band_posts, mypage_schedule_applications, mypage_vote_choices,
     mypage_community_posts, mypage_liked_posts, mypage_comments, mypage_shared_posts,
     mypage_liked_contests,
@@ -39,6 +39,7 @@ urlpatterns = [
     # 마이페이지 섹션별 상세 페이지
     path("mypage/bands/", mypage_bands, name="mypage_bands"),
     path("mypage/created-bands/", mypage_created_bands, name="mypage_created_bands"),
+    path("mypage/bookmarked-bands/", mypage_bookmarked_bands, name="mypage_bookmarked_bands"),
     path("mypage/band-posts/", mypage_band_posts, name="mypage_band_posts"),
     path("mypage/band-comments/", mypage_band_comments, name="mypage_band_comments"),
     path("mypage/liked-band-posts/", mypage_liked_band_posts, name="mypage_liked_band_posts"),

@@ -47,13 +47,25 @@
                         </svg>
                     </div>
                 </a>
-                <a href="{% url 'accounts:mypage_created_bands' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                <a href="{% url 'accounts:mypage_created_bands' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">✨</span>
                         <span style="font-size: 16px; font-weight: 500; color: #1e293b;">내가 만든 모임</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 14px; color: var(--muted);">{{ created_bands_count }}</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </a>
+                <a href="{% url 'accounts:mypage_bookmarked_bands' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px;">⭐</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">관심 모임</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 14px; color: var(--muted);">{{ bookmarked_bands_count }}</span>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
                             <path d="M9 18l6-6-6-6"/>
                         </svg>

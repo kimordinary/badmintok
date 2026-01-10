@@ -9,7 +9,7 @@ import copy
 from .models import (
     Band, BandMember, BandPost, BandPostImage, BandComment,
     BandPostLike, BandCommentLike, BandVote, BandVoteOption, BandVoteChoice,
-    BandSchedule, BandScheduleApplication, BandScheduleImage
+    BandSchedule, BandScheduleApplication, BandScheduleImage, BandBookmark
 )
 from .forms import (
     BandForm, BandPostForm, BandCommentForm, BandVoteForm,
@@ -1081,7 +1081,12 @@ def band_detail(request, band_id):
     
     # 전체 멤버 수
     total_member_count = band.members.filter(status="active").count()
-    
+
+    # 북마크 여부 확인
+    is_bookmarked = False
+    if request.user.is_authenticated:
+        is_bookmarked = BandBookmark.objects.filter(band=band, user=request.user).exists()
+
     return render(request, "band/detail.html", {
         "band": band,
         "posts": posts_page,
@@ -1094,6 +1099,7 @@ def band_detail(request, band_id):
         "is_member": is_member,
         "is_creator": is_creator,
         "member": member,
+        "is_bookmarked": is_bookmarked,
         "search": search,
         "active_tab": active_tab,
     })
@@ -1101,31 +1107,29 @@ def band_detail(request, band_id):
 
 @login_required
 def band_join(request, band_id):
-    """밴드 가입"""
+    """밴드 가입 신청"""
     band = get_object_or_404(Band, id=band_id)
-    
+
     # 이미 멤버인지 확인
     existing_member = band.members.filter(user=request.user).first()
     if existing_member:
         if existing_member.status == "active":
-            messages.info(request, "이미 가입된 밴드입니다.")
+            messages.info(request, "이미 가입된 모임입니다.")
         elif existing_member.status == "pending":
             messages.info(request, "가입 승인 대기 중입니다.")
         else:
-            messages.error(request, "차단된 밴드입니다.")
+            messages.error(request, "차단된 모임입니다.")
         return redirect("band:detail", band_id=band_id)
-    
-    # 가입 처리 (자동 승인)
-    status = "active"
-    messages.success(request, "밴드에 가입되었습니다.")
 
+    # 가입 신청 (모임장 승인 필요)
     BandMember.objects.create(
         band=band,
         user=request.user,
         role="member",
-        status=status
+        status="pending"  # 승인 대기 상태
     )
-    
+
+    messages.success(request, "가입 신청이 완료되었습니다. 모임장의 승인을 기다려주세요.")
     return redirect("band:detail", band_id=band_id)
 
 
@@ -1134,18 +1138,38 @@ def band_leave(request, band_id):
     """밴드 탈퇴"""
     band = get_object_or_404(Band, id=band_id)
     member = band.members.filter(user=request.user).first()
-    
+
     if not member:
         messages.error(request, "가입되지 않은 밴드입니다.")
         return redirect("band:detail", band_id=band_id)
-    
+
     if member.role == "owner":
         messages.error(request, "모임장은 밴드를 탈퇴할 수 없습니다.")
         return redirect("band:detail", band_id=band_id)
-    
+
     member.delete()
     messages.success(request, "밴드를 탈퇴했습니다.")
     return redirect("band:list")
+
+
+@login_required
+def band_bookmark_toggle(request, band_id):
+    """밴드 북마크 토글 (관심 모임 추가/제거)"""
+    band = get_object_or_404(Band, id=band_id)
+
+    # 이미 북마크되어 있는지 확인
+    bookmark = BandBookmark.objects.filter(band=band, user=request.user).first()
+
+    if bookmark:
+        # 북마크 제거
+        bookmark.delete()
+        messages.success(request, "관심 모임에서 제거되었습니다.")
+    else:
+        # 북마크 추가
+        BandBookmark.objects.create(band=band, user=request.user)
+        messages.success(request, "관심 모임에 추가되었습니다.")
+
+    return redirect("band:detail", band_id=band_id)
 
 
 @login_required
@@ -2192,10 +2216,6 @@ def schedule_apply(request, band_id, schedule_id):
     """일정 신청"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
 
-    # 멤버 확인
-    member = schedule.band.members.filter(user=request.user, status="active").first()
-    is_member = member is not None
-    
     # 이미 신청했는지 확인
     existing = schedule.applications.filter(user=request.user).first()
     if existing and existing.status in ["pending", "approved"]:
@@ -2212,32 +2232,7 @@ def schedule_apply(request, band_id, schedule_id):
         return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
     
     if request.method == "POST":
-        # 자동 가입 처리
-        auto_join = request.POST.get("auto_join")
-        if auto_join and not is_member:
-            # 이미 가입 신청이 있는지 확인
-            existing_member = schedule.band.members.filter(user=request.user).first()
-            if not existing_member:
-                # 새로 가입
-                BandMember.objects.create(
-                    band=schedule.band,
-                    user=request.user,
-                    role="member",
-                    status="active"
-                )
-                is_member = True
-                messages.success(request, f"{schedule.band.name} 모임에 가입되었습니다.")
-            elif existing_member.status == "pending":
-                # pending 상태를 active로 변경
-                existing_member.status = "active"
-                existing_member.save()
-                is_member = True
-                messages.success(request, f"{schedule.band.name} 모임 가입이 승인되었습니다.")
-
-        # 멤버가 아니면 신청 불가
-        if not is_member:
-            messages.error(request, "모임에 먼저 가입해주세요.")
-            return redirect("band:schedule_apply", band_id=band_id, schedule_id=schedule_id)
+        # 번개는 누구나 참가 가능 (멤버가 아니어도 OK)
 
         form = BandScheduleApplicationForm(request.POST)
         if form.is_valid():
@@ -2268,7 +2263,6 @@ def schedule_apply(request, band_id, schedule_id):
         "band": schedule.band,
         "schedule": schedule,
         "form": form,
-        "is_member": is_member,
     })
 
 

@@ -142,22 +142,26 @@
     .stats-table th {
         text-align: left;
         padding: 8px 10px;
-        background: var(--surface-2);
-        color: var(--muted);
+        background: #f6f9f7 !important;
+        color: #64748b !important;
         font-size: 12px;
         font-weight: 600;
         border-bottom: 1px solid var(--admin-border);
+    }
+
+    .stats-table tbody tr {
+        background: #ffffff !important;
     }
 
     .stats-table td {
         padding: 8px 10px;
         border-bottom: 1px solid rgba(15, 23, 42, 0.05);
         font-size: 13px;
-        color: var(--text);
+        color: #0f172a !important;
     }
 
-    .stats-table tr:hover {
-        background: rgba(49, 170, 96, 0.03);
+    .stats-table tbody tr:hover {
+        background: rgba(49, 170, 96, 0.08) !important;
     }
 
     /* 2열 그리드 */
@@ -177,13 +181,13 @@
     .device-label {
         width: 70px;
         font-size: 13px;
-        color: var(--muted);
+        color: #64748b !important;
     }
 
     .device-progress {
         flex: 1;
         height: 20px;
-        background: var(--surface-2);
+        background: #f6f9f7;
         border-radius: 3px;
         overflow: hidden;
         margin: 0 10px;
@@ -191,14 +195,14 @@
 
     .device-fill {
         height: 100%;
-        background: var(--brand);
+        background: #31AA60;
         transition: width 0.3s ease;
     }
 
     .device-count {
         font-size: 13px;
         font-weight: 600;
-        color: var(--text);
+        color: #0f172a !important;
         min-width: 50px;
         text-align: right;
     }

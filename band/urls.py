@@ -13,6 +13,7 @@ urlpatterns = [
     path("<int:band_id>/update/", views.band_update, name="update"),
     path("<int:band_id>/join/", views.band_join, name="join"),
     path("<int:band_id>/leave/", views.band_leave, name="leave"),
+    path("<int:band_id>/bookmark/", views.band_bookmark_toggle, name="bookmark_toggle"),
     path("<int:band_id>/delete-request/", views.band_delete_request, name="delete_request"),
     path("<int:band_id>/member-management/", views.member_management, name="member_management"),
     path("<int:band_id>/members/<int:member_id>/approve/", views.member_approve, name="member_approve"),

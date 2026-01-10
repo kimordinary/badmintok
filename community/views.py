@@ -426,6 +426,15 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # 중복 제출 방지를 위한 토큰 생성
+        import secrets
+        submit_token = secrets.token_urlsafe(32)
+        session_key = 'post_submit_token'
+        self.request.session[session_key] = submit_token
+        self.request.session.modified = True
+        context['submit_token'] = submit_token
+        
         # 계층 구조로 카테고리 정리
         # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
         community_categories = Category.objects.filter(
@@ -484,6 +493,23 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        # 중복 제출 방지: 세션 기반 토큰 사용
+        session_key = 'post_submit_token'
+        submitted_token = self.request.POST.get('submit_token')
+        stored_token = self.request.session.get(session_key)
+        
+        # 토큰 검증: 세션에 토큰이 있고 POST의 토큰과 일치하는 경우에만 정상 처리
+        if stored_token and submitted_token and stored_token == submitted_token:
+            # 토큰 사용 후 제거 (중복 제출 방지)
+            del self.request.session[session_key]
+            self.request.session.modified = True
+        else:
+            # 토큰이 없거나 일치하지 않으면 중복 제출로 간주
+            # (이미 사용된 토큰이거나 유효하지 않은 요청)
+            messages.warning(self.request, "중복 제출이 감지되었습니다. 이미 게시글이 작성되었을 수 있습니다.")
+            logger.warning(f"Duplicate post submission detected for user {self.request.user.id} - stored_token: {bool(stored_token)}, submitted_token: {bool(submitted_token)}")
+            return redirect("community:list")
+        
         form.instance.author = self.request.user
         
         # 동호인 리뷰 카테고리인 경우 source를 MEMBER_REVIEWS로 설정
@@ -508,6 +534,74 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         
         messages.success(self.request, "게시글이 작성되었습니다.")
         return response
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 중복 제출 방지를 위한 토큰 생성
+        import secrets
+        submit_token = secrets.token_urlsafe(32)
+        session_key = 'post_submit_token'
+        self.request.session[session_key] = submit_token
+        self.request.session.modified = True
+        context['submit_token'] = submit_token
+        
+        # 계층 구조로 카테고리 정리
+        # 동호인톡 활성 카테고리만 포함 (상위 카테고리 = 탭)
+        community_categories = Category.objects.filter(
+            source=Category.Source.COMMUNITY,
+            parent__isnull=True,
+            is_active=True
+        )
+
+        # 상위 카테고리(탭)와 하위 카테고리 slug 목록 생성
+        allowed_category_slugs = set()
+        for category in community_categories:
+            allowed_category_slugs.add(category.slug)
+            # 하위 카테고리도 포함
+            child_categories = Category.objects.filter(parent=category, is_active=True)
+            allowed_category_slugs.update(child_categories.values_list('slug', flat=True))
+
+        # allowed_category_slugs가 비어있으면 모든 카테고리 허용
+        if allowed_category_slugs:
+            all_categories = list(Category.objects.filter(
+                slug__in=allowed_category_slugs,
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).select_related('parent').order_by("display_order", "name"))
+        else:
+            all_categories = list(Category.objects.filter(
+                is_active=True
+            ).exclude(
+                slug='hot'
+            ).select_related('parent').order_by("display_order", "name"))
+
+        def build_hierarchy():
+            """계층 구조 리스트 생성"""
+            hierarchy = []
+            parents = [c for c in all_categories if c.parent is None]
+
+            for parent in parents:
+                # 해당 parent의 children 찾기
+                children = [c for c in all_categories if c.parent_id == parent.id]
+
+                if children:
+                    # children이 있으면 parent를 상위 카테고리로 표시
+                    parent.has_children = True
+                    hierarchy.append(parent)
+                    for child in children:
+                        child.has_children = False
+                    hierarchy.extend(children)
+                else:
+                    # children이 없으면 선택 가능한 일반 카테고리로 표시
+                    parent.has_children = False
+                    hierarchy.append(parent)
+
+            return hierarchy
+
+        context['categories_hierarchical'] = build_hierarchy()
+        return context
 
 
 class PostUpdateView(LoginRequiredMixin, UpdateView):
@@ -971,12 +1065,19 @@ class CommentCreateView(LoginRequiredMixin, View):
 
         # AJAX 요청인 경우 JSON 응답
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # 프로필 이미지 URL을 절대 URL로 변환
+            profile_image_url = comment.author.profile_image_url
+            if profile_image_url and not profile_image_url.startswith('http'):
+                # 상대 경로인 경우 절대 URL로 변환
+                profile_image_url = request.build_absolute_uri(profile_image_url)
+            
             return JsonResponse({
                 'success': True,
                 'comment': {
                     'id': comment.id,
                     'content': comment.content,
                     'author_name': comment.author.activity_name,
+                    'author_profile_image': profile_image_url,
                     'author_initial': comment.author.activity_name[0] if comment.author.activity_name else '',
                     'created_at': comment.created_at.strftime('%Y.%m.%d %H:%M'),
                     'like_count': comment.like_count,

@@ -204,7 +204,24 @@ class Post(models.Model):
         """저장 시 슬러그 자동 생성 및 발행 시간 처리"""
         # 슬러그가 비어있으면 자동 생성
         if not self.slug and self.title:
-            self.slug = self.generate_slug()
+            base_slug = self.generate_slug()
+            
+            # 슬러그 중복 방지: 같은 슬러그가 이미 존재하면 번호 추가
+            slug = base_slug
+            counter = 1
+            while Post.objects.filter(slug=slug).exclude(pk=self.pk if self.pk else None).exists():
+                # 슬러그 끝에 번호 추가 (예: "my-post-1", "my-post-2")
+                suffix = f"-{counter}"
+                # 슬러그 길이 제한 (45자) 고려
+                max_base_length = 45 - len(suffix)
+                if len(base_slug) > max_base_length:
+                    truncated_base = base_slug[:max_base_length].rsplit('-', 1)[0]
+                    slug = f"{truncated_base}{suffix}"
+                else:
+                    slug = f"{base_slug}{suffix}"
+                counter += 1
+            
+            self.slug = slug
 
         # 발행 시간이 설정되지 않았으면 현재 시간으로 설정
         if not self.published_at:
