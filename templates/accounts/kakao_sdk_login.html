@@ -22,7 +22,8 @@
         // SDK를 사용하여 카카오 로그인 시작 (모바일 앱 자동 전환 지원)
         Kakao.Auth.authorize({
             redirectUri: '{{ redirect_uri }}',
-            prompt: 'login'
+            prompt: 'login',
+            throughTalk: true  // 모바일에서 카카오톡 앱으로 자동 전환
         });
     </script>
 </body>
