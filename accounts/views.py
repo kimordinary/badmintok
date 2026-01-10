@@ -328,37 +328,43 @@ def mypage_liked_contests(request):
 
 
 class KakaoLoginView(View):
-    """카카오 로그인 시작 - SDK 사용을 위한 state 생성 및 페이지 렌더링"""
+    """카카오 로그인 시작 - REST API 방식으로 직접 리다이렉트"""
     def get(self, request):
         try:
             client_id = settings.KAKAO_CLIENT_ID
             redirect_uri = settings.KAKAO_REDIRECT_URI
-            
+
             if not client_id:
                 messages.error(request, "카카오 로그인 설정이 올바르지 않습니다. 관리자에게 문의하세요.")
                 return redirect("accounts:login")
-            
+
             if not redirect_uri:
                 messages.error(request, "카카오 리다이렉트 URI가 설정되지 않았습니다. 관리자에게 문의하세요.")
                 return redirect("accounts:login")
-            
+
             # state 생성 및 세션에 저장
             state = uuid.uuid4().hex
             request.session["kakao_oauth_state"] = state
             request.session.save()
-            
+
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"카카오 로그인 시작 - state: {state}, session_key: {request.session.session_key}")
-            
-            # SDK를 사용하여 카카오 로그인 시작하는 페이지 렌더링
-            from django.shortcuts import render
-            return render(request, 'accounts/kakao_sdk_login.html', {
+
+            # 요청할 권한 범위
+            scope = "account_email profile_nickname"
+
+            # 카카오 인증 URL 생성 및 리다이렉트
+            from urllib.parse import urlencode
+            params = {
                 'client_id': client_id,
-                'javascript_key': settings.KAKAO_JAVASCRIPT_KEY,
                 'redirect_uri': redirect_uri,
+                'response_type': 'code',
                 'state': state,
-            })
+                'scope': scope
+            }
+            kakao_authorize_url = f"https://kauth.kakao.com/oauth/authorize?{urlencode(params)}"
+            return redirect(kakao_authorize_url)
         except Exception as e:
             import traceback
             print(f"카카오 로그인 오류: {e}")
@@ -373,25 +379,12 @@ class KakaoCallbackView(View):
         code = request.GET.get("code")
         error = request.GET.get("error")
 
-        # code는 있지만 state가 없으면 JavaScript가 localStorage에서 state를 추가하도록 템플릿 렌더링
-        # (세션은 유지 - JavaScript가 state 추가 후 다시 요청할 때 사용)
-        if code and not state:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error("카카오 콜백: code는 있지만 state 없음 - JavaScript로 처리")
-            return render(request, "accounts/kakao_callback.html")
-
-        # state 검증을 위해 세션에서 가져오기 (검증 성공 후 삭제)
-        session_state = request.session.get("kakao_oauth_state")
+        session_state = request.session.pop("kakao_oauth_state", None)
 
         # 디버깅 로그
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"카카오 콜백 - state: {state}, code: {code}, error: {error}, session_state: {session_state}")
-
-        if not any([state, code, error]):
-            logger.error("카카오 콜백: state, code, error 모두 없음")
-            return render(request, "accounts/kakao_callback.html")
 
         if error:
             logger.error(f"카카오 콜백 에러: {error}")
@@ -421,9 +414,6 @@ class KakaoCallbackView(View):
             else:
                 messages.error(request, "카카오 로그인에 실패했습니다. 세션이 만료되었거나 보안 검증에 실패했습니다.")
             return redirect("accounts:login")
-
-        # state 검증 성공 - 세션에서 삭제
-        request.session.pop("kakao_oauth_state", None)
 
         token_data = {
             "grant_type": "authorization_code",
