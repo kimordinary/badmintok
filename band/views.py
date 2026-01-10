@@ -119,6 +119,7 @@ def band_list(request):
             
             band.total_members = band.members.filter(status="active").count()
             band.total_posts = band.posts.count()
+            # bookmark_count는 프로퍼티로 이미 정의되어 있음 (할당 불가)
             
             # 번개의 지역 정보 사용
             if band.flash_region_detail:
@@ -174,6 +175,7 @@ def band_list(request):
                 band_copy.d_day_is_past = d_day_is_past
                 band_copy.total_members = band.members.filter(status="active").count()
                 band_copy.total_posts = band.posts.count()
+                # bookmark_count는 프로퍼티로 이미 정의되어 있음 (할당 불가)
                 
                 # 모임/동호회의 지역 정보 사용
                 if band.flash_region_detail:
@@ -312,8 +314,9 @@ def band_list(request):
     
     bands = bands.annotate(
         total_members=Count("members", filter=Q(members__status="active")),
-        total_posts=Count("posts")
-    ).prefetch_related("schedules").order_by("-created_at")
+        total_posts=Count("posts"),
+        bookmark_count_annotated=Count("bookmarks")
+    ).prefetch_related("schedules").order_by("-bookmark_count_annotated", "-created_at")
     
     if band_type:
         # band_type이 일치하거나 categories에 포함된 경우 필터링
@@ -2338,13 +2341,9 @@ def schedule_application_reject(request, band_id, schedule_id, application_id):
 def schedule_application_cancel(request, band_id, schedule_id):
     """번개 참가 신청 취소"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
-    
-    # 멤버 확인
-    member = schedule.band.members.filter(user=request.user, status="active").first()
-    if not member:
-        messages.error(request, "밴드 멤버만 취소할 수 있습니다.")
-        return redirect("band:detail", band_id=band_id)
-    
+
+    # 번개는 누구나 참가/취소 가능
+
     # 신청 확인
     application = schedule.applications.filter(user=request.user).first()
     if not application:

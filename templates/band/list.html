@@ -1121,10 +1121,21 @@
                                                         {{ band.name }}
                                                     </p>
                                                 {% endif %}
-                                                <!-- 참가자 수 (좌측 하단) -->
-                                                <div style="font-size: clamp(11px, 2.8vw, 13px); color: #64748b; display: flex; align-items: center; gap: 3px; white-space: nowrap; flex-shrink: 0;">
-                                                    <span style="position: relative; top: -1px; font-size: clamp(12px, 3vw, 14px);">👥</span>
-                                                    <span>{{ band.total_members|default:band.member_count }}명</span>
+                                                <!-- 멤버 수 + 관심 모임 수 (좌측 하단) -->
+                                                <div style="display: flex; gap: 10px; align-items: center;">
+                                                    <div style="font-size: clamp(11px, 2.8vw, 13px); color: #1e293b; display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0;">
+                                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" fill="#64748b"/>
+                                                            <path d="M3 14C3 11.2386 5.23858 9 8 9C10.7614 9 13 11.2386 13 14V14.5C13 14.7761 12.7761 15 12.5 15H3.5C3.22386 15 3 14.7761 3 14.5V14Z" fill="#64748b"/>
+                                                        </svg>
+                                                        <span>{{ band.total_members|default:band.member_count }}명</span>
+                                                    </div>
+                                                    <div style="font-size: clamp(11px, 2.8vw, 13px); color: #1e293b; display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0;">
+                                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M8 0.5L10.3511 5.26604L15.6085 6.02786L11.8042 9.73396L12.7023 14.9721L8 12.5L3.29772 14.9721L4.19577 9.73396L0.391548 6.02786L5.64886 5.26604L8 0.5Z" fill="#64748b"/>
+                                                        </svg>
+                                                        <span>{{ band.bookmark_count }}명</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

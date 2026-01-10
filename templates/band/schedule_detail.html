@@ -44,9 +44,16 @@
             <div style="margin-bottom: 24px;">
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #64748b; font-size: 14px;">일시</span>
+                        <span style="color: #64748b; font-size: 14px;">일정</span>
                         <span style="font-size: 16px; font-weight: 600; color: #1e293b;">
-                            {{ schedule.start_datetime|date:"Y년 m월 d일 (D) H:i" }}
+                            {{ schedule.start_datetime|date:"Y년 m월 d일 (D)" }}
+                        </span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #64748b; font-size: 14px;">시간</span>
+                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">
+                            {{ schedule.start_datetime|time:"H:i" }}
                             {% if schedule.end_datetime %}
                                 ~ {{ schedule.end_datetime|time:"H:i" }}
                             {% endif %}
