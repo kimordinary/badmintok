@@ -46,7 +46,8 @@
       "Bash(grep:*)",
       "Bash(ipconfig:*)",
       "Bash(netsh advfirewall firewall show rule:*)",
-      "Bash(netsh advfirewall firewall add rule name=\"Badmintok HTTP\" dir=in action=allow protocol=TCP localport=80)"
+      "Bash(netsh advfirewall firewall add rule name=\"Badmintok HTTP\" dir=in action=allow protocol=TCP localport=80)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

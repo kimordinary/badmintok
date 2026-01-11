@@ -652,13 +652,13 @@ def notice_detail(request, notice_id):
 def robots_txt(request):
     """robots.txt 파일 서빙"""
     from django.conf import settings
-    
+
     # 실제 도메인을 가져오기 (프로덕션에서는 환경 변수나 settings에서 가져옴)
     domain = request.get_host()
     if not domain.startswith('http'):
         protocol = 'https' if not settings.DEBUG else 'http'
         domain = f"{protocol}://{domain}"
-    
+
     robots_content = f"""User-agent: *
 Allow: /
 
@@ -671,3 +671,66 @@ Disallow: /accounts/
 """
     response = HttpResponse(robots_content, content_type='text/plain; charset=utf-8')
     return response
+
+
+def track_outbound_click(request):
+    """외부 링크 클릭 추적 API"""
+    from django.http import JsonResponse
+    from django.views.decorators.csrf import csrf_exempt
+    from django.views.decorators.http import require_POST
+    from .models import OutboundClick
+    from urllib.parse import urlparse
+    import json
+
+    @csrf_exempt
+    @require_POST
+    def _track(request):
+        try:
+            data = json.loads(request.body)
+            destination_url = data.get('destination_url')
+            link_text = data.get('link_text', '')
+            link_type = data.get('link_type', 'text_link')
+            source_url = data.get('source_url', '')
+
+            if not destination_url:
+                return JsonResponse({'error': 'destination_url is required'}, status=400)
+
+            # 도메인 추출
+            parsed_url = urlparse(destination_url)
+            destination_domain = parsed_url.netloc or parsed_url.path.split('/')[0]
+
+            # 세션 키 가져오기
+            if not request.session.session_key:
+                request.session.create()
+            session_key = request.session.session_key
+
+            # IP 주소 가져오기
+            ip_address = request.META.get('HTTP_X_FORWARDED_FOR')
+            if ip_address:
+                ip_address = ip_address.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR')
+
+            # User Agent 및 디바이스 타입
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            device_type = 'mobile' if 'Mobile' in user_agent or 'Android' in user_agent or 'iPhone' in user_agent else 'desktop'
+
+            # 클릭 로그 저장
+            OutboundClick.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                session_key=session_key,
+                ip_address=ip_address,
+                destination_url=destination_url,
+                destination_domain=destination_domain,
+                link_text=link_text,
+                link_type=link_type,
+                source_url=source_url,
+                user_agent=user_agent,
+                device_type=device_type,
+            )
+
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return _track(request)

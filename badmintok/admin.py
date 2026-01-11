@@ -7,7 +7,7 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 
-from .models import BadmintokBanner, Notice, VisitorLog
+from .models import BadmintokBanner, Notice, VisitorLog, OutboundClick
 
 
 @admin.register(BadmintokBanner)
@@ -102,6 +102,21 @@ class VisitorLogAdmin(admin.ModelAdmin):
         return False
 
 
+@admin.register(OutboundClick)
+class OutboundClickAdmin(admin.ModelAdmin):
+    """외부 링크 클릭 Admin"""
+    list_display = ("clicked_at", "destination_domain", "link_type", "source_url", "user", "device_type")
+    list_filter = ("link_type", "device_type", "clicked_at")
+    search_fields = ("destination_url", "destination_domain", "link_text", "source_url", "user__email", "user__activity_name")
+    readonly_fields = ("clicked_at", "user", "session_key", "ip_address", "destination_url", "destination_domain", "link_text", "link_type", "source_url", "user_agent", "device_type")
+    date_hierarchy = "clicked_at"
+    list_per_page = 50
+
+    def has_add_permission(self, request):
+        """추가 권한 제거 (자동으로만 생성)"""
+        return False
+
+
 class BadmintokAdminSite(admin.AdminSite):
     """커스텀 Admin 사이트 - 통계 대시보드 추가"""
 
@@ -114,11 +129,23 @@ class BadmintokAdminSite(admin.AdminSite):
 
     def statistics_view(self, request):
         """젯팩 스타일 통계 대시보드"""
+        # 기간 파라미터 받기 (기본값: 7일)
+        period = request.GET.get('period', '7')
+        try:
+            period_days = int(period)
+            if period_days not in [1, 7, 30]:
+                period_days = 7
+        except ValueError:
+            period_days = 7
+
         now = timezone.now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         yesterday_start = today_start - timedelta(days=1)
         week_start = today_start - timedelta(days=7)
         month_start = today_start - timedelta(days=30)
+
+        # 선택된 기간의 시작일
+        period_start = today_start - timedelta(days=period_days)
 
         # 오늘 방문자 수 (고유 세션)
         today_visitors = VisitorLog.objects.filter(
@@ -185,16 +212,16 @@ class BadmintokAdminSite(admin.AdminSite):
                 'visitors': visitors,
             })
 
-        # 상위 페이지 (최근 7일)
+        # 상위 페이지 (선택된 기간)
         top_pages = VisitorLog.objects.filter(
-            visited_at__gte=week_start
+            visited_at__gte=period_start
         ).values('url_path').annotate(
             views=Count('id')
         ).order_by('-views')[:10]
 
-        # 상위 유입 경로 (최근 7일)
+        # 상위 유입 경로 (선택된 기간)
         top_referrers = VisitorLog.objects.filter(
-            visited_at__gte=week_start,
+            visited_at__gte=period_start,
             referer_domain__isnull=False
         ).exclude(
             referer_domain=''
@@ -202,12 +229,19 @@ class BadmintokAdminSite(admin.AdminSite):
             visits=Count('id')
         ).order_by('-visits')[:10]
 
-        # 디바이스 통계 (최근 7일)
+        # 디바이스 통계 (선택된 기간)
         device_stats = VisitorLog.objects.filter(
-            visited_at__gte=week_start
+            visited_at__gte=period_start
         ).values('device_type').annotate(
             count=Count('id')
         ).order_by('-count')
+
+        # 외부 링크 클릭 통계 (선택된 기간)
+        top_outbound_clicks = OutboundClick.objects.filter(
+            clicked_at__gte=period_start
+        ).values('destination_domain', 'link_type').annotate(
+            clicks=Count('id')
+        ).order_by('-clicks')[:10]
 
         # 전체 통계
         from community.models import Post, Comment
@@ -236,6 +270,7 @@ class BadmintokAdminSite(admin.AdminSite):
             'top_pages': top_pages,
             'top_referrers': top_referrers,
             'device_stats': device_stats,
+            'top_outbound_clicks': top_outbound_clicks,
             'total_users': total_users,
             'total_posts': total_posts,
             'total_comments': total_comments,
@@ -244,6 +279,8 @@ class BadmintokAdminSite(admin.AdminSite):
             # 변화율 계산
             'visitors_change': self._calculate_change(today_visitors, yesterday_visitors),
             'pageviews_change': self._calculate_change(today_pageviews, yesterday_pageviews),
+            # 선택된 기간
+            'selected_period': period_days,
         }
 
         return render(request, 'admin/statistics.html', context)

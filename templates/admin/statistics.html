@@ -206,6 +206,36 @@
         min-width: 50px;
         text-align: right;
     }
+
+    /* 기간 선택 버튼 */
+    .period-selector {
+        display: flex;
+        gap: 4px;
+        background: #f6f9f7;
+        padding: 3px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .period-btn {
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .period-btn:hover {
+        background: rgba(49, 170, 96, 0.1);
+        color: var(--brand);
+    }
+
+    .period-btn.active {
+        background: var(--brand);
+        color: white;
+    }
 </style>
 {% endblock %}
 
@@ -308,7 +338,14 @@
     <div class="two-column-grid">
         <!-- 상위 페이지 -->
         <div class="table-section">
-            <h2>상위 페이지 (최근 7일)</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h2 style="margin: 0;">상위 페이지</h2>
+                <div class="period-selector">
+                    <a href="?period=1" class="period-btn {% if selected_period == 1 %}active{% endif %}">1일</a>
+                    <a href="?period=7" class="period-btn {% if selected_period == 7 %}active{% endif %}">7일</a>
+                    <a href="?period=30" class="period-btn {% if selected_period == 30 %}active{% endif %}">30일</a>
+                </div>
+            </div>
             {% if top_pages %}
             <table class="stats-table">
                 <thead>
@@ -333,7 +370,14 @@
 
         <!-- 상위 유입 경로 -->
         <div class="table-section">
-            <h2>상위 유입 경로 (최근 7일)</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h2 style="margin: 0;">상위 유입 경로</h2>
+                <div class="period-selector">
+                    <a href="?period=1" class="period-btn {% if selected_period == 1 %}active{% endif %}">1일</a>
+                    <a href="?period=7" class="period-btn {% if selected_period == 7 %}active{% endif %}">7일</a>
+                    <a href="?period=30" class="period-btn {% if selected_period == 30 %}active{% endif %}">30일</a>
+                </div>
+            </div>
             {% if top_referrers %}
             <table class="stats-table">
                 <thead>
@@ -355,6 +399,45 @@
             <p style="color: var(--muted); text-align: center; padding: 20px;">데이터가 없습니다.</p>
             {% endif %}
         </div>
+    </div>
+
+    <!-- 외부 링크 클릭 통계 -->
+    <div class="table-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2 style="margin: 0;">외부 링크 클릭</h2>
+            <div class="period-selector">
+                <a href="?period=1" class="period-btn {% if selected_period == 1 %}active{% endif %}">1일</a>
+                <a href="?period=7" class="period-btn {% if selected_period == 7 %}active{% endif %}">7일</a>
+                <a href="?period=30" class="period-btn {% if selected_period == 30 %}active{% endif %}">30일</a>
+            </div>
+        </div>
+        {% if top_outbound_clicks %}
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>도메인</th>
+                    <th>링크 유형</th>
+                    <th style="text-align: right;">클릭수</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for click in top_outbound_clicks %}
+                <tr>
+                    <td>{{ click.destination_domain }}</td>
+                    <td>
+                        {% if click.link_type == 'banner' %}배너
+                        {% elif click.link_type == 'text_link' %}텍스트 링크
+                        {% elif click.link_type == 'button' %}버튼
+                        {% else %}기타{% endif %}
+                    </td>
+                    <td style="text-align: right;">{{ click.clicks }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: var(--muted); text-align: center; padding: 20px;">데이터가 없습니다.</p>
+        {% endif %}
     </div>
 
     <!-- 디바이스 통계 -->

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load community_filters %}
 
 {% block title %}{{ post.title|default:post.content|truncatewords:10 }} - {{ band.name }}{% endblock %}
 
@@ -47,7 +48,7 @@
             </div>
             
             <div class="post-content" style="margin-bottom: 16px; line-height: 1.8; color: #1e293b;">
-                {{ post.content|safe }}
+                {{ post.content|add_nofollow_external }}
             </div>
             
             

@@ -53,3 +53,66 @@ def get_item(dictionary, key):
     if not dictionary:
         return None
     return dictionary.get(key)
+
+
+@register.filter
+def add_nofollow_external(value):
+    """외부 링크에만 rel="nofollow noopener noreferrer" 추가 (내부 링크는 유지)"""
+    from django.utils.safestring import mark_safe
+
+    if not value:
+        return ""
+
+    content_str = str(value)
+
+    # <a> 태그를 찾아서 처리
+    def process_link(match):
+        full_tag = match.group(0)
+        href = match.group(1)
+
+        # 내부 링크 판단 (상대 경로 또는 badmintok.com 포함)
+        is_internal = (
+            not href.startswith('http') or  # 상대 경로
+            'badmintok.com' in href or      # badmintok.com 도메인
+            'localhost' in href or           # localhost (개발 환경)
+            '127.0.0.1' in href              # 로컬 IP
+        )
+
+        # 내부 링크는 그대로 반환
+        if is_internal:
+            return full_tag
+
+        # 외부 링크: rel 속성이 이미 있는지 확인
+        if 'rel=' in full_tag:
+            # rel 속성이 있으면 nofollow 추가/확인
+            if 'nofollow' not in full_tag:
+                # rel 속성에 nofollow 추가
+                full_tag = re.sub(
+                    r'rel=["\']([^"\']*)["\']',
+                    r'rel="\1 nofollow noopener noreferrer"',
+                    full_tag
+                )
+        else:
+            # rel 속성이 없으면 추가
+            # <a href="..." 다음에 rel 추가
+            full_tag = re.sub(
+                r'(<a\s+[^>]*href=["\'][^"\']*["\'])([^>]*>)',
+                r'\1 rel="nofollow noopener noreferrer"\2',
+                full_tag
+            )
+
+        # target="_blank"가 없으면 추가
+        if 'target=' not in full_tag:
+            full_tag = re.sub(
+                r'(<a\s+[^>]*)>',
+                r'\1 target="_blank">',
+                full_tag
+            )
+
+        return full_tag
+
+    # 모든 <a> 태그 처리
+    pattern = r'<a\s+[^>]*href=["\']([^"\']*)["\'][^>]*>'
+    result = re.sub(pattern, process_link, content_str)
+
+    return mark_safe(result)

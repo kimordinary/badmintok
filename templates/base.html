@@ -378,5 +378,78 @@
         })();
 
     </script>
+
+    <!-- 외부 링크 클릭 추적 스크립트 -->
+    <script>
+        (function() {
+            // 현재 사이트 도메인
+            const currentDomain = window.location.hostname;
+
+            // 외부 링크 클릭 추적 함수
+            function trackOutboundClick(url, text, type) {
+                // API 호출 (비동기, 페이지 이동 방해 안 함)
+                fetch('/api/track-click/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        destination_url: url,
+                        link_text: text,
+                        link_type: type,
+                        source_url: window.location.href
+                    }),
+                    keepalive: true  // 페이지 이동 시에도 요청 완료 보장
+                }).catch(err => {
+                    // 에러는 무시 (사용자 경험에 영향 안 줌)
+                    console.debug('Click tracking failed:', err);
+                });
+            }
+
+            // 모든 링크에 이벤트 리스너 추가
+            document.addEventListener('click', function(e) {
+                // 클릭된 요소나 그 상위 요소 중 <a> 태그 찾기
+                let target = e.target;
+                while (target && target.tagName !== 'A') {
+                    target = target.parentElement;
+                }
+
+                if (!target) return;
+
+                const href = target.href;
+                if (!href) return;
+
+                // 외부 링크인지 확인
+                try {
+                    const linkUrl = new URL(href, window.location.href);
+                    const linkDomain = linkUrl.hostname;
+
+                    // 외부 링크인 경우에만 추적
+                    if (linkDomain && linkDomain !== currentDomain) {
+                        const linkText = target.textContent.trim().substring(0, 200) || target.getAttribute('aria-label') || '';
+                        let linkType = 'text_link';
+
+                        // 링크 유형 판별
+                        if (target.classList.contains('banner') || target.closest('.banner')) {
+                            linkType = 'banner';
+                        } else if (target.tagName === 'BUTTON' || target.classList.contains('btn') || target.classList.contains('button')) {
+                            linkType = 'button';
+                        }
+
+                        // 클릭 추적
+                        trackOutboundClick(href, linkText, linkType);
+                    }
+                } catch (err) {
+                    // URL 파싱 실패 시 무시
+                    console.debug('URL parsing failed:', err);
+                }
+            });
+
+            // 페이지 언로드 전에 대기 중인 추적 완료 (선택사항)
+            window.addEventListener('beforeunload', function() {
+                // Fetch keepalive가 알아서 처리하므로 별도 작업 불필요
+            });
+        })();
+    </script>
 </body>
 </html>

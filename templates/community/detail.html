@@ -73,7 +73,7 @@
 
             <!-- 텍스트 내용 (Quill HTML) -->
             <div class="post-content" style="word-wrap: break-word;">
-                {{ post.content|safe }}
+                {{ post.content|add_nofollow_external }}
             </div>
             <style>
                 .post-content {

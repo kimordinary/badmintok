@@ -126,3 +126,67 @@ class VisitorLog(models.Model):
 
     def __str__(self):
         return f"{self.url_path} - {self.visited_at.strftime('%Y-%m-%d %H:%M')}"
+
+
+class OutboundClick(models.Model):
+    """외부 링크 클릭 추적 - 광고 배너, 외부 링크 등"""
+
+    # 클릭자 정보
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="outbound_clicks",
+        verbose_name=_("사용자")
+    )
+    session_key = models.CharField(_("세션 키"), max_length=40, db_index=True)
+    ip_address = models.GenericIPAddressField(_("IP 주소"), null=True, blank=True)
+
+    # 클릭된 링크 정보
+    destination_url = models.URLField(_("목적지 URL"), max_length=1000)
+    destination_domain = models.CharField(_("목적지 도메인"), max_length=200, db_index=True)
+    link_text = models.CharField(_("링크 텍스트"), max_length=200, blank=True, help_text="링크에 표시된 텍스트")
+    link_type = models.CharField(
+        _("링크 유형"),
+        max_length=50,
+        choices=[
+            ("banner", "배너"),
+            ("text_link", "텍스트 링크"),
+            ("button", "버튼"),
+            ("other", "기타"),
+        ],
+        default="text_link"
+    )
+
+    # 페이지 정보 (어느 페이지에서 클릭했는지)
+    source_url = models.CharField(_("소스 URL"), max_length=500, help_text="클릭이 발생한 페이지")
+
+    # 브라우저/디바이스 정보
+    user_agent = models.CharField(_("User Agent"), max_length=500, blank=True)
+    device_type = models.CharField(
+        _("디바이스 유형"),
+        max_length=20,
+        choices=[
+            ("desktop", "데스크톱"),
+            ("mobile", "모바일"),
+            ("tablet", "태블릿"),
+        ],
+        default="desktop"
+    )
+
+    # 시간 정보
+    clicked_at = models.DateTimeField(_("클릭 시각"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = _("외부 링크 클릭")
+        verbose_name_plural = _("외부 링크 클릭")
+        ordering = ["-clicked_at"]
+        indexes = [
+            models.Index(fields=["-clicked_at"]),
+            models.Index(fields=["destination_domain", "-clicked_at"]),
+            models.Index(fields=["link_type", "-clicked_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.destination_domain} - {self.clicked_at.strftime('%Y-%m-%d %H:%M')}"

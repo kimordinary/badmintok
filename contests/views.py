@@ -129,15 +129,10 @@ class ContestListView(ListView):
                 Q(schedule_end__isnull=True) | Q(schedule_end__gte=today)
             )
 
-        # select_related를 제거하여 데이터베이스에 잘못된 FK 값이 있어도 크래시 방지
-        # category와 sponsor는 개별적으로 접근하며 try-except로 처리
+        # select_related로 category를 미리 로드 (템플릿 필터링을 위해 필수)
         # prefetch_related로 이미지들을 미리 로드 (N+1 쿼리 방지)
-        # only()를 사용하여 필요한 필드만 선택
-        # sponsor_id는 마이그레이션 이슈로 인해 제외 (나중에 안전하게 접근)
-        return queryset.prefetch_related('images').only(
-            'id', 'title', 'slug', 'schedule_start', 'schedule_end',
-            'region', 'region_detail', 'participant_reward', 'category_id', 'is_qualifying'
-        )
+        # sponsor는 마이그레이션 이슈로 인해 나중에 안전하게 접근
+        return queryset.select_related('category', 'sponsor').prefetch_related('images')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
