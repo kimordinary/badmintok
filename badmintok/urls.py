@@ -62,6 +62,9 @@ urlpatterns = [
     # API
     path("api/auth/", include("accounts.api.urls", namespace="accounts_api")),
     path("api/badmintok/", include("badmintok.api.urls", namespace="badmintok_api")),
+    path("api/community/", include("community.api.urls", namespace="community_api")),
+    path("api/band/", include("band.api.urls", namespace="band_api")),
+    path("api/contests/", include("contests.api.urls", namespace="contests_api")),
     # SEO 관련
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
