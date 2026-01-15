@@ -33,6 +33,11 @@
         <!-- 메인 탭 (동적 탭) -->
         <div class="badmintok-tab-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; flex-wrap: wrap; gap: 12px;">
             <div class="community-tabs" style="display: flex; align-items: center; flex: 1; min-width: 0;">
+                <a href="{% url 'badmintok' %}?tab=new"
+                   class="community-tab {% if active_tab == 'new' %}active{% endif %}"
+                   style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 16px; font-weight: 500;">
+                    NEW
+                </a>
                 {% for tab in tabs %}
                 <a href="{% url 'badmintok' %}?tab={{ tab.slug }}"
                    class="community-tab {% if active_tab == tab.slug or forloop.first and not active_tab %}active{% endif %}"
@@ -48,7 +53,7 @@
         <div id="tab-content">
             <!-- 하위 카테고리 필터 탭 (동적) -->
             {% if tab_children|get_item:active_tab %}
-            <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+            <div class="community-tabs" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
                 <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
                    class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
@@ -66,7 +71,7 @@
 
             <!-- 공지사항 배너 -->
             {% if pinned_notice %}
-            <div class="notice-banner" style="margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+            <div class="notice-banner" style="margin-top: 24px; margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
                 <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
                     <span style="font-size: 32px; line-height: 1;">📣</span>
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -304,7 +309,7 @@
         <div id="reviews-content">
             <!-- 하위 카테고리 필터 탭 (동적) -->
             {% if tab_children|get_item:active_tab %}
-            <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+            <div class="community-tabs" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
                 <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
                    class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
@@ -537,7 +542,7 @@
 
             <!-- 하위 카테고리 필터 탭 (동적) -->
             {% if tab_children|get_item:active_tab %}
-            <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+            <div class="community-tabs" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
                 <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
                    class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
@@ -736,7 +741,7 @@
         <div id="feed-content" style="margin-top: 20px;">
             <!-- 하위 카테고리 필터 탭 (동적) -->
             {% if tab_children|get_item:active_tab %}
-            <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+            <div class="community-tabs" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
                 <a href="{% url 'badmintok' %}?tab={{ active_tab }}"
                    class="community-tab {% if not category or category == 'all' %}active{% endif %}"
                    style="display: inline-block; padding: 10px 16px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">

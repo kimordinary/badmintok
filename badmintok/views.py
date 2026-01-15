@@ -253,56 +253,61 @@ def badmintok(request):
     ).select_related("author", "category").prefetch_related("images", "categories")
 
     # 탭별 필터링 - 동적으로 처리
-    current_tab = tabs.filter(slug=active_tab).first()
-    if current_tab:
-        # 뉴스 탭인 경우 하드코딩된 카테고리 목록 사용
-        if active_tab == 'news':
-            news_category_slugs = ['tournament', 'player', 'equipment', 'community']
-            posts = posts.filter(
-                Q(category__slug__in=news_category_slugs) | Q(categories__slug__in=news_category_slugs)
-            ).distinct()
-            
-            # 2차 카테고리 필터링 (카테고리 선택 시)
-            if category:
-                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
-        # 리뷰 탭인 경우 하드코딩된 카테고리 목록 사용
-        elif active_tab == 'reviews':
-            reviews_category_slugs = ['racket', 'shoes', 'apparel', 'shuttlecock', 'protective', 'accessories']
-            posts = posts.filter(
-                Q(category__slug__in=reviews_category_slugs) | Q(categories__slug__in=reviews_category_slugs)
-            ).distinct()
-            
-            # 2차 카테고리 필터링 (카테고리 선택 시)
-            if category:
-                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
-        # 브랜드관 탭인 경우 하드코딩된 카테고리 목록 사용
-        elif active_tab == 'brand':
-            brand_category_slugs = ['yonex', 'lining', 'victor', 'mizuno', 'technist', 'strokus', 'redsun', 'trion', 'tricore', 'apacs']
-            posts = posts.filter(
-                Q(category__slug__in=brand_category_slugs) | Q(categories__slug__in=brand_category_slugs)
-            ).distinct()
-            
-            # 2차 카테고리 필터링 (카테고리 선택 시)
-            if category:
-                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
-        # 기타 탭인 경우 (상위 카테고리)
-        else:
-            # 현재 탭(상위 카테고리)와 그 하위 카테고리들을 가져옴
-            category_slugs = [current_tab.slug]
+    # NEW 탭인 경우 모든 카테고리의 최신 글 표시
+    if active_tab == 'new':
+        # 모든 배드민톡 글 표시 (카테고리 필터링 없음)
+        pass
+    else:
+        current_tab = tabs.filter(slug=active_tab).first()
+        if current_tab:
+            # 뉴스 탭인 경우 하드코딩된 카테고리 목록 사용
+            if active_tab == 'news':
+                news_category_slugs = ['tournament', 'player', 'equipment', 'community']
+                posts = posts.filter(
+                    Q(category__slug__in=news_category_slugs) | Q(categories__slug__in=news_category_slugs)
+                ).distinct()
 
-            # 하위 카테고리 추가
-            child_categories = Category.objects.filter(parent=current_tab, is_active=True)
-            category_slugs.extend([cat.slug for cat in child_categories])
+                # 2차 카테고리 필터링 (카테고리 선택 시)
+                if category:
+                    posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+            # 리뷰 탭인 경우 하드코딩된 카테고리 목록 사용
+            elif active_tab == 'reviews':
+                reviews_category_slugs = ['racket', 'shoes', 'apparel', 'shuttlecock', 'protective', 'accessories']
+                posts = posts.filter(
+                    Q(category__slug__in=reviews_category_slugs) | Q(categories__slug__in=reviews_category_slugs)
+                ).distinct()
 
-            # 카테고리 필터링
-            posts = posts.filter(
-                Q(category__slug__in=category_slugs) | Q(categories__slug__in=category_slugs)
-            ).distinct()
+                # 2차 카테고리 필터링 (카테고리 선택 시)
+                if category:
+                    posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+            # 브랜드관 탭인 경우 하드코딩된 카테고리 목록 사용
+            elif active_tab == 'brand':
+                brand_category_slugs = ['yonex', 'lining', 'victor', 'mizuno', 'technist', 'strokus', 'redsun', 'trion', 'tricore', 'apacs']
+                posts = posts.filter(
+                    Q(category__slug__in=brand_category_slugs) | Q(categories__slug__in=brand_category_slugs)
+                ).distinct()
 
-            # 2차 카테고리 필터링 (카테고리 선택 시)
-            if category:
-                posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
-        # 카테고리가 없는 탭인 경우 모든 글 표시 (필터링 없음)
+                # 2차 카테고리 필터링 (카테고리 선택 시)
+                if category:
+                    posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+            # 기타 탭인 경우 (상위 카테고리)
+            else:
+                # 현재 탭(상위 카테고리)와 그 하위 카테고리들을 가져옴
+                category_slugs = [current_tab.slug]
+
+                # 하위 카테고리 추가
+                child_categories = Category.objects.filter(parent=current_tab, is_active=True)
+                category_slugs.extend([cat.slug for cat in child_categories])
+
+                # 카테고리 필터링
+                posts = posts.filter(
+                    Q(category__slug__in=category_slugs) | Q(categories__slug__in=category_slugs)
+                ).distinct()
+
+                # 2차 카테고리 필터링 (카테고리 선택 시)
+                if category:
+                    posts = posts.filter(Q(category__slug=category) | Q(categories__slug=category)).distinct()
+            # 카테고리가 없는 탭인 경우 모든 글 표시 (필터링 없음)
 
     # 검색 기능
     search = request.GET.get("search")
