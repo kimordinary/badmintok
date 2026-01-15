@@ -48,6 +48,23 @@
             </div>
         </div>
 
+        <!-- 공지사항 배너 (모든 탭 공통) -->
+        {% if pinned_notice %}
+        <div class="notice-banner" style="margin-top: 24px; margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+            <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                <span style="font-size: 32px; line-height: 1;">📣</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
+                    <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
+            </div>
+            </div>
+            <a href="{% url 'notice_list' %}" style="padding: 12px 24px; background: var(--brand); color: #fff; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 600; white-space: nowrap;">
+                <span class="notice-banner-text">전체 보기</span>
+                <span class="notice-banner-arrow">→</span>
+            </a>
+        </div>
+        {% endif %}
+
         <!-- 탭 컨텐츠 -->
         {% if active_tab != 'reviews' and active_tab != 'brand' and active_tab != 'feed' %}
         <div id="tab-content">
@@ -66,23 +83,6 @@
                     {{ child.name }}
                 </a>
                 {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- 공지사항 배너 -->
-            {% if pinned_notice %}
-            <div class="notice-banner" style="margin-top: 24px; margin-bottom: 24px; padding: 20px 24px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
-                <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
-                    <span style="font-size: 32px; line-height: 1;">📣</span>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 18px; font-weight: 700; color: var(--brand);">[민톡 알림]</span>
-                        <span style="font-size: 17px; color: #1e293b;">{{ pinned_notice.title }}</span>
-                </div>
-                </div>
-                <a href="{% url 'notice_list' %}" style="padding: 12px 24px; background: var(--brand); color: #fff; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 600; white-space: nowrap;">
-                    <span class="notice-banner-text">전체 보기</span>
-                    <span class="notice-banner-arrow">→</span>
-                </a>
             </div>
             {% endif %}
 
