@@ -114,6 +114,7 @@ class Contest(models.Model):
     participant_target = models.TextField("참가 대상 (종목 / 연령 / 급수)", blank=True, help_text="참가 대상, 종목, 연령, 급수 정보를 입력하세요.")
     award_reward_text = models.TextField("입상상품", blank=True, help_text="입상상품에 대한 상세 정보를 입력하세요.")
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="liked_contests", blank=True, verbose_name="좋아요")
+    view_count = models.PositiveIntegerField("조회수", default=0)
     created_at = models.DateTimeField("등록일", auto_now_add=True)
     updated_at = models.DateTimeField("수정일", auto_now=True)
 
@@ -166,6 +167,11 @@ class Contest(models.Model):
     def like_count(self):
         """좋아요 개수를 반환합니다."""
         return self.likes.count()
+
+    def increase_view_count(self):
+        """조회수 증가"""
+        self.view_count += 1
+        self.save(update_fields=["view_count"])
 
     def save(self, *args, **kwargs):
         if not self.slug:

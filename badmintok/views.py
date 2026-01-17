@@ -222,8 +222,8 @@ def badmintok(request):
         ).order_by('display_order')  # 부모 내에서 display_order로 정렬
         tab_children[tab.slug] = children
 
-    # 기본 탭 설정 (첫 번째 탭 또는 없으면 'news')
-    default_tab = tabs[0].slug if tabs.exists() else "news"
+    # 기본 탭 설정 (NEW 탭)
+    default_tab = "new"
     active_tab = request.GET.get("tab", default_tab)
     category = request.GET.get("category", "")
 

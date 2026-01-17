@@ -47,7 +47,9 @@
       "Bash(ipconfig:*)",
       "Bash(netsh advfirewall firewall show rule:*)",
       "Bash(netsh advfirewall firewall add rule name=\"Badmintok HTTP\" dir=in action=allow protocol=TCP localport=80)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(cmd.exe /c taskkill /F /PID 38932)",
+      "Bash(cmd.exe /c taskkill /F /PID 36220)"
     ],
     "deny": [],
     "ask": []

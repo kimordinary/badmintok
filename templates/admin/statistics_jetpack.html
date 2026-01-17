@@ -1,0 +1,542 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+    :root {
+        --jetpack-green: #00a32a;
+        --jetpack-gray: #1e1e1e;
+        --jetpack-light-gray: #f6f7f7;
+        --jetpack-border: #e0e0e0;
+        --text-primary: #1e1e1e;
+        --text-secondary: #757575;
+    }
+
+    body {
+        background: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .stats-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* 헤더 */
+    .stats-header {
+        margin-bottom: 30px;
+    }
+
+    .stats-header h1 {
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--jetpack-gray);
+        margin: 0 0 8px 0;
+    }
+
+    .stats-header p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* 기간 선택 탭 */
+    .period-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--jetpack-border);
+        padding-bottom: 0;
+    }
+
+    .period-tab {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: all 0.2s;
+    }
+
+    .period-tab:hover {
+        color: var(--jetpack-green);
+    }
+
+    .period-tab.active {
+        color: var(--jetpack-green);
+        border-bottom-color: var(--jetpack-green);
+    }
+
+    /* 날짜 네비게이션 */
+    .date-navigation {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 12px;
+        background: var(--jetpack-light-gray);
+        border-radius: 4px;
+    }
+
+    .date-nav-btn {
+        padding: 8px 16px;
+        background: #fff;
+        border: 1px solid var(--jetpack-border);
+        border-radius: 4px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .date-nav-btn:hover {
+        background: #f0f0f0;
+        border-color: var(--jetpack-green);
+        color: var(--jetpack-green);
+    }
+
+    .date-display {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--jetpack-gray);
+        min-width: 200px;
+        text-align: center;
+    }
+
+    /* 메인 지표 카드 */
+    .main-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+
+    .metric-card {
+        background: #fff;
+        border: 1px solid var(--jetpack-border);
+        border-radius: 4px;
+        padding: 20px;
+    }
+
+    .metric-label {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+        font-size: 32px;
+        font-weight: 600;
+        color: var(--jetpack-gray);
+    }
+
+    /* 차트 섹션 */
+    .chart-section {
+        background: #fff;
+        border: 1px solid var(--jetpack-border);
+        border-radius: 4px;
+        padding: 24px;
+        margin-bottom: 30px;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .chart-header h2 {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--jetpack-gray);
+        margin: 0;
+    }
+
+    .chart-toggle {
+        display: flex;
+        gap: 0;
+        background: var(--jetpack-light-gray);
+        border-radius: 4px;
+        padding: 2px;
+    }
+
+    .chart-toggle-btn {
+        padding: 6px 12px;
+        background: none;
+        border: none;
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-radius: 3px;
+        transition: all 0.2s;
+    }
+
+    .chart-toggle-btn.active {
+        background: #fff;
+        color: var(--jetpack-green);
+        font-weight: 600;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    /* 통계 테이블 섹션 */
+    .stats-sections {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-section {
+        background: #fff;
+        border: 1px solid var(--jetpack-border);
+        border-radius: 4px;
+        padding: 20px;
+    }
+
+    .stat-section h3 {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--jetpack-gray);
+        margin: 0 0 16px 0;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--jetpack-border);
+    }
+
+    .stat-table {
+        width: 100%;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        max-width: 70%;
+    }
+
+    .stat-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--jetpack-green);
+        margin-left: 12px;
+    }
+
+    .stat-bar {
+        height: 6px;
+        background: var(--jetpack-light-gray);
+        border-radius: 3px;
+        margin-top: 4px;
+        overflow: hidden;
+    }
+
+    .stat-bar-fill {
+        height: 100%;
+        background: var(--jetpack-green);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+        .main-metrics {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-sections {
+            grid-template-columns: 1fr;
+        }
+
+        .period-tabs {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .date-navigation {
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .date-nav-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .date-display {
+            font-size: 13px;
+            min-width: 150px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-wrap">
+    <!-- 헤더 -->
+    <div class="stats-header">
+        <h1>통계</h1>
+        <p>사이트 방문자 및 트래픽 분석</p>
+    </div>
+
+    <!-- 기간 선택 탭 -->
+    <div class="period-tabs">
+        <a href="?period=day&date={{ selected_date }}" class="period-tab {% if period == 'day' %}active{% endif %}">일</a>
+        <a href="?period=week&date={{ selected_date }}" class="period-tab {% if period == 'week' %}active{% endif %}">주</a>
+        <a href="?period=month&date={{ selected_date }}" class="period-tab {% if period == 'month' %}active{% endif %}">월</a>
+        <a href="?period=year&date={{ selected_date }}" class="period-tab {% if period == 'year' %}active{% endif %}">년</a>
+    </div>
+
+    <!-- 날짜 네비게이션 -->
+    <div class="date-navigation">
+        <a href="?period={{ period }}&date={{ prev_date }}" class="date-nav-btn">
+            <span>←</span>
+            <span>이전</span>
+        </a>
+        <div class="date-display">{{ date_display }}</div>
+        <a href="?period={{ period }}&date={{ next_date }}" class="date-nav-btn">
+            <span>다음</span>
+            <span>→</span>
+        </a>
+    </div>
+
+    <!-- 메인 지표 -->
+    <div class="main-metrics">
+        <div class="metric-card">
+            <div class="metric-label">방문자</div>
+            <div class="metric-value">{{ period_visitors|default:0 }}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">조회수</div>
+            <div class="metric-value">{{ period_pageviews|default:0 }}</div>
+        </div>
+    </div>
+
+    <!-- 메인 차트 -->
+    <div class="chart-section">
+        <div class="chart-header">
+            <h2>트렌드</h2>
+        </div>
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 통계 섹션들 -->
+    <div class="stats-sections">
+        <!-- 상위 페이지 -->
+        <div class="stat-section">
+            <h3>상위 페이지</h3>
+            <div class="stat-table">
+                {% if top_pages %}
+                    {% for page in top_pages %}
+                    <div class="stat-row">
+                        <div class="stat-label" title="{{ page.url_path }}">{{ page.url_path }}</div>
+                        <div class="stat-value">{{ page.views }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">데이터가 없습니다</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 유입 경로 -->
+        <div class="stat-section">
+            <h3>유입 경로</h3>
+            <div class="stat-table">
+                {% if top_referrers %}
+                    {% for ref in top_referrers %}
+                    <div class="stat-row">
+                        <div class="stat-label" title="{{ ref.referer_domain }}">{{ ref.referer_domain }}</div>
+                        <div class="stat-value">{{ ref.visits }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">데이터가 없습니다</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 검색어 -->
+        <div class="stat-section">
+            <h3>검색어</h3>
+            <div class="stat-table">
+                {% if top_search_terms %}
+                    {% for term in top_search_terms %}
+                    <div class="stat-row">
+                        <div class="stat-label" title="{{ term.term }}">{{ term.term }}</div>
+                        <div class="stat-value">{{ term.count }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">검색어 데이터가 없습니다</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 외부 링크 클릭 -->
+        <div class="stat-section">
+            <h3>클릭한 링크</h3>
+            <div class="stat-table">
+                {% if top_outbound_clicks %}
+                    {% for click in top_outbound_clicks %}
+                    <div class="stat-row">
+                        <div class="stat-label" title="{{ click.destination_domain }}">{{ click.destination_domain }}</div>
+                        <div class="stat-value">{{ click.clicks }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">데이터가 없습니다</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    // 차트 데이터
+    const chartData = {{ chart_data_json|safe }};
+
+    // 차트 설정 - 막대 그래프로 방문자수(진함)와 조회수(연함) 동시 표시
+    const ctx = document.getElementById('mainChart').getContext('2d');
+
+    const chartConfig = {
+        type: 'bar',
+        data: {
+            labels: chartData.map(d => d.label),
+            datasets: [
+                {
+                    label: '방문자',
+                    data: chartData.map(d => d.visitors),
+                    backgroundColor: '#00a32a',
+                    borderColor: '#00a32a',
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.8,
+                },
+                {
+                    label: '조회수',
+                    data: chartData.map(d => d.views),
+                    backgroundColor: 'rgba(0, 163, 42, 0.3)',
+                    borderColor: 'rgba(0, 163, 42, 0.3)',
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.8,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        padding: 15,
+                        color: '#757575',
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: '#1e1e1e',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#00a32a',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    boxWidth: 8,
+                    boxHeight: 8,
+                    bodySpacing: 6,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#f0f0f0',
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        color: '#757575',
+                        font: {
+                            size: 12
+                        },
+                        precision: 0
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        color: '#757575',
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            }
+        }
+    };
+
+    const mainChart = new Chart(ctx, chartConfig);
+</script>
+{% endblock %}

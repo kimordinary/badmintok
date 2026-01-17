@@ -302,6 +302,23 @@ class ContestDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         contest = context["contest"]
+        # 세션 기반 조회수 중복 방지 (3시간 제한)
+        session_key = "viewed_contests"
+        viewed_contests = self.request.session.get(session_key, {})
+        contest_id_str = str(contest.id)
+        current_time = datetime.now()
+
+        should_increase = True
+        if contest_id_str in viewed_contests:
+            last_viewed_time = datetime.fromisoformat(viewed_contests[contest_id_str])
+            if (current_time - last_viewed_time).total_seconds() < 10800:
+                should_increase = False
+
+        if should_increase:
+            contest.increase_view_count()
+            viewed_contests[contest_id_str] = current_time.isoformat()
+            self.request.session[session_key] = viewed_contests
+            self.request.session.modified = True
         context["schedule_entries"] = contest.schedules.all()
 
         # 대회 이미지들 가져오기 (순서대로)

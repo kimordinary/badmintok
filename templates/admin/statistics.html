@@ -263,9 +263,13 @@
     </div>
 
     <!-- 주요 지표 카드 -->
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 10px 12px; margin-bottom: 16px; font-size: 13px; color: #856404;">
+        <strong>📊 실제 사용자만 집계됩니다</strong> - 봇, 크롤러, 스태프 방문은 제외되었습니다.
+    </div>
+
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-card-header">오늘 방문자</div>
+            <div class="stat-card-header">오늘 방문자 (실제)</div>
             <div class="stat-card-value">{{ today_visitors|default:0 }}</div>
             <div class="stat-card-change {% if visitors_change > 0 %}positive{% elif visitors_change < 0 %}negative{% else %}neutral{% endif %}">
                 {% if visitors_change > 0 %}
@@ -280,7 +284,7 @@
         </div>
 
         <div class="stat-card">
-            <div class="stat-card-header">오늘 페이지뷰</div>
+            <div class="stat-card-header">오늘 페이지뷰 (실제)</div>
             <div class="stat-card-value">{{ today_pageviews|default:0 }}</div>
             <div class="stat-card-change {% if pageviews_change > 0 %}positive{% elif pageviews_change < 0 %}negative{% else %}neutral{% endif %}">
                 {% if pageviews_change > 0 %}
@@ -307,6 +311,22 @@
             <div class="stat-card-value">{{ month_visitors|default:0 }}</div>
             <div class="stat-card-change neutral">
                 최근 30일간
+            </div>
+        </div>
+
+        <div class="stat-card" style="background: #f8f9fa;">
+            <div class="stat-card-header" style="color: #dc2626;">오늘 봇 방문 (제외됨)</div>
+            <div class="stat-card-value" style="color: #64748b;">{{ today_bot_visits|default:0 }}</div>
+            <div class="stat-card-change neutral" style="font-size: 10px;">
+                크롤러/스크래퍼
+            </div>
+        </div>
+
+        <div class="stat-card" style="background: #f8f9fa;">
+            <div class="stat-card-header" style="color: #dc2626;">주간 봇 방문 (제외됨)</div>
+            <div class="stat-card-value" style="color: #64748b;">{{ week_bot_visits|default:0 }}</div>
+            <div class="stat-card-change neutral" style="font-size: 10px;">
+                최근 7일간
             </div>
         </div>
     </div>

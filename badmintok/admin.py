@@ -127,163 +127,250 @@ class BadmintokAdminSite(admin.AdminSite):
         ]
         return custom_urls + urls
 
-    def statistics_view(self, request):
-        """젯팩 스타일 통계 대시보드"""
-        # 기간 파라미터 받기 (기본값: 7일)
-        period = request.GET.get('period', '7')
+    def _extract_search_terms(self, referer):
+        """유입 URL에서 검색어 추출 (Google, Naver, Daum 등)"""
+        from urllib.parse import urlparse, parse_qs
+
+        if not referer:
+            return None
+
         try:
-            period_days = int(period)
-            if period_days not in [1, 7, 30]:
-                period_days = 7
-        except ValueError:
-            period_days = 7
+            parsed = urlparse(referer)
+            domain = parsed.netloc.lower()
+            query_params = parse_qs(parsed.query)
+
+            # Google (q 파라미터)
+            if 'google' in domain and 'q' in query_params:
+                return query_params['q'][0]
+
+            # Naver (query 파라미터)
+            if 'naver' in domain and 'query' in query_params:
+                return query_params['query'][0]
+
+            # Daum (q 파라미터)
+            if 'daum' in domain and 'q' in query_params:
+                return query_params['q'][0]
+
+            # Bing (q 파라미터)
+            if 'bing' in domain and 'q' in query_params:
+                return query_params['q'][0]
+
+        except Exception:
+            pass
+
+        return None
+
+    def statistics_view(self, request):
+        """Jetpack 스타일 통계 대시보드"""
+        from datetime import datetime
+
+        # 기간 파라미터: day, week, month, year (기본값: week)
+        period = request.GET.get('period', 'week')
+
+        # 기간별 일수 매핑
+        period_days_map = {
+            'day': 1,
+            'week': 7,
+            'month': 30,
+            'year': 365
+        }
+
+        if period not in period_days_map:
+            period = 'week'
+
+        period_days = period_days_map[period]
+
+        # 날짜 파라미터 (선택된 날짜, 기본값: 오늘)
+        date_param = request.GET.get('date', '')
 
         now = timezone.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        yesterday_start = today_start - timedelta(days=1)
-        week_start = today_start - timedelta(days=7)
-        month_start = today_start - timedelta(days=30)
 
-        # 선택된 기간의 시작일
-        period_start = today_start - timedelta(days=period_days)
+        if date_param:
+            try:
+                # YYYY-MM-DD 형식으로 파싱
+                selected_date = datetime.strptime(date_param, '%Y-%m-%d')
+                selected_date = timezone.make_aware(selected_date.replace(hour=0, minute=0, second=0, microsecond=0))
+            except ValueError:
+                selected_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            selected_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # 오늘 방문자 수 (고유 세션)
-        today_visitors = VisitorLog.objects.filter(
-            visited_at__gte=today_start
-        ).values('session_key').distinct().count()
+        # 기간 시작일/종료일 계산
+        if period == 'day':
+            period_start = selected_date
+            period_end = selected_date + timedelta(days=1)
+            chart_days = 1
+        elif period == 'week':
+            period_start = selected_date - timedelta(days=6)
+            period_end = selected_date + timedelta(days=1)
+            chart_days = 7
+        elif period == 'month':
+            period_start = selected_date - timedelta(days=29)
+            period_end = selected_date + timedelta(days=1)
+            chart_days = 30
+        else:  # year
+            period_start = selected_date - timedelta(days=364)
+            period_end = selected_date + timedelta(days=1)
+            chart_days = 365
 
-        # 어제 방문자 수
-        yesterday_visitors = VisitorLog.objects.filter(
-            visited_at__gte=yesterday_start,
-            visited_at__lt=today_start
-        ).values('session_key').distinct().count()
+        # 이전/다음 날짜 계산
+        if period == 'day':
+            prev_date = (selected_date - timedelta(days=1)).strftime('%Y-%m-%d')
+            next_date = (selected_date + timedelta(days=1)).strftime('%Y-%m-%d')
+        elif period == 'week':
+            prev_date = (selected_date - timedelta(days=7)).strftime('%Y-%m-%d')
+            next_date = (selected_date + timedelta(days=7)).strftime('%Y-%m-%d')
+        elif period == 'month':
+            prev_date = (selected_date - timedelta(days=30)).strftime('%Y-%m-%d')
+            next_date = (selected_date + timedelta(days=30)).strftime('%Y-%m-%d')
+        else:  # year
+            prev_date = (selected_date - timedelta(days=365)).strftime('%Y-%m-%d')
+            next_date = (selected_date + timedelta(days=365)).strftime('%Y-%m-%d')
 
-        # 이번 주 방문자 수
-        week_visitors = VisitorLog.objects.filter(
-            visited_at__gte=week_start
-        ).values('session_key').distinct().count()
+        # 현재 날짜 표시 형식
+        if period == 'day':
+            date_display = selected_date.strftime('%Y년 %m월 %d일')
+        elif period == 'week':
+            week_start = selected_date - timedelta(days=6)
+            date_display = f"{week_start.strftime('%Y년 %m월 %d일')} - {selected_date.strftime('%m월 %d일')}"
+        elif period == 'month':
+            month_start = selected_date - timedelta(days=29)
+            date_display = f"{month_start.strftime('%Y년 %m월 %d일')} - {selected_date.strftime('%m월 %d일')}"
+        else:  # year
+            year_start = selected_date - timedelta(days=364)
+            date_display = f"{year_start.strftime('%Y년 %m월 %d일')} - {selected_date.strftime('%m월 %d일')}"
 
-        # 이번 달 방문자 수
-        month_visitors = VisitorLog.objects.filter(
-            visited_at__gte=month_start
-        ).values('session_key').distinct().count()
+        # 실제 사용자만 필터링 (봇 및 스태프 제외)
+        real_user_filter = (
+            Q(device_type__in=['desktop', 'mobile', 'tablet']) &
+            (Q(user__is_staff=False) | Q(user__isnull=True))
+        )
 
-        # 오늘 페이지뷰
-        today_pageviews = VisitorLog.objects.filter(
-            visited_at__gte=today_start
-        ).count()
+        # === 1. 선택된 기간 통계 ===
+        # 방문자 수 (고유 세션)
+        period_visitors = VisitorLog.objects.filter(
+            visited_at__gte=period_start,
+            visited_at__lt=period_end
+        ).filter(real_user_filter).values('session_key').distinct().count()
 
-        # 어제 페이지뷰
-        yesterday_pageviews = VisitorLog.objects.filter(
-            visited_at__gte=yesterday_start,
-            visited_at__lt=today_start
-        ).count()
+        # 페이지뷰
+        period_pageviews = VisitorLog.objects.filter(
+            visited_at__gte=period_start,
+            visited_at__lt=period_end
+        ).filter(real_user_filter).count()
 
-        # 최근 7일 일별 방문자 수 (차트용)
-        daily_stats = []
-        for i in range(6, -1, -1):
-            day_start = today_start - timedelta(days=i)
+        # === 2. 차트 데이터 (모든 기간에서 일별 데이터) ===
+        chart_data = []
+
+        # 일별 데이터 생성
+        for i in range(chart_days - 1, -1, -1):
+            day_start = selected_date - timedelta(days=i)
             day_end = day_start + timedelta(days=1)
+
             visitors = VisitorLog.objects.filter(
                 visited_at__gte=day_start,
                 visited_at__lt=day_end
-            ).values('session_key').distinct().count()
+            ).filter(real_user_filter).values('session_key').distinct().count()
+
             pageviews = VisitorLog.objects.filter(
                 visited_at__gte=day_start,
                 visited_at__lt=day_end
-            ).count()
-            daily_stats.append({
-                'date': day_start.strftime('%m/%d'),
+            ).filter(real_user_filter).count()
+
+            # 날짜 포맷 설정
+            if period == 'day':
+                date_label = day_start.strftime('%m/%d')
+            elif period == 'week':
+                date_label = day_start.strftime('%m/%d')
+            elif period == 'month':
+                date_label = day_start.strftime('%m/%d')
+            else:  # year
+                date_label = day_start.strftime('%y/%m/%d')
+
+            chart_data.append({
+                'label': date_label,
                 'visitors': visitors,
-                'pageviews': pageviews,
+                'views': pageviews,
             })
 
-        # 오늘 시간대별 방문자 수 (차트용)
-        hourly_stats = []
-        for hour in range(24):
-            hour_start = today_start + timedelta(hours=hour)
-            hour_end = hour_start + timedelta(hours=1)
-            visitors = VisitorLog.objects.filter(
-                visited_at__gte=hour_start,
-                visited_at__lt=hour_end
-            ).values('session_key').distinct().count()
-            hourly_stats.append({
-                'hour': f'{hour:02d}:00',
-                'visitors': visitors,
-            })
-
-        # 상위 페이지 (선택된 기간)
+        # === 3. 상위 게시물/페이지 ===
         top_pages = VisitorLog.objects.filter(
-            visited_at__gte=period_start
-        ).values('url_path').annotate(
+            visited_at__gte=period_start,
+            visited_at__lt=period_end
+        ).filter(real_user_filter).values('url_path').annotate(
             views=Count('id')
-        ).order_by('-views')[:10]
+        ).order_by('-views')[:15]
 
-        # 상위 유입 경로 (선택된 기간)
+        # === 4. 유입 경로 (Referrers) ===
         top_referrers = VisitorLog.objects.filter(
             visited_at__gte=period_start,
+            visited_at__lt=period_end,
             referer_domain__isnull=False
-        ).exclude(
+        ).filter(real_user_filter).exclude(
             referer_domain=''
         ).values('referer_domain').annotate(
             visits=Count('id')
-        ).order_by('-visits')[:10]
+        ).order_by('-visits')[:15]
 
-        # 디바이스 통계 (선택된 기간)
-        device_stats = VisitorLog.objects.filter(
-            visited_at__gte=period_start
-        ).values('device_type').annotate(
-            count=Count('id')
-        ).order_by('-count')
+        # === 5. 검색어 추출 ===
+        # referer에서 검색어 추출
+        search_logs = VisitorLog.objects.filter(
+            visited_at__gte=period_start,
+            visited_at__lt=period_end,
+            referer__isnull=False
+        ).filter(real_user_filter).exclude(referer='').values_list('referer', flat=True)
 
-        # 외부 링크 클릭 통계 (선택된 기간)
+        search_terms_count = {}
+        for referer in search_logs:
+            term = self._extract_search_terms(referer)
+            if term:
+                search_terms_count[term] = search_terms_count.get(term, 0) + 1
+
+        # 상위 검색어 정렬
+        top_search_terms = sorted(
+            [{'term': k, 'count': v} for k, v in search_terms_count.items()],
+            key=lambda x: x['count'],
+            reverse=True
+        )[:15]
+
+        # === 6. 외부 링크 클릭 (Outbound Clicks) ===
         top_outbound_clicks = OutboundClick.objects.filter(
-            clicked_at__gte=period_start
-        ).values('destination_domain', 'link_type').annotate(
+            clicked_at__gte=period_start,
+            clicked_at__lt=period_end,
+            device_type__in=['desktop', 'mobile', 'tablet']
+        ).exclude(
+            user__is_staff=True
+        ).values('destination_domain').annotate(
             clicks=Count('id')
-        ).order_by('-clicks')[:10]
-
-        # 전체 통계
-        from community.models import Post, Comment
-        from band.models import Band, BandPost
-        from contests.models import Contest
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-
-        total_users = User.objects.count()
-        total_posts = Post.objects.filter(is_deleted=False).count()
-        total_comments = Comment.objects.filter(is_deleted=False).count()
-        total_bands = Band.objects.count()
-        total_contests = Contest.objects.count()
+        ).order_by('-clicks')[:15]
 
         context = {
             'site_header': '배드민톡 통계',
-            'site_title': '통계 대시보드',
-            'today_visitors': today_visitors,
-            'yesterday_visitors': yesterday_visitors,
-            'week_visitors': week_visitors,
-            'month_visitors': month_visitors,
-            'today_pageviews': today_pageviews,
-            'yesterday_pageviews': yesterday_pageviews,
-            'daily_stats_json': json.dumps(daily_stats),
-            'hourly_stats_json': json.dumps(hourly_stats),
+            'site_title': 'Jetpack 스타일 통계',
+            # 기간 정보
+            'period': period,
+            'period_days': period_days,
+            # 날짜 네비게이션
+            'selected_date': selected_date.strftime('%Y-%m-%d'),
+            'date_display': date_display,
+            'prev_date': prev_date,
+            'next_date': next_date,
+            # 주요 지표
+            'period_visitors': period_visitors,
+            'period_pageviews': period_pageviews,
+            # 차트 데이터
+            'chart_data_json': json.dumps(chart_data),
+            # 상위 페이지
             'top_pages': top_pages,
+            # 유입 경로
             'top_referrers': top_referrers,
-            'device_stats': device_stats,
+            # 검색어
+            'top_search_terms': top_search_terms,
+            # 외부 링크 클릭
             'top_outbound_clicks': top_outbound_clicks,
-            'total_users': total_users,
-            'total_posts': total_posts,
-            'total_comments': total_comments,
-            'total_bands': total_bands,
-            'total_contests': total_contests,
-            # 변화율 계산
-            'visitors_change': self._calculate_change(today_visitors, yesterday_visitors),
-            'pageviews_change': self._calculate_change(today_pageviews, yesterday_pageviews),
-            # 선택된 기간
-            'selected_period': period_days,
         }
 
-        return render(request, 'admin/statistics.html', context)
+        return render(request, 'admin/statistics_jetpack.html', context)
 
     def _calculate_change(self, current, previous):
         """변화율 계산 (%)"""
