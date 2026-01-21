@@ -326,6 +326,7 @@ curl -X DELETE "http://localhost:8000/api/community/posts/post-slug/delete/" \
 curl -X POST "http://localhost:8000/api/community/posts/post-slug/like/" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
+> `post-slug`는 실제 게시물의 `slug`로 치환해서 사용하세요.
 
 ---
 
@@ -336,6 +337,8 @@ curl -X POST "http://localhost:8000/api/community/posts/post-slug/like/" \
 **엔드포인트:** `GET /api/community/posts/<slug>/comments/`
 
 **인증:** 불필요
+
+> `<slug>`에는 게시글 제목이 아니라 실제 게시글의 `slug` 값을 사용합니다.
 
 **성공 응답 (200 OK):**
 ```json

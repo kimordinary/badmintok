@@ -5,10 +5,10 @@ app_name = 'community_api'
 
 urlpatterns = [
     # 게시물
+    path('posts/create/', views.post_create, name='post_create'),
     path('posts/', views.post_list, name='post_list'),
     path('posts/<str:slug>/', views.post_detail, name='post_detail'),
     path('posts/<str:slug>/like/', views.post_like, name='post_like'),
-    path('posts/create/', views.post_create, name='post_create'),
     path('posts/<str:slug>/update/', views.post_update, name='post_update'),
     path('posts/<str:slug>/delete/', views.post_delete, name='post_delete'),
     
