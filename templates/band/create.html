@@ -204,7 +204,16 @@
                             <input type="number" id="meeting_cost" name="meeting_cost" placeholder="참가비를 입력하세요" min="0" value="{% if is_update and meeting_cost %}{{ meeting_cost }}{% endif %}" class="form-input-with-icon" style="box-sizing: border-box;">
                         </div>
                     </div>
-                    
+
+                    <!-- 입금 계좌 -->
+                    <div style="margin-bottom: 24px;">
+                        <label for="bank_account" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">
+                            입금 계좌
+                        </label>
+                        <input type="text" id="bank_account" name="bank_account" placeholder="카카오뱅크 3333-00-0000000 홍길동" value="{% if is_update and schedule.bank_account %}{{ schedule.bank_account }}{% endif %}" class="form-input" style="box-sizing: border-box;">
+                        <p style="margin-top: 6px; font-size: 12px; color: #64748b;">참가비 입금 계좌를 입력하세요.</p>
+                    </div>
+
                     <!-- 정원 -->
                     <div style="margin-bottom: 24px;">
                         <label for="meeting_capacity" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #1e293b;">

@@ -169,12 +169,7 @@
             {% for message in messages %}
                 <div class="message-banner message-banner-{{ message.tags }}" data-auto-dismiss="{% if message.tags == 'success' or message.tags == 'info' %}true{% else %}false{% endif %}">
                     <div class="message-banner-content">
-                        <span class="message-banner-icon">
-                            {% if message.tags == 'error' %}⚠️
-                            {% elif message.tags == 'success' %}✅
-                            {% elif message.tags == 'warning' %}⚠️
-                            {% else %}ℹ️{% endif %}
-                        </span>
+                        <span class="message-banner-icon"></span>
                         <span class="message-banner-text">{{ message }}</span>
                     </div>
                     <button class="message-banner-close" onclick="this.parentElement.remove()" aria-label="닫기">×</button>

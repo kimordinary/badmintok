@@ -126,7 +126,7 @@ class BandScheduleForm(forms.ModelForm):
         model = BandSchedule
         fields = [
             "title", "description", "start_datetime", "end_datetime",
-            "location", "max_participants", "requires_approval", "application_deadline"
+            "location", "max_participants", "requires_approval", "application_deadline", "bank_account"
         ]
         widgets = {
             "title": forms.TextInput(attrs={"class": "form-input", "placeholder": "일정 제목"}),
@@ -137,6 +137,7 @@ class BandScheduleForm(forms.ModelForm):
             "max_participants": forms.NumberInput(attrs={"class": "form-input", "min": 1}),
             "requires_approval": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
             "application_deadline": forms.DateTimeInput(attrs={"class": "form-input", "type": "datetime-local"}),
+            "bank_account": forms.TextInput(attrs={"class": "form-input", "placeholder": "카카오뱅크 3333-00-0000000 홍길동"}),
         }
 
 

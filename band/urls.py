@@ -44,9 +44,11 @@ urlpatterns = [
     path("<int:band_id>/schedules/<int:schedule_id>/", views.schedule_detail, name="schedule_detail"),
     path("<int:band_id>/schedules/<int:schedule_id>/apply/", views.schedule_apply, name="schedule_apply"),
     path("<int:band_id>/schedules/<int:schedule_id>/cancel/", views.schedule_application_cancel, name="schedule_application_cancel"),
-    path("<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/approve/", 
+    path("<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/approve/",
          views.schedule_application_approve, name="schedule_application_approve"),
-    path("<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/", 
+    path("<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/",
          views.schedule_application_reject, name="schedule_application_reject"),
+    path("<int:band_id>/schedules/<int:schedule_id>/toggle-close/",
+         views.schedule_toggle_close, name="schedule_toggle_close"),
 ]
 

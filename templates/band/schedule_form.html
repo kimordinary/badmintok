@@ -55,7 +55,13 @@
                 {{ form.max_participants }}
                 <p class="help-text">비워두면 인원 제한이 없습니다.</p>
             </div>
-            
+
+            <div class="form-field">
+                <label for="{{ form.bank_account.id_for_label }}">입금 계좌</label>
+                {{ form.bank_account }}
+                <p class="help-text">참가비 입금 계좌를 입력하세요. (예: 카카오뱅크 3333-00-0000000 홍길동)</p>
+            </div>
+
             <div class="form-field">
                 <label>
                     {{ form.requires_approval }}

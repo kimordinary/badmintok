@@ -9,8 +9,27 @@
             <!-- 헤더 -->
             <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
                 <a href="{% url 'band:detail' band.id %}?tab=flash" style="text-decoration: none; color: #1e293b; font-size: 20px; line-height: 1;">&lt;</a>
-                <h1 id="scheduleTitle" style="margin: 0; font-size: 20px; font-weight: 700; color: #1e293b;">{{ schedule.title|default:band.name }}</h1>
+                <h1 id="scheduleTitle" style="margin: 0; font-size: 20px; font-weight: 700; color: #1e293b; flex: 1;">{{ schedule.title|default:band.name }}</h1>
+                {% if is_admin %}
+                <form method="post" action="{% url 'band:schedule_toggle_close' band.id schedule.id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" style="padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; {% if schedule.is_closed %}background: #10b981; color: white;{% else %}background: #f1f5f9; color: #64748b;{% endif %}">
+                        {% if schedule.is_closed %}모집 열기{% else %}모집 마감{% endif %}
+                    </button>
+                </form>
+                {% endif %}
             </div>
+
+            {% if schedule.is_closed %}
+            <div style="margin-bottom: 16px; padding: 12px 16px; background: #fef2f2; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <span style="font-size: 14px; font-weight: 500; color: #ef4444;">모집이 마감되었습니다</span>
+            </div>
+            {% endif %}
             
             <!-- 번개 이미지 슬라이드 -->
             {% if schedule.images.all %}
@@ -41,53 +60,122 @@
             {% endif %}
             
             <!-- 번개 정보 -->
-            <div style="margin-bottom: 24px;">
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #64748b; font-size: 14px;">일정</span>
-                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">
-                            {{ schedule.start_datetime|date:"Y년 m월 d일 (D)" }}
+            <div style="margin-bottom: 24px; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: white; border-radius: 8px; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
                         </span>
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">일정</div>
+                            <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ schedule.start_datetime|date:"Y년 m월 d일 (D)" }}</div>
+                        </div>
                     </div>
 
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #64748b; font-size: 14px;">시간</span>
-                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">
-                            {{ schedule.start_datetime|time:"H:i" }}
-                            {% if schedule.end_datetime %}
-                                ~ {{ schedule.end_datetime|time:"H:i" }}
-                            {% endif %}
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: white; border-radius: 8px; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
                         </span>
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">시간</div>
+                            <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ schedule.start_datetime|time:"H:i" }}{% if schedule.end_datetime %} ~ {{ schedule.end_datetime|time:"H:i" }}{% endif %}</div>
+                        </div>
                     </div>
-                    
+
                     {% if schedule.location %}
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #64748b; font-size: 14px;">위치</span>
-                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">{{ schedule.location }}</span>
-                    </div>
-                    {% endif %}
-                    
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #64748b; font-size: 14px;">참가 인원</span>
-                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">
-                            {{ schedule.current_participants }}명
-                            {% if schedule.max_participants %}
-                                / {{ schedule.max_participants }}명
-                            {% endif %}
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: white; border-radius: 8px; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
                         </span>
-                    </div>
-                    
-                    {% if meeting_cost %}
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #64748b; font-size: 14px;">참가비</span>
-                        <span style="font-size: 16px; font-weight: 600; color: #1e293b;">{{ meeting_cost }}원</span>
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">위치</div>
+                            <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ schedule.location }}</div>
+                        </div>
                     </div>
                     {% endif %}
-                    
+
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: white; border-radius: 8px; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </span>
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">참가 인원</div>
+                            <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ schedule.current_participants }}명{% if schedule.max_participants %} / {{ schedule.max_participants }}명{% endif %}</div>
+                        </div>
+                    </div>
+
+                    {% if meeting_cost %}
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: white; border-radius: 8px; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </span>
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">참가비</div>
+                            <div style="font-size: 15px; font-weight: 600; color: #1e293b;">{{ meeting_cost }}원</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if schedule.bank_account %}
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: white; border-radius: 8px; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                <line x1="1" y1="10" x2="23" y2="10"></line>
+                            </svg>
+                        </span>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">입금 계좌</div>
+                            <div
+                                id="bankAccountText"
+                                data-account="{{ schedule.bank_account }}"
+                                onclick="copyBankAccount()"
+                                style="font-size: 15px; font-weight: 600; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+                            >
+                                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ schedule.bank_account }}</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% if schedule.description %}
-                    <div>
-                        <span style="color: #64748b; font-size: 14px;">설명</span>
-                        <div id="scheduleDescription" data-description-original="{{ schedule.description|escapejs }}" style="margin-top: 4px; font-size: 14px; color: #1e293b; line-height: 1.6; white-space: pre-wrap;">{{ schedule.description|linebreaks }}</div>
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: white; border-radius: 8px; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                        </span>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">설명</div>
+                            <div id="scheduleDescription" data-description-original="{{ schedule.description|escapejs }}" style="font-size: 14px; color: #1e293b; line-height: 1.6; white-space: pre-wrap;">{{ schedule.description|linebreaks }}</div>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -95,20 +183,25 @@
             
             <!-- 참가자 목록 -->
             {% if approved_participants %}
-            <div style="margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 8px;">
-                <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 700; color: #1e293b;">참가자 ({{ approved_participants|length }}명)</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <div style="margin-bottom: 24px; background: #f8fafc; border-radius: 12px; overflow: hidden;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b;">참가자 <span style="color: var(--brand);">{{ approved_participants|length }}명</span></h3>
+                </div>
+                <div style="background: white;">
                     {% for app in approved_participants %}
-                        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px;{% if not forloop.last %} border-bottom: 1px solid #f1f5f9;{% endif %}">
+                        <div style="display: flex; align-items: center; gap: 12px;">
                             {% if app.user.profile_image %}
-                                <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.real_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                             {% else %}
-                                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">{{ app.user.real_name|first }}</div>
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">{{ app.user.real_name|first }}</div>
                             {% endif %}
-                            <span style="font-size: 14px; font-weight: 500; color: #1e293b;">
-                                {{ app.user.real_name }}{% if app.user.profile and app.user.profile.badminton_level %} / {{ app.user.profile.get_badminton_level_display }}{% endif %}
-                            </span>
+                            <span style="font-size: 15px; font-weight: 500; color: #1e293b;">{{ app.user.real_name }}</span>
                         </div>
+                        {% if app.user.profile and app.user.profile.badminton_level %}
+                        <span style="font-size: 13px; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 12px;">{{ app.user.profile.get_badminton_level_display }}</span>
+                        {% endif %}
+                    </div>
                     {% endfor %}
                 </div>
             </div>
@@ -156,11 +249,17 @@
                         <div style="padding: 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px;">
                             <p style="margin: 0; font-size: 13px; color: #475569;">참가 신청이 취소되었습니다.</p>
                         </div>
+                        {% if not schedule.is_closed %}
                         <a href="{% url 'band:schedule_apply' band.id schedule.id %}" class="btn btn-primary" style="display: block; width: 100%; text-align: center; padding: 12px; background: var(--brand); color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">다시 신청하기</a>
+                        {% endif %}
                     {% endif %}
                 {% else %}
                     <!-- 신청 가능한 경우 -->
-                    {% if schedule.max_participants and schedule.current_participants >= schedule.max_participants %}
+                    {% if schedule.is_closed %}
+                        <div style="padding: 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px;">
+                            <p style="margin: 0; font-size: 14px; color: #475569; text-align: center;">모집이 마감되었습니다.</p>
+                        </div>
+                    {% elif schedule.max_participants and schedule.current_participants >= schedule.max_participants %}
                         <div style="padding: 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px;">
                             <p style="margin: 0; font-size: 14px; color: #475569; text-align: center;">참가 인원이 마감되었습니다.</p>
                         </div>
@@ -248,9 +347,38 @@
     .schedule-nav-next {
         right: 8px;
     }
+
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+        15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
 </style>
 
 <script>
+    // 입금 계좌 복사 기능
+    function copyBankAccount() {
+        const bankAccountEl = document.getElementById('bankAccountText');
+        if (!bankAccountEl) return;
+
+        const accountText = bankAccountEl.dataset.account;
+
+        navigator.clipboard.writeText(accountText).then(function() {
+            // 복사 성공 토스트 메시지
+            const toast = document.createElement('div');
+            toast.textContent = '계좌번호가 복사되었습니다';
+            toast.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 9999; animation: fadeInOut 2s ease-in-out forwards;';
+            document.body.appendChild(toast);
+
+            setTimeout(function() {
+                toast.remove();
+            }, 2000);
+        }).catch(function(err) {
+            console.error('복사 실패:', err);
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // 제목에서 날짜 패턴(예: "- 2025-12-09") 제거
         const titleEl = document.getElementById('scheduleTitle');

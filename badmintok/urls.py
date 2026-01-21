@@ -27,6 +27,7 @@ from .sitemaps import sitemaps
 from community import admin_uploads
 from community.feeds import CommunityPostFeed, BadmintokPostFeed, MemberReviewPostFeed
 from band.feeds import BandFeed, BandPostFeed
+from band import views as band_views
 from contests.feeds import ContestFeed
 from .feeds import AllPostsFeed
 from accounts.views import privacy_policy, terms_of_service
@@ -47,6 +48,9 @@ urlpatterns = [
     path("member-reviews/", lambda request: redirect("community:list"), name="member_reviews"),
     path("member-reviews/create/", lambda request: redirect("community:create"), name="member_reviews_create"),
     path("community/", include(("community.urls", "community"), namespace="community")),
+    # Backward-compatible alias: some templates/code reverse 'bookmark_toggle' without the 'band:' namespace.
+    # Keep the canonical namespaced route in band/urls.py as well.
+    path("band/<int:band_id>/bookmark/", band_views.band_bookmark_toggle, name="bookmark_toggle"),
     path("band/", include(("band.urls", "band"), namespace="band")),
     # path(
     #     "shop/",

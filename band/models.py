@@ -526,6 +526,8 @@ class BandSchedule(models.Model):
     current_participants = models.IntegerField(_("현재 참가 인원"), default=0)
     requires_approval = models.BooleanField(_("승인 필요"), default=False)
     application_deadline = models.DateTimeField(_("신청 마감일"), null=True, blank=True)
+    bank_account = models.CharField(_("입금 계좌"), max_length=100, blank=True, help_text="참가비 입금 계좌 (예: 카카오뱅크 3333-00-0000000 홍길동)")
+    is_closed = models.BooleanField(_("모집 마감"), default=False, help_text="수동으로 모집을 마감합니다")
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

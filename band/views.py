@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.db.models import Count, Q, Prefetch
 from django.core.paginator import Paginator
@@ -1880,7 +1881,8 @@ def schedule_create(request, band_id):
         flash_description = request.POST.get("flash_description", "")
         meeting_cost = request.POST.get("meeting_cost", "")
         meeting_capacity = request.POST.get("meeting_capacity", "20")
-        
+        bank_account = request.POST.get("bank_account", "").strip()  # 입금 계좌
+
         # 날짜/시간 결합
         if meeting_date and meeting_time:
             try:
@@ -1938,6 +1940,7 @@ def schedule_create(request, band_id):
             max_participants=int(meeting_capacity) if meeting_capacity else None,
             current_participants=0,
             requires_approval=False,
+            bank_account=bank_account,
             created_by=request.user
         )
         
@@ -1988,6 +1991,7 @@ def schedule_update(request, band_id, schedule_id):
         meeting_cost = request.POST.get("meeting_cost", "")
         meeting_capacity = request.POST.get("meeting_capacity", "20")
         flash_region = request.POST.get("flash_region", "")  # 지역 정보
+        bank_account = request.POST.get("bank_account", "").strip()  # 입금 계좌
         
         # 날짜/시간 결합
         if meeting_date and meeting_time:
@@ -2046,6 +2050,7 @@ def schedule_update(request, band_id, schedule_id):
         schedule.end_datetime = end_datetime
         schedule.location = meeting_location
         schedule.max_participants = int(meeting_capacity) if meeting_capacity else None
+        schedule.bank_account = bank_account
         schedule.save()
         
         # 지역 정보를 부모 Band에 저장
@@ -2210,6 +2215,7 @@ def schedule_detail(request, band_id, schedule_id):
         "approved_participants": approved_participants,
         "pending_applications": pending_applications,
         "can_manage": can_manage,
+        "is_admin": can_manage,
         "meeting_cost": meeting_cost,
     })
 
@@ -2367,5 +2373,29 @@ def schedule_application_cancel(request, band_id, schedule_id):
         schedule.save(update_fields=["current_participants"])
     
     messages.success(request, "참가 신청이 취소되었습니다.")
+    return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+
+
+@login_required
+@require_POST
+def schedule_toggle_close(request, band_id, schedule_id):
+    """번개 모집 마감/해제 토글"""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    # 방장 또는 관리자 권한 확인
+    member = schedule.band.members.filter(user=request.user, status="active").first()
+    if not member or member.role not in ["owner", "admin"]:
+        messages.error(request, "권한이 없습니다.")
+        return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+
+    # 마감 상태 토글
+    schedule.is_closed = not schedule.is_closed
+    schedule.save(update_fields=["is_closed"])
+
+    if schedule.is_closed:
+        messages.success(request, "모집이 마감되었습니다.")
+    else:
+        messages.success(request, "모집이 다시 열렸습니다.")
+
     return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
 
