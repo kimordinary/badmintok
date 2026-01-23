@@ -3,13 +3,14 @@ services:
     image: mysql:8.0.43
     container_name: badmintok-mysql-prod
     restart: unless-stopped
-    env_file:
-      - .env.prod
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       MYSQL_DATABASE: "${MYSQL_DATABASE}"
-      MYSQL_USER: "${MYSQL_USER}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      # IMPORTANT: MYSQL_USER and MYSQL_PASSWORD are for creating a regular user, NOT for root
+      # If MYSQL_USER is set to "root" in your environment, it will cause an error
+      # Only uncomment the lines below if you want to create a non-root user
+      # MYSQL_USER: "${MYSQL_USER}"
+      # MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
       TZ: "Asia/Seoul"
     # Production: 포트를 외부에 노출하지 않음 (보안)
     # ports:

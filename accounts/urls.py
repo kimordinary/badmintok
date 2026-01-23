@@ -3,7 +3,8 @@ from django.contrib.auth import views as auth_views
 
 from .forms import UserLoginForm
 from .views import (
-    KakaoCallbackView, KakaoLoginView, NaverCallbackView, NaverLoginView,
+    KakaoCallbackView, KakaoLoginView, KakaoMobileLoginView,
+    NaverCallbackView, NaverLoginView,
     GoogleCallbackView, GoogleLoginView,
     SignupSuccessView, SignupView,
     mypage, profile_edit, enter_real_name,
@@ -26,6 +27,8 @@ urlpatterns = [
     path("login/kakao/", KakaoLoginView.as_view(), name="kakao_login"),
     path("kakao/", KakaoCallbackView.as_view(), name="kakao_callback"),
     path("kakao", KakaoCallbackView.as_view(), name="kakao_callback_no_slash"),
+    # 모바일 앱을 위한 카카오 로그인 API
+    path("api/kakao/mobile/", KakaoMobileLoginView.as_view(), name="kakao_mobile_login"),
     path("login/naver/", NaverLoginView.as_view(), name="naver_login"),
     path("naver/", NaverCallbackView.as_view(), name="naver_callback"),
     path("naver", NaverCallbackView.as_view(), name="naver_callback_no_slash"),

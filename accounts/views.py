@@ -1,6 +1,7 @@
 import datetime
 import os
 import uuid
+import json
 from urllib.parse import urlparse
 
 import requests
@@ -8,9 +9,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.core.files.base import ContentFile
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, TemplateView
 
 from django.contrib.auth.decorators import login_required
@@ -597,6 +602,188 @@ class KakaoCallbackView(View):
         
         redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
         return redirect(redirect_to)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class KakaoMobileLoginView(View):
+    """
+    모바일 앱을 위한 카카오 로그인 API
+    모바일 앱에서 카카오 SDK로 받은 access_token을 서버로 전송하여 로그인 처리
+    
+    POST /api/accounts/kakao/mobile/
+    Body: {
+        "access_token": "카카오에서 받은 access_token"
+    }
+    
+    Response: {
+        "success": true,
+        "user": {
+            "id": 1,
+            "email": "user@example.com",
+            "activity_name": "사용자명",
+            "profile_image_url": "프로필 이미지 URL"
+        },
+        "session_id": "세션 ID (쿠키로도 전달됨)",
+        "requires_real_name": true/false  // 실명 입력 필요 여부
+    }
+    """
+    def post(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # JSON 요청 본문 파싱
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST
+            
+            access_token = data.get('access_token')
+            
+            if not access_token:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'access_token이 필요합니다.'
+                }, status=400)
+            
+            # 카카오 API로 사용자 정보 조회
+            try:
+                user_info_response = requests.get(
+                    "https://kapi.kakao.com/v2/user/me",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=5,
+                )
+                user_info_response.raise_for_status()
+                user_info = user_info_response.json()
+            except requests.RequestException as e:
+                logger.error(f"카카오 사용자 정보 조회 실패: {str(e)}")
+                return JsonResponse({
+                    'success': False,
+                    'error': '카카오 사용자 정보를 가져오는 데 실패했습니다.'
+                }, status=400)
+            
+            # 사용자 정보 파싱 (기존 KakaoCallbackView와 동일한 로직)
+            kakao_account = user_info.get("kakao_account", {})
+            email = kakao_account.get("email")
+            legal_name = kakao_account.get("legal_name")
+            account_name = kakao_account.get("name")
+            profile = kakao_account.get("profile", {})
+            nickname = profile.get("nickname")
+            profile_image_url = profile.get("profile_image_url")
+            is_default_image = profile.get("is_default_image", True)
+            gender = kakao_account.get("gender")
+            age_range = kakao_account.get("age_range")
+            birthday = kakao_account.get("birthday")
+            birthyear = kakao_account.get("birthyear")
+            phone_number = kakao_account.get("phone_number")
+            
+            if not email:
+                return JsonResponse({
+                    'success': False,
+                    'error': '카카오 계정에서 이메일 정보를 제공하지 않았습니다.'
+                }, status=400)
+            
+            # 사용자 생성 또는 조회
+            defaults = {
+                "activity_name": nickname or email.split("@")[0],
+                "auth_provider": "kakao"
+            }
+            user, created = User.objects.get_or_create(email=email, defaults=defaults)
+            if created:
+                user.set_unusable_password()
+                user.save()
+            else:
+                update_fields = []
+                if not user.auth_provider:
+                    user.auth_provider = "kakao"
+                    update_fields.append("auth_provider")
+                if nickname and user.activity_name != nickname:
+                    user.activity_name = nickname
+                    update_fields.append("activity_name")
+                if update_fields:
+                    user.save(update_fields=update_fields)
+            
+            # 프로필 처리
+            profile_defaults = {}
+            if gender:
+                gender_map = {
+                    "male": UserProfile.Gender.MALE,
+                    "female": UserProfile.Gender.FEMALE,
+                }
+                profile_defaults["gender"] = gender_map.get(gender, UserProfile.Gender.OTHER)
+            
+            if age_range:
+                profile_defaults["age_range"] = age_range
+            if birthyear and birthyear.isdigit():
+                profile_defaults["birth_year"] = int(birthyear)
+            if birthday and len(birthday) == 4:
+                try:
+                    birth_month = int(birthday[:2])
+                    birth_day = int(birthday[2:])
+                    birth_year_value = int(birthyear) if birthyear and birthyear.isdigit() else 1900
+                    profile_defaults["birthday"] = datetime.date(birth_year_value, birth_month, birth_day)
+                except ValueError:
+                    pass
+            if phone_number:
+                profile_defaults["phone_number"] = phone_number
+            
+            profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
+            
+            update_fields = set()
+            if not created_profile:
+                for field, value in profile_defaults.items():
+                    if value and getattr(profile_obj, field) != value:
+                        setattr(profile_obj, field, value)
+                        update_fields.add(field)
+            
+            # 프로필 이미지 처리
+            default_profile_path = "images/userprofile/user.png"
+            if not is_default_image and profile_image_url:
+                try:
+                    image_response = requests.get(profile_image_url, timeout=5)
+                    image_response.raise_for_status()
+                    file_name = f"kakao_{user.id}.jpg"
+                    storage = profile_obj.profile_image.field.storage
+                    save_path = f"images/userprofile/{file_name}"
+                    stored_path = storage.save(save_path, ContentFile(image_response.content))
+                    if profile_obj.profile_image.name != stored_path:
+                        profile_obj.profile_image.name = stored_path
+                        update_fields.add("profile_image")
+                except requests.RequestException:
+                    pass
+            
+            if update_fields:
+                profile_obj.save(update_fields=list(update_fields))
+            
+            # 로그인 처리
+            auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            
+            # 응답 데이터 구성
+            response_data = {
+                'success': True,
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'activity_name': user.activity_name,
+                    'profile_image_url': request.build_absolute_uri(profile_obj.profile_image.url) if profile_obj.profile_image else None,
+                },
+                'session_id': request.session.session_key,
+                'requires_real_name': not bool(profile_obj.name),
+            }
+            
+            return JsonResponse(response_data)
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': '잘못된 JSON 형식입니다.'
+            }, status=400)
+        except Exception as e:
+            logger.error(f"모바일 카카오 로그인 오류: {str(e)}", exc_info=True)
+            return JsonResponse({
+                'success': False,
+                'error': f'로그인 처리 중 오류가 발생했습니다: {str(e)}'
+            }, status=500)
 
 
 class NaverLoginView(View):

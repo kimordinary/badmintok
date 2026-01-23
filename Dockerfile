@@ -24,10 +24,10 @@ RUN python manage.py collectstatic --noinput || true
 
 EXPOSE 8080
 
-# Copy and set executable permission for entrypoint
-COPY entrypoint.sh .
+# Ensure entrypoint.sh has executable permission
 RUN chmod +x entrypoint.sh
 
-CMD ["./entrypoint.sh"]
+# Use sh to execute entrypoint to avoid permission issues
+CMD ["sh", "entrypoint.sh"]
 
 
