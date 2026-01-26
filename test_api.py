@@ -110,14 +110,32 @@ def main():
     # 테스트할 엔드포인트 정의
     tests = [
         # (엔드포인트, 파라미터, 설명)
+        # === Badmintok API ===
         ("", None, "홈 - 최신 게시물 5개"),
+        ("badmintok/posts/", None, "배드민톡 게시물 목록"),
+        ("badmintok/posts/", {"page": 1, "page_size": 5}, "배드민톡 게시물 (페이지 1, 5개)"),
+        ("badmintok/hot-posts/", None, "배드민톡 인기 게시물 TOP 10"),
+
+        # === Community API ===
+        ("community/posts/", None, "동호인톡 게시물 목록"),
+        ("community/posts/", {"tab": "hot"}, "동호인톡 HOT 탭"),
+        ("community/posts/", {"search": "배드민턴"}, "동호인톡 게시물 검색"),
+        ("community/categories/", None, "동호인톡 카테고리 목록"),
+
+        # === Contests API ===
+        ("contests/", None, "대회 목록"),
+        ("contests/", {"period": "upcoming"}, "예정된 대회 (30일 이내)"),
+        ("contests/", {"order": "popular"}, "인기 대회순"),
+        ("contests/hot/", None, "인기 대회 TOP 10"),
+        ("contests/categories/", None, "대회 분류 목록"),
+
+        # === Band API ===
+        ("bands/", None, "밴드 목록"),
+        ("bands/", {"band_type": "flash"}, "번개 목록"),
+        ("bands/hot/", None, "인기 밴드 TOP 10"),
+
+        # === Common Resources ===
         ("banners/", None, "배너 목록"),
-        ("posts/", None, "게시물 목록 (기본)"),
-        ("posts/", {"page": 1, "page_size": 5}, "게시물 목록 (페이지 1, 5개)"),
-        ("posts/", {"tab": "new"}, "게시물 목록 (NEW 탭)"),
-        ("posts/", {"tab": "news"}, "게시물 목록 (뉴스 탭)"),
-        ("posts/", {"search": "배드민턴"}, "게시물 검색"),
-        ("hot-posts/", None, "인기 게시물 TOP 10"),
         ("notices/", None, "공지사항 목록"),
     ]
 

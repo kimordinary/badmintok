@@ -1,14 +1,14 @@
 from rest_framework import serializers
 from badmintok.models import BadmintokBanner, Notice
 from community.models import Post, PostImage
-from accounts.models import CustomUser
+from accounts.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
     """사용자 정보 Serializer"""
     class Meta:
-        model = CustomUser
-        fields = ['id', 'activity_name', 'profile_image']
+        model = User
+        fields = ['id', 'activity_name', 'email']
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -51,7 +51,14 @@ class PostListSerializer(serializers.ModelSerializer):
         return None
 
     def get_excerpt(self, obj):
-        return obj.excerpt
+        """본문에서 발췌문 생성 (100자)"""
+        if obj.content:
+            # HTML 태그 제거
+            import re
+            text = re.sub(r'<[^>]+>', '', obj.content)
+            text = text.strip()
+            return text[:100] + '...' if len(text) > 100 else text
+        return ''
 
 
 class PostDetailSerializer(serializers.ModelSerializer):
