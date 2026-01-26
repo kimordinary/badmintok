@@ -1,0 +1,110 @@
+{
+  "info": {
+    "name": "배드민톡 API",
+    "description": "배드민톡 프로덕션 API 테스트 컬렉션",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "홈 - 최신 게시물",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://badmintok.com/api/",
+          "protocol": "https",
+          "host": ["badmintok", "com"],
+          "path": ["api", ""]
+        }
+      }
+    },
+    {
+      "name": "배너 목록",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://badmintok.com/api/banners/",
+          "protocol": "https",
+          "host": ["badmintok", "com"],
+          "path": ["api", "banners", ""]
+        }
+      }
+    },
+    {
+      "name": "게시물 목록",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://badmintok.com/api/posts/?page=1&page_size=10",
+          "protocol": "https",
+          "host": ["badmintok", "com"],
+          "path": ["api", "posts", ""],
+          "query": [
+            {"key": "page", "value": "1"},
+            {"key": "page_size", "value": "10"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "게시물 목록 - NEW 탭",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://badmintok.com/api/posts/?tab=new",
+          "protocol": "https",
+          "host": ["badmintok", "com"],
+          "path": ["api", "posts", ""],
+          "query": [
+            {"key": "tab", "value": "new"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "게시물 검색",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://badmintok.com/api/posts/?search=배드민턴",
+          "protocol": "https",
+          "host": ["badmintok", "com"],
+          "path": ["api", "posts", ""],
+          "query": [
+            {"key": "search", "value": "배드민턴"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "인기 게시물",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://badmintok.com/api/hot-posts/",
+          "protocol": "https",
+          "host": ["badmintok", "com"],
+          "path": ["api", "hot-posts", ""]
+        }
+      }
+    },
+    {
+      "name": "공지사항 목록",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://badmintok.com/api/notices/",
+          "protocol": "https",
+          "host": ["badmintok", "com"],
+          "path": ["api", "notices", ""]
+        }
+      }
+    }
+  ]
+}

@@ -63,6 +63,8 @@ urlpatterns = [
     path("notices/", views.notice_list, name="notice_list"),
     path("notices/<int:notice_id>/", views.notice_detail, name="notice_detail"),
     path("accounts/", include("accounts.urls", namespace="accounts")),
+    # API
+    path("api/", include("badmintok.api.urls", namespace="api")),
     # 외부 링크 클릭 추적 API
     path("api/track-click/", views.track_outbound_click, name="track_outbound_click"),
     # SEO 관련

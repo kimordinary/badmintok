@@ -1011,6 +1011,182 @@ class NaverCallbackView(View):
         return redirect(redirect_to)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class NaverMobileLoginView(View):
+    """
+    모바일 앱을 위한 네이버 로그인 API
+    모바일 앱에서 네이버 SDK로 받은 access_token을 서버로 전송하여 로그인 처리
+    
+    POST /api/accounts/naver/mobile/
+    Body: {
+        "access_token": "네이버에서 받은 access_token"
+    }
+    
+    Response: {
+        "success": true,
+        "user": {
+            "id": 1,
+            "email": "user@example.com",
+            "activity_name": "사용자명",
+            "profile_image_url": "프로필 이미지 URL"
+        },
+        "session_id": "세션 ID (쿠키로도 전달됨)",
+        "requires_real_name": true/false  // 실명 입력 필요 여부
+    }
+    """
+    def post(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # JSON 요청 본문 파싱
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST
+            
+            access_token = data.get('access_token')
+            
+            if not access_token:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'access_token이 필요합니다.'
+                }, status=400)
+            
+            # 네이버 API로 사용자 정보 조회
+            try:
+                user_info_response = requests.get(
+                    "https://openapi.naver.com/v1/nid/me",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=5,
+                )
+                user_info_response.raise_for_status()
+                user_info = user_info_response.json()
+            except requests.RequestException as e:
+                logger.error(f"네이버 사용자 정보 조회 실패: {str(e)}")
+                return JsonResponse({
+                    'success': False,
+                    'error': '네이버 사용자 정보를 가져오는 데 실패했습니다.'
+                }, status=400)
+            
+            # 사용자 정보 파싱 (기존 NaverCallbackView와 동일한 로직)
+            response = user_info.get("response", {})
+            email = response.get("email")
+            name = response.get("name")
+            nickname = response.get("nickname")
+            profile_image = response.get("profile_image")
+            gender = response.get("gender")  # M or F
+            birthday = response.get("birthday")  # MM-DD
+            birthyear = response.get("birthyear")  # YYYY
+            mobile = response.get("mobile")
+            
+            if not email:
+                return JsonResponse({
+                    'success': False,
+                    'error': '네이버 계정에서 이메일 정보를 제공하지 않았습니다.'
+                }, status=400)
+            
+            # 사용자 생성 또는 조회
+            defaults = {
+                "activity_name": nickname or name or email.split("@")[0],
+                "auth_provider": "naver"
+            }
+            user, created = User.objects.get_or_create(email=email, defaults=defaults)
+            if created:
+                user.set_unusable_password()
+                user.save()
+            else:
+                update_fields = []
+                if not user.auth_provider:
+                    user.auth_provider = "naver"
+                    update_fields.append("auth_provider")
+                if nickname and user.activity_name != nickname:
+                    user.activity_name = nickname
+                    update_fields.append("activity_name")
+                if update_fields:
+                    user.save(update_fields=update_fields)
+            
+            # 프로필 처리
+            profile_defaults = {}
+            if gender:
+                gender_map = {
+                    "M": UserProfile.Gender.MALE,
+                    "F": UserProfile.Gender.FEMALE,
+                }
+                profile_defaults["gender"] = gender_map.get(gender, UserProfile.Gender.OTHER)
+            
+            if birthyear and birthyear.isdigit():
+                profile_defaults["birth_year"] = int(birthyear)
+            if birthday and birthyear:
+                try:
+                    birth_month = int(birthday.split("-")[0])
+                    birth_day = int(birthday.split("-")[1])
+                    birth_year_value = int(birthyear) if birthyear.isdigit() else 1900
+                    profile_defaults["birthday"] = datetime.date(birth_year_value, birth_month, birth_day)
+                except (ValueError, IndexError):
+                    pass
+            if mobile:
+                profile_defaults["phone_number"] = mobile
+            
+            profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
+            
+            update_fields = set()
+            if not created_profile:
+                for field, value in profile_defaults.items():
+                    if value and getattr(profile_obj, field) != value:
+                        setattr(profile_obj, field, value)
+                        update_fields.add(field)
+            
+            # 프로필 이미지 처리
+            default_profile_path = "images/userprofile/user.png"
+            if profile_image:
+                try:
+                    image_response = requests.get(profile_image, timeout=5)
+                    image_response.raise_for_status()
+                    file_name = f"naver_{user.id}.jpg"
+                    storage = profile_obj.profile_image.field.storage
+                    save_path = f"images/userprofile/{file_name}"
+                    stored_path = storage.save(save_path, ContentFile(image_response.content))
+                    if profile_obj.profile_image.name != stored_path:
+                        profile_obj.profile_image.name = stored_path
+                        update_fields.add("profile_image")
+                except requests.RequestException:
+                    pass
+            
+            if update_fields:
+                profile_obj.save(update_fields=list(update_fields))
+            
+            # 로그인 처리
+            auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            
+            # 응답 데이터 구성
+            response_data = {
+                'success': True,
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'activity_name': user.activity_name,
+                    'profile_image_url': request.build_absolute_uri(profile_obj.profile_image.url) if profile_obj.profile_image else None,
+                },
+                'session_id': request.session.session_key,
+                'requires_real_name': not bool(profile_obj.name),
+            }
+            
+            return JsonResponse(response_data)
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': '잘못된 JSON 형식입니다.'
+            }, status=400)
+        except Exception as e:
+            logger.error(f"모바일 네이버 로그인 오류: {str(e)}", exc_info=True)
+            return JsonResponse({
+                'success': False,
+                'error': f'로그인 처리 중 오류가 발생했습니다: {str(e)}'
+            }, status=500)
+
+
 class GoogleLoginView(View):
     def get(self, request):
         try:
@@ -1200,13 +1376,193 @@ class GoogleCallbackView(View):
 
         auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         messages.success(request, "구글 계정으로 로그인되었습니다.")
-        
+
         # 실명이 없으면 실명 입력 페이지로 리다이렉트
         if not profile_obj.name:
             return redirect("accounts:enter_real_name")
-        
+
         redirect_to = request.GET.get("next") or settings.LOGIN_REDIRECT_URL
         return redirect(redirect_to)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class GoogleMobileLoginView(View):
+    """
+    모바일 앱을 위한 구글 로그인 API
+    모바일 앱에서 구글 SDK로 받은 access_token을 서버로 전송하여 로그인 처리
+
+    POST /accounts/api/google/mobile/
+    Body: {
+        "access_token": "구글에서 받은 access_token"
+    }
+
+    Response: {
+        "success": true,
+        "user": {
+            "id": 1,
+            "email": "user@example.com",
+            "activity_name": "사용자명",
+            "profile_image_url": "프로필 이미지 URL"
+        },
+        "session_id": "세션 ID (쿠키로도 전달됨)",
+        "requires_real_name": true/false  # 실명 입력 필요 여부
+    }
+    """
+
+    def post(self, request):
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            # JSON 요청 본문 파싱
+            if request.content_type == "application/json":
+                data = json.loads(request.body)
+            else:
+                data = request.POST
+
+            access_token = data.get("access_token")
+
+            if not access_token:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "access_token이 필요합니다.",
+                    },
+                    status=400,
+                )
+
+            # 구글 API로 사용자 정보 조회
+            try:
+                user_info_response = requests.get(
+                    "https://www.googleapis.com/oauth2/v2/userinfo",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=5,
+                )
+                user_info_response.raise_for_status()
+                user_info = user_info_response.json()
+            except requests.RequestException as e:
+                logger.error(f"구글 사용자 정보 조회 실패: {str(e)}")
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "구글 사용자 정보를 가져오는 데 실패했습니다.",
+                    },
+                    status=400,
+                )
+
+            # 사용자 정보 파싱 (기존 GoogleCallbackView와 유사한 로직)
+            email = user_info.get("email")
+            name = user_info.get("name")
+            picture = user_info.get("picture")
+            verified_email = user_info.get("verified_email", False)
+
+            if not email:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "구글 계정에서 이메일 정보를 제공하지 않았습니다.",
+                    },
+                    status=400,
+                )
+
+            if not verified_email:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "구글 계정의 이메일이 인증되지 않았습니다.",
+                    },
+                    status=400,
+                )
+
+            # 사용자 생성 또는 조회
+            defaults = {
+                "activity_name": name or email.split("@")[0],
+                "auth_provider": "google",
+            }
+            user, created = User.objects.get_or_create(email=email, defaults=defaults)
+            if created:
+                user.set_unusable_password()
+                user.save()
+            else:
+                update_fields = []
+                if not user.auth_provider:
+                    user.auth_provider = "google"
+                    update_fields.append("auth_provider")
+                if name and user.activity_name != name:
+                    user.activity_name = name
+                    update_fields.append("activity_name")
+                if update_fields:
+                    user.save(update_fields=update_fields)
+
+            # 프로필 처리
+            profile_defaults = {}
+            profile_obj, created_profile = UserProfile.objects.get_or_create(
+                user=user, defaults=profile_defaults
+            )
+
+            update_fields = set()
+            if not created_profile:
+                for field, value in profile_defaults.items():
+                    if value and getattr(profile_obj, field) != value:
+                        setattr(profile_obj, field, value)
+                        update_fields.add(field)
+
+            if picture:
+                try:
+                    image_response = requests.get(picture, timeout=5)
+                    image_response.raise_for_status()
+                    file_name = f"google_{user.id}.jpg"
+                    storage = profile_obj.profile_image.field.storage
+                    save_path = f"images/userprofile/{file_name}"
+                    stored_path = storage.save(save_path, ContentFile(image_response.content))
+                    if profile_obj.profile_image.name != stored_path:
+                        profile_obj.profile_image.name = stored_path
+                        update_fields.add("profile_image")
+                except requests.RequestException:
+                    pass
+
+            if update_fields:
+                profile_obj.save(update_fields=list(update_fields))
+
+            # 로그인 처리
+            auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+            response_data = {
+                "success": True,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "activity_name": user.activity_name,
+                    "profile_image_url": request.build_absolute_uri(
+                        profile_obj.profile_image.url
+                    )
+                    if profile_obj.profile_image
+                    else None,
+                },
+                "session_id": request.session.session_key,
+                "requires_real_name": not bool(profile_obj.name),
+            }
+
+            return JsonResponse(response_data)
+
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "잘못된 JSON 형식입니다.",
+                },
+                status=400,
+            )
+        except Exception as e:
+            logger.error(f"모바일 구글 로그인 오류: {str(e)}", exc_info=True)
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": f"로그인 처리 중 오류가 발생했습니다: {str(e)}",
+                },
+                status=500,
+            )
 
 
 # 설정 및 기타 페이지 뷰들

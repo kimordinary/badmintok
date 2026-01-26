@@ -81,6 +81,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'django.contrib.syndication',
+    # Third-party apps
+    'corsheaders',
+    'rest_framework',
     # 프로젝트 앱
     'badmintok.apps.BadmintokConfig',
     # 도메인 앱
@@ -92,6 +95,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware는 CommonMiddleware 전에 위치
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -274,3 +278,79 @@ NAVER_REDIRECT_URI = os.environ.get('NAVER_REDIRECT_URI', 'http://localhost/acco
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost/accounts/google')
+
+# CORS 설정
+# 환경에 따라 동적으로 설정
+if DEBUG:
+    # 로컬 개발 환경: localhost와 127.0.0.1에서 모든 요청 허용
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:3000',
+        'http://localhost:8000',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:8000',
+    ]
+    CORS_ALLOW_ALL_ORIGINS = True  # 개발 환경에서는 모든 origin 허용
+else:
+    # 프로덕션 환경: 실제 도메인만 허용
+    CORS_ALLOWED_ORIGINS_ENV = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+    if CORS_ALLOWED_ORIGINS_ENV:
+        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',')]
+    else:
+        CORS_ALLOWED_ORIGINS = [
+            'https://badmintok.com',
+            'https://www.badmintok.com',
+        ]
+    CORS_ALLOW_ALL_ORIGINS = False
+
+# CORS 추가 설정
+CORS_ALLOW_CREDENTIALS = True  # 쿠키 전달 허용
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# REST Framework 설정
+REST_FRAMEWORK = {
+    # 기본 인증 클래스
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    # 기본 권한 클래스
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    # 페이지네이션
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    # 렌더러
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    # 파서
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
+    # 예외 핸들러
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+    # 날짜/시간 형식
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+    'DATE_FORMAT': '%Y-%m-%d',
+    'TIME_FORMAT': '%H:%M:%S',
+}

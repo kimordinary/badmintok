@@ -31,7 +31,7 @@
         width: 100% !important;
         max-width: 1200px !important;
         padding: 0 20px !important;
-        margin: 40px 0 !important;
+        margin: 0px 0 !important;
         box-sizing: border-box !important;
     }
     .community-main-grid {
@@ -58,9 +58,46 @@
         height: 120px !important;
         object-fit: cover;
     }
+    /* 배너 이미지 로딩 시 레이아웃 시프트 방지 */
+    .banner-wrapper {
+        position: relative;
+        margin-top: 24px;
+        margin-bottom: 24px;
+    }
+    .badmintok-banners {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        min-height: 0;
+    }
+    .badmintok-banners::-webkit-scrollbar {
+        display: none;
+    }
     .badmintok-banner-item {
-        aspect-ratio: 8 / 3 !important;
-        min-height: 0 !important;
+        position: relative;
+        min-width: 100%;
+        max-width: 100%;
+        aspect-ratio: 8 / 3;
+        scroll-snap-align: center;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .badmintok-banner-item img {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
     }
 </style>
 {% endblock %}
@@ -73,14 +110,14 @@
         <div class="banner-wrapper" style="margin-top: 24px; margin-bottom: 24px;">
             <div class="badmintok-banners" aria-label="배드민톡 배너" data-banner-container>
                 {% for banner in banner_images %}
-                        <div class="badmintok-banner-item">
+                    <div class="badmintok-banner-item">
                         <span class="banner-sponsored-label">Sponsored</span>
                         {% if banner.link_url %}
-                            <a href="{{ banner.link_url }}" target="_blank" rel="nofollow noopener noreferrer" style="display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;">
-                                <img src="{{ banner.url }}" alt="{{ banner.alt }}" {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %} style="cursor: pointer;">
+                            <a href="{{ banner.link_url }}" target="_blank" rel="nofollow noopener noreferrer" style="display: block; width: 100%; height: 100%;">
+                                <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy" style="cursor: pointer;">
                             </a>
                         {% else %}
-                            <img src="{{ banner.url }}" alt="{{ banner.alt }}" {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %}>
+                            <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy">
                         {% endif %}
                     </div>
                 {% endfor %}
@@ -743,54 +780,6 @@
 </section>
 
 <style>
-    .banner-wrapper {
-        position: relative;
-        margin-top: 24px;
-        margin-bottom: 24px;
-    }
-
-    .badmintok-banners {
-        display: flex;
-        gap: 16px;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scroll-behavior: smooth;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge */
-        /* 초기 높이 확보로 레이아웃 시프트 방지 */
-        min-height: 0;
-    }
-
-    .badmintok-banners::-webkit-scrollbar {
-        display: none; /* Chrome/Safari/Opera */
-    }
-
-    .badmintok-banner-item {
-        position: relative;
-        min-width: 100%;
-        max-width: 100%;
-        aspect-ratio: 8 / 3;
-        scroll-snap-align: center;
-        border-radius: 12px;
-        overflow: hidden;
-        background: #e2e8f0;
-        /* 초기 높이 확보로 레이아웃 시프트 방지 */
-        flex-shrink: 0;
-        height: 100%;
-    }
-
-    .badmintok-banner-item img {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        /* 이미지 로딩 중 레이아웃 안정화 */
-        display: block;
-    }
-
-
     .banner-nav {
         position: absolute;
         top: 50%;
@@ -1117,7 +1106,7 @@
             font-size: 11px !important;
         }
     }
-    
+
 </style>
 
 <script>
@@ -1131,6 +1120,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextBtn = wrapper.querySelector('[data-banner-next]');
 
         if (items.length <= 1) {
+            // 배너가 1개 이하면 버튼 숨기기
             if (prevBtn) prevBtn.style.display = 'none';
             if (nextBtn) nextBtn.style.display = 'none';
             return;
@@ -1141,8 +1131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function slideToBanner(index) {
             const item = items[index];
             if (item) {
-                const scrollPosition = item.offsetLeft;
-                container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
             }
         }
 
@@ -1156,6 +1145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             slideToBanner(currentIndex);
         }
 
+        // 버튼 클릭 이벤트
         if (prevBtn) {
             prevBtn.addEventListener('click', function() {
                 prevBanner();
@@ -1168,12 +1158,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // 5초마다 자동 슬라이드
         const autoSlideInterval = setInterval(nextBanner, 5000);
 
+        // 사용자가 수동으로 스크롤하면 인터벌 초기화
         let scrollTimeout;
         container.addEventListener('scroll', function() {
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(function() {
+                // 현재 보이는 배너의 인덱스를 업데이트
                 const containerRect = container.getBoundingClientRect();
                 items.forEach(function(item, index) {
                     const itemRect = item.getBoundingClientRect();
