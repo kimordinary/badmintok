@@ -245,24 +245,26 @@ class PostListView(ListView):
 
         # 서버 측 최적화: 게시물 excerpt 및 이미지 URL 추출
         import re
+        import html
         from django.utils.html import strip_tags
-        
+
         # 메인 게시물 리스트 최적화
         posts = context.get('posts', [])
         for post in posts:
             if hasattr(post, 'content') and post.content:
-                # HTML 태그 제거 및 excerpt 추출
-                text_content = strip_tags(post.content)
+                # HTML 엔티티 디코딩 후 태그 제거 및 excerpt 추출
+                unescaped_content = html.unescape(post.content)
+                text_content = strip_tags(unescaped_content)
                 if len(text_content) > 80:
                     # 80자 초과 시 15단어로 제한
                     words = text_content.split()[:15]
                     post.excerpt = ' '.join(words) + '...'
                 else:
                     post.excerpt = text_content
-                
+
                 # 첫 번째 이미지 URL 추출
                 pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
-                match = re.search(pattern, post.content, re.IGNORECASE)
+                match = re.search(pattern, unescaped_content, re.IGNORECASE)
                 if match:
                     post.content_image_url = match.group(1)
                 else:
@@ -270,22 +272,23 @@ class PostListView(ListView):
             else:
                 post.excerpt = ""
                 post.content_image_url = None
-        
+
         # Hot 게시물 리스트 최적화
         hot_posts = context.get('hot_posts', [])
         for post in hot_posts:
             if hasattr(post, 'content') and post.content:
-                # HTML 태그 제거 및 excerpt 추출
-                text_content = strip_tags(post.content)
+                # HTML 엔티티 디코딩 후 태그 제거 및 excerpt 추출
+                unescaped_content = html.unescape(post.content)
+                text_content = strip_tags(unescaped_content)
                 if len(text_content) > 80:
                     words = text_content.split()[:15]
                     post.excerpt = ' '.join(words) + '...'
                 else:
                     post.excerpt = text_content
-                
+
                 # 첫 번째 이미지 URL 추출
                 pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
-                match = re.search(pattern, post.content, re.IGNORECASE)
+                match = re.search(pattern, unescaped_content, re.IGNORECASE)
                 if match:
                     post.content_image_url = match.group(1)
                 else:

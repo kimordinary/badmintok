@@ -130,15 +130,9 @@ class ContestListView(ListView):
                 Q(schedule_end__isnull=True) | Q(schedule_end__gte=today)
             )
 
-        # 정렬: 등록 마감 임박순 → 대회 시작일 빠른 순
-        # registration_end가 null이 아니고 마감되지 않은 대회를 우선 표시
-        queryset = queryset.annotate(
-            registration_priority=Case(
-                When(registration_end__isnull=False, registration_end__gte=today, then=0),
-                default=1,
-                output_field=IntegerField()
-            )
-        ).order_by('registration_priority', 'registration_end', 'schedule_start')
+        # 정렬: 대회 시작일 빠른 순 (D-day 기준)
+        # 가장 임박한 대회부터 표시
+        queryset = queryset.order_by('schedule_start')
 
         # select_related로 category를 미리 로드 (템플릿 필터링을 위해 필수)
         # prefetch_related로 이미지들을 미리 로드 (N+1 쿼리 방지)
