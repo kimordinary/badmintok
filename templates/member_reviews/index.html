@@ -491,7 +491,8 @@ document.addEventListener('DOMContentLoaded', function() {
         function slideToBanner(index) {
             const item = items[index];
             if (item) {
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                const scrollPosition = item.offsetLeft;
+                container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
             }
         }
 

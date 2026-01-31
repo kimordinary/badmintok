@@ -168,7 +168,7 @@
                                                 {% endfor %}
                                             </div>
                                             <h3 class="community-post-title">{{ post.title }}</h3>
-                                            <p class="community-post-excerpt">{{ post.content }}</p>
+                                            <p class="community-post-excerpt">{{ post.content|striptags|truncatewords:15 }}</p>
                                             <div class="community-post-meta">
                                                 <span class="community-post-author">{{ post.author.activity_name }}</span>
                                                 <span class="community-post-separator">|</span>
@@ -378,7 +378,7 @@
                                         {% endfor %}
                                     </div>
                                     <h3 class="community-post-title">{{ post.title }}</h3>
-                                    <p class="community-post-excerpt">{{ post.content }}</p>
+                                    <p class="community-post-excerpt">{{ post.content|striptags|truncatewords:15 }}</p>
                                     <div class="community-post-meta">
                                         <span class="community-post-author">{{ post.author.activity_name }}</span>
                                         <span class="community-post-separator">|</span>
@@ -622,7 +622,7 @@
                                                 {% endfor %}
                                             </div>
                                             <h3 class="community-post-title">{{ post.title }}</h3>
-                                            <p class="community-post-excerpt">{{ post.content }}</p>
+                                            <p class="community-post-excerpt">{{ post.content|striptags|truncatewords:15 }}</p>
                                             <div class="community-post-meta">
                                                 <span class="community-post-author">{{ post.author.activity_name }}</span>
                                                 <span class="community-post-separator">|</span>
@@ -829,7 +829,7 @@
                                                 {% endfor %}
                                             </div>
                                             <h3 class="community-post-title">{{ post.title }}</h3>
-                                            <p class="community-post-excerpt">{{ post.content }}</p>
+                                            <p class="community-post-excerpt">{{ post.content|striptags|truncatewords:15 }}</p>
                                             <div class="community-post-meta">
                                                 <span class="community-post-author">{{ post.author.activity_name }}</span>
                                                 <span class="community-post-separator">|</span>
@@ -1364,7 +1364,8 @@ document.addEventListener('DOMContentLoaded', function() {
         function slideToBanner(index) {
             const item = items[index];
             if (item) {
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                const scrollPosition = item.offsetLeft;
+                container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
             }
         }
 

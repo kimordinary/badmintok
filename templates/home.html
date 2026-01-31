@@ -136,7 +136,7 @@
                         <span class="community-post-category community-post-category-primary">{{ post.get_category_display }}</span>
                     </div>
                     <h3 class="community-post-title">{{ post.title }}</h3>
-                    <p class="community-post-excerpt">{{ post.content }}</p>
+                    <p class="community-post-excerpt">{{ post.content|striptags|truncatewords:15 }}</p>
                     <div class="community-post-meta">
                         <span class="community-post-author">{{ post.author.activity_name }}</span>
                         <span class="community-post-separator">|</span>
