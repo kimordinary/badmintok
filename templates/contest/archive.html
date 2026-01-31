@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+{% load contest_filters %}
+
+{% block title %}종료된 대회 아카이브 - 배드민톡{% endblock %}
+{% block og_title_meta %}<meta property="og:title" content="종료된 대회 아카이브 - 배드민톡">{% endblock %}
+{% block extra_head %}
+<meta name="description" content="지난 배드민턴 대회 기록을 확인하세요. 승급대회, 지역대회 등 종료된 모든 대회 정보를 제공합니다.">
+<meta property="og:description" content="지난 배드민턴 대회 기록을 확인하세요. 승급대회, 지역대회 등 종료된 모든 대회 정보를 제공합니다.">
+
+<!-- 페이지네이션 SEO -->
+{% if page_obj %}
+  {% if page_obj.has_previous %}
+    <link rel="prev" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}?page={{ page_obj.previous_page_number }}">
+  {% endif %}
+  {% if page_obj.has_next %}
+    <link rel="next" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}?page={{ page_obj.next_page_number }}">
+  {% endif %}
+{% endif %}
+
+<style>
+    .archive-header {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .archive-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 8px 0;
+    }
+
+    .archive-subtitle {
+        font-size: 16px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        color: #475569;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        margin-bottom: 24px;
+    }
+
+    .back-link:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+
+    /* 대회 카드 스타일 */
+    .contest-post-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .contest-post-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .contest-post-item:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .contest-post-image {
+        width: 120px;
+        min-width: 120px;
+        height: 160px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .contest-post-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .contest-post-no-image {
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .contest-post-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .contest-post-header {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .d-day-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .d-day-ended {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .contest-post-category {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        background: var(--badge-color, #e2e8f0);
+        color: white;
+    }
+
+    .contest-post-category-qualifying {
+        background: #22c55e;
+        color: white;
+    }
+
+    .contest-post-category-non-qualifying {
+        background: #94a3b8;
+        color: white;
+    }
+
+    .contest-post-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .contest-post-sponsor {
+        font-size: 13px;
+    }
+
+    .contest-post-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .contest-post-info {
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .contest-post-stats {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 6px;
+    }
+
+    .contest-post-stats svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+    }
+
+    /* 모바일에서 클릭 가능하도록 보장 */
+    @media (max-width: 1024px) {
+        body {
+            pointer-events: auto !important;
+        }
+
+        main {
+            pointer-events: auto !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+
+        section,
+        .section,
+        .container,
+        .contest-post-item {
+            pointer-events: auto !important;
+            position: relative !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section" aria-labelledby="archive-title">
+    <div class="container" style="margin-top: 24px;">
+        <!-- 뒤로 가기 링크 -->
+        <a href="{% url 'contests:list' %}" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            대회 목록으로 돌아가기
+        </a>
+
+        <!-- 헤더 -->
+        <div class="archive-header">
+            <h1 class="archive-title" id="archive-title">종료된 대회 아카이브</h1>
+            <p class="archive-subtitle">지난 배드민턴 대회 기록을 확인하세요</p>
+        </div>
+
+        <!-- 검색 및 필터 섹션 -->
+        <div style="margin: 40px 0 24px 0;">
+            <!-- 필터 버튼들 (가로 배치) -->
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <button type="button" onclick="openFilterSheet('qualifying')" style="flex: 1; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1e293b; cursor: pointer; transition: all 0.2s;">
+                    승급 여부
+                </button>
+                <button type="button" onclick="openFilterSheet('sponsor')" style="flex: 1; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1e293b; cursor: pointer; transition: all 0.2s;">
+                    스폰서
+                </button>
+                <button type="button" onclick="openFilterSheet('region')" style="flex: 1; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1e293b; cursor: pointer; transition: all 0.2s;">
+                    지역
+                </button>
+            </div>
+
+            <!-- 검색창 -->
+            <form method="get" action="{% url 'contests:archive' %}" style="position: relative;">
+                <!-- 필터 파라미터 유지 -->
+                {% for value in request.GET.getlist.qualifying %}
+                    <input type="hidden" name="qualifying" value="{{ value }}">
+                {% endfor %}
+                {% for value in request.GET.getlist.sponsor %}
+                    <input type="hidden" name="sponsor" value="{{ value }}">
+                {% endfor %}
+                {% for value in request.GET.getlist.region %}
+                    <input type="hidden" name="region" value="{{ value }}">
+                {% endfor %}
+
+                <input type="text"
+                       name="search"
+                       value="{{ request.GET.search }}"
+                       placeholder="대회 검색"
+                       style="width: 100%; padding: 12px 48px 12px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; font-family: inherit; background: #fff;">
+                <button type="submit" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; background: var(--brand); border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- 오버레이 -->
+        <div id="filterOverlay" onclick="closeFilterSheet()" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999; opacity: 0; transition: opacity 0.3s;"></div>
+
+        <!-- 승급 여부 바텀시트 -->
+        <div id="qualifyingSheet" class="filter-bottom-sheet" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 16px 16px 0 0; z-index: 1000; max-height: 70vh; transform: translateY(100%); transition: transform 0.3s;">
+            <div style="padding: 24px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                    <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">승급 여부</h3>
+                    <button type="button" onclick="closeFilterSheet()" style="width: 32px; height: 32px; border: none; background: #f1f5f9; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 5L5 15M5 5L15 15" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <form method="get" action="{% url 'contests:archive' %}">
+                    {% if request.GET.search %}
+                        <input type="hidden" name="search" value="{{ request.GET.search }}">
+                    {% endif %}
+                    {% for value in request.GET.getlist.sponsor %}
+                        <input type="hidden" name="sponsor" value="{{ value }}">
+                    {% endfor %}
+                    {% for value in request.GET.getlist.region %}
+                        <input type="hidden" name="region" value="{{ value }}">
+                    {% endfor %}
+
+                    <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="qualifying" value="true" {% if 'true' in request.GET.getlist.qualifying %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-size: 15px; color: #475569;">승급</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="qualifying" value="false" {% if 'false' in request.GET.getlist.qualifying %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-size: 15px; color: #475569;">비승급</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" style="flex: 1; padding: 14px; background: var(--brand); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                            적용
+                        </button>
+                        <button type="button" onclick="window.location.href='{% url 'contests:archive' %}?search={{ request.GET.search }}&sponsor={{ request.GET.getlist.sponsor|join:'&sponsor=' }}&region={{ request.GET.getlist.region|join:'&region=' }}'" style="padding: 14px 24px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                            초기화
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 스폰서 바텀시트 -->
+        <div id="sponsorSheet" class="filter-bottom-sheet" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 16px 16px 0 0; z-index: 1000; max-height: 70vh; transform: translateY(100%); transition: transform 0.3s; overflow-y: auto;">
+            <div style="padding: 24px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                    <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">스폰서</h3>
+                    <button type="button" onclick="closeFilterSheet()" style="width: 32px; height: 32px; border: none; background: #f1f5f9; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 5L5 15M5 5L15 15" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <form method="get" action="{% url 'contests:archive' %}">
+                    {% if request.GET.search %}
+                        <input type="hidden" name="search" value="{{ request.GET.search }}">
+                    {% endif %}
+                    {% for value in request.GET.getlist.qualifying %}
+                        <input type="hidden" name="qualifying" value="{{ value }}">
+                    {% endfor %}
+                    {% for value in request.GET.getlist.region %}
+                        <input type="hidden" name="region" value="{{ value }}">
+                    {% endfor %}
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;">
+                        {% for sponsor in sponsors %}
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px;">
+                                <input type="checkbox" name="sponsor" value="{{ sponsor.id }}" {% if sponsor.id|stringformat:"s" in request.GET.getlist.sponsor %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+                                <span style="font-size: 15px; color: #475569;">{{ sponsor.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" style="flex: 1; padding: 14px; background: var(--brand); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                            적용
+                        </button>
+                        <button type="button" onclick="window.location.href='{% url 'contests:archive' %}?search={{ request.GET.search }}&qualifying={{ request.GET.getlist.qualifying|join:'&qualifying=' }}&region={{ request.GET.getlist.region|join:'&region=' }}'" style="padding: 14px 24px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                            초기화
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 지역 바텀시트 -->
+        <div id="regionSheet" class="filter-bottom-sheet" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 16px 16px 0 0; z-index: 1000; max-height: 70vh; transform: translateY(100%); transition: transform 0.3s; overflow-y: auto;">
+            <div style="padding: 24px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                    <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">지역</h3>
+                    <button type="button" onclick="closeFilterSheet()" style="width: 32px; height: 32px; border: none; background: #f1f5f9; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 5L5 15M5 5L15 15" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <form method="get" action="{% url 'contests:archive' %}">
+                    {% if request.GET.search %}
+                        <input type="hidden" name="search" value="{{ request.GET.search }}">
+                    {% endif %}
+                    {% for value in request.GET.getlist.qualifying %}
+                        <input type="hidden" name="qualifying" value="{{ value }}">
+                    {% endfor %}
+                    {% for value in request.GET.getlist.sponsor %}
+                        <input type="hidden" name="sponsor" value="{{ value }}">
+                    {% endfor %}
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+                        {% for region_code, region_name in regions %}
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px;">
+                                <input type="checkbox" name="region" value="{{ region_code }}" {% if region_code in request.GET.getlist.region %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+                                <span style="font-size: 15px; color: #475569;">{{ region_name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" style="flex: 1; padding: 14px; background: var(--brand); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                            적용
+                        </button>
+                        <button type="button" onclick="window.location.href='{% url 'contests:archive' %}?search={{ request.GET.search }}&qualifying={{ request.GET.getlist.qualifying|join:'&qualifying=' }}&sponsor={{ request.GET.getlist.sponsor|join:'&sponsor=' }}'" style="padding: 14px 24px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                            초기화
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 대회 목록 -->
+        <div style="margin-top: 32px;">
+            {% if contests %}
+                <div class="contest-post-list" style="opacity: 0.9;">
+                    {% for contest in contests %}
+                        <a href="{% url 'contests:detail' contest.slug %}" class="contest-post-item">
+                            <div class="contest-post-image">
+                                {% with first_image=contest.images.first %}
+                                    {% if first_image %}
+                                        <img src="{{ first_image.image.url }}" alt="{{ contest.title }}" class="contest-post-thumbnail" style="filter: grayscale(20%);">
+                                    {% else %}
+                                        <div class="contest-post-no-image" style="background: #e2e8f0;">이미지 없음</div>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                            <div class="contest-post-content">
+                                <div class="contest-post-header">
+                                    <span class="d-day-badge d-day-ended">종료</span>
+                                    {% if contest.category %}
+                                        <span class="contest-post-category" style="--badge-color: {{ contest.category.color }}">{{ contest.category.name }}</span>
+                                    {% endif %}
+                                    {% if contest.is_qualifying %}
+                                        <span class="contest-post-category contest-post-category-qualifying">승급</span>
+                                    {% else %}
+                                        <span class="contest-post-category contest-post-category-non-qualifying">비승급</span>
+                                    {% endif %}
+                                </div>
+                                <h3 class="contest-post-title">{{ contest.title }}</h3>
+                                {% if contest.sponsor %}
+                                <div class="contest-post-sponsor">
+                                    <span style="color: #64748b;">스폰서:</span>
+                                    <span style="margin-left: 8px; color: #1e293b; font-weight: 500;">{{ contest.sponsor.name }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="contest-post-meta">
+                                    <div class="contest-post-info">
+                                        <span style="color: #64748b;">일정:</span>
+                                        <span style="margin-left: 8px;">{{ contest.get_period_display|default:'-' }}</span>
+                                    </div>
+                                    <div class="contest-post-info">
+                                        <span style="color: #64748b;">장소:</span>
+                                        <span style="margin-left: 8px;">{{ contest.get_location_display|default:"-"|bold_region }}</span>
+                                    </div>
+                                    <div class="contest-post-info">
+                                        <span style="color: #64748b;">종료일:</span>
+                                        <span style="margin-left: 8px;">{{ contest.schedule_end|date:"Y.m.d"|default:'-' }}</span>
+                                    </div>
+                                </div>
+                                <div class="contest-post-stats">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                    </svg>
+                                    <span>{{ contest.view_count }}</span>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="padding: 48px; text-align: center; color: #64748b;">
+                    <p>종료된 대회 정보가 없습니다.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 페이지네이션 -->
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <nav aria-label="대회 목록 페이지네이션" style="margin-top: 48px; margin-bottom: 48px;">
+            <ul style="display: flex; justify-content: center; align-items: center; gap: 8px; list-style: none; padding: 0; margin: 0;">
+                {% if page_obj.has_previous %}
+                    <li>
+                        <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="첫 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="11 17 6 12 11 7"></polyline>
+                                <polyline points="18 17 13 12 18 7"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="이전 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                        <li>
+                            <span style="display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 12px; background: var(--brand); color: white; border-radius: 6px; font-weight: 600; font-size: 14px;" aria-current="page">
+                                {{ num }}
+                            </span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li>
+                            <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                               style="display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li>
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="다음 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="마지막 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="13 17 18 12 13 7"></polyline>
+                                <polyline points="6 17 11 12 6 7"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+            <p style="text-align: center; margin-top: 16px; font-size: 14px; color: #94a3b8;">
+                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+            </p>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+    function openFilterSheet(type) {
+        const overlay = document.getElementById('filterOverlay');
+        const sheet = document.getElementById(type + 'Sheet');
+
+        if (overlay && sheet) {
+            overlay.style.display = 'block';
+            sheet.style.display = 'block';
+
+            // 약간의 지연 후 애니메이션 트리거
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                sheet.style.transform = 'translateY(0)';
+            }, 10);
+        }
+    }
+
+    function closeFilterSheet() {
+        const overlay = document.getElementById('filterOverlay');
+        const sheets = document.querySelectorAll('.filter-bottom-sheet');
+
+        if (overlay) {
+            overlay.style.opacity = '0';
+        }
+
+        sheets.forEach(sheet => {
+            sheet.style.transform = 'translateY(100%)';
+        });
+
+        setTimeout(() => {
+            if (overlay) overlay.style.display = 'none';
+            sheets.forEach(sheet => {
+                sheet.style.display = 'none';
+            });
+        }, 300);
+    }
+</script>
+{% endblock %}

@@ -733,6 +733,191 @@
         </style>
 
     <script>
+        // Editor.js JSON을 HTML로 렌더링하는 함수
+        function renderEditorJSContent() {
+            const container = document.getElementById('post-content-body');
+            if (!container) return;
+
+            // 콘텐츠 가져오기
+            let contentText = container.textContent.trim();
+
+            // JSON인지 확인 (Editor.js 형식)
+            if (!contentText.startsWith('{') || !contentText.includes('"blocks"')) {
+                // HTML 형식이면 그대로 유지 (이미 렌더링되어 있음)
+                return;
+            }
+
+            try {
+                const editorData = JSON.parse(contentText);
+                if (!editorData.blocks || !Array.isArray(editorData.blocks)) {
+                    return;
+                }
+
+                // JSON을 HTML로 변환
+                let htmlContent = '';
+
+                editorData.blocks.forEach(block => {
+                    switch (block.type) {
+                        case 'header':
+                            const level = block.data.level || 2;
+                            htmlContent += `<h${level}>${block.data.text || ''}</h${level}>`;
+                            break;
+
+                        case 'paragraph':
+                            htmlContent += `<p>${block.data.text || ''}</p>`;
+                            break;
+
+                        case 'list':
+                            const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                            const items = (block.data.items || []).map(item => `<li>${item}</li>`).join('');
+                            htmlContent += `<${tag}>${items}</${tag}>`;
+                            break;
+
+                        case 'quote':
+                            const quoteText = block.data.text || '';
+                            const caption = block.data.caption ? `<cite>${block.data.caption}</cite>` : '';
+                            htmlContent += `<blockquote>${quoteText}${caption}</blockquote>`;
+                            break;
+
+                        case 'code':
+                            htmlContent += `<pre><code>${escapeHtmlForEditor(block.data.code || '')}</code></pre>`;
+                            break;
+
+                        case 'delimiter':
+                            htmlContent += `<div style="text-align: center; margin: 32px 0; color: #94a3b8; font-size: 24px;">* * *</div>`;
+                            break;
+
+                        case 'table':
+                            if (block.data.content && Array.isArray(block.data.content)) {
+                                htmlContent += '<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">';
+                                block.data.content.forEach((row, rowIndex) => {
+                                    htmlContent += '<tr>';
+                                    row.forEach(cell => {
+                                        const tag = rowIndex === 0 && block.data.withHeadings ? 'th' : 'td';
+                                        htmlContent += `<${tag} style="border: 1px solid #e2e8f0; padding: 12px;">${cell}</${tag}>`;
+                                    });
+                                    htmlContent += '</tr>';
+                                });
+                                htmlContent += '</table>';
+                            }
+                            break;
+
+                        case 'image':
+                            // CustomImageTool 형식
+                            const imgUrl = block.data.url || block.data.file?.url || '';
+                            if (imgUrl) {
+                                const alt = block.data.alt || '';
+                                const caption = block.data.caption || '';
+                                const width = block.data.width || '100%';
+
+                                htmlContent += `<div style="margin: 24px 0;">`;
+                                htmlContent += `<img src="${imgUrl}" alt="${escapeHtmlForEditor(alt)}" style="max-width: ${width}; width: ${width}; height: auto; border-radius: 8px; display: block; margin: 0 auto;">`;
+                                if (caption) {
+                                    htmlContent += `<p style="text-align: center; color: #64748b; font-size: 14px; margin-top: 8px; font-style: italic;">${escapeHtmlForEditor(caption)}</p>`;
+                                }
+                                htmlContent += `</div>`;
+                            }
+                            break;
+
+                        case 'youtube':
+                            // YouTubeTool 형식
+                            const videoUrl = block.data.url || '';
+                            const videoWidth = block.data.width || '100%';
+
+                            if (videoUrl) {
+                                // YouTube URL에서 비디오 ID 추출
+                                let videoId = '';
+                                const patterns = [
+                                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                                    /^([a-zA-Z0-9_-]{11})$/
+                                ];
+
+                                for (let pattern of patterns) {
+                                    const match = videoUrl.match(pattern);
+                                    if (match) {
+                                        videoId = match[1];
+                                        break;
+                                    }
+                                }
+
+                                if (videoId) {
+                                    const aspectRatio = '56.25%'; // 16:9
+                                    htmlContent += `
+                                        <div style="margin: 24px auto; max-width: ${videoWidth}; width: ${videoWidth};">
+                                            <div style="position: relative; padding-bottom: ${aspectRatio}; height: 0; overflow: hidden;">
+                                                <iframe src="https://www.youtube.com/embed/${videoId}"
+                                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px;"
+                                                        frameborder="0"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowfullscreen></iframe>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            }
+                            break;
+
+                        case 'button':
+                            // ButtonTool 형식
+                            const btnText = block.data.text || '';
+                            const btnUrl = block.data.url || '';
+                            const btnStyle = block.data.style || 'primary';
+                            const btnSize = block.data.size || 'medium';
+
+                            if (btnText && btnUrl) {
+                                // 스타일별 CSS
+                                let btnStyles = '';
+                                if (btnStyle === 'primary') {
+                                    btnStyles = 'background: #31AA60; color: white; border: none;';
+                                } else if (btnStyle === 'secondary') {
+                                    btnStyles = 'background: #64748b; color: white; border: none;';
+                                } else if (btnStyle === 'outline') {
+                                    btnStyles = 'background: transparent; color: #31AA60; border: 2px solid #31AA60;';
+                                }
+
+                                // 크기별 폰트 (패딩은 고정 10px)
+                                let btnSizeStyles = 'padding: 10px;';
+                                if (btnSize === 'small') {
+                                    btnSizeStyles += ' font-size: 14px;';
+                                } else if (btnSize === 'medium') {
+                                    btnSizeStyles += ' font-size: 16px;';
+                                } else if (btnSize === 'large') {
+                                    btnSizeStyles += ' font-size: 18px;';
+                                }
+
+                                htmlContent += `
+                                    <div style="text-align: center; margin: 24px 0;">
+                                        <a href="${escapeHtmlForEditor(btnUrl)}" target="_blank" rel="noopener noreferrer"
+                                           style="display: inline-block; width: 70%; ${btnStyles} ${btnSizeStyles} border-radius: 8px; text-decoration: none; font-weight: 500; transition: all 0.2s; text-align: center;">
+                                            ${escapeHtmlForEditor(btnText)}
+                                        </a>
+                                    </div>
+                                `;
+                            }
+                            break;
+
+                        default:
+                            // 알 수 없는 블록 타입은 무시
+                            break;
+                    }
+                });
+
+                // 변환된 HTML을 컨테이너에 삽입
+                container.innerHTML = htmlContent;
+
+            } catch (e) {
+                console.error('Editor.js JSON 파싱 실패:', e);
+                // 파싱 실패 시 원본 유지
+            }
+        }
+
+        // HTML 이스케이프 함수 (Editor.js용)
+        function escapeHtmlForEditor(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // CSRF 토큰 가져오기
         function getCookie(name) {
             let cookieValue = null;
@@ -1150,6 +1335,9 @@
                 document.body.removeChild(textarea);
             });
         }
+
+        // Editor.js JSON 렌더링 실행
+        document.addEventListener('DOMContentLoaded', renderEditorJSContent);
 
         // 목차 생성 및 첫 번째 h2 위에 삽입
         document.addEventListener('DOMContentLoaded', function() {

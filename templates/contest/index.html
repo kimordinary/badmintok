@@ -6,6 +6,58 @@
 {% block extra_head %}
 <meta name="description" content="전국 배드민턴 대회 일정, 접수 정보, 대회장 위치, 참가비, 상금 정보를 한눈에 확인하세요. 승급대회부터 지역대회까지 모든 대회 정보를 제공합니다.">
 <meta property="og:description" content="전국 배드민턴 대회 일정, 접수 정보, 대회장 위치, 참가비, 상금 정보를 한눈에 확인하세요. 승급대회부터 지역대회까지 모든 대회 정보를 제공합니다.">
+
+<!-- 구조화된 데이터 (Schema.org) - SEO 최적화 -->
+{% if contests %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "전국 배드민턴 대회 목록",
+  "description": "전국 배드민턴 대회 일정, 접수 정보, 대회장 위치를 확인하세요",
+  "numberOfItems": {{ contests|length }},
+  "itemListElement": [
+    {% for contest in contests %}
+    {
+      "@type": "ListItem",
+      "position": {{ forloop.counter }},
+      "item": {
+        "@type": "SportsEvent",
+        "@id": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
+        "name": "{{ contest.title|escapejs }}",
+        "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
+        {% if contest.schedule_start %}"startDate": "{{ contest.schedule_start|date:'Y-m-d' }}",{% endif %}
+        {% if contest.schedule_end %}"endDate": "{{ contest.schedule_end|date:'Y-m-d' }}",{% endif %}
+        {% if contest.get_location_display %}"location": {
+          "@type": "Place",
+          "name": "{{ contest.get_location_display|escapejs }}"
+        },{% endif %}
+        "sport": "배드민턴",
+        {% if contest.schedule_start and contest.schedule_end %}
+        "eventStatus": "https://schema.org/{% if contest.schedule_end >= today %}EventScheduled{% else %}EventCancelled{% endif %}",
+        {% endif %}
+        "organizer": {
+          "@type": "Organization",
+          "name": "배드민톡"
+        }
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+
+<!-- 페이지네이션 SEO -->
+{% if page_obj %}
+  {% if page_obj.has_previous %}
+    <link rel="prev" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}?page={{ page_obj.previous_page_number }}">
+  {% endif %}
+  {% if page_obj.has_next %}
+    <link rel="next" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}?page={{ page_obj.next_page_number }}">
+  {% endif %}
+{% endif %}
+
 <style>
     /* 대회 리스트 + 사이드바 7:3 그리드 */
     .contest-grid {
@@ -506,6 +558,7 @@
                 <div class="contest-panels-list">
                     <div class="contest-panel-list active" id="contest-panel-list-all" role="tabpanel">
                         <div class="contest-list">
+                            <!-- DEBUG: contests count = {{ contests|length }} -->
                             {% if contests %}
                                 <div class="contest-post-list">
                                     {% for contest in contests %}
@@ -698,6 +751,92 @@
                 </div>
             </aside>
         </div>
+
+        <!-- 페이지네이션 -->
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <nav aria-label="대회 목록 페이지네이션" style="margin-top: 48px; margin-bottom: 48px;">
+            <ul style="display: flex; justify-content: center; align-items: center; gap: 8px; list-style: none; padding: 0; margin: 0;">
+                {% if page_obj.has_previous %}
+                    <li>
+                        <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="첫 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="11 17 6 12 11 7"></polyline>
+                                <polyline points="18 17 13 12 18 7"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="이전 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                        <li>
+                            <span style="display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 12px; background: var(--brand); color: white; border-radius: 6px; font-weight: 600; font-size: 14px;" aria-current="page">
+                                {{ num }}
+                            </span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li>
+                            <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                               style="display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li>
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="다음 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% for value in request.GET.getlist.qualifying %}&qualifying={{ value }}{% endfor %}{% for value in request.GET.getlist.sponsor %}&sponsor={{ value }}{% endfor %}{% for value in request.GET.getlist.region %}&region={{ value }}{% endfor %}"
+                           style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid #e2e8f0; border-radius: 6px; color: #64748b; text-decoration: none; transition: all 0.2s;"
+                           aria-label="마지막 페이지">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="13 17 18 12 13 7"></polyline>
+                                <polyline points="6 17 11 12 6 7"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+            <p style="text-align: center; margin-top: 16px; font-size: 14px; color: #94a3b8;">
+                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+            </p>
+        </nav>
+        {% endif %}
+
+        <!-- 종료된 대회 아카이브 링크 (SEO용) -->
+        <div style="margin-top: 64px; padding-top: 32px; border-top: 1px solid #e2e8f0; text-align: center;">
+            <a href="{% url 'contests:archive' %}" style="display: inline-flex; align-items: center; gap: 8px; color: #64748b; text-decoration: none; font-size: 14px; transition: color 0.2s;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+                지난 대회 기록 보기
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </a>
+        </div>
+
 </section>
 
 <style>
@@ -2804,7 +2943,8 @@
             if ([2025, 2026, 2027].includes(currentYear)) {
                 const monthContests = getMonthContests(currentYear, currentMonth);
                 renderWeeklyCalendar(currentYear, currentMonth, monthContests);
-                filterMobileContestList(currentYear, currentMonth);
+                // 페이지 로드 시에는 모든 대회 표시 (캘린더 클릭 시에만 필터 적용)
+                // filterMobileContestList(currentYear, currentMonth);
             }
     });
 

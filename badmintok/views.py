@@ -12,8 +12,6 @@ from .models import BadmintokBanner, Notice
 
 def home(request):
     """홈페이지 뷰"""
-    import re
-
     # 배드민톡 최신 게시물 5개 가져오기
     now = timezone.now()
     latest_posts = Post.objects.filter(
@@ -23,27 +21,8 @@ def home(request):
         published_at__lte=now
     ).select_related('author', 'category').prefetch_related('images').order_by('-created_at')[:5]
 
-    # 각 게시물에 발췌문과 이미지 URL 추가
-    for post in latest_posts:
-        # 발췌문 생성 (HTML 태그 제거)
-        if post.content:
-            # HTML 태그 제거
-            clean_text = re.sub(r'<[^>]+>', '', post.content)
-            # 줄바꿈 제거 및 공백 정리
-            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
-            # 80자로 제한
-            post.excerpt = clean_text[:80] + '...' if len(clean_text) > 80 else clean_text
-
-            # 본문에서 첫 번째 이미지 찾기
-            pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
-            match = re.search(pattern, post.content, re.IGNORECASE)
-            if match:
-                post.content_image_url = match.group(1)
-            else:
-                post.content_image_url = None
-        else:
-            post.excerpt = ""
-            post.content_image_url = None
+    # 게시물 리스트는 템플릿에서 JavaScript로 처리
+    # 서버 사이드 처리 불필요
 
     context = {
         'latest_posts': latest_posts,
@@ -355,6 +334,8 @@ def badmintok(request):
 
     # 고정된 공지사항 가져오기 (최신 1개)
     pinned_notice = Notice.objects.filter(is_pinned=True).order_by("-created_at").first()
+
+    # 게시물 리스트는 템플릿에서 JavaScript로 처리
 
     return render(request, "badmintok/index.html", {
         "tabs": tabs,

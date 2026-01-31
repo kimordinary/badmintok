@@ -168,13 +168,7 @@
                                                 {% endfor %}
                                             </div>
                                             <h3 class="community-post-title">{{ post.title }}</h3>
-                                            <p class="community-post-excerpt">
-                                                {% if post.content|striptags|length > 80 %}
-                                                    {{ post.content|striptags|truncatewords:15 }}
-                                                {% else %}
-                                                    {{ post.content|striptags }}
-                                                {% endif %}
-                                            </p>
+                                            <p class="community-post-excerpt">{{ post.content }}</p>
                                             <div class="community-post-meta">
                                                 <span class="community-post-author">{{ post.author.activity_name }}</span>
                                                 <span class="community-post-separator">|</span>
@@ -384,13 +378,7 @@
                                         {% endfor %}
                                     </div>
                                     <h3 class="community-post-title">{{ post.title }}</h3>
-                                    <p class="community-post-excerpt">
-                                        {% if post.content|striptags|length > 80 %}
-                                            {{ post.content|striptags|truncatewords:15 }}
-                                        {% else %}
-                                            {{ post.content|striptags }}
-                                        {% endif %}
-                                    </p>
+                                    <p class="community-post-excerpt">{{ post.content }}</p>
                                     <div class="community-post-meta">
                                         <span class="community-post-author">{{ post.author.activity_name }}</span>
                                         <span class="community-post-separator">|</span>
@@ -634,13 +622,7 @@
                                                 {% endfor %}
                                             </div>
                                             <h3 class="community-post-title">{{ post.title }}</h3>
-                                            <p class="community-post-excerpt">
-                                                {% if post.content|striptags|length > 80 %}
-                                                    {{ post.content|striptags|truncatewords:15 }}
-                                                {% else %}
-                                                    {{ post.content|striptags }}
-                                                {% endif %}
-                                            </p>
+                                            <p class="community-post-excerpt">{{ post.content }}</p>
                                             <div class="community-post-meta">
                                                 <span class="community-post-author">{{ post.author.activity_name }}</span>
                                                 <span class="community-post-separator">|</span>
@@ -847,13 +829,7 @@
                                                 {% endfor %}
                                             </div>
                                             <h3 class="community-post-title">{{ post.title }}</h3>
-                                            <p class="community-post-excerpt">
-                                                {% if post.content|striptags|length > 80 %}
-                                                    {{ post.content|striptags|truncatewords:15 }}
-                                                {% else %}
-                                                    {{ post.content|striptags }}
-                                                {% endif %}
-                                            </p>
+                                            <p class="community-post-excerpt">{{ post.content }}</p>
                                             <div class="community-post-meta">
                                                 <span class="community-post-author">{{ post.author.activity_name }}</span>
                                                 <span class="community-post-separator">|</span>
@@ -1433,6 +1409,76 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }, 150);
         });
+    });
+});
+
+// Editor.js JSON 감지 및 텍스트 추출 (excerpt용)
+document.addEventListener('DOMContentLoaded', function() {
+    const excerptElements = document.querySelectorAll('.community-post-excerpt');
+
+    excerptElements.forEach(function(excerptEl) {
+        const text = excerptEl.textContent.trim();
+
+        // JSON 형식인지 확인
+        if (text.startsWith('{') && text.includes('"blocks"')) {
+            try {
+                const data = JSON.parse(text);
+
+                if (data.blocks && Array.isArray(data.blocks)) {
+                    // 모든 블록에서 텍스트 추출
+                    let extractedText = '';
+
+                    data.blocks.forEach(function(block) {
+                        if (block.type === 'paragraph' && block.data && block.data.text) {
+                            // HTML 태그 제거
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = block.data.text;
+                            extractedText += tempDiv.textContent + ' ';
+                        } else if (block.type === 'header' && block.data && block.data.text) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = block.data.text;
+                            extractedText += tempDiv.textContent + ' ';
+                        } else if (block.type === 'h1' && block.data && block.data.text) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = block.data.text;
+                            extractedText += tempDiv.textContent + ' ';
+                        } else if (block.type === 'h2' && block.data && block.data.text) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = block.data.text;
+                            extractedText += tempDiv.textContent + ' ';
+                        } else if (block.type === 'h3' && block.data && block.data.text) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = block.data.text;
+                            extractedText += tempDiv.textContent + ' ';
+                        } else if (block.type === 'list' && block.data && block.data.items) {
+                            block.data.items.forEach(function(item) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = item;
+                                extractedText += tempDiv.textContent + ' ';
+                            });
+                        } else if (block.type === 'quote' && block.data && block.data.text) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = block.data.text;
+                            extractedText += tempDiv.textContent + ' ';
+                        } else if (block.type === 'button' && block.data && block.data.text) {
+                            extractedText += block.data.text + ' ';
+                        }
+                    });
+
+                    // 추출된 텍스트를 80자로 제한
+                    extractedText = extractedText.trim();
+                    if (extractedText.length > 80) {
+                        extractedText = extractedText.substring(0, 80) + '...';
+                    }
+
+                    // excerpt 요소 업데이트
+                    excerptEl.textContent = extractedText || '내용 없음';
+                }
+            } catch (e) {
+                // JSON 파싱 실패 시 원본 텍스트 유지
+                console.log('JSON parsing failed for excerpt:', e);
+            }
+        }
     });
 });
 </script>

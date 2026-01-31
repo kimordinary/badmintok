@@ -26,6 +26,7 @@
     const PLUGIN_MAPPINGS = {
         Header: ['Header'],
         List: ['List'],
+        Table: ['Table'],
         Image: ['Image'],
         Quote: ['Quote'],
         Code: ['CodeTool'],
@@ -143,6 +144,17 @@
                 inlineToolbar: true,
                 config: {
                     defaultStyle: 'unordered'
+                }
+            };
+        }
+
+        if (plugins.Table) {
+            tools.table = {
+                class: plugins.Table,
+                inlineToolbar: true,
+                config: {
+                    rows: 2,
+                    cols: 3
                 }
             };
         }

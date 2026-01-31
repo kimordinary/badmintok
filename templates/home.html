@@ -136,9 +136,7 @@
                         <span class="community-post-category community-post-category-primary">{{ post.get_category_display }}</span>
                     </div>
                     <h3 class="community-post-title">{{ post.title }}</h3>
-                    <p class="community-post-excerpt">
-                        {{ post.excerpt }}
-                    </p>
+                    <p class="community-post-excerpt">{{ post.content }}</p>
                     <div class="community-post-meta">
                         <span class="community-post-author">{{ post.author.activity_name }}</span>
                         <span class="community-post-separator">|</span>
@@ -1344,4 +1342,71 @@
         }
     }
 </style>
+
+<script>
+    // Editor.js JSON 형식의 content를 파싱하여 excerpt로 변환
+    document.addEventListener('DOMContentLoaded', function() {
+        const excerptElements = document.querySelectorAll('.community-post-excerpt');
+
+        excerptElements.forEach(function(excerptEl) {
+            const text = excerptEl.textContent.trim();
+
+            // Editor.js JSON 형식인지 확인 ('{' 로 시작하고 "blocks"를 포함)
+            if (text.startsWith('{') && text.includes('"blocks"')) {
+                try {
+                    const data = JSON.parse(text);
+
+                    if (data.blocks && Array.isArray(data.blocks)) {
+                        let extractedText = '';
+
+                        // 각 블록에서 텍스트 추출
+                        data.blocks.forEach(function(block) {
+                            if (block.type === 'paragraph' && block.data && block.data.text) {
+                                // HTML 태그 제거
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = block.data.text;
+                                extractedText += tempDiv.textContent + ' ';
+                            } else if (block.type === 'header' && block.data && block.data.text) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = block.data.text;
+                                extractedText += tempDiv.textContent + ' ';
+                            } else if (['h1', 'h2', 'h3'].includes(block.type) && block.data && block.data.text) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = block.data.text;
+                                extractedText += tempDiv.textContent + ' ';
+                            } else if (block.type === 'list' && block.data && block.data.items) {
+                                block.data.items.forEach(function(item) {
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = item;
+                                    extractedText += tempDiv.textContent + ' ';
+                                });
+                            } else if (block.type === 'quote' && block.data && block.data.text) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = block.data.text;
+                                extractedText += tempDiv.textContent + ' ';
+                            } else if (block.type === 'button' && block.data && block.data.text) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = block.data.text;
+                                extractedText += tempDiv.textContent + ' ';
+                            }
+                        });
+
+                        // 공백 정리 및 길이 제한
+                        extractedText = extractedText.trim();
+                        if (extractedText.length > 80) {
+                            extractedText = extractedText.substring(0, 80) + '...';
+                        }
+
+                        // 텍스트가 있으면 적용, 없으면 기본 메시지
+                        excerptEl.textContent = extractedText || '내용 없음';
+                    }
+                } catch (e) {
+                    // JSON 파싱 실패 시 무시 (일반 텍스트일 경우)
+                    console.log('JSON parsing failed for excerpt:', e);
+                }
+            }
+            // 일반 텍스트인 경우 그대로 유지
+        });
+    });
+</script>
 {% endblock %}

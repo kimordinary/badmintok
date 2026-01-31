@@ -305,6 +305,19 @@ class PostDetailView(DetailView):
     slug_field = "slug"
     slug_url_kwarg = "slug"
 
+    def get(self, request, *args, **kwargs):
+        """배드민톡 게시물은 배드민톡 URL로 리다이렉트"""
+        try:
+            self.object = self.get_object()
+            # 배드민톡 게시물인 경우 배드민톡 URL로 리다이렉트
+            if self.object.source == Post.Source.BADMINTOK:
+                from django.shortcuts import redirect
+                return redirect('badmintok_detail', slug=self.object.slug)
+            context = self.get_context_data(object=self.object)
+            return self.render_to_response(context)
+        except:
+            return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         from django.utils import timezone
 
@@ -322,7 +335,7 @@ class PostDetailView(DetailView):
         # queryset이 없으면 get_queryset()에서 가져옴
         if queryset is None:
             queryset = self.get_queryset()
-        
+
         # slug로 조회 (중복된 경우 가장 최신 것 선택)
         slug = self.kwargs.get(self.slug_url_kwarg)
         if slug is None:
@@ -330,10 +343,10 @@ class PostDetailView(DetailView):
                 "Generic detail view %s must be called with either an object "
                 "pk or a slug." % self.__class__.__name__
             )
-        
+
         # slug로 필터링하고, 중복된 경우 최신 것 선택
         post = queryset.filter(slug=slug).order_by('-created_at').first()
-        
+
         if post is None:
             from django.http import Http404
             raise Http404("No %s found matching the query" % (queryset.model._meta.verbose_name))

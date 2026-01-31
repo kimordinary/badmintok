@@ -52,9 +52,14 @@ class ContestListView(ListView):
     model = Contest
     template_name = "contest/index.html"
     context_object_name = "contests"
+    paginate_by = 20  # 페이지당 20개 표시
 
     def get_queryset(self):
+        from django.utils import timezone
+        from django.db.models import Q, Case, When, IntegerField
+
         queryset = Contest.objects.all()
+        today = timezone.now().date()
 
         # category 필터링
         category_param = self.request.GET.get('category')
@@ -68,7 +73,6 @@ class ContestListView(ListView):
         # 검색 필터링
         search = self.request.GET.get('search')
         if search:
-            from django.db.models import Q
             queryset = queryset.filter(
                 Q(title__icontains=search) | Q(region_detail__icontains=search)
             )
@@ -102,7 +106,7 @@ class ContestListView(ListView):
                     except Sponsor.DoesNotExist:
                         logger.warning(f"Sponsor with name '{sponsor_value}' not found")
                         continue
-            
+
             if sponsor_ids:
                 queryset = queryset.filter(sponsor_id__in=sponsor_ids)
 
@@ -111,7 +115,7 @@ class ContestListView(ListView):
         if region_list:
             queryset = queryset.filter(region__in=region_list)
 
-        # 아무 필터도 선택되지 않은 경우, 종료되지 않은 대회만 표시
+        # 아무 필터도 선택되지 않은 경우, 종료되지 않은 대회만 표시 (SEO를 위해 날짜 제한 제거)
         has_any_filter = (
             category_param or
             search or
@@ -121,13 +125,20 @@ class ContestListView(ListView):
         )
 
         if not has_any_filter:
-            from django.utils import timezone
-            from django.db.models import Q
-            today = timezone.now().date()
-            # schedule_end가 None이거나 오늘 이후인 대회만 표시
+            # schedule_end가 None이거나 오늘 이후인 대회만 표시 (진행 예정 대회)
             queryset = queryset.filter(
                 Q(schedule_end__isnull=True) | Q(schedule_end__gte=today)
             )
+
+        # 정렬: 등록 마감 임박순 → 대회 시작일 빠른 순
+        # registration_end가 null이 아니고 마감되지 않은 대회를 우선 표시
+        queryset = queryset.annotate(
+            registration_priority=Case(
+                When(registration_end__isnull=False, registration_end__gte=today, then=0),
+                default=1,
+                output_field=IntegerField()
+            )
+        ).order_by('registration_priority', 'registration_end', 'schedule_start')
 
         # select_related로 category를 미리 로드 (템플릿 필터링을 위해 필수)
         # prefetch_related로 이미지들을 미리 로드 (N+1 쿼리 방지)
@@ -288,6 +299,110 @@ class ContestListView(ListView):
             closing_soon_contests = Contest.objects.none()
 
         context["closing_soon_contests"] = closing_soon_contests
+
+        # 최근 종료된 대회 (SEO를 위해 최대 10개)
+        try:
+            recently_ended_contests = (
+                Contest.objects.filter(
+                    schedule_end__isnull=False,
+                    schedule_end__lt=today,
+                )
+                .prefetch_related("images")
+                .select_related('category', 'sponsor')
+                .order_by("-schedule_end")[:10]
+            )
+        except Exception as e:
+            logger.error(f"Error fetching recently_ended_contests: {e}")
+            recently_ended_contests = Contest.objects.none()
+
+        context["recently_ended_contests"] = recently_ended_contests
+
+        return context
+
+
+class ContestArchiveView(ListView):
+    """종료된 대회 아카이브 페이지"""
+    model = Contest
+    template_name = "contest/archive.html"
+    context_object_name = "contests"
+    paginate_by = 20
+
+    def get_queryset(self):
+        from django.utils import timezone
+        from django.db.models import Q
+
+        queryset = Contest.objects.all()
+        today = timezone.now().date()
+
+        # 종료된 대회만 표시 (schedule_end가 오늘보다 이전)
+        queryset = queryset.filter(
+            schedule_end__isnull=False,
+            schedule_end__lt=today
+        )
+
+        # 검색 필터링
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) | Q(region_detail__icontains=search)
+            )
+
+        # 승급/비승급 필터링
+        qualifying_list = self.request.GET.getlist('qualifying')
+        if qualifying_list:
+            if len(qualifying_list) == 1:
+                if 'true' in qualifying_list:
+                    queryset = queryset.filter(is_qualifying=True)
+                elif 'false' in qualifying_list:
+                    queryset = queryset.filter(is_qualifying=False)
+
+        # 스폰서 필터링
+        sponsor_list = self.request.GET.getlist('sponsor')
+        if sponsor_list:
+            sponsor_ids = []
+            for sponsor_value in sponsor_list:
+                try:
+                    sponsor_id = int(sponsor_value)
+                    sponsor_ids.append(sponsor_id)
+                except (ValueError, TypeError):
+                    try:
+                        from .models import Sponsor
+                        sponsor_obj = Sponsor.objects.get(name=sponsor_value)
+                        sponsor_ids.append(sponsor_obj.id)
+                    except Sponsor.DoesNotExist:
+                        logger.warning(f"Sponsor with name '{sponsor_value}' not found")
+                        continue
+
+            if sponsor_ids:
+                queryset = queryset.filter(sponsor_id__in=sponsor_ids)
+
+        # 지역 필터링
+        region_list = self.request.GET.getlist('region')
+        if region_list:
+            queryset = queryset.filter(region__in=region_list)
+
+        # 최신 종료 순으로 정렬
+        queryset = queryset.order_by('-schedule_end', '-schedule_start')
+
+        return queryset.select_related('category', 'sponsor').prefetch_related('images')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # 스폰서 목록
+        sponsors = Sponsor.objects.all().order_by('name')
+        context["sponsors"] = sponsors
+
+        # 지역 목록
+        context["regions"] = Contest.Region.choices
+
+        # 카테고리 목록
+        try:
+            categories = ContestCategory.objects.all().order_by('id')
+        except Exception as e:
+            logger.error(f"Error ordering categories: {e}")
+            categories = ContestCategory.objects.all()
+        context["categories"] = categories
 
         return context
 

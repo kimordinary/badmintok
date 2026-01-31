@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if is_update %}글 수정{% else %}글쓰기{% endif %} - 배드민톡</title>
 
-    <!-- Quill Editor -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <!-- Editor.js -->
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 
     <style>
@@ -172,12 +171,12 @@
             color: #cbd5e1;
         }
 
-        /* Quill 에디터 커스터마이징 */
-        .wp-quill-wrapper {
+        /* Editor.js 커스터마이징 */
+        .wp-editorjs-wrapper {
             border: none;
         }
 
-        #editor {
+        #editorjs-content {
             min-height: 500px;
             background: #fff;
             border: none;
@@ -185,108 +184,82 @@
             line-height: 1.8;
         }
 
-        .ql-container {
+        /* Editor.js 기본 스타일 */
+        .codex-editor {
             border: none !important;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .codex-editor__redactor {
+            padding-bottom: 100px !important;
+        }
+
+        .ce-block__content {
+            max-width: 100%;
+            margin: 0;
+        }
+
+        .ce-paragraph {
             font-size: 16px;
-        }
-
-        .ql-editor {
-            min-height: 500px;
-            padding: 0;
+            line-height: 1.8;
             color: #334155;
-        }
-
-        .ql-editor::before {
-            color: #cbd5e1;
-            font-style: normal;
-            left: 0;
-        }
-
-        .ql-editor p {
             margin-bottom: 16px;
         }
 
-        .ql-editor h1 {
-            font-size: 32px;
+        .ce-header {
             font-weight: 700;
+            color: #1e293b;
             margin: 32px 0 16px;
-            color: #1e293b;
         }
 
-        .ql-editor h2 {
-            font-size: 28px;
-            font-weight: 700;
-            margin: 28px 0 14px;
-            color: #1e293b;
-        }
-
-        .ql-editor h3 {
-            font-size: 24px;
-            font-weight: 600;
-            margin: 24px 0 12px;
-            color: #1e293b;
+        .ce-header[contentEditable=true][data-placeholder]:empty::before {
+            color: #cbd5e1;
         }
 
         /* 툴바 스타일 */
-        .ql-toolbar {
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 8px;
-            background: #f8fafc;
-            padding: 12px;
-            margin-bottom: 24px;
-            position: sticky;
-            top: 80px;
-            z-index: 100;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        .ce-toolbar__content {
+            max-width: 100%;
         }
 
-        .ql-toolbar button {
-            width: 32px !important;
-            height: 32px !important;
-            margin: 0 2px;
-            border-radius: 4px;
+        .ce-toolbar__plus,
+        .ce-toolbar__settings-btn {
+            color: #64748b;
         }
 
-        .ql-toolbar button:hover {
-            background: #e2e8f0 !important;
+        .ce-toolbar__plus:hover,
+        .ce-toolbar__settings-btn:hover {
+            background: #f1f5f9;
+            color: #334155;
         }
 
-        .ql-toolbar button.ql-active {
-            background: #dbeafe !important;
-            color: #2563eb !important;
+        .ce-inline-toolbar {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .ql-toolbar .ql-stroke {
-            stroke: #475569;
+        .ce-inline-tool {
+            color: #64748b;
         }
 
-        .ql-toolbar .ql-fill {
-            fill: #475569;
+        .ce-inline-tool:hover {
+            background: #f1f5f9;
+            color: #334155;
         }
 
-        .ql-toolbar button:hover .ql-stroke {
-            stroke: #1e293b;
+        .ce-conversion-toolbar {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .ql-toolbar button:hover .ql-fill {
-            fill: #1e293b;
+        .ce-popover {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        /* 버튼 툴바 아이콘 커스텀 */
-        .ql-toolbar .ql-button {
-            position: relative;
-        }
-
-        .ql-toolbar .ql-button:before {
-            content: '';
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='8' width='18' height='8' rx='2'/%3E%3Cpath d='M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E");
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
+        .ce-popover__item:hover {
+            background: #f1f5f9;
         }
 
         /* 사이드바 스타일 */
@@ -1327,9 +1300,9 @@
                         rows="1"
                         maxlength="200">{% if post %}{{ post.title }}{% endif %}</textarea>
 
-                    <!-- Quill 에디터 -->
-                    <div class="wp-quill-wrapper">
-                        <div id="editor"></div>
+                    <!-- Editor.js -->
+                    <div class="wp-editorjs-wrapper">
+                        <div id="editorjs-content"></div>
                         <textarea name="content" id="hidden_content" style="display: none;">{% if post %}{{ post.content }}{% endif %}</textarea>
                     </div>
 
@@ -1880,469 +1853,910 @@
         </div>
     </div>
 
-    <!-- Quill Editor -->
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    <script>
-        // ========== Quill 커스텀 Button Blot 정의 ==========
-        const BlockEmbed = Quill.import('blots/block/embed');
-        
-        class ButtonBlot extends BlockEmbed {
-            static create(value) {
-                const node = super.create();
-                node.setAttribute('contenteditable', 'false');
-                
-                // 버튼 요소 생성
-                const button = document.createElement('a');
-                button.href = value.url || '#';
-                button.className = 'ql-button ' + (value.style || 'ql-button-primary');
-                
-                // 링크 스타일 무시 (항상 흰색 텍스트)
-                button.style.color = 'white';
-                button.style.textDecoration = 'none';
-                button.style.cssText = (value.customStyle || '') + 'color: white !important; text-decoration: none !important;';
-                
-                // 버튼 내용 구조 생성 (텍스트 + 아이콘)
-                const buttonText = document.createElement('span');
-                buttonText.className = 'ql-button-text';
-                buttonText.textContent = value.text || '버튼';
-                
-                // SVG 화살표 아이콘 생성
-                const buttonIcon = document.createElement('span');
-                buttonIcon.className = 'ql-button-icon';
-                buttonIcon.innerHTML = '<svg aria-hidden="true" role="img" height="1em" width="1em" viewBox="0 0 256 512" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"></path></svg>';
-                
-                // 버튼에 텍스트와 아이콘 추가
-                button.appendChild(buttonText);
-                button.appendChild(buttonIcon);
-                
-                // 새 탭에서 열기 설정
-                if (value.openInNewTab) {
-                    button.target = '_blank';
-                    button.rel = 'noopener noreferrer';
-                }
-                
-                // 버튼 편집을 위한 wrapper
-                const wrapper = document.createElement('div');
-                wrapper.className = 'ql-button-wrapper';
-                wrapper.appendChild(button);
-                
-                // 편집 버튼 (data 속성으로 식별)
-                const editBtn = document.createElement('button');
-                editBtn.className = 'ql-button-edit';
-                editBtn.setAttribute('data-button-edit', 'true');
-                editBtn.innerHTML = '✎';
-                editBtn.title = '버튼 편집';
-                wrapper.appendChild(editBtn);
-                
-                // 삭제 버튼 (data 속성으로 식별)
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'ql-button-delete';
-                deleteBtn.setAttribute('data-button-delete', 'true');
-                deleteBtn.innerHTML = '×';
-                deleteBtn.title = '버튼 삭제';
-                wrapper.appendChild(deleteBtn);
-                
-                node.appendChild(wrapper);
-                node.setAttribute('data-button-data', JSON.stringify(value));
-                
-                return node;
-            }
-            
-            static value(node) {
-                try {
-                    return JSON.parse(node.getAttribute('data-button-data') || '{}');
-                } catch (e) {
-                    return {};
-                }
-            }
-            
-            static blotName = 'button';
-            static tagName = 'div';
-            static className = 'ql-button-container';
-        }
-        
-        Quill.register(ButtonBlot);
-    </script>
-    <script>
-        // 이미지 업로드 핸들러 (Quill 초기화 전에 정의)
-        async function imageHandler() {
-            const input = document.createElement('input');
-            input.setAttribute('type', 'file');
-            input.setAttribute('accept', 'image/*');
-            input.click();
 
-            input.onchange = async function() {
-                const file = input.files[0];
+    <!-- Editor.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest/dist/bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest/dist/bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest/dist/bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest/dist/bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest/dist/bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest/dist/bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest/dist/table.js"></script>
+
+    <script>
+        // 플러그인이 로드될 때까지 대기
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                // EditorJS와 플러그인이 로드되었는지 확인
+                if (typeof EditorJS === 'undefined') {
+                    console.error('EditorJS가 로드되지 않았습니다.');
+                    alert('에디터를 로드하는 중 오류가 발생했습니다. 페이지를 새로고침 해주세요.');
+                    return;
+                }
+
+                console.log('EditorJS 로드됨');
+                console.log('사용 가능한 플러그인:', {
+                    Header: typeof Header !== 'undefined',
+                    List: typeof List !== 'undefined',
+                    Quote: typeof Quote !== 'undefined',
+                    CodeTool: typeof CodeTool !== 'undefined',
+                    Delimiter: typeof Delimiter !== 'undefined',
+                    Table: typeof Table !== 'undefined'
+                });
+
+                initializeEditor();
+            }, 2000);
+        });
+
+        // CSRF 토큰 가져오기 함수 (전역)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // 커스텀 이미지 도구
+        class CustomImageTool {
+            constructor({data, api}) {
+                this.data = data || {};
+                this.api = api;
+                this.wrapper = null;
+                this.settingsOpened = false;
+            }
+
+            static get toolbox() {
+                return {
+                    title: 'Image',
+                    icon: '<svg width="17" height="15" viewBox="0 0 336 276" xmlns="http://www.w3.org/2000/svg"><path d="M291 150V79c0-19-15-34-34-34H79c-19 0-34 15-34 34v42l67-44 81 72 56-29 42 30zm0 52l-43-30-56 30-81-67-66 39v23c0 19 15 34 34 34h178c17 0 31-13 34-29zM79 0h178c44 0 79 35 79 79v118c0 44-35 79-79 79H79c-44 0-79-35-79-79V79C0 35 35 0 79 0z"/></svg>'
+                };
+            }
+
+            render() {
+                this.wrapper = document.createElement('div');
+                this.wrapper.classList.add('custom-image-tool');
+
+                if (this.data && this.data.url) {
+                    this._renderImage();
+                } else {
+                    this._renderFileButton();
+                }
+
+                return this.wrapper;
+            }
+
+            _renderFileButton() {
+                this.wrapper.innerHTML = `
+                    <div style="padding: 40px; border: 2px dashed #e2e8f0; border-radius: 8px; text-align: center; cursor: pointer;" class="image-upload-area">
+                        <svg width="48" height="48" viewBox="0 0 336 276" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto 16px; display: block; fill: #cbd5e0;"><path d="M291 150V79c0-19-15-34-34-34H79c-19 0-34 15-34 34v42l67-44 81 72 56-29 42 30zm0 52l-43-30-56 30-81-67-66 39v23c0 19 15 34 34 34h178c17 0 31-13 34-29zM79 0h178c44 0 79 35 79 79v118c0 44-35 79-79 79H79c-44 0-79-35-79-79V79C0 35 35 0 79 0z"/></svg>
+                        <p style="margin: 0; color: #4a5568; font-size: 14px;">이미지를 선택하거나 드래그하세요</p>
+                        <input type="file" accept="image/*" style="display: none;" class="image-file-input">
+                    </div>
+                `;
+
+                const area = this.wrapper.querySelector('.image-upload-area');
+                const input = this.wrapper.querySelector('.image-file-input');
+
+                area.addEventListener('click', () => input.click());
+                input.addEventListener('change', (e) => this._handleFile(e.target.files[0]));
+            }
+
+            async _handleFile(file) {
                 if (!file) return;
 
-                await uploadImage(file);
-            };
-        }
+                this.wrapper.innerHTML = '<div style="text-align: center; padding: 40px;">업로드 중...</div>';
 
-        // 이미지 업로드 함수
-        async function uploadImage(file) {
-            // 파일 크기 제한 (10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                alert('이미지 크기는 10MB 이하여야 합니다.');
-                return;
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('{% url "community:badmintok_image_upload" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success && result.url) {
+                        this.data = {
+                            url: result.url,
+                            alt: '',
+                            caption: '',
+                            width: '100%'
+                        };
+                        this._renderImage();
+                    } else {
+                        throw new Error(result.error || '이미지 업로드 실패');
+                    }
+                } catch (error) {
+                    console.error('이미지 업로드 오류:', error);
+                    alert('이미지 업로드 중 오류가 발생했습니다.');
+                    this._renderFileButton();
+                }
             }
 
-            // FormData 생성
-            const formData = new FormData();
-            formData.append('image', file);
+            _renderImage() {
+                const { url, alt, caption, width } = this.data;
 
-            // CSRF 토큰 추가
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                this.wrapper.innerHTML = `
+                    <div class="image-container">
+                        <div style="max-width: ${width || '100%'}; margin: 0 auto;">
+                            <img src="${url}" alt="${alt || ''}" style="width: 100%; border-radius: 8px; display: block;">
+                            ${caption ? `<p style="margin: 8px 0 0 0; font-size: 14px; color: #718096; text-align: center;">${caption}</p>` : ''}
+                        </div>
+                        <button type="button" class="image-settings-button" style="margin-top: 12px; padding: 8px 16px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; font-size: 13px; width: 100%;">
+                            설정
+                        </button>
+                        <div class="image-settings-panel" style="display: none; margin-top: 12px; padding: 16px; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #4a5568;">대체 텍스트 (Alt):</label>
+                                <input type="text" class="image-alt-input" value="${alt || ''}" placeholder="이미지 설명" style="width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px;">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #4a5568;">제목/캡션:</label>
+                                <input type="text" class="image-caption-input" value="${caption || ''}" placeholder="이미지 제목" style="width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px;">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #4a5568;">크기:</label>
+                                <select class="image-width-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px;">
+                                    <option value="100%" ${width === '100%' ? 'selected' : ''}>전체 너비 (100%)</option>
+                                    <option value="75%" ${width === '75%' ? 'selected' : ''}>75%</option>
+                                    <option value="50%" ${width === '50%' ? 'selected' : ''}>50%</option>
+                                    <option value="600px" ${width === '600px' ? 'selected' : ''}>고정 크기 (600px)</option>
+                                </select>
+                            </div>
+                            <button type="button" class="image-apply-button" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; width: 100%;">
+                                적용
+                            </button>
+                        </div>
+                    </div>
+                `;
 
-            // 로딩 상태 표시
-            updateSaveStatus('saving', '이미지 업로드 중...');
+                const settingsButton = this.wrapper.querySelector('.image-settings-button');
+                const settingsPanel = this.wrapper.querySelector('.image-settings-panel');
+                const applyButton = this.wrapper.querySelector('.image-apply-button');
 
-            try {
-                // 서버에 이미지 업로드
-                const response = await fetch('{% url "community:badmintok_image_upload" %}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: formData
+                settingsButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.settingsOpened = !this.settingsOpened;
+                    settingsPanel.style.display = this.settingsOpened ? 'block' : 'none';
                 });
 
-                const data = await response.json();
+                applyButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.data.alt = this.wrapper.querySelector('.image-alt-input').value;
+                    this.data.caption = this.wrapper.querySelector('.image-caption-input').value;
+                    this.data.width = this.wrapper.querySelector('.image-width-select').value;
+                    this.settingsOpened = false;
+                    this._renderImage();
+                });
+            }
 
-                if (data.success && data.url) {
-                    // 이미지 업로드 성공 - Alt 텍스트 모달 표시
-                    showAltModal(data.url);
-                    updateSaveStatus('saved', '이미지 업로드 완료');
+            save() {
+                return this.data;
+            }
+        }
+
+        // 커스텀 YouTube 임베드 도구
+        class YouTubeTool {
+            constructor({data}) {
+                this.data = data || {};
+                this.wrapper = null;
+            }
+
+            static get toolbox() {
+                return {
+                    title: 'YouTube',
+                    icon: '<svg width="17" height="15" viewBox="0 0 17 15" xmlns="http://www.w3.org/2000/svg"><path d="M16.6 3.7s-.2-1.1-.6-1.6c-.6-.6-1.3-.6-1.6-.7C11.8 1 8.5 1 8.5 1h0S5.2 1 2.6 1.4c-.3 0-1 0-1.6.7-.5.5-.6 1.6-.6 1.6S0 5 0 6.3v1.2C0 9 0 10.3.4 10.3s.2-1.1.6-1.6c.6-.6 1.3-.6 1.6-.7 2.6-.3 5.9-.4 5.9-.4s3.3 0 5.9.4c.3 0 1 0 1.6.7.5.5.6 1.6.6 1.6s.4 1.3.4 2.6v1.2c0 1.3-.4 2.6-.4 2.6s-.2 1.1-.6 1.6c-.6.6-1.3.6-1.6.7-2.6.3-5.9.4-5.9.4s-3.3 0-5.9-.4c-.3 0-1 0-1.6-.7-.5-.5-.6-1.6-.6-1.6S0 10 0 8.7V7.5c0-1.3.4-2.6.4-2.6z"/><path fill="#fff" d="M6.8 10.2l4.5-2.5-4.5-2.5z"/></svg>'
+                };
+            }
+
+            render() {
+                this.wrapper = document.createElement('div');
+                this.wrapper.classList.add('youtube-tool');
+
+                if (this.data && this.data.url) {
+                    this.wrapper.innerHTML = this._createIframe(this.data.url, this.data.width || '100%');
                 } else {
-                    alert(data.error || '이미지 업로드에 실패했습니다.');
-                    updateSaveStatus('saved', '저장됨');
+                    this._renderInput();
                 }
-            } catch (error) {
-                console.error('이미지 업로드 오류:', error);
-                alert('이미지 업로드 중 오류가 발생했습니다.');
-                updateSaveStatus('saved', '저장됨');
+
+                return this.wrapper;
+            }
+
+            _renderInput() {
+                this.wrapper.innerHTML = `
+                    <div style="padding: 20px; border: 2px dashed #e2e8f0; border-radius: 8px;">
+                        <input
+                            type="text"
+                            class="youtube-url-input"
+                            placeholder="YouTube URL을 입력하세요 (예: https://www.youtube.com/watch?v=...)"
+                            style="width: 100%; padding: 12px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px; margin-bottom: 10px;"
+                        />
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 14px; color: #4a5568;">크기:</label>
+                            <select class="youtube-width-select" style="padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px;">
+                                <option value="100%">전체 너비 (100%)</option>
+                                <option value="75%">75%</option>
+                                <option value="50%">50%</option>
+                                <option value="600px">고정 크기 (600px)</option>
+                            </select>
+                        </div>
+                        <button
+                            type="button"
+                            class="youtube-add-button"
+                            style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; width: 100%;"
+                        >
+                            추가
+                        </button>
+                    </div>
+                `;
+
+                // 버튼 이벤트 리스너 추가
+                const button = this.wrapper.querySelector('.youtube-add-button');
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._handleAdd();
+                });
+            }
+
+            _handleAdd() {
+                const input = this.wrapper.querySelector('.youtube-url-input');
+                const widthSelect = this.wrapper.querySelector('.youtube-width-select');
+                const url = input.value.trim();
+                const width = widthSelect.value;
+
+                if (url && this._extractVideoId(url)) {
+                    this.data = { url, width };
+                    this.wrapper.innerHTML = this._createIframe(url, width);
+                } else {
+                    alert('유효한 YouTube URL을 입력해주세요.');
+                }
+            }
+
+            _createIframe(url, width = '100%') {
+                const videoId = this._extractVideoId(url);
+                if (!videoId) {
+                    return '<div style="padding: 20px; color: red;">유효하지 않은 YouTube URL입니다.</div>';
+                }
+
+                return `
+                    <div style="max-width: ${width}; margin: 0 auto;">
+                        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px;">
+                            <iframe
+                                src="https://www.youtube.com/embed/${videoId}"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                            ></iframe>
+                        </div>
+                    </div>
+                `;
+            }
+
+            _extractVideoId(url) {
+                const patterns = [
+                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                    /^([a-zA-Z0-9_-]{11})$/
+                ];
+
+                for (let pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match && match[1]) {
+                        return match[1];
+                    }
+                }
+                return null;
+            }
+
+            save() {
+                return this.data;
             }
         }
 
-        // Quill Editor 초기화
-        const quill = new Quill('#editor', {
-            theme: 'snow',
-            modules: {
-                toolbar: {
-                    container: [
-                        [{ 'header': [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline', 'strike'],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'align': [] }],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['blockquote', 'code-block'],
-                        ['link', 'image', 'video'],
-                        ['button'],
-                        ['clean']
-                    ],
-                    handlers: {
-                        'image': imageHandler,
-                        'button': function() {
-                            showButtonModal({}, function(buttonData) {
-                                const range = quill.getSelection(true);
-                                quill.insertEmbed(range.index, 'button', buttonData, 'user');
-                                quill.setSelection(range.index + 1, 'user');
-                            });
-                        }
-                    }
-                }
-            },
-            placeholder: '이야기를 시작하세요...',
-        });
+        // 커스텀 버튼 도구
+        class ButtonTool {
+            constructor({data}) {
+                this.data = data || {
+                    text: '',
+                    url: '',
+                    style: 'primary',
+                    size: 'medium'
+                };
+                this.wrapper = null;
+            }
 
-        // 기존 내용이 있으면 에디터에 로드
-        const hiddenContent = document.getElementById('hidden_content');
-        if (hiddenContent && hiddenContent.value) {
-            quill.root.innerHTML = hiddenContent.value;
+            static get toolbox() {
+                return {
+                    title: '버튼',
+                    icon: '<svg width="17" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="8" width="18" height="8" rx="2" stroke="currentColor" stroke-width="2"/></svg>'
+                };
+            }
+
+            render() {
+                this.wrapper = document.createElement('div');
+                this.wrapper.classList.add('button-tool');
+
+                if (this.data && this.data.text && this.data.url) {
+                    this._renderPreview();
+                } else {
+                    this._renderInput();
+                }
+
+                return this.wrapper;
+            }
+
+            _renderInput() {
+                this.wrapper.innerHTML = `
+                    <div style="padding: 20px; border: 2px dashed #e2e8f0; border-radius: 8px; background: #f8fafc;">
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 14px; color: #4a5568; font-weight: 500;">버튼 텍스트:</label>
+                            <input
+                                type="text"
+                                class="button-text-input"
+                                placeholder="버튼에 표시될 텍스트를 입력하세요"
+                                value="${this.data.text || ''}"
+                                style="width: 100%; padding: 12px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px;"
+                            />
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 14px; color: #4a5568; font-weight: 500;">링크 URL:</label>
+                            <input
+                                type="text"
+                                class="button-url-input"
+                                placeholder="https://example.com"
+                                value="${this.data.url || ''}"
+                                style="width: 100%; padding: 12px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px;"
+                            />
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 14px; color: #4a5568; font-weight: 500;">스타일:</label>
+                                <select class="button-style-select" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px;">
+                                    <option value="primary" ${this.data.style === 'primary' ? 'selected' : ''}>Primary (브랜드 컬러)</option>
+                                    <option value="secondary" ${this.data.style === 'secondary' ? 'selected' : ''}>Secondary (회색)</option>
+                                    <option value="outline" ${this.data.style === 'outline' ? 'selected' : ''}>Outline (테두리)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 14px; color: #4a5568; font-weight: 500;">크기:</label>
+                                <select class="button-size-select" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px;">
+                                    <option value="small" ${this.data.size === 'small' ? 'selected' : ''}>작게</option>
+                                    <option value="medium" ${this.data.size === 'medium' ? 'selected' : ''}>중간</option>
+                                    <option value="large" ${this.data.size === 'large' ? 'selected' : ''}>크게</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="button-save-btn"
+                            style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; width: 100%; font-weight: 500;"
+                        >
+                            ${this.data.text ? '업데이트' : '버튼 추가'}
+                        </button>
+                    </div>
+                `;
+
+                const saveBtn = this.wrapper.querySelector('.button-save-btn');
+                saveBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._handleSave();
+                });
+            }
+
+            _handleSave() {
+                const textInput = this.wrapper.querySelector('.button-text-input');
+                const urlInput = this.wrapper.querySelector('.button-url-input');
+                const styleSelect = this.wrapper.querySelector('.button-style-select');
+                const sizeSelect = this.wrapper.querySelector('.button-size-select');
+
+                const text = textInput.value.trim();
+                const url = urlInput.value.trim();
+                const style = styleSelect.value;
+                const size = sizeSelect.value;
+
+                if (!text) {
+                    alert('버튼 텍스트를 입력해주세요.');
+                    return;
+                }
+
+                if (!url) {
+                    alert('링크 URL을 입력해주세요.');
+                    return;
+                }
+
+                this.data = { text, url, style, size };
+                this._renderPreview();
+            }
+
+            _renderPreview() {
+                const { text, url, style, size } = this.data;
+
+                // 스타일별 CSS
+                let buttonStyles = '';
+                if (style === 'primary') {
+                    buttonStyles = 'background: #31AA60; color: white; border: none;';
+                } else if (style === 'secondary') {
+                    buttonStyles = 'background: #64748b; color: white; border: none;';
+                } else if (style === 'outline') {
+                    buttonStyles = 'background: transparent; color: #31AA60; border: 2px solid #31AA60;';
+                }
+
+                // 크기별 폰트 (패딩은 고정 10px)
+                let sizeStyles = 'padding: 10px;';
+                if (size === 'small') {
+                    sizeStyles += ' font-size: 14px;';
+                } else if (size === 'medium') {
+                    sizeStyles += ' font-size: 16px;';
+                } else if (size === 'large') {
+                    sizeStyles += ' font-size: 18px;';
+                }
+
+                this.wrapper.innerHTML = `
+                    <div style="padding: 20px; border: 2px solid #e2e8f0; border-radius: 8px; background: #f8fafc; position: relative;">
+                        <div style="text-align: center; margin-bottom: 12px;">
+                            <a href="${url}" target="_blank" style="display: inline-block; width: 70%; ${buttonStyles} ${sizeStyles} border-radius: 8px; text-decoration: none; font-weight: 500; transition: all 0.2s; text-align: center;">
+                                ${text}
+                            </a>
+                        </div>
+                        <button
+                            type="button"
+                            class="button-edit-btn"
+                            style="padding: 6px 12px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e0; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;"
+                        >
+                            편집
+                        </button>
+                    </div>
+                `;
+
+                const editBtn = this.wrapper.querySelector('.button-edit-btn');
+                editBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._renderInput();
+                });
+            }
+
+            save() {
+                return this.data;
+            }
         }
 
-        // ========== 스크롤 방지 기능 ==========
-        // 툴바 버튼 및 드롭다운 클릭 시 스크롤 방지
-        const toolbarElement = document.querySelector('.ql-toolbar');
-        
-        if (toolbarElement && quill) {
-            // 현재 스크롤 위치를 저장하는 변수
-            let savedScrollY = null;
-            
-            // 툴바의 모든 클릭 이벤트 처리 (버튼 + 드롭다운)
-            toolbarElement.addEventListener('mousedown', function(e) {
-                const button = e.target.closest('button');
-                const pickerLabel = e.target.closest('.ql-picker-label');
-                const pickerItem = e.target.closest('.ql-picker-item');
-                
-                // 버튼 또는 드롭다운 클릭 시
-                if (button || pickerLabel || pickerItem) {
-                    // 현재 스크롤 위치 저장
-                    savedScrollY = window.scrollY;
-                    
-                    // 드롭다운 옵션 선택 시
-                    if (pickerItem) {
-                        // 옵션 선택 후 스크롤 위치 복원
-                        setTimeout(() => {
-                            requestAnimationFrame(() => {
-                                if (savedScrollY !== null) {
-                                    window.scrollTo(0, savedScrollY);
-                                    savedScrollY = null;
-                                }
-                            });
-                        }, 10);
-                    }
-                    // 드롭다운 버튼 클릭 시
-                    else if (pickerLabel) {
-                        // 드롭다운이 열린 후 스크롤 위치 복원
-                        setTimeout(() => {
-                            requestAnimationFrame(() => {
-                                if (savedScrollY !== null) {
-                                    window.scrollTo(0, savedScrollY);
-                                }
-                            });
-                        }, 10);
-                    }
-                    // 일반 버튼 클릭 시
-                    else if (button) {
-                        // 버튼에 포커스가 가지 않도록 방지
-                        e.preventDefault();
-                        
-                        // 에디터로 포커스 이동 (스크롤 없이)
-                        setTimeout(() => {
-                            // 현재 선택 영역 유지 또는 에디터 끝으로 이동
-                            const selection = quill.getSelection();
-                            if (selection && selection.index >= 0) {
-                                // 기존 선택 영역 유지
-                                quill.setSelection(selection.index, selection.length, 'user');
-                            } else {
-                                // 선택 영역이 없으면 에디터 끝으로
-                                const length = quill.getLength();
-                                quill.setSelection(length - 1, 0, 'user');
-                            }
-                            
-                            // 포커스 이동 후 스크롤 위치 복원
-                            requestAnimationFrame(() => {
-                                if (savedScrollY !== null) {
-                                    window.scrollTo(0, savedScrollY);
-                                    savedScrollY = null;
-                                }
-                            });
-                        }, 0);
+        function initializeEditor() {
+        // CSRF 토큰 가져오기
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
                     }
                 }
-            }, true); // capture phase에서 먼저 처리
-            
-            // 드롭다운 옵션 클릭 이벤트 추가 처리
-            toolbarElement.addEventListener('click', function(e) {
-                const pickerItem = e.target.closest('.ql-picker-item');
-                const pickerLabel = e.target.closest('.ql-picker-label');
-                
-                if (pickerItem || pickerLabel) {
-                    const scrollY = window.scrollY;
-                    
-                    // 클릭 처리 후 스크롤 위치 복원
-                    setTimeout(() => {
-                        requestAnimationFrame(() => {
-                            window.scrollTo(0, scrollY);
-                        });
-                    }, 20);
-                }
-            }, true);
-            
-            // 포커스 이벤트 차단 (버튼 및 드롭다운)
-            toolbarElement.addEventListener('focusin', function(e) {
-                const target = e.target;
-                if (target.tagName === 'BUTTON' || 
-                    target.classList.contains('ql-picker-label') ||
-                    target.classList.contains('ql-picker-item')) {
-                    // 포커스 이벤트는 차단하지 않고, 스크롤만 방지
-                    if (savedScrollY !== null) {
-                        requestAnimationFrame(() => {
-                            window.scrollTo(0, savedScrollY);
+            }
+            return cookieValue;
+        }
+
+        // HTML을 Editor.js JSON으로 변환 (기존 Quill HTML 포스트용)
+        // 임베드 서비스 감지 함수
+        function detectEmbedService(url) {
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                return 'youtube';
+            } else if (url.includes('vimeo.com')) {
+                return 'vimeo';
+            } else if (url.includes('coub.com')) {
+                return 'coub';
+            } else if (url.includes('codepen.io')) {
+                return 'codepen';
+            } else if (url.includes('instagram.com')) {
+                return 'instagram';
+            } else if (url.includes('twitter.com') || url.includes('x.com')) {
+                return 'twitter';
+            } else if (url.includes('facebook.com')) {
+                return 'facebook';
+            }
+            return 'youtube'; // 기본값
+        }
+
+        function convertHTMLToEditorJS(html) {
+            if (!html || !html.trim()) {
+                return { blocks: [] };
+            }
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const blocks = [];
+
+            function processNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent.trim();
+                    if (text) {
+                        blocks.push({
+                            type: 'paragraph',
+                            data: { text: text }
                         });
                     }
-                }
-            }, true);
-            
-            // 드롭다운이 열릴 때 스크롤 방지
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                        const target = mutation.target;
-                        if (target.classList.contains('ql-expanded')) {
-                            // 드롭다운이 열렸을 때 스크롤 위치 복원
-                            if (savedScrollY !== null) {
-                                requestAnimationFrame(() => {
-                                    window.scrollTo(0, savedScrollY);
-                                });
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName.toLowerCase();
+
+                    if (tagName === 'h1' || tagName === 'h2' || tagName === 'h3') {
+                        blocks.push({
+                            type: 'header',
+                            data: {
+                                text: node.textContent.trim(),
+                                level: parseInt(tagName[1])
                             }
+                        });
+                    } else if (tagName === 'p') {
+                        const text = node.innerHTML.trim();
+                        if (text) {
+                            blocks.push({
+                                type: 'paragraph',
+                                data: { text: text }
+                            });
                         }
+                    } else if (tagName === 'blockquote') {
+                        blocks.push({
+                            type: 'quote',
+                            data: {
+                                text: node.textContent.trim(),
+                                caption: ''
+                            }
+                        });
+                    } else if (tagName === 'ul' || tagName === 'ol') {
+                        const items = Array.from(node.querySelectorAll('li')).map(li => li.textContent.trim());
+                        if (items.length > 0) {
+                            blocks.push({
+                                type: 'list',
+                                data: {
+                                    style: tagName === 'ul' ? 'unordered' : 'ordered',
+                                    items: items
+                                }
+                            });
+                        }
+                    } else if (tagName === 'img') {
+                        blocks.push({
+                            type: 'image',
+                            data: {
+                                file: { url: node.src },
+                                caption: node.alt || '',
+                                withBorder: false,
+                                stretched: false,
+                                withBackground: false
+                            }
+                        });
+                    } else if (tagName === 'pre') {
+                        blocks.push({
+                            type: 'code',
+                            data: { code: node.textContent }
+                        });
+                    } else if (tagName === 'iframe') {
+                        // YouTube, Vimeo 등 임베드 처리
+                        const src = node.src;
+                        if (src) {
+                            blocks.push({
+                                type: 'embed',
+                                data: {
+                                    service: detectEmbedService(src),
+                                    source: src,
+                                    embed: src,
+                                    width: node.width || 600,
+                                    height: node.height || 300,
+                                    caption: ''
+                                }
+                            });
+                        }
+                    } else {
+                        // 자식 노드 처리
+                        for (let child of node.childNodes) {
+                            processNode(child);
+                        }
+                    }
+                }
+            }
+
+            for (let child of doc.body.childNodes) {
+                processNode(child);
+            }
+
+            return { blocks: blocks };
+        }
+
+        // Editor.js 초기화
+        let editor = null;
+        const hiddenContent = document.getElementById('hidden_content');
+
+        // 초기 데이터 파싱
+        let initialData = null;
+        if (hiddenContent && hiddenContent.value && hiddenContent.value.trim()) {
+            try {
+                const parsed = JSON.parse(hiddenContent.value);
+                if (parsed.blocks && Array.isArray(parsed.blocks)) {
+                    // 이미 Editor.js JSON 형식
+                    initialData = parsed;
+                } else {
+                    throw new Error('Not Editor.js format');
+                }
+            } catch (e) {
+                // JSON이 아니거나 Editor.js 형식이 아니면 HTML로 간주하고 변환
+                console.log('Converting HTML to Editor.js format...');
+                initialData = convertHTMLToEditorJS(hiddenContent.value);
+            }
+        }
+
+        // 커스텀 헤더 도구 클래스 생성
+        class H1Tool extends Header {
+            static get toolbox() {
+                return {
+                    title: 'H1',
+                    icon: '<svg width="12" height="14" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 14"><path d="M2.77 14V8.67h5.54V14h2.94V1.25h-2.94v4.83H2.77V1.25H0V14z"/></svg>'
+                };
+            }
+
+            constructor({data, config, api, readOnly}) {
+                super({
+                    data: data,
+                    config: {...config, levels: [1], defaultLevel: 1},
+                    api: api,
+                    readOnly: readOnly
+                });
+            }
+        }
+
+        class H2Tool extends Header {
+            static get toolbox() {
+                return {
+                    title: 'H2',
+                    icon: '<svg width="14" height="14" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><path d="M2.77 14V8.67h5.54V14h2.94V1.25h-2.94v4.83H2.77V1.25H0V14z"/></svg>'
+                };
+            }
+
+            constructor({data, config, api, readOnly}) {
+                super({
+                    data: data,
+                    config: {...config, levels: [2], defaultLevel: 2},
+                    api: api,
+                    readOnly: readOnly
+                });
+            }
+        }
+
+        class H3Tool extends Header {
+            static get toolbox() {
+                return {
+                    title: 'H3',
+                    icon: '<svg width="16" height="14" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 14"><path d="M2.77 14V8.67h5.54V14h2.94V1.25h-2.94v4.83H2.77V1.25H0V14z"/></svg>'
+                };
+            }
+
+            constructor({data, config, api, readOnly}) {
+                super({
+                    data: data,
+                    config: {...config, levels: [3], defaultLevel: 3},
+                    api: api,
+                    readOnly: readOnly
+                });
+            }
+        }
+
+        // tools 객체 생성
+        const editorTools = {
+                h1: {
+                    class: H1Tool,
+                    inlineToolbar: true,
+                    config: {
+                        placeholder: '제목 1을 입력하세요'
+                    }
+                },
+                h2: {
+                    class: H2Tool,
+                    inlineToolbar: true,
+                    config: {
+                        placeholder: '제목 2를 입력하세요'
+                    }
+                },
+                h3: {
+                    class: H3Tool,
+                    inlineToolbar: true,
+                    config: {
+                        placeholder: '제목 3을 입력하세요'
+                    }
+                },
+                list: {
+                    class: List,
+                    inlineToolbar: true,
+                    config: {
+                        defaultStyle: 'unordered'
+                    }
+                },
+                quote: {
+                    class: Quote,
+                    inlineToolbar: true,
+                    config: {
+                        quotePlaceholder: '인용구를 입력하세요',
+                        captionPlaceholder: '출처'
+                    }
+                },
+                code: {
+                    class: CodeTool,
+                    config: {
+                        placeholder: '코드를 입력하세요'
+                    }
+                },
+                delimiter: Delimiter,
+                table: {
+                    class: Table,
+                    inlineToolbar: true,
+                    config: {
+                        rows: 2,
+                        cols: 3
+                    }
+                }
+        };
+
+        // 커스텀 이미지 도구 추가
+        editorTools.image = CustomImageTool;
+        console.log('✅ 커스텀 이미지 도구가 추가되었습니다');
+
+        // 커스텀 YouTube 도구 추가
+        editorTools.youtube = YouTubeTool;
+        console.log('✅ 커스텀 YouTube 도구가 추가되었습니다');
+
+        // 커스텀 버튼 도구 추가
+        editorTools.button = ButtonTool;
+        console.log('✅ 커스텀 버튼 도구가 추가되었습니다');
+
+        console.log('전달할 tools 객체:', Object.keys(editorTools));
+
+        // Editor.js 초기화
+        editor = new EditorJS({
+            holder: 'editorjs-content',
+            placeholder: '이야기를 시작하세요...',
+            tools: editorTools,
+            data: initialData || undefined,
+            minHeight: 500
+        });
+
+        // Editor.js에서 텍스트 추출 (SEO 분석용)
+        async function getEditorText() {
+            try {
+                const outputData = await editor.save();
+                let text = '';
+
+                outputData.blocks.forEach(block => {
+                    if (block.type === 'paragraph' || block.type === 'header') {
+                        // HTML 태그 제거
+                        const div = document.createElement('div');
+                        div.innerHTML = block.data.text || '';
+                        text += div.textContent + ' ';
+                    } else if (block.type === 'list') {
+                        text += (block.data.items || []).join(' ') + ' ';
+                    } else if (block.type === 'quote') {
+                        text += (block.data.text || '') + ' ';
+                    } else if (block.type === 'code') {
+                        text += (block.data.code || '') + ' ';
+                    } else if (block.type === 'table' && block.data.content) {
+                        block.data.content.forEach(row => {
+                            text += row.join(' ') + ' ';
+                        });
                     }
                 });
-            });
-            
-            // 모든 드롭다운 감시
-            const pickers = toolbarElement.querySelectorAll('.ql-picker');
-            pickers.forEach(function(picker) {
-                observer.observe(picker, { attributes: true, attributeFilter: ['class'] });
-            });
+
+                return text.trim();
+            } catch (error) {
+                console.error('Error extracting text:', error);
+                return '';
+            }
         }
 
-        // 붙여넣기 시 스크롤 방지
-        if (quill) {
-            const editorRoot = quill.root;
-            
-            // 붙여넣기 이벤트 처리
-            editorRoot.addEventListener('paste', function(e) {
-                const scrollY = window.scrollY;
-                
-                // 붙여넣기 처리 후 스크롤 위치 복원
-                setTimeout(() => {
-                    requestAnimationFrame(() => {
-                        window.scrollTo(0, scrollY);
-                    });
-                }, 0);
-            }, true);
-            
-            // 에디터 포커스 시 스크롤 방지 (툴바에서 온 경우만)
-            let isToolbarClick = false;
-            
-            if (toolbarElement) {
-                toolbarElement.addEventListener('mousedown', function() {
-                    isToolbarClick = true;
-                    setTimeout(() => {
-                        isToolbarClick = false;
-                    }, 100);
-                }, true);
-            }
-            
-            editorRoot.addEventListener('focus', function(e) {
-                if (isToolbarClick) {
-                    const scrollY = window.scrollY;
-                    requestAnimationFrame(() => {
-                        window.scrollTo(0, scrollY);
-                    });
-                }
-            }, true);
-        }
-
-        // 드래그 앤 드롭 이미지 업로드
-        const editorWrapper = document.getElementById('wpEditorWrapper');
-        const dragOverlay = document.getElementById('dragOverlay');
-        let dragCounter = 0;
-
-        editorWrapper.addEventListener('dragenter', (e) => {
-            e.preventDefault();
-            dragCounter++;
-            if (e.dataTransfer.types.includes('Files')) {
-                dragOverlay.classList.add('active');
-            }
-        });
-
-        editorWrapper.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dragCounter--;
-            if (dragCounter === 0) {
-                dragOverlay.classList.remove('active');
-            }
-        });
-
-        editorWrapper.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
-        editorWrapper.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            dragCounter = 0;
-            dragOverlay.classList.remove('active');
-
-            const files = Array.from(e.dataTransfer.files);
-            const imageFiles = files.filter(file => file.type.startsWith('image/'));
-
-            if (imageFiles.length > 0) {
-                for (const file of imageFiles) {
-                    await uploadImage(file);
-                }
-            }
-        });
-
-        // 제목 입력 자동 높이 조절
+        // 제목 입력 auto-resize
         const titleInput = document.getElementById('wpTitleInput');
-
         if (titleInput) {
             titleInput.addEventListener('input', function() {
                 this.style.height = 'auto';
                 this.style.height = this.scrollHeight + 'px';
-                autoSave();
             });
+
+            // 초기 높이 설정
+            titleInput.style.height = 'auto';
+            titleInput.style.height = titleInput.scrollHeight + 'px';
         }
 
-        // 에디터 내용 변경 시 자동 저장
+        // 저장 상태 업데이트
+        const saveStatus = document.querySelector('.wp-save-status');
+        function updateSaveStatus(type, message) {
+            if (saveStatus) {
+                saveStatus.className = 'wp-save-status ' + type;
+                saveStatus.textContent = message;
+            }
+        }
+
+        // 자동 저장
         let autoSaveTimeout;
-        if (quill) {
-            quill.on('text-change', function() {
-                autoSave();
-            });
-        }
-
-        // 자동 저장 함수
         function autoSave() {
-            if (!titleInput || !quill) return;
+            if (!titleInput || !editor) return;
 
             clearTimeout(autoSaveTimeout);
             updateSaveStatus('saving', '저장 중...');
 
-            autoSaveTimeout = setTimeout(() => {
-                const title = titleInput.value;
-                const content = quill.root.innerHTML;
+            autoSaveTimeout = setTimeout(async () => {
+                try {
+                    const title = titleInput.value;
+                    const content = await editor.save();
 
-                // localStorage에 임시 저장
-                const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
-                localStorage.setItem(draftKey, JSON.stringify({
-                    title: title,
-                    content: content,
-                    timestamp: new Date().toISOString()
-                }));
+                    // localStorage에 임시 저장
+                    const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
+                    const draftData = {
+                        title: title,
+                        content: JSON.stringify(content),
+                        timestamp: Date.now()
+                    };
 
-                updateSaveStatus('saved', '저장됨');
+                    localStorage.setItem(draftKey, JSON.stringify(draftData));
+                    updateSaveStatus('saved', '저장됨');
+                } catch (error) {
+                    console.error('자동 저장 오류:', error);
+                    updateSaveStatus('saved', '저장 실패');
+                }
             }, 1000);
         }
 
-        // 저장 상태 업데이트
-        function updateSaveStatus(status, text) {
-            const saveStatus = document.getElementById('saveStatus');
-            const saveStatusText = document.getElementById('saveStatusText');
-            const icon = saveStatus.querySelector('.material-symbols-outlined');
+        // 에디터 준비 후 자동 저장 설정
+        editor.isReady.then(() => {
+            console.log('Editor.js 초기화 완료');
 
-            saveStatus.className = 'wp-save-status ' + status;
-            saveStatusText.textContent = text;
+            // 변경 감지는 간단하게 처리 (Editor.js는 onChange 콜백 없음)
+            setInterval(autoSave, 30000); // 30초마다 자동 저장
+        });
 
-            if (status === 'saving') {
-                icon.textContent = 'sync';
-                icon.classList.add('spinning');
-            } else if (status === 'saved') {
-                icon.textContent = 'check_circle';
-                icon.classList.remove('spinning');
-            }
+        // 제목 변경 시 자동 저장
+        if (titleInput) {
+            titleInput.addEventListener('input', autoSave);
         }
 
-        // 페이지 로드 시 임시 저장된 내용 복원
-        window.addEventListener('DOMContentLoaded', function() {
+        // 임시 저장본 복원
+        window.addEventListener('load', function() {
             const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
-            const draft = localStorage.getItem(draftKey);
+            const savedDraft = localStorage.getItem(draftKey);
 
-            if (draft && !hiddenContent.value) {
+            if (savedDraft && !{% if post %}true{% else %}false{% endif %}) {
                 try {
-                    const draftData = JSON.parse(draft);
-                    const draftTime = new Date(draftData.timestamp);
-                    const timeDiff = (new Date() - draftTime) / 1000 / 60; // 분 단위
+                    const draftData = JSON.parse(savedDraft);
+                    const savedTime = new Date(draftData.timestamp);
+                    const now = new Date();
+                    const timeDiff = (now - savedTime) / 1000 / 60; // 분 단위
 
-                    // 30분 이내의 임시 저장본이 있으면 복원 제안
                     if (timeDiff < 30) {
                         if (confirm(`${Math.round(timeDiff)}분 전에 저장된 임시 저장본이 있습니다. 복원하시겠습니까?`)) {
                             titleInput.value = draftData.title || '';
-                            quill.root.innerHTML = draftData.content || '';
+
+                            // Editor.js 데이터 복원
+                            const content = JSON.parse(draftData.content);
+                            editor.isReady.then(() => {
+                                editor.render(content);
+                            });
+
                             titleInput.style.height = 'auto';
                             titleInput.style.height = titleInput.scrollHeight + 'px';
                         }
@@ -2353,129 +2767,304 @@
             }
         });
 
-        // 폼 제출 시 에디터 내용을 textarea에 복사
+        // 폼 제출 처리
         const postForm = document.getElementById('postForm');
+        if (postForm && editor && hiddenContent) {
+            postForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                try {
+                    // 에디터 내용 가져오기
+                    const outputData = await editor.save();
+
+                    // 빈 내용 체크
+                    if (!outputData.blocks || outputData.blocks.length === 0) {
+                        alert('내용을 입력해주세요.');
+                        return false;
+                    }
+
+                    // JSON을 hidden field에 저장
+                    hiddenContent.value = JSON.stringify(outputData);
+
+                    // 임시 저장본 삭제
+                    const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
+                    localStorage.removeItem(draftKey);
+
+                    // 폼 제출
+                    this.submit();
+                } catch (error) {
+                    console.error('폼 제출 오류:', error);
+                    alert('저장 중 오류가 발생했습니다.');
+                    return false;
+                }
+            });
+        }
+
+        // 게시하기/임시저장 버튼
         const publishBtn = document.getElementById('publishBtn');
         const saveDraftBtn = document.getElementById('saveDraftBtn');
 
-        if (postForm && quill && hiddenContent) {
-            postForm.addEventListener('submit', function(e) {
-                // 에디터 내용을 가져옴
-                const editorContent = quill.root.innerHTML;
-                const editorText = quill.getText().trim();
-
-                // 빈 내용 체크
-                if (!editorText || editorContent === '<p><br></p>' || editorContent === '<p></p>') {
-                    e.preventDefault();
-                    alert('내용을 입력해주세요.');
-                    quill.focus();
-                    return false;
-                }
-
-                // 에디터 내용을 textarea에 저장
-                hiddenContent.value = editorContent;
-
-                // 썸네일 Alt 텍스트 동기화
-                const thumbnailAltDisplay = document.getElementById('id_thumbnail_alt_display');
-                const thumbnailAltHidden = document.getElementById('id_thumbnail_alt');
-                if (thumbnailAltDisplay && thumbnailAltHidden) {
-                    thumbnailAltHidden.value = thumbnailAltDisplay.value;
-                }
-
-                // 제출 버튼 비활성화
-                if (publishBtn) {
-                    publishBtn.disabled = true;
-                    publishBtn.innerHTML = '<span class="material-symbols-outlined spinning" style="font-size: 18px;">sync</span> 게시 중...';
-                }
-
-                // 임시 저장본 삭제
-                const draftKey = 'badmintok_post_draft{% if post %}_{{ post.id }}{% endif %}';
-                localStorage.removeItem(draftKey);
-            });
-        }
-
-        // 전체 화면 모드 토글
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        const wpEditorWrapper = document.getElementById('wpEditorWrapper');
-        let isFullscreen = false;
-
-        if (fullscreenBtn && wpEditorWrapper) {
-            fullscreenBtn.addEventListener('click', function() {
-                isFullscreen = !isFullscreen;
-
-                if (isFullscreen) {
-                    wpEditorWrapper.classList.add('fullscreen-mode');
-                    const icon = fullscreenBtn.querySelector('.material-symbols-outlined');
-                    if (icon) icon.textContent = 'fullscreen_exit';
-                    fullscreenBtn.title = '전체 화면 종료';
-                } else {
-                    wpEditorWrapper.classList.remove('fullscreen-mode');
-                    const icon = fullscreenBtn.querySelector('.material-symbols-outlined');
-                    if (icon) icon.textContent = 'fullscreen';
-                    fullscreenBtn.title = '전체 화면 모드';
-                }
-            });
-
-            // ESC 키로 전체 화면 종료
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && isFullscreen && fullscreenBtn) {
-                    fullscreenBtn.click();
+        if (publishBtn) {
+            publishBtn.addEventListener('click', function() {
+                if (postForm) {
+                    postForm.submit();
                 }
             });
         }
 
-        // 미리보기 버튼
+        if (saveDraftBtn) {
+            saveDraftBtn.addEventListener('click', async function() {
+                try {
+                    const outputData = await editor.save();
+                    hiddenContent.value = JSON.stringify(outputData);
+
+                    // 임시저장 input 추가
+                    const draftInput = document.createElement('input');
+                    draftInput.type = 'hidden';
+                    draftInput.name = 'save_draft';
+                    draftInput.value = 'true';
+                    postForm.appendChild(draftInput);
+
+                    postForm.submit();
+                } catch (error) {
+                    console.error('임시저장 오류:', error);
+                    alert('임시저장 중 오류가 발생했습니다.');
+                }
+            });
+        }
+
+        // 미리보기
         const previewBtn = document.getElementById('previewBtn');
-        if (previewBtn && titleInput && quill) {
-            previewBtn.addEventListener('click', function() {
-                const title = titleInput.value || '제목 없음';
-                const content = quill.root.innerHTML;
+        if (previewBtn && titleInput && editor) {
+            previewBtn.addEventListener('click', async function() {
+                try {
+                    const title = titleInput.value || '제목 없음';
+                    const outputData = await editor.save();
 
-            // 새 창으로 미리보기
-            const previewWindow = window.open('', 'preview', 'width=800,height=600');
-            previewWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>미리보기 - ${title}</title>
-                    <style>
-                        body {
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                            max-width: 800px;
-                            margin: 0 auto;
-                            padding: 48px 24px;
-                            line-height: 1.8;
-                            color: #334155;
+                    // Editor.js 블록을 HTML로 변환
+                    let htmlContent = '';
+                    outputData.blocks.forEach(block => {
+                        if (block.type === 'header') {
+                            htmlContent += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
+                        } else if (block.type === 'paragraph') {
+                            htmlContent += `<p>${block.data.text}</p>`;
+                        } else if (block.type === 'list') {
+                            const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                            htmlContent += `<${tag}>`;
+                            (block.data.items || []).forEach(item => {
+                                htmlContent += `<li>${item}</li>`;
+                            });
+                            htmlContent += `</${tag}>`;
+                        } else if (block.type === 'quote') {
+                            htmlContent += `<blockquote>${block.data.text}${block.data.caption ? `<footer>${block.data.caption}</footer>` : ''}</blockquote>`;
+                        } else if (block.type === 'code') {
+                            htmlContent += `<pre><code>${block.data.code}</code></pre>`;
+                        } else if (block.type === 'image') {
+                            htmlContent += `<figure><img src="${block.data.file.url}" alt="${block.data.caption || ''}"><figcaption>${block.data.caption || ''}</figcaption></figure>`;
+                        } else if (block.type === 'delimiter') {
+                            htmlContent += '<hr>';
+                        } else if (block.type === 'table' && block.data.content) {
+                            htmlContent += '<table border="1">';
+                            block.data.content.forEach(row => {
+                                htmlContent += '<tr>';
+                                row.forEach(cell => {
+                                    htmlContent += `<td>${cell}</td>`;
+                                });
+                                htmlContent += '</tr>';
+                            });
+                            htmlContent += '</table>';
                         }
-                        h1 {
-                            font-size: 40px;
-                            font-weight: 700;
-                            color: #1e293b;
-                            margin-bottom: 32px;
-                        }
-                        p {
-                            margin-bottom: 16px;
-                        }
-                        img {
-                            max-width: 100%;
-                            height: auto;
-                            border-radius: 8px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>${title}</h1>
-                    <div>${content}</div>
-                </body>
-                </html>
-            `);
-            previewWindow.document.close();
+                    });
+
+                    // 새 창으로 미리보기
+                    const previewWindow = window.open('', 'preview', 'width=800,height=600');
+                    previewWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html lang="ko">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>미리보기 - ${title}</title>
+                            <style>
+                                body { max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
+                                h1, h2, h3 { margin: 24px 0 12px; color: #1e293b; }
+                                p { margin: 16px 0; color: #334155; }
+                                img { max-width: 100%; height: auto; }
+                                pre { background: #f8fafc; padding: 16px; border-radius: 8px; overflow-x: auto; }
+                                blockquote { border-left: 4px solid #3b82f6; padding-left: 16px; margin: 16px 0; color: #64748b; }
+                                table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+                                td { padding: 8px; border: 1px solid #e2e8f0; }
+                                ul { margin: 16px 0; }
+                                li { margin: 8px 0; }
+                                mark { background: #fef08a; padding: 2px 4px; }
+                                code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+                                u { text-decoration: underline; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>${title}</h1>
+                            <hr>
+                            ${htmlContent}
+                        </body>
+                        </html>
+                    `);
+                    previewWindow.document.close();
+                } catch (error) {
+                    console.error('미리보기 오류:', error);
+                    alert('미리보기를 생성할 수 없습니다.');
+                }
             });
         }
 
-        // 썸네일 업로드 기능
+        // SEO 분석
+        const focusKeywordInput = document.getElementById('focus_keyword');
+        const metaDescInput = document.getElementById('meta_description');
+        const slugInput = document.getElementById('slug');
+        const seoScore = document.getElementById('seo-score');
+        const seoCheckList = document.getElementById('seo-check-list');
+
+        async function performSEOAnalysis() {
+            if (!titleInput || !editor || !focusKeywordInput || !metaDescInput || !slugInput) {
+                return;
+            }
+
+            const title = titleInput.value.trim();
+            const content = await getEditorText();
+            const focusKeyword = focusKeywordInput.value.trim().toLowerCase();
+            const metaDescription = metaDescInput.value.trim();
+            const slug = slugInput.value.trim();
+
+            let score = 0;
+            let maxScore = 10;
+            let checks = [];
+
+            // 1. 포커스 키워드가 제목에 있는지
+            if (focusKeyword && title.toLowerCase().includes(focusKeyword)) {
+                score += 2;
+                checks.push({ status: 'good', text: '포커스 키워드가 제목에 포함되어 있습니다.' });
+            } else if (focusKeyword) {
+                checks.push({ status: 'bad', text: '포커스 키워드가 제목에 없습니다.' });
+            }
+
+            // 2. 포커스 키워드가 본문에 있는지
+            if (focusKeyword && content.toLowerCase().includes(focusKeyword)) {
+                score += 2;
+                checks.push({ status: 'good', text: '포커스 키워드가 본문에 포함되어 있습니다.' });
+            } else if (focusKeyword) {
+                checks.push({ status: 'bad', text: '포커스 키워드가 본문에 없습니다.' });
+            }
+
+            // 3. 메타 설명 길이 체크
+            if (metaDescription.length >= 120 && metaDescription.length <= 160) {
+                score += 2;
+                checks.push({ status: 'good', text: `메타 설명 길이가 적절합니다. (${metaDescription.length}자)` });
+            } else if (metaDescription.length > 0) {
+                checks.push({ status: 'warning', text: `메타 설명 길이를 120-160자로 조정하세요. (현재 ${metaDescription.length}자)` });
+                score += 1;
+            } else {
+                checks.push({ status: 'bad', text: '메타 설명을 입력하세요.' });
+            }
+
+            // 4. 제목 길이 체크
+            if (title.length >= 30 && title.length <= 60) {
+                score += 1;
+                checks.push({ status: 'good', text: `제목 길이가 적절합니다. (${title.length}자)` });
+            } else if (title.length > 0) {
+                checks.push({ status: 'warning', text: `제목 길이를 30-60자로 조정하세요. (현재 ${title.length}자)` });
+            }
+
+            // 5. 본문 길이 체크
+            if (content.length >= 300) {
+                score += 1;
+                checks.push({ status: 'good', text: `본문이 충분합니다. (${content.length}자)` });
+            } else {
+                checks.push({ status: 'warning', text: `본문을 300자 이상 작성하세요. (현재 ${content.length}자)` });
+            }
+
+            // 6. Slug 체크
+            if (slug.length > 0 && /^[a-z0-9-]+$/.test(slug)) {
+                score += 1;
+                checks.push({ status: 'good', text: 'URL 슬러그가 적절합니다.' });
+            } else if (slug.length > 0) {
+                checks.push({ status: 'warning', text: 'URL 슬러그는 영문 소문자, 숫자, 하이픈만 사용하세요.' });
+            }
+
+            // 7. 키워드 밀도 체크
+            if (focusKeyword && content) {
+                const keywordCount = (content.toLowerCase().match(new RegExp(focusKeyword, 'g')) || []).length;
+                const wordCount = content.split(/\s+/).length;
+                const density = wordCount > 0 ? (keywordCount / wordCount * 100) : 0;
+
+                if (density >= 0.5 && density <= 2.5) {
+                    score += 1;
+                    checks.push({ status: 'good', text: `키워드 밀도가 적절합니다. (${density.toFixed(1)}%)` });
+                } else if (density > 0) {
+                    checks.push({ status: 'warning', text: `키워드 밀도를 0.5-2.5%로 조정하세요. (현재 ${density.toFixed(1)}%)` });
+                }
+            }
+
+            // SEO 점수 표시
+            const percentage = Math.round((score / maxScore) * 100);
+            if (seoScore) {
+                seoScore.textContent = percentage;
+                const scoreElement = seoScore.parentElement;
+                if (percentage >= 80) {
+                    scoreElement.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                } else if (percentage >= 50) {
+                    scoreElement.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                } else {
+                    scoreElement.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                }
+            }
+
+            // SEO 체크리스트 표시
+            if (seoCheckList) {
+                seoCheckList.innerHTML = checks.map(check => {
+                    let emoji = check.status === 'good' ? '✅' : check.status === 'warning' ? '⚠️' : '❌';
+                    let color = check.status === 'good' ? '#10b981' : check.status === 'warning' ? '#f59e0b' : '#ef4444';
+                    return `<li style="color: ${color}; margin-bottom: 8px;">${emoji} ${check.text}</li>`;
+                }).join('');
+            }
+        }
+
+        // SEO 분석 트리거
+        if (titleInput) {
+            titleInput.addEventListener('input', performSEOAnalysis);
+        }
+        if (focusKeywordInput) {
+            focusKeywordInput.addEventListener('input', performSEOAnalysis);
+        }
+        if (metaDescInput) {
+            metaDescInput.addEventListener('input', performSEOAnalysis);
+        }
+        if (slugInput) {
+            slugInput.addEventListener('input', performSEOAnalysis);
+        }
+
+        // 에디터 준비 후 SEO 분석
+        editor.isReady.then(() => {
+            performSEOAnalysis();
+
+            // 에디터 변경 시 SEO 분석 (30초 간격)
+            setInterval(performSEOAnalysis, 30000);
+        });
+
+        // 전체 화면 토글
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const editorWrapper = document.querySelector('.wp-editor-wrapper');
+        if (fullscreenBtn && editorWrapper) {
+            fullscreenBtn.addEventListener('click', function() {
+                editorWrapper.classList.toggle('fullscreen-mode');
+                const icon = this.querySelector('.material-symbols-outlined');
+                if (editorWrapper.classList.contains('fullscreen-mode')) {
+                    icon.textContent = 'fullscreen_exit';
+                } else {
+                    icon.textContent = 'fullscreen';
+                }
+            });
+        }
+
+        // 썸네일 업로드
         const uploadThumbnailBtn = document.getElementById('uploadThumbnailBtn');
         const thumbnailInput = document.getElementById('id_thumbnail');
         const thumbnailPreview = document.getElementById('thumbnail-preview');
@@ -2484,1389 +3073,21 @@
             uploadThumbnailBtn.addEventListener('click', function() {
                 thumbnailInput.click();
             });
-        }
 
-        if (thumbnailInput) {
-            thumbnailInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                // 파일 크기 체크 (5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('썸네일 이미지 크기는 5MB 이하여야 합니다.');
-                    thumbnailInput.value = '';
-                    return;
-                }
-
-                // 이미지 파일 체크
-                if (!file.type.startsWith('image/')) {
-                    alert('이미지 파일만 업로드 가능합니다.');
-                    thumbnailInput.value = '';
-                    return;
-                }
-
-                // 미리보기 표시
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    thumbnailPreview.innerHTML = `
-                        <img src="${e.target.result}" alt="썸네일 미리보기" style="width: 100%; height: auto; display: block;">
-                    `;
-                };
-                reader.readAsDataURL(file);
-
-                // 썸네일 Alt 텍스트가 비어있고 포커스 키워드가 있으면 자동 입력
-                const thumbnailAltInput = document.getElementById('id_thumbnail_alt');
-                const thumbnailAltDisplayInput = document.getElementById('id_thumbnail_alt_display');
-                if (thumbnailAltDisplayInput && !thumbnailAltDisplayInput.value.trim() && focusKeywordInput) {
-                    const focusKeyword = focusKeywordInput.value.trim();
-                    if (focusKeyword) {
-                        thumbnailAltDisplayInput.value = focusKeyword;
-                        thumbnailAltInput.value = focusKeyword;
-                        thumbnailAltDisplayInput.style.borderColor = '#10b981';
-                        setTimeout(() => {
-                            thumbnailAltDisplayInput.style.borderColor = '';
-                        }, 1000);
-                    }
-                }
-
-                // SEO 분석 업데이트
-                performSEOAnalysis();
-            });
-        }
-
-        // 썸네일 Alt 텍스트 동기화 (사이드바 디스플레이 → 폼 hidden)
-        const thumbnailAltDisplayInput = document.getElementById('id_thumbnail_alt_display');
-        const thumbnailAltHiddenInput = document.getElementById('id_thumbnail_alt');
-        if (thumbnailAltDisplayInput && thumbnailAltHiddenInput) {
-            thumbnailAltDisplayInput.addEventListener('input', function() {
-                thumbnailAltHiddenInput.value = this.value;
-            });
-        }
-
-        // 썸네일 제거 기능
-        const removeThumbnailBtn = document.getElementById('removeThumbnailBtn');
-        if (removeThumbnailBtn) {
-            removeThumbnailBtn.addEventListener('click', function() {
-                if (confirm('썸네일을 제거하시겠습니까?')) {
-                    thumbnailPreview.innerHTML = `
-                        <div style="padding: 48px 24px; text-align: center; color: #94a3b8;">
-                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 8px;">image</span>
-                            <span style="font-size: 13px;">썸네일 없음</span>
-                        </div>
-                    `;
-                    // 썸네일 파일 인풋 초기화
-                    thumbnailInput.value = '';
-                    // 썸네일 제거를 위한 hidden input 추가
-                    const form = document.getElementById('postForm');
-                    const removeInput = document.createElement('input');
-                    removeInput.type = 'hidden';
-                    removeInput.name = 'remove_thumbnail';
-                    removeInput.value = 'true';
-                    form.appendChild(removeInput);
-                    removeThumbnailBtn.remove();
-                }
-            });
-        }
-
-        // 제목에서 슬러그 자동 생성 (한글 지원)
-        const slugInput = document.getElementById('id_slug');
-        let slugManuallyEdited = false;
-
-        if (slugInput) {
-            // 슬러그가 이미 있으면 수동 편집으로 간주
-            if (slugInput.value) {
-                slugManuallyEdited = true;
-            }
-
-            slugInput.addEventListener('input', function() {
-                slugManuallyEdited = true;
-            });
-
-            // 슬러그 입력 시 유효성 검사
-            slugInput.addEventListener('blur', function() {
-                let slug = this.value.trim();
-                if (slug) {
-                    // 한글, 영문, 숫자, - 만 허용
-                    slug = slug.replace(/[^\w가-힣-]/g, '');
-                    slug = slug.replace(/[-]+/g, '-').trim().toLowerCase();
-                    this.value = slug;
-                }
-            });
-        }
-
-        if (titleInput) {
-            titleInput.addEventListener('input', function() {
-                // 슬러그가 수동으로 편집되지 않았으면 자동 생성
-                if (slugInput && !slugManuallyEdited) {
-                    const title = this.value;
-                    if (title) {
-                        // 한글, 영문, 숫자만 남기고 공백을 -로 변환
-                        let slug = title.replace(/[^\w\s가-힣-]/g, '');
-                        slug = slug.replace(/[-\s]+/g, '-').trim().toLowerCase();
-
-                        // 200자 제한
-                        if (slug.length > 200) {
-                            slug = slug.substring(0, 200);
-                            // 마지막 - 제거
-                            slug = slug.replace(/-+$/, '');
+            thumbnailInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (thumbnailPreview) {
+                            thumbnailPreview.innerHTML = `<img src="${e.target.result}" alt="썸네일" style="width: 100%; height: auto; display: block;">`;
                         }
-
-                        slugInput.value = slug;
-                    }
+                    };
+                    reader.readAsDataURL(file);
                 }
             });
         }
-
-        // 메시지 자동 숨김
-        setTimeout(() => {
-            const messages = document.querySelector('.messages');
-            if (messages) {
-                messages.style.transition = 'opacity 0.3s';
-                messages.style.opacity = '0';
-                setTimeout(() => messages.remove(), 300);
-            }
-        }, 3000);
-
-        // ========== SEO 분석 기능 ==========
-
-        // 모든 필요한 요소 참조 (slugInput은 위에서 이미 선언됨)
-        const metaDescInput = document.getElementById('id_meta_description');
-        const metaDescLength = document.getElementById('metaDescLength');
-        const checklistToggle = document.getElementById('seoChecklistToggle');
-        const checklist = document.getElementById('seoChecklist');
-        const checklistIcon = document.getElementById('seoChecklistIcon');
-        const focusKeywordInput = document.getElementById('id_focus_keyword');
-
-        // 메타 설명 길이 카운터
-        function updateMetaDescLength() {
-            if (!metaDescInput || !metaDescLength) return;
-
-            const length = metaDescInput.value.length;
-            metaDescLength.textContent = length;
-            if (length >= 120 && length <= 160) {
-                metaDescLength.style.color = '#10b981';
-            } else {
-                metaDescLength.style.color = '#64748b';
-            }
-        }
-
-        // SEO 체크리스트 토글
-        if (checklistToggle && checklist && checklistIcon) {
-            checklistToggle.addEventListener('click', () => {
-                if (checklist.style.display === 'none' || !checklist.style.display) {
-                    checklist.style.display = 'block';
-                    checklistIcon.textContent = 'expand_less';
-                } else {
-                    checklist.style.display = 'none';
-                    checklistIcon.textContent = 'expand_more';
-                }
-            });
-        }
-
-        // 파워 워드 목록 (한국어)
-        const powerWords = [
-            '최고', '최신', '완벽', '놀라운', '비밀', '확실한', '검증된', '전문가', '프로',
-            '꿀팁', '필수', '추천', '인기', '화제', '효과', '실전', '가이드', '완전',
-            '무료', '특별', '한정', '독점', '공개', '강력', '혁신', '획기적', '절대'
-        ];
-
-        // 감정 단어 목록 (한국어)
-        const emotionalWords = [
-            '놀라운', '멋진', '행복', '기쁨', '슬픈', '무서운', '신나는', '흥미로운',
-            '재미있는', '감동', '사랑', '열정', '희망', '꿈', '환상', '즐거운', '경이로운'
-        ];
-
-        // SEO 분석 함수
-        function performSEOAnalysis() {
-            // 필수 요소들이 없으면 분석 건너뛰기
-            if (!titleInput || !quill || !focusKeywordInput || !metaDescInput || !slugInput) {
-                return;
-            }
-
-            const title = titleInput.value.trim();
-            const content = quill.getText().trim();
-            const contentHTML = quill.root.innerHTML;
-            const focusKeyword = focusKeywordInput.value.trim().toLowerCase();
-            const metaDescription = metaDescInput.value.trim();
-            const slug = slugInput.value.trim();
-            const thumbnailPreview = document.querySelector('#thumbnail-preview img');
-
-            let passedChecks = 0;
-            const totalChecks = 28;
-
-            // 키워드 밀도 계산
-            let keywordCount = 0;
-            let keywordDensity = 0;
-
-            if (focusKeyword) {
-                const contentLower = content.toLowerCase();
-                const titleLower = title.toLowerCase();
-                const metaLower = metaDescription.toLowerCase();
-                const slugLower = slug.toLowerCase();
-
-                // 키워드 출현 횟수 계산
-                const regex = new RegExp(focusKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                const matches = contentLower.match(regex);
-                keywordCount = matches ? matches.length : 0;
-
-                // 총 단어 수 계산 (공백 기준)
-                const words = content.split(/\s+/).filter(w => w.length > 0);
-                const wordCount = words.length;
-
-                if (wordCount > 0) {
-                    keywordDensity = (keywordCount / wordCount) * 100;
-                }
-
-                // 키워드 밀도 표시 업데이트
-                document.getElementById('keywordDensity').textContent = keywordCount + '회';
-                document.getElementById('keywordDensityPercent').textContent = '(' + keywordDensity.toFixed(2) + '%)';
-
-                // 기본 SEO 체크
-                passedChecks += checkSEO('keyword-in-title', titleLower.includes(focusKeyword), '제목에 포커스 키워드 포함');
-                passedChecks += checkSEO('keyword-in-meta', metaLower.includes(focusKeyword), '메타 설명에 포커스 키워드 포함');
-                passedChecks += checkSEO('keyword-in-url', slugLower.includes(focusKeyword), 'URL에 포커스 키워드 포함');
-                passedChecks += checkSEO('keyword-in-content', keywordCount >= 1, '본문에 포커스 키워드 사용 (1회 이상)');
-                passedChecks += checkSEO('keyword-density', keywordDensity >= 0.5 && keywordDensity <= 2.5, '키워드 밀도 적정 (0.5-2.5%)');
-
-                // 키워드가 제목 앞부분에 있는지 (첫 60% 이내)
-                const titleFirstPart = titleLower.substring(0, Math.ceil(titleLower.length * 0.6));
-                passedChecks += checkSEO('keyword-beginning', titleFirstPart.includes(focusKeyword), '제목 앞부분에 키워드 배치');
-
-                // 첫 문단에 키워드 포함 (처음 150자)
-                const firstParagraph = contentLower.substring(0, 150);
-                passedChecks += checkSEO('keyword-in-first-paragraph', firstParagraph.includes(focusKeyword), '첫 문단에 포커스 키워드 포함');
-            } else {
-                // 키워드가 없을 때
-                document.getElementById('keywordDensity').textContent = '0회';
-                document.getElementById('keywordDensityPercent').textContent = '(0%)';
-
-                checkSEO('keyword-in-title', false, '제목에 포커스 키워드 포함');
-                checkSEO('keyword-in-meta', false, '메타 설명에 포커스 키워드 포함');
-                checkSEO('keyword-in-url', false, 'URL에 포커스 키워드 포함');
-                checkSEO('keyword-in-content', false, '본문에 포커스 키워드 사용 (1회 이상)');
-                checkSEO('keyword-density', false, '키워드 밀도 적정 (0.5-2.5%)');
-                checkSEO('keyword-beginning', false, '제목 앞부분에 키워드 배치');
-                checkSEO('keyword-in-first-paragraph', false, '첫 문단에 포커스 키워드 포함');
-            }
-
-            // 컨텐츠 길이
-            passedChecks += checkSEO('content-length', content.length >= 600, '본문 길이 충분 (600자 이상)');
-
-            // 제목 길이
-            passedChecks += checkSEO('title-length', title.length >= 15 && title.length <= 60, '제목 길이 적정 (15-60자)');
-
-            // 메타 설명 길이
-            passedChecks += checkSEO('meta-length', metaDescription.length >= 120 && metaDescription.length <= 160, '메타 설명 길이 적정 (120-160자)');
-
-            // URL 길이
-            passedChecks += checkSEO('url-length', slug.length <= 75, 'URL 길이 적정 (75자 이하)');
-
-            // 고급 SEO
-            // 이미지 개수 체크
-            const images = contentHTML.match(/<img/g);
-            const imageCount = images ? images.length : 0;
-            passedChecks += checkSEO('has-images', imageCount >= 1, '이미지 포함 (1개 이상)');
-
-            // 모든 이미지에 Alt 텍스트 (간단한 체크)
-            const imagesWithAlt = contentHTML.match(/<img[^>]+alt="[^"]+"/g);
-            const imagesWithAltCount = imagesWithAlt ? imagesWithAlt.length : 0;
-            passedChecks += checkSEO('images-have-alt', imageCount > 0 && imagesWithAltCount === imageCount, '모든 이미지에 Alt 텍스트');
-
-            // 링크 개수 체크
-            const internalLinks = contentHTML.match(/<a[^>]+href="\/[^"]*"/g);
-            const internalLinkCount = internalLinks ? internalLinks.length : 0;
-            passedChecks += checkSEO('has-internal-links', internalLinkCount >= 2, '내부 링크 포함 (2개 이상)');
-
-            const externalLinks = contentHTML.match(/<a[^>]+href="http/g);
-            const externalLinkCount = externalLinks ? externalLinks.length : 0;
-            passedChecks += checkSEO('has-external-links', externalLinkCount >= 1, '외부 링크 포함 (1개 이상)');
-
-            // 소제목 사용
-            const headings = contentHTML.match(/<h[23]/g);
-            const headingCount = headings ? headings.length : 0;
-            passedChecks += checkSEO('has-headings', headingCount >= 1, '소제목 사용 (H2/H3)');
-
-            // 소제목에 키워드
-            if (focusKeyword && headingCount > 0) {
-                const h2h3 = contentHTML.match(/<h[23][^>]*>.*?<\/h[23]>/gi);
-                let keywordInHeading = false;
-                if (h2h3) {
-                    keywordInHeading = h2h3.some(h => h.toLowerCase().includes(focusKeyword));
-                }
-                passedChecks += checkSEO('keyword-in-headings', keywordInHeading, '소제목에 키워드 포함');
-            } else {
-                checkSEO('keyword-in-headings', false, '소제목에 키워드 포함');
-            }
-
-            // 썸네일
-            passedChecks += checkSEO('has-thumbnail', thumbnailPreview !== null, '썸네일 이미지 설정');
-
-            // 외부 링크 새 탭 (간단한 체크)
-            const externalLinksNewTab = contentHTML.match(/<a[^>]+href="http[^>]+target="_blank"/g);
-            const externalLinksNewTabCount = externalLinksNewTab ? externalLinksNewTab.length : 0;
-            passedChecks += checkSEO('links-open-new-tab', externalLinkCount === 0 || externalLinksNewTabCount === externalLinkCount, '외부 링크 새 탭으로 열기');
-
-            // 제목 분석
-            // 숫자 포함
-            passedChecks += checkSEO('title-has-number', /\d/.test(title), '제목에 숫자 포함');
-
-            // 파워 워드
-            const hasPowerWord = powerWords.some(word => title.includes(word));
-            passedChecks += checkSEO('title-has-power-word', hasPowerWord, '제목에 파워 워드 사용');
-
-            // 감정 단어
-            const hasEmotionalWord = emotionalWords.some(word => title.includes(word));
-            passedChecks += checkSEO('title-has-emotional-word', hasEmotionalWord, '제목에 감정 단어 사용');
-
-            // 제목 단어 수
-            const titleWords = title.split(/\s+/).filter(w => w.length > 0);
-            passedChecks += checkSEO('title-not-too-long', titleWords.length >= 6 && titleWords.length <= 13, '제목 단어 수 적정 (6-13개)');
-
-            // 제목 긍정적 표현 (부정어 체크)
-            const negativeWords = ['안됨', '못함', '나쁜', '최악', '실패', '위험'];
-            const hasNegative = negativeWords.some(word => title.includes(word));
-            passedChecks += checkSEO('title-sentiment-positive', !hasNegative, '제목 긍정적 표현');
-
-            // 가독성
-            // 문장 길이 (평균 25자 이하)
-            const sentences = content.split(/[.!?]\s+/).filter(s => s.length > 0);
-            const avgSentenceLength = sentences.length > 0
-                ? sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length
-                : 0;
-            passedChecks += checkSEO('sentence-length', avgSentenceLength <= 25 || sentences.length === 0, '문장 길이 적정 (25자 이하)');
-
-            // 문단 길이 (150자 이하)
-            const paragraphs = content.split(/\n\n/).filter(p => p.trim().length > 0);
-            let longParagraphs = 0;
-            paragraphs.forEach(p => {
-                if (p.length > 150) longParagraphs++;
-            });
-            passedChecks += checkSEO('paragraph-length', longParagraphs === 0 || paragraphs.length === 0, '문단 길이 적정 (150자 이하)');
-
-            // 목록 사용
-            const hasList = contentHTML.includes('<ul>') || contentHTML.includes('<ol>');
-            passedChecks += checkSEO('has-lists', hasList, '목록 사용 (불릿 포인트/번호)');
-
-            // 수동태 최소화 (한국어 수동태 표현 체크)
-            const passivePatterns = ['되어지', '되어진', '당하', '받는다', '받았다'];
-            const passiveCount = passivePatterns.reduce((count, pattern) => {
-                const matches = content.match(new RegExp(pattern, 'g'));
-                return count + (matches ? matches.length : 0);
-            }, 0);
-            passedChecks += checkSEO('passive-voice-low', passiveCount <= 2, '수동태 사용 최소화');
-
-            // SEO 점수 업데이트
-            const score = Math.round((passedChecks / totalChecks) * 100);
-            document.getElementById('seoScore').textContent = score;
-            document.getElementById('seoCheckCount').textContent = passedChecks;
-
-            // 점수 바 색상 및 너비
-            const scoreBar = document.getElementById('seoScoreBar');
-            const scoreLabel = document.getElementById('seoScoreLabel');
-            scoreBar.style.width = score + '%';
-
-            if (score >= 80) {
-                scoreBar.style.background = '#10b981';
-                document.getElementById('seoScore').style.color = '#10b981';
-                scoreLabel.textContent = '훌륭함';
-                scoreLabel.style.color = '#10b981';
-            } else if (score >= 60) {
-                scoreBar.style.background = '#f59e0b';
-                document.getElementById('seoScore').style.color = '#f59e0b';
-                scoreLabel.textContent = '양호';
-                scoreLabel.style.color = '#f59e0b';
-            } else if (score >= 40) {
-                scoreBar.style.background = '#ef4444';
-                document.getElementById('seoScore').style.color = '#ef4444';
-                scoreLabel.textContent = '개선 필요';
-                scoreLabel.style.color = '#ef4444';
-            } else {
-                scoreBar.style.background = '#64748b';
-                document.getElementById('seoScore').style.color = '#64748b';
-                scoreLabel.textContent = '미흡';
-                scoreLabel.style.color = '#64748b';
-            }
-
-            // 카테고리별 통과 개수 업데이트
-            updateCategoryCount('기본 SEO', [
-                'keyword-in-title', 'keyword-in-meta', 'keyword-in-url', 'keyword-in-content',
-                'keyword-density', 'content-length', 'title-length', 'meta-length', 'url-length',
-                'keyword-beginning', 'keyword-in-first-paragraph'
-            ]);
-
-            updateCategoryCount('고급 SEO', [
-                'has-images', 'images-have-alt', 'has-internal-links', 'has-external-links',
-                'has-headings', 'keyword-in-headings', 'has-thumbnail', 'links-open-new-tab'
-            ]);
-
-            updateCategoryCount('제목 분석', [
-                'title-has-number', 'title-has-power-word', 'title-has-emotional-word',
-                'title-not-too-long', 'title-sentiment-positive'
-            ]);
-
-            updateCategoryCount('가독성', [
-                'sentence-length', 'paragraph-length', 'has-lists', 'passive-voice-low'
-            ]);
-        }
-
-        // SEO 체크 항목 업데이트
-        function checkSEO(checkName, passed, label) {
-            const item = document.querySelector(`[data-check="${checkName}"]`);
-            if (item) {
-                if (passed) {
-                    item.classList.remove('failed');
-                    item.classList.add('passed');
-                    item.querySelector('.seo-check-icon').textContent = '✓';
-                } else {
-                    item.classList.remove('passed');
-                    item.classList.add('failed');
-                    item.querySelector('.seo-check-icon').textContent = '○';
-                }
-            }
-            return passed ? 1 : 0;
-        }
-
-        // 카테고리별 통과 개수 업데이트
-        function updateCategoryCount(categoryName, checkNames) {
-            const categoryDiv = Array.from(document.querySelectorAll('#seoChecklist > div')).find(
-                div => div.querySelector('div').textContent.includes(categoryName)
-            );
-
-            if (categoryDiv) {
-                let passedCount = 0;
-                checkNames.forEach(checkName => {
-                    const item = document.querySelector(`[data-check="${checkName}"]`);
-                    if (item && item.classList.contains('passed')) {
-                        passedCount++;
-                    }
-                });
-
-                const header = categoryDiv.querySelector('div:first-child');
-                header.textContent = `${categoryName} (${passedCount}/${checkNames.length})`;
-            }
-        }
-
-        // 이벤트 리스너 등록
-        if (metaDescInput) {
-            metaDescInput.addEventListener('input', () => {
-                updateMetaDescLength();
-                performSEOAnalysis();
-            });
-            updateMetaDescLength();
-        }
-
-        if (focusKeywordInput) {
-            focusKeywordInput.addEventListener('input', performSEOAnalysis);
-        }
-
-        if (slugInput) {
-            slugInput.addEventListener('input', performSEOAnalysis);
-        }
-
-        // Quill 에디터 내용 변경 시 SEO 분석
-        if (quill) {
-            quill.on('text-change', performSEOAnalysis);
-        }
-
-        // 제목 입력 시 SEO 분석 (기존 autoSave 외에 추가)
-        if (titleInput) {
-            const originalTitleHandler = titleInput.oninput;
-            titleInput.addEventListener('input', () => {
-                performSEOAnalysis();
-            });
-        }
-
-        // 초기 SEO 분석 실행 (모든 설정 후)
-        setTimeout(() => {
-            performSEOAnalysis();
-        }, 100);
-
-        // ========== 임시저장 기능 ==========
-        // postForm, saveDraftBtn, publishBtn은 위에서 이미 선언됨
-
-        if (saveDraftBtn && postForm) {
-            saveDraftBtn.addEventListener('click', () => {
-                // is_draft hidden input 추가
-                let isDraftInput = postForm.querySelector('input[name="is_draft"]');
-                if (!isDraftInput) {
-                    isDraftInput = document.createElement('input');
-                    isDraftInput.type = 'hidden';
-                    isDraftInput.name = 'is_draft';
-                    postForm.appendChild(isDraftInput);
-                }
-                isDraftInput.value = 'true';
-
-                // 폼 제출
-                postForm.submit();
-            });
-        }
-
-        // 게시하기 버튼은 is_draft를 false로
-        if (publishBtn && postForm) {
-            publishBtn.addEventListener('click', () => {
-                let isDraftInput = postForm.querySelector('input[name="is_draft"]');
-                if (!isDraftInput) {
-                    isDraftInput = document.createElement('input');
-                    isDraftInput.type = 'hidden';
-                    isDraftInput.name = 'is_draft';
-                    postForm.appendChild(isDraftInput);
-                }
-                isDraftInput.value = 'false';
-            });
-        }
-
-        // ========== 이미지 Alt 텍스트 모달 ==========
-        const altModal = document.getElementById('altModal');
-        const altModalImage = document.getElementById('altModalImage');
-        const altModalAltText = document.getElementById('altModalAltText');
-        const altModalTitle = document.getElementById('altModalTitle');
-        const altModalCaption = document.getElementById('altModalCaption');
-        const altModalClose = document.getElementById('altModalClose');
-        const altModalCancel = document.getElementById('altModalCancel');
-        const altModalSave = document.getElementById('altModalSave');
-
-        let currentImageUrl = '';
-        let currentImageRange = null;
-
-        // Alt 텍스트 모달 표시
-        function showAltModal(imageUrl) {
-            currentImageUrl = imageUrl;
-            currentImageRange = quill.getSelection(true);
-
-            // 모달 이미지 표시
-            altModalImage.src = imageUrl;
-
-            // 포커스 키워드가 있으면 자동 제안
-            const focusKeyword = focusKeywordInput.value.trim();
-            if (focusKeyword) {
-                altModalAltText.value = focusKeyword;
-                altModalAltText.placeholder = `예: ${focusKeyword} 관련 이미지`;
-            } else {
-                altModalAltText.value = '';
-                altModalAltText.placeholder = '이미지를 설명하는 텍스트를 입력하세요...';
-            }
-
-            // 다른 필드 초기화
-            altModalTitle.value = '';
-            altModalCaption.value = '';
-
-            // 모달 표시
-            altModal.classList.add('active');
-
-            // Alt 텍스트 입력 필드에 포커스
-            setTimeout(() => altModalAltText.focus(), 100);
-        }
-
-        // Alt 텍스트 모달 닫기
-        function closeAltModal() {
-            altModal.classList.remove('active');
-            currentImageUrl = '';
-            currentImageRange = null;
-        }
-
-        // Alt 텍스트 저장 및 이미지 삽입
-        function saveAltText() {
-            const altText = altModalAltText.value.trim();
-
-            if (!altText) {
-                alert('Alt 텍스트는 필수 입력 항목입니다.');
-                altModalAltText.focus();
-                return;
-            }
-
-            // 이미지를 에디터에 삽입
-            if (currentImageRange !== null) {
-                quill.insertEmbed(currentImageRange.index, 'image', currentImageUrl);
-
-                // 삽입된 이미지에 Alt, Title, Caption 속성 추가
-                setTimeout(() => {
-                    const images = quill.root.querySelectorAll('img');
-                    const lastImage = images[images.length - 1];
-
-                    if (lastImage && lastImage.src === currentImageUrl) {
-                        lastImage.setAttribute('alt', altText);
-
-                        const title = altModalTitle.value.trim();
-                        if (title) {
-                            lastImage.setAttribute('title', title);
-                        }
-
-                        const caption = altModalCaption.value.trim();
-                        if (caption) {
-                            // Caption은 이미지를 figure로 감싸서 figcaption 추가
-                            const figure = document.createElement('figure');
-                            figure.style.margin = '1em 0';
-                            figure.style.textAlign = 'center';
-
-                            const img = lastImage.cloneNode(true);
-                            img.style.maxWidth = '100%';
-                            img.style.height = 'auto';
-
-                            const figcaption = document.createElement('figcaption');
-                            figcaption.textContent = caption;
-                            figcaption.style.fontSize = '0.9em';
-                            figcaption.style.color = '#64748b';
-                            figcaption.style.marginTop = '0.5em';
-
-                            figure.appendChild(img);
-                            figure.appendChild(figcaption);
-
-                            lastImage.parentNode.replaceChild(figure, lastImage);
-                        }
-
-                        // SEO 분석 다시 실행
-                        performSEOAnalysis();
-
-                        // 이미지 크기 조정 핸들러 설정 (약간의 지연을 두어 DOM이 완전히 렌더링되도록)
-                        setTimeout(() => {
-                            setupImageResizeHandlers();
-                        }, 200);
-                    }
-                }, 100);
-
-                quill.setSelection(currentImageRange.index + 1);
-            }
-
-            // 모달 닫기
-            closeAltModal();
-            updateSaveStatus('saved', '저장됨');
-        }
-
-        // 모달 닫기 버튼 이벤트
-        if (altModalClose) {
-            altModalClose.addEventListener('click', closeAltModal);
-        }
-
-        if (altModalCancel) {
-            altModalCancel.addEventListener('click', closeAltModal);
-        }
-
-        // 모달 저장 버튼 이벤트
-        if (altModalSave) {
-            altModalSave.addEventListener('click', saveAltText);
-        }
-
-        // Enter 키로 저장
-        if (altModalAltText) {
-            altModalAltText.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveAltText();
-                }
-            });
-        }
-
-        // 모달 배경 클릭 시 닫기
-        altModal.addEventListener('click', (e) => {
-            if (e.target === altModal) {
-                closeAltModal();
-            }
-        });
-
-        // ESC 키로 모달 닫기
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && altModal.classList.contains('active')) {
-                closeAltModal();
-            }
-        });
-
-        // ========== 이미지 크기 조정 기능 ==========
-        const resizeModal = document.getElementById('resizeModal');
-        const resizeModalClose = document.getElementById('resizeModalClose');
-        const resizeModalCancel = document.getElementById('resizeModalCancel');
-        const resizeModalSave = document.getElementById('resizeModalSave');
-        const resizePreviewImage = document.getElementById('resizePreviewImage');
-        const resizeWidth = document.getElementById('resizeWidth');
-        const resizeHeight = document.getElementById('resizeHeight');
-        const resizeMaintainAspect = document.getElementById('resizeMaintainAspect');
-        const resizeWidthUnit = document.getElementById('resizeWidthUnit');
-        const resizeHeightUnit = document.getElementById('resizeHeightUnit');
-        const resizePresetBtns = document.querySelectorAll('.resize-preset-btn');
-        const resizeUnitRadios = document.querySelectorAll('input[name="resizeUnit"]');
-
-        let currentImageElement = null;
-        let originalImageWidth = 0;
-        let originalImageHeight = 0;
-        let originalImageSrc = '';
-
-        // 이미지 클릭/더블클릭 이벤트 처리
-        function setupImageResizeHandlers() {
-            if (!quill) return;
-            
-            const editor = quill.root;
-            
-            // 기존 이미지에 이벤트 리스너 추가
-            const images = editor.querySelectorAll('img');
-            images.forEach(img => {
-                // 이미 핸들러가 설정된 이미지는 건너뛰기 (중복 방지)
-                if (img.dataset.resizeHandlerAdded === 'true') {
-                    return;
-                }
-
-                // 더블클릭으로 크기 조정 모달 열기
-                img.addEventListener('dblclick', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openResizeModal(this);
-                });
-
-                // 이미지 로드 완료 후 배지 설정 (DOM 구조 변경 방지)
-                if (img.complete) {
-                    // 이미 로드된 경우
-                    setTimeout(() => updateImageSizeBadge(img), 100);
-                } else {
-                    // 아직 로드 중인 경우
-                    img.addEventListener('load', function() {
-                        setTimeout(() => updateImageSizeBadge(this), 100);
-                    }, { once: true });
-                }
-
-                // 핸들러가 설정되었음을 표시
-                img.dataset.resizeHandlerAdded = 'true';
-            });
-        }
-
-        // 이미지 크기 배지 업데이트 (DOM 구조 변경 없이 안전하게)
-        function updateImageSizeBadge(img) {
-            if (!img || !img.parentElement || !img.complete) {
-                // 이미지가 아직 로드되지 않았으면 나중에 시도
-                if (img && !img.complete) {
-                    img.addEventListener('load', function() {
-                        updateImageSizeBadge(this);
-                    }, { once: true });
-                }
-                return;
-            }
-            
-            // 배지는 나중에 호버 시 동적으로 표시하도록 변경 (DOM 변경 최소화)
-            // 여기서는 단순히 이미지에 데이터만 저장
-            const width = img.offsetWidth || img.naturalWidth || 0;
-            const height = img.offsetHeight || img.naturalHeight || 0;
-            
-            if (width > 0 && height > 0) {
-                img.dataset.imageWidth = width;
-                img.dataset.imageHeight = height;
-                
-                // 호버 시 배지 표시
-                if (!img.dataset.badgeHoverAdded) {
-                    img.addEventListener('mouseenter', function() {
-                        showImageSizeBadge(this);
-                    });
-                    img.addEventListener('mouseleave', function() {
-                        hideImageSizeBadge(this);
-                    });
-                    img.dataset.badgeHoverAdded = 'true';
-                }
-            }
-        }
-
-        // 이미지 크기 배지 표시 (DOM 구조 변경 없이 오버레이로만 표시)
-        function showImageSizeBadge(img) {
-            if (!img || !img.parentElement) return;
-            
-            // 기존 배지 제거
-            const existingBadge = document.querySelector('.image-size-badge[data-for-img]');
-            if (existingBadge) {
-                existingBadge.remove();
-            }
-
-            const width = img.dataset.imageWidth || img.offsetWidth || img.naturalWidth || 0;
-            const height = img.dataset.imageHeight || img.offsetHeight || img.naturalHeight || 0;
-            
-            if (width === 0 || height === 0) return;
-
-            // 스타일에서 크기 확인
-            let displayWidth = width;
-            let displayHeight = height;
-            
-            if (img.style.width) {
-                displayWidth = img.style.width;
-            }
-            if (img.style.height && img.style.height !== 'auto') {
-                displayHeight = img.style.height;
-            }
-
-            // 배지 생성 (fixed position으로 화면에 오버레이)
-            const badge = document.createElement('div');
-            badge.className = 'image-size-badge';
-            badge.setAttribute('data-for-img', '');
-            badge.textContent = `${displayWidth} × ${displayHeight}`;
-            
-            // 이미지의 위치 계산
-            const rect = img.getBoundingClientRect();
-            badge.style.position = 'fixed';
-            badge.style.top = (rect.top - 24) + 'px';
-            badge.style.left = rect.left + 'px';
-            badge.style.zIndex = '10002';
-            
-            document.body.appendChild(badge);
-        }
-
-        // 이미지 크기 배지 숨김
-        function hideImageSizeBadge(img) {
-            const badge = document.querySelector('.image-size-badge[data-for-img]');
-            if (badge) {
-                badge.remove();
-            }
-        }
-
-        // 크기 조정 모달 열기
-        function openResizeModal(img) {
-            currentImageElement = img;
-            originalImageSrc = img.src;
-            
-            // 원본 이미지 크기 가져오기
-            const tempImg = new Image();
-            tempImg.onload = function() {
-                originalImageWidth = this.naturalWidth;
-                originalImageHeight = this.naturalHeight;
-
-                // 현재 적용된 크기 가져오기
-                let currentWidth = img.offsetWidth || originalImageWidth;
-                let currentHeight = img.offsetHeight || originalImageHeight;
-
-                // 스타일에서 크기 확인
-                if (img.style.width) {
-                    if (img.style.width.includes('%')) {
-                        resizeWidth.value = parseFloat(img.style.width);
-                        resizeWidthUnit.textContent = '%';
-                        document.querySelector('input[name="resizeUnit"][value="%"]').checked = true;
-                    } else {
-                        resizeWidth.value = parseInt(img.style.width) || currentWidth;
-                        resizeWidthUnit.textContent = 'px';
-                        document.querySelector('input[name="resizeUnit"][value="px"]').checked = true;
-                    }
-                } else {
-                    resizeWidth.value = currentWidth;
-                    resizeWidthUnit.textContent = 'px';
-                    document.querySelector('input[name="resizeUnit"][value="px"]').checked = true;
-                }
-
-                if (img.style.height) {
-                    if (img.style.height.includes('%')) {
-                        resizeHeight.value = parseFloat(img.style.height);
-                        resizeHeightUnit.textContent = '%';
-                    } else {
-                        resizeHeight.value = parseInt(img.style.height) || currentHeight;
-                        resizeHeightUnit.textContent = 'px';
-                    }
-                } else {
-                    resizeHeight.value = currentHeight;
-                    resizeHeightUnit.textContent = 'px';
-                }
-
-                // 미리보기 이미지 설정
-                resizePreviewImage.src = originalImageSrc;
-                updateResizePreview();
-
-                // 모달 표시
-                resizeModal.classList.add('active');
-                resizeWidth.focus();
-            };
-            tempImg.src = originalImageSrc;
-        }
-
-        // 크기 조정 모달 닫기
-        function closeResizeModal() {
-            resizeModal.classList.remove('active');
-            currentImageElement = null;
-        }
-
-        // 크기 조정 미리보기 업데이트
-        function updateResizePreview() {
-            if (!resizePreviewImage || !currentImageElement) return;
-
-            const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
-            let width = resizeWidth.value;
-            let height = resizeHeight.value;
-
-            if (width && height) {
-                if (unit === 'px') {
-                    resizePreviewImage.style.width = width + 'px';
-                    resizePreviewImage.style.height = height + 'px';
-                } else {
-                    resizePreviewImage.style.width = width + '%';
-                    resizePreviewImage.style.height = 'auto'; // 퍼센트일 때는 높이 자동
-                }
-            }
-        }
-
-        // 비율 유지하면서 크기 조정
-        function adjustAspectRatio(changedInput) {
-            if (!resizeMaintainAspect.checked || !originalImageWidth || !originalImageHeight) return;
-
-            const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
-            const aspectRatio = originalImageWidth / originalImageHeight;
-
-            if (changedInput === 'width') {
-                const newWidth = parseFloat(resizeWidth.value);
-                if (!isNaN(newWidth) && newWidth > 0) {
-                    if (unit === 'px') {
-                        resizeHeight.value = Math.round(newWidth / aspectRatio);
-                    } else {
-                        // 퍼센트일 때는 높이를 비율에 맞춰 계산 (복잡하므로 자동 높이 유지)
-                    }
-                }
-            } else if (changedInput === 'height') {
-                const newHeight = parseFloat(resizeHeight.value);
-                if (!isNaN(newHeight) && newHeight > 0) {
-                    if (unit === 'px') {
-                        resizeWidth.value = Math.round(newHeight * aspectRatio);
-                    }
-                }
-            }
-        }
-
-        // 크기 조정 적용
-        function applyResize() {
-            if (!currentImageElement) return;
-
-            const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
-            const width = resizeWidth.value;
-            const height = resizeHeight.value;
-
-            if (!width || !height) {
-                alert('너비와 높이를 모두 입력해주세요.');
-                return;
-            }
-
-            // 이미지 스타일 적용
-            if (unit === 'px') {
-                currentImageElement.style.width = width + 'px';
-                if (resizeMaintainAspect.checked) {
-                    currentImageElement.style.height = 'auto';
-                } else {
-                    currentImageElement.style.height = height + 'px';
-                }
-            } else {
-                currentImageElement.style.width = width + '%';
-                currentImageElement.style.height = 'auto';
-            }
-
-            // 이미지 크기 배지 업데이트
-            updateImageSizeBadge(currentImageElement);
-
-            // 이미지 핸들러 플래그 리셋하여 다시 조정 가능하도록 함
-            delete currentImageElement.dataset.resizeHandlerAdded;
-            delete currentImageElement.dataset.badgeHoverAdded;
-            
-            // 이벤트 리스너 재설정 (더블클릭 핸들러 다시 추가)
-            if (currentImageElement.dblclick) {
-                currentImageElement.removeEventListener('dblclick', currentImageElement.dblclick);
-            }
-            currentImageElement.addEventListener('dblclick', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                openResizeModal(this);
-            });
-            currentImageElement.dataset.resizeHandlerAdded = 'true';
-
-            // SEO 분석 다시 실행
-            performSEOAnalysis();
-
-            // 모달 닫기
-            closeResizeModal();
-            updateSaveStatus('saved', '저장됨');
-        }
-
-        // 프리셋 버튼 클릭
-        resizePresetBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                // 모든 버튼에서 active 제거
-                resizePresetBtns.forEach(b => b.classList.remove('active'));
-                // 클릭한 버튼에 active 추가
-                this.classList.add('active');
-
-                const size = this.dataset.size;
-                const unit = document.querySelector('input[name="resizeUnit"]:checked').value;
-
-                if (size === 'original') {
-                    resizeWidth.value = originalImageWidth;
-                    resizeHeight.value = originalImageHeight;
-                    resizeWidthUnit.textContent = unit;
-                    resizeHeightUnit.textContent = unit;
-                } else if (size === 'fit') {
-                    currentImageElement.style.width = '100%';
-                    currentImageElement.style.height = 'auto';
-                    resizeWidth.value = 100;
-                    resizeHeight.value = 'auto';
-                    resizeWidthUnit.textContent = '%';
-                    resizeHeightUnit.textContent = '%';
-                    document.querySelector('input[name="resizeUnit"][value="%"]').checked = true;
-                } else {
-                    const percentage = parseInt(size);
-                    if (unit === 'px') {
-                        resizeWidth.value = Math.round((originalImageWidth * percentage) / 100);
-                        resizeHeight.value = Math.round((originalImageHeight * percentage) / 100);
-                    } else {
-                        resizeWidth.value = percentage;
-                        resizeHeight.value = 'auto';
-                    }
-                }
-
-                updateResizePreview();
-            });
-        });
-
-        // 크기 입력 필드 이벤트
-        resizeWidth.addEventListener('input', function() {
-            adjustAspectRatio('width');
-            updateResizePreview();
-        });
-
-        resizeHeight.addEventListener('input', function() {
-            adjustAspectRatio('height');
-            updateResizePreview();
-        });
-
-        resizeMaintainAspect.addEventListener('change', function() {
-            if (this.checked) {
-                adjustAspectRatio('width');
-            }
-            updateResizePreview();
-        });
-
-        // 단위 변경 이벤트
-        resizeUnitRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                const unit = this.value;
-                resizeWidthUnit.textContent = unit;
-                resizeHeightUnit.textContent = unit;
-
-                // 픽셀에서 퍼센트로 변경
-                if (unit === '%') {
-                    if (resizeWidth.value && originalImageWidth) {
-                        resizeWidth.value = Math.round((parseInt(resizeWidth.value) / originalImageWidth) * 100);
-                    }
-                    resizeHeight.value = 'auto';
-                    resizeHeightUnit.textContent = '';
-                } else {
-                    // 퍼센트에서 픽셀으로 변경
-                    if (resizeWidth.value && originalImageWidth) {
-                        resizeWidth.value = Math.round((parseInt(resizeWidth.value) / 100) * originalImageWidth);
-                    }
-                    if (originalImageHeight) {
-                        resizeHeight.value = Math.round((parseInt(resizeHeight.value) / 100) * originalImageHeight) || originalImageHeight;
-                        resizeHeightUnit.textContent = 'px';
-                    }
-                }
-                updateResizePreview();
-            });
-        });
-
-        // 모달 닫기 이벤트
-        if (resizeModalClose) {
-            resizeModalClose.addEventListener('click', closeResizeModal);
-        }
-
-        if (resizeModalCancel) {
-            resizeModalCancel.addEventListener('click', closeResizeModal);
-        }
-
-        if (resizeModalSave) {
-            resizeModalSave.addEventListener('click', applyResize);
-        }
-
-        // 모달 배경 클릭 시 닫기
-        resizeModal.addEventListener('click', (e) => {
-            if (e.target === resizeModal) {
-                closeResizeModal();
-            }
-        });
-
-        // ESC 키로 모달 닫기
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && resizeModal.classList.contains('active')) {
-                closeResizeModal();
-            }
-        });
-
-        // 에디터 내용 변경 시 이미지 핸들러 재설정 (이미지가 추가되었을 때만)
-        if (quill) {
-            let previousImageCount = 0;
-            
-            quill.on('text-change', function() {
-                // 이미지 개수 확인
-                const currentImageCount = quill.root.querySelectorAll('img').length;
-                
-                // 새 이미지가 추가된 경우에만 핸들러 설정
-                if (currentImageCount > previousImageCount) {
-                    setTimeout(() => {
-                        setupImageResizeHandlers();
-                    }, 300);
-                }
-                
-                previousImageCount = currentImageCount;
-            });
-
-            // 초기 설정 (페이지 로드 후)
-            setTimeout(() => {
-                setupImageResizeHandlers();
-                previousImageCount = quill.root.querySelectorAll('img').length;
-            }, 500);
-        }
-
-        // ========== 버튼 모달 기능 ==========
-        const buttonModal = document.getElementById('buttonModal');
-        const buttonModalClose = document.getElementById('buttonModalClose');
-        const buttonModalCancel = document.getElementById('buttonModalCancel');
-        const buttonModalSave = document.getElementById('buttonModalSave');
-        const buttonModalText = document.getElementById('buttonModalText');
-        const buttonModalUrl = document.getElementById('buttonModalUrl');
-        const buttonModalStyle = document.getElementById('buttonModalStyle');
-        const buttonModalNewTab = document.getElementById('buttonModalNewTab');
-        const buttonModalPreview = document.getElementById('buttonModalPreview');
-        const buttonPreviewButton = document.getElementById('buttonPreviewButton');
-
-        let buttonModalCallback = null;
-
-        // 버튼 모달 표시
-        function showButtonModal(buttonData, callback) {
-            buttonModalCallback = callback;
-
-            // 기존 데이터가 있으면 입력 필드에 설정
-            if (buttonData && Object.keys(buttonData).length > 0) {
-                buttonModalText.value = buttonData.text || '';
-                buttonModalUrl.value = buttonData.url || '';
-                buttonModalStyle.value = buttonData.style || 'ql-button-primary';
-                buttonModalNewTab.checked = buttonData.openInNewTab || false;
-            } else {
-                // 새 버튼인 경우 기본값
-                buttonModalText.value = '';
-                buttonModalUrl.value = '';
-                buttonModalStyle.value = 'ql-button-primary';
-                buttonModalNewTab.checked = false;
-            }
-
-            // 미리보기 업데이트
-            updateButtonPreview();
-
-            // 모달 표시
-            buttonModal.classList.add('active');
-            
-            // 첫 번째 입력 필드에 포커스
-            setTimeout(() => buttonModalText.focus(), 100);
-        }
-
-        // 버튼 모달 닫기
-        function closeButtonModal() {
-            buttonModal.classList.remove('active');
-            buttonModalCallback = null;
-        }
-
-        // 버튼 미리보기 업데이트
-        function updateButtonPreview() {
-            const text = buttonModalText.value || '버튼';
-            const url = buttonModalUrl.value || '#';
-            const style = buttonModalStyle.value;
-            const openInNewTab = buttonModalNewTab.checked;
-
-            // 기존 내용 제거
-            buttonPreviewButton.innerHTML = '';
-            
-            // 텍스트 생성
-            const buttonText = document.createElement('span');
-            buttonText.className = 'ql-button-text';
-            buttonText.textContent = text;
-            
-            // SVG 아이콘 생성
-            const buttonIcon = document.createElement('span');
-            buttonIcon.className = 'ql-button-icon';
-            buttonIcon.innerHTML = '<svg aria-hidden="true" role="img" height="1em" width="1em" viewBox="0 0 256 512" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"></path></svg>';
-            
-            // 버튼에 텍스트와 아이콘 추가
-            buttonPreviewButton.appendChild(buttonText);
-            buttonPreviewButton.appendChild(buttonIcon);
-            
-            buttonPreviewButton.href = url;
-            buttonPreviewButton.className = 'ql-button ' + style;
-            
-            // 항상 흰색 텍스트 유지
-            buttonPreviewButton.style.color = 'white';
-            buttonPreviewButton.style.textDecoration = 'none';
-            
-            if (openInNewTab) {
-                buttonPreviewButton.target = '_blank';
-                buttonPreviewButton.rel = 'noopener noreferrer';
-            } else {
-                buttonPreviewButton.removeAttribute('target');
-                buttonPreviewButton.removeAttribute('rel');
-            }
-        }
-
-        // 입력 필드 변경 시 미리보기 업데이트
-        if (buttonModalText) {
-            buttonModalText.addEventListener('input', updateButtonPreview);
-        }
-        if (buttonModalUrl) {
-            buttonModalUrl.addEventListener('input', updateButtonPreview);
-        }
-        if (buttonModalStyle) {
-            buttonModalStyle.addEventListener('change', updateButtonPreview);
-        }
-        if (buttonModalNewTab) {
-            buttonModalNewTab.addEventListener('change', updateButtonPreview);
-        }
-
-        // 버튼 저장
-        function saveButton() {
-            const text = buttonModalText.value.trim();
-            const url = buttonModalUrl.value.trim();
-            const style = buttonModalStyle.value;
-            const openInNewTab = buttonModalNewTab.checked;
-
-            if (!text) {
-                alert('버튼 텍스트를 입력해주세요.');
-                buttonModalText.focus();
-                return;
-            }
-
-            if (!url) {
-                alert('링크 URL을 입력해주세요.');
-                buttonModalUrl.focus();
-                return;
-            }
-
-            const buttonData = {
-                text: text,
-                url: url,
-                style: style,
-                openInNewTab: openInNewTab
-            };
-
-            if (buttonModalCallback) {
-                buttonModalCallback(buttonData);
-            }
-
-            closeButtonModal();
-            updateSaveStatus('saved', '저장됨');
-        }
-
-        // 버튼 편집/삭제 이벤트 위임 (에디터 레벨에서 처리)
-        if (quill && quill.root) {
-            quill.root.addEventListener('click', function(e) {
-                // 편집 버튼 클릭
-                const editBtn = e.target.closest('[data-button-edit="true"]');
-                if (editBtn) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const buttonContainer = editBtn.closest('.ql-button-container');
-                    if (buttonContainer) {
-                        // data 속성에서 버튼 데이터 읽기
-                        let buttonData = {};
-                        try {
-                            const dataAttr = buttonContainer.getAttribute('data-button-data');
-                            if (dataAttr) {
-                                buttonData = JSON.parse(dataAttr);
-                            } else {
-                                // data 속성이 없으면 DOM에서 추출
-                                const button = buttonContainer.querySelector('.ql-button');
-                                if (button) {
-                                    const textSpan = button.querySelector('.ql-button-text');
-                                    buttonData = {
-                                        text: textSpan ? textSpan.textContent : '버튼',
-                                        url: button.href || '#',
-                                        style: button.className.replace('ql-button ', '').trim() || 'ql-button-primary',
-                                        openInNewTab: button.target === '_blank'
-                                    };
-                                }
-                            }
-                        } catch (err) {
-                            console.error('버튼 데이터 파싱 오류:', err);
-                        }
-                        
-                        showButtonModal(buttonData, function(newData) {
-                            // 기존 노드의 data 속성 업데이트
-                            buttonContainer.setAttribute('data-button-data', JSON.stringify(newData));
-                            
-                            // wrapper 내부의 버튼 요소 업데이트
-                            const wrapper = buttonContainer.querySelector('.ql-button-wrapper');
-                            if (wrapper) {
-                                const button = wrapper.querySelector('.ql-button');
-                                if (button) {
-                                    button.href = newData.url || '#';
-                                    button.className = 'ql-button ' + (newData.style || 'ql-button-primary');
-                                    
-                                    // 텍스트 업데이트
-                                    const textSpan = button.querySelector('.ql-button-text');
-                                    if (textSpan) {
-                                        textSpan.textContent = newData.text || '버튼';
-                                    }
-                                    
-                                    // 새 탭 열기 설정
-                                    if (newData.openInNewTab) {
-                                        button.target = '_blank';
-                                        button.rel = 'noopener noreferrer';
-                                    } else {
-                                        button.removeAttribute('target');
-                                        button.removeAttribute('rel');
-                                    }
-                                }
-                            }
-                            
-                            // Quill에 변경 사항 알림
-                            quill.update('user');
-                            updateSaveStatus('saved', '저장됨');
-                        });
-                    }
-                    return;
-                }
-                
-                // 삭제 버튼 클릭
-                const deleteBtn = e.target.closest('[data-button-delete="true"]');
-                if (deleteBtn) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const buttonContainer = deleteBtn.closest('.ql-button-container');
-                    if (buttonContainer) {
-                        buttonContainer.remove();
-                        updateSaveStatus('saved', '저장됨');
-                    }
-                    return;
-                }
-            });
-        }
-
-        // 모달 이벤트 리스너
-        if (buttonModalClose) {
-            buttonModalClose.addEventListener('click', closeButtonModal);
-        }
-
-        if (buttonModalCancel) {
-            buttonModalCancel.addEventListener('click', closeButtonModal);
-        }
-
-        if (buttonModalSave) {
-            buttonModalSave.addEventListener('click', saveButton);
-        }
-
-        // Enter 키로 저장
-        if (buttonModalText && buttonModalUrl) {
-            [buttonModalText, buttonModalUrl].forEach(input => {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && buttonModal.classList.contains('active')) {
-                        e.preventDefault();
-                        saveButton();
-                    }
-                });
-            });
-        }
-
-        // 모달 배경 클릭 시 닫기
-        if (buttonModal) {
-            buttonModal.addEventListener('click', (e) => {
-                if (e.target === buttonModal) {
-                    closeButtonModal();
-                }
-            });
-        }
-
-        // ESC 키로 버튼 모달 닫기
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && buttonModal && buttonModal.classList.contains('active')) {
-                closeButtonModal();
-            }
-        });
+        } // end initializeEditor
     </script>
 </body>
 </html>

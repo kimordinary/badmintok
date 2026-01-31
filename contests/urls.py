@@ -1,6 +1,6 @@
 from django.urls import path, register_converter
 
-from .views import ContestDetailView, ContestListView, contest_like
+from .views import ContestDetailView, ContestListView, ContestArchiveView, contest_like
 
 
 class UnicodeSlugConverter:
@@ -20,6 +20,7 @@ app_name = "contests"
 
 urlpatterns = [
     path("", ContestListView.as_view(), name="list"),
+    path("archive/", ContestArchiveView.as_view(), name="archive"),
     path("<unicode_slug:slug>/", ContestDetailView.as_view(), name="detail"),
     path("<unicode_slug:slug>/like/", contest_like, name="like"),
 ]
