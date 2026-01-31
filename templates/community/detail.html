@@ -8,17 +8,9 @@
 
 {% block og_image %}{% if post.thumbnail %}{{ request.scheme }}://{{ request.get_host }}{{ post.thumbnail.url }}{% elif post.images.exists %}{{ request.scheme }}://{{ request.get_host }}{{ post.images.first.image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}{% endif %}{% endblock %}
 
-{% block extra_head %}
-{% if post.meta_description %}
-<meta name="description" content="{{ post.meta_description|striptags }}">
-{% else %}
-<meta name="description" content="{{ post.content|striptags|truncatewords:30 }}">
-{% endif %}
-{% endblock %}
-
 {% block og_tags %}
 {% if post.meta_description %}
-<meta property="og:description" content="{{ post.meta_description|striptags }}">
+<meta property="og:description" content="{{ post.meta_description }}">
 {% else %}
 <meta property="og:description" content="{{ post.content|striptags|truncatewords:30 }}">
 {% endif %}
