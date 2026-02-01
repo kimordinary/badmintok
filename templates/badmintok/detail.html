@@ -775,7 +775,9 @@
                             break;
 
                         case 'paragraph':
-                            htmlContent += `<p>${block.data.text || ''}</p>`;
+                            const pText = block.data.text || '';
+                            // 빈 단락이면 &nbsp;로 공백 유지
+                            htmlContent += `<p>${pText || '&nbsp;'}</p>`;
                             break;
 
                         case 'list':
