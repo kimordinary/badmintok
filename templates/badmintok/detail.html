@@ -759,7 +759,18 @@
                 editorData.blocks.forEach(block => {
                     switch (block.type) {
                         case 'header':
-                            const level = block.data.level || 2;
+                        case 'h1':
+                        case 'h2':
+                        case 'h3':
+                        case 'h4':
+                        case 'h5':
+                        case 'h6':
+                            // header 타입 또는 h1~h6 타입 모두 처리
+                            let level = block.data.level || 2;
+                            // h1, h2 등 타입에서 레벨 추출
+                            if (block.type.startsWith('h') && block.type.length === 2) {
+                                level = parseInt(block.type.charAt(1)) || 2;
+                            }
                             htmlContent += `<h${level}>${block.data.text || ''}</h${level}>`;
                             break;
 
