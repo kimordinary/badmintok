@@ -1,7 +1,16 @@
 {% extends "base.html" %}
-{% load contest_filters %}
+{% load contest_filters static %}
 
 {% block title %}{{ contest.title }} - 배드민톡{% endblock %}
+
+{% block og_title_meta %}<meta property="og:title" content="{{ contest.title }}">{% endblock %}
+
+{% block og_image %}{% if contest_images %}{{ request.scheme }}://{{ request.get_host }}{{ contest_images.0.image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}{% endif %}{% endblock %}
+
+{% block og_tags %}
+<meta name="description" content="{{ contest.title }} | 일정: {{ contest.get_period_display }} | 장소: {{ contest.get_location_display }} | 접수마감: {{ contest.registration_end|date:'Y.m.d' }} | 배드민톡에서 전국 배드민턴 대회 일정을 확인하세요.">
+<meta property="og:description" content="일정: {{ contest.get_period_display }} | 장소: {{ contest.get_location_display }} | 접수마감: {{ contest.registration_end|date:'Y.m.d' }}">
+{% endblock %}
 
 {% block content %}
 <section class="section" aria-labelledby="contest-title" style="position: relative;">

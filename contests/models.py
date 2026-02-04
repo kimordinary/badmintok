@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from datetime import date
 import os
 import uuid
@@ -87,17 +86,15 @@ class Contest(models.Model):
         help_text="승급 대회인 경우 체크하세요. 비승급 대회는 체크하지 않습니다.",
     )
     title = models.CharField("대회명", max_length=200)
-    slug = models.SlugField("슬러그", unique=True, max_length=45, allow_unicode=True, help_text="URL에서 사용할 고유 값입니다.")
+    slug = models.SlugField("슬러그", unique=True, max_length=37, allow_unicode=True, help_text="URL에서 사용할 고유 값입니다.")
     schedule_start = models.DateField("대회 시작일")
     schedule_end = models.DateField("대회 종료일", blank=True, null=True)
     region = models.CharField("지역", max_length=20, choices=Region.choices, default=Region.SEOUL)
     region_detail = models.CharField("상세 장소", max_length=200, blank=True)
-    event_division = models.CharField("급수 (종목 / 연령 / 급수)", max_length=255)
     registration_start = models.DateField("접수 시작일")
     registration_end = models.DateField("접수 종료일")
     entry_fee = models.CharField("접수비", max_length=100, blank=True)
     competition_type = models.CharField("대회구", max_length=100, blank=True)
-    participant_reward = models.CharField("참가상품", max_length=255, blank=True)
     sponsor = models.ForeignKey(
         "Sponsor",
         on_delete=models.SET_NULL,
@@ -106,7 +103,6 @@ class Contest(models.Model):
         null=True,
         verbose_name="스폰서",
     )
-    award_reward = models.JSONField("입상상품", blank=True, null=True, help_text="JSON 형식으로 입력하세요.")
     registration_name = models.CharField("접수처 이름", max_length=200, blank=True, help_text="접수처 이름을 입력하세요. 예: 배드민톡, 네이버 등")
     registration_link = models.URLField("접수 링크", blank=True)
     description = models.TextField("대회 요강 AI 요약", blank=True)
@@ -186,43 +182,12 @@ class Contest(models.Model):
 
     def clean(self):
         super().clean()
-        if self.award_reward in (None, "", {}, []):
-            self.award_reward = []
-            return
-
-        structured = []
-
-        def normalize_prizes(prizes_value):
-            prize_list = []
-            if isinstance(prizes_value, dict):
-                for rank, prize in prizes_value.items():
-                    prize_list.append({"rank": str(rank), "prize": str(prize)})
-            elif isinstance(prizes_value, list):
-                for item in prizes_value:
-                    if not isinstance(item, dict) or "rank" not in item or "prize" not in item:
-                        raise ValidationError({"award_reward": "입상상품의 prizes 항목은 rank와 prize를 포함해야 합니다."})
-                    prize_list.append({"rank": str(item["rank"]), "prize": str(item["prize"])})
-            else:
-                raise ValidationError({"award_reward": "입상상품의 prizes 형식이 올바르지 않습니다."})
-            return prize_list
-
-        if isinstance(self.award_reward, dict):
-            ordered = OrderedDict(self.award_reward)
-            for division, prizes in ordered.items():
-                structured.append({"division": str(division), "prizes": normalize_prizes(prizes)})
-        elif isinstance(self.award_reward, list):
-            for entry in self.award_reward:
-                if not isinstance(entry, dict):
-                    raise ValidationError({"award_reward": "입상상품은 JSON 객체 또는 객체 리스트여야 합니다."})
-                division = entry.get("division")
-                prizes = entry.get("prizes")
-                if not division or prizes is None:
-                    raise ValidationError({"award_reward": "입상상품 각 항목은 division과 prizes를 포함해야 합니다."})
-                structured.append({"division": str(division), "prizes": normalize_prizes(prizes)})
-        else:
-            raise ValidationError({"award_reward": "입상상품은 JSON 객체 또는 객체 리스트여야 합니다."})
-
-        self.award_reward = structured
+        # 대회 일정 검증: 종료일이 시작일보다 이전이면 오류
+        if self.schedule_end and self.schedule_start and self.schedule_end < self.schedule_start:
+            raise ValidationError({"schedule_end": "대회 종료일은 시작일보다 이후여야 합니다."})
+        # 접수 일정 검증: 종료일이 시작일보다 이전이면 오류
+        if self.registration_end and self.registration_start and self.registration_end < self.registration_start:
+            raise ValidationError({"registration_end": "접수 종료일은 시작일보다 이후여야 합니다."})
 
 
 
@@ -232,6 +197,8 @@ class ContestSchedule(models.Model):
         ("여복", "여복"),
         ("남복", "남복"),
         ("단식", "단식"),
+        ("준자강", "준자강"),
+        ("자강", "자강"),
     )
     AGE_CHOICES = (
         ("10대", "10대"),

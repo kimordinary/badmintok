@@ -1,7 +1,20 @@
 from django import forms
 from django.contrib import admin
+from django.utils.html import format_html
 
 from .models import Contest, ContestCategory, ContestImage, ContestSchedule, Sponsor
+
+
+class ContestAdminForm(forms.ModelForm):
+    """Contest 어드민 폼 - textarea 크기 조정"""
+    class Meta:
+        model = Contest
+        fields = "__all__"
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 6}),
+            "participant_target": forms.Textarea(attrs={"rows": 4}),
+            "award_reward_text": forms.Textarea(attrs={"rows": 4}),
+        }
 
 
 class ContestScheduleInlineForm(forms.ModelForm):
@@ -54,8 +67,15 @@ class ContestImageInline(admin.TabularInline):
     """대회 이미지 인라인"""
     model = ContestImage
     extra = 1
-    fields = ("image", "order")
+    fields = ("image_preview", "image", "order")
+    readonly_fields = ("image_preview",)
     ordering = ("order", "id")
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="max-height: 80px; max-width: 120px; object-fit: contain;" />', obj.image.url)
+        return "-"
+    image_preview.short_description = "미리보기"
 
 
 @admin.register(ContestCategory)
@@ -72,6 +92,7 @@ class SponsorAdmin(admin.ModelAdmin):
 
 @admin.register(Contest)
 class ContestAdmin(admin.ModelAdmin):
+    form = ContestAdminForm
     inlines = [ContestImageInline, ContestScheduleInline]
     list_display = (
         "title",
@@ -90,18 +111,19 @@ class ContestAdmin(admin.ModelAdmin):
     autocomplete_fields = ("category", "sponsor")
     ordering = ("-created_at",)
     fieldsets = (
-        (None, {"fields": ("category", "is_qualifying", "title", "slug", "description", "pdf_file")}),
-        # 인라인(경기 일정) 바로 위에 오도록 일정/접수를 가운데로 배치
-        ("일정 및 접수", {"fields": ("schedule_start", "schedule_end", "registration_start", "registration_end")}),
+        (None, {"fields": ("category", "is_qualifying", "title", "slug", "pdf_file", "description")}),
+        ("대회 일정", {"fields": (("schedule_start", "schedule_end"),)}),
+        ("접수 정보", {"fields": (("registration_start", "registration_end"), "registration_name", "registration_link", "entry_fee")}),
         ("참가 대상 (종목 / 연령 / 급수)", {"fields": ("participant_target",)}),
         ("입상상품", {"fields": ("award_reward_text",)}),
-        ("세부 정보", {"fields": ("region", "region_detail", "entry_fee", "competition_type", "participant_reward", "sponsor", "registration_name", "registration_link")}),
+        ("장소 및 기타", {"fields": ("region", "region_detail", "competition_type", "sponsor")}),
     )
     actions = ["delete_selected"]
-    
+
     class Media:
-        js = ('js/admin-contest-slug.js',)
-    
+        css = {"all": ("css/admin-contest.css",)}
+        js = ("js/admin-contest-slug.js", "js/admin-contest-textarea.js")
+
     def has_delete_permission(self, request, obj=None):
         """삭제 권한 확인 - staff 사용자는 삭제 가능"""
         return request.user.is_staff

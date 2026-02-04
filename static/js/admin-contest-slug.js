@@ -6,9 +6,9 @@
         if (!slugInput) return;
         
         // URL 구조: https://badmintok.com/badminton-tournament/슬러그
-        const BASE_URL_LENGTH = 'https://badmintok.com/badminton-tournament/'.length; // 35자
+        const BASE_URL_LENGTH = 'https://badmintok.com/badminton-tournament/'.length; // 43자
         const MAX_TOTAL_URL_LENGTH = 80; // 전체 URL 최대 길이
-        const MAX_SLUG_LENGTH = MAX_TOTAL_URL_LENGTH - BASE_URL_LENGTH; // 슬러그 최대 길이 (45자)
+        const MAX_SLUG_LENGTH = MAX_TOTAL_URL_LENGTH - BASE_URL_LENGTH; // 슬러그 최대 길이 (37자)
         const RECOMMENDED_MIN = 70; // 전체 URL 권장 최소 길이
         const RECOMMENDED_MAX = 80; // 전체 URL 권장 최대 길이
         

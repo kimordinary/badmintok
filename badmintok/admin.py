@@ -276,6 +276,22 @@ class BadmintokAdminSite(admin.AdminSite):
         # 페이지뷰
         period_pageviews = base_queryset.count()
 
+        # === 1-1. 이전 기간 통계 (변화율 계산용) ===
+        prev_period_start = period_start - timedelta(days=chart_days)
+        prev_period_end = period_start
+
+        prev_base_queryset = VisitorLog.objects.filter(
+            visited_at__gte=prev_period_start,
+            visited_at__lt=prev_period_end
+        ).filter(real_user_filter)
+
+        prev_visitors = prev_base_queryset.values('session_key').distinct().count()
+        prev_pageviews = prev_base_queryset.count()
+
+        # 변화율 계산
+        visitors_change = self._calculate_change(period_visitors, prev_visitors)
+        pageviews_change = self._calculate_change(period_pageviews, prev_pageviews)
+
         # === 2. 차트 데이터 (단일 쿼리로 일별 집계) ===
         # 일별 페이지뷰 집계
         daily_pageviews = base_queryset.annotate(
@@ -313,18 +329,18 @@ class BadmintokAdminSite(admin.AdminSite):
             })
 
         # === 3. 상위 게시물/페이지 ===
-        top_pages = base_queryset.values('url_path').annotate(
+        top_pages = list(base_queryset.values('url_path').annotate(
             views=Count('id')
-        ).order_by('-views')[:15]
+        ).order_by('-views')[:15])
 
         # === 4. 유입 경로 (Referrers) ===
-        top_referrers = base_queryset.filter(
+        top_referrers = list(base_queryset.filter(
             referer_domain__isnull=False
         ).exclude(
             referer_domain=''
         ).values('referer_domain').annotate(
             visits=Count('id')
-        ).order_by('-visits')[:15]
+        ).order_by('-visits')[:15])
 
         # === 5. 검색어 추출 (최적화: 검색 엔진 도메인만 필터링 + 제한) ===
         search_engine_domains = ['google', 'naver', 'daum', 'bing']
@@ -353,7 +369,7 @@ class BadmintokAdminSite(admin.AdminSite):
         )[:15]
 
         # === 6. 외부 링크 클릭 (Outbound Clicks) ===
-        top_outbound_clicks = OutboundClick.objects.filter(
+        top_outbound_clicks = list(OutboundClick.objects.filter(
             clicked_at__gte=period_start,
             clicked_at__lt=period_end,
             device_type__in=['desktop', 'mobile', 'tablet']
@@ -361,7 +377,7 @@ class BadmintokAdminSite(admin.AdminSite):
             Q(user__is_staff=False) | Q(user__isnull=True)
         ).values('destination_domain').annotate(
             clicks=Count('id')
-        ).order_by('-clicks')[:15]
+        ).order_by('-clicks')[:15])
 
         context = {
             'site_header': '배드민톡 통계',
@@ -377,6 +393,9 @@ class BadmintokAdminSite(admin.AdminSite):
             # 주요 지표
             'period_visitors': period_visitors,
             'period_pageviews': period_pageviews,
+            # 이전 기간 대비 변화율
+            'visitors_change': visitors_change,
+            'pageviews_change': pageviews_change,
             # 차트 데이터
             'chart_data_json': json.dumps(chart_data),
             # 상위 페이지

@@ -144,6 +144,27 @@
         color: var(--jetpack-gray);
     }
 
+    .metric-change {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        margin-top: 8px;
+    }
+
+    .metric-change.positive {
+        color: #00a32a;
+    }
+
+    .metric-change.negative {
+        color: #d63638;
+    }
+
+    .metric-change.neutral {
+        color: var(--text-secondary);
+    }
+
     /* 차트 섹션 */
     .chart-section {
         background: #fff;
@@ -342,10 +363,18 @@
         <div class="metric-card">
             <div class="metric-label">방문자</div>
             <div class="metric-value">{{ period_visitors|default:0 }}</div>
+            <div class="metric-change {% if visitors_change > 0 %}positive{% elif visitors_change < 0 %}negative{% else %}neutral{% endif %}">
+                {% if visitors_change > 0 %}↑{% elif visitors_change < 0 %}↓{% else %}→{% endif %}
+                {{ visitors_change }}% <span style="color: var(--text-secondary); font-weight: 400;">이전 기간 대비</span>
+            </div>
         </div>
         <div class="metric-card">
             <div class="metric-label">조회수</div>
             <div class="metric-value">{{ period_pageviews|default:0 }}</div>
+            <div class="metric-change {% if pageviews_change > 0 %}positive{% elif pageviews_change < 0 %}negative{% else %}neutral{% endif %}">
+                {% if pageviews_change > 0 %}↑{% elif pageviews_change < 0 %}↓{% else %}→{% endif %}
+                {{ pageviews_change }}% <span style="color: var(--text-secondary); font-weight: 400;">이전 기간 대비</span>
+            </div>
         </div>
     </div>
 
