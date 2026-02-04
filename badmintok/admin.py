@@ -3,9 +3,12 @@ from django.utils.html import format_html
 from django.urls import reverse, path
 from django.shortcuts import render
 from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 from django.utils import timezone
+from django.core.cache import cache
 from datetime import timedelta
 import json
+import hashlib
 
 from .models import BadmintokBanner, Notice, VisitorLog, OutboundClick
 
@@ -160,8 +163,13 @@ class BadmintokAdminSite(admin.AdminSite):
 
         return None
 
+    def _get_cache_key(self, period, date_str):
+        """캐시 키 생성"""
+        key = f"stats_{period}_{date_str}"
+        return hashlib.md5(key.encode()).hexdigest()
+
     def statistics_view(self, request):
-        """Jetpack 스타일 통계 대시보드"""
+        """Jetpack 스타일 통계 대시보드 (최적화 버전)"""
         from datetime import datetime
 
         # 기간 파라미터: day, week, month, year (기본값: week)
@@ -194,6 +202,15 @@ class BadmintokAdminSite(admin.AdminSite):
                 selected_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
         else:
             selected_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # 캐시 확인 (오늘 데이터가 아닌 경우만 캐시 사용)
+        cache_key = self._get_cache_key(period, selected_date.strftime('%Y-%m-%d'))
+        is_today = selected_date.date() == now.date()
+
+        if not is_today:
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                return render(request, 'admin/statistics_jetpack.html', cached_data)
 
         # 기간 시작일/종료일 계산
         if period == 'day':
@@ -246,79 +263,81 @@ class BadmintokAdminSite(admin.AdminSite):
             (Q(user__is_staff=False) | Q(user__isnull=True))
         )
 
+        # 기간 내 기본 쿼리셋 (재사용)
+        base_queryset = VisitorLog.objects.filter(
+            visited_at__gte=period_start,
+            visited_at__lt=period_end
+        ).filter(real_user_filter)
+
         # === 1. 선택된 기간 통계 ===
         # 방문자 수 (고유 세션)
-        period_visitors = VisitorLog.objects.filter(
-            visited_at__gte=period_start,
-            visited_at__lt=period_end
-        ).filter(real_user_filter).values('session_key').distinct().count()
+        period_visitors = base_queryset.values('session_key').distinct().count()
 
         # 페이지뷰
-        period_pageviews = VisitorLog.objects.filter(
-            visited_at__gte=period_start,
-            visited_at__lt=period_end
-        ).filter(real_user_filter).count()
+        period_pageviews = base_queryset.count()
 
-        # === 2. 차트 데이터 (모든 기간에서 일별 데이터) ===
+        # === 2. 차트 데이터 (단일 쿼리로 일별 집계) ===
+        # 일별 페이지뷰 집계
+        daily_pageviews = base_queryset.annotate(
+            date=TruncDate('visited_at')
+        ).values('date').annotate(
+            views=Count('id')
+        ).order_by('date')
+
+        # 일별 방문자 수 집계 (고유 세션)
+        daily_visitors = base_queryset.annotate(
+            date=TruncDate('visited_at')
+        ).values('date', 'session_key').distinct().values('date').annotate(
+            visitors=Count('session_key')
+        ).order_by('date')
+
+        # 딕셔너리로 변환하여 빠른 조회
+        pageviews_dict = {item['date']: item['views'] for item in daily_pageviews}
+        visitors_dict = {item['date']: item['visitors'] for item in daily_visitors}
+
+        # 차트 데이터 생성 (빈 날짜도 포함)
         chart_data = []
-
-        # 일별 데이터 생성
         for i in range(chart_days - 1, -1, -1):
-            day_start = selected_date - timedelta(days=i)
-            day_end = day_start + timedelta(days=1)
-
-            visitors = VisitorLog.objects.filter(
-                visited_at__gte=day_start,
-                visited_at__lt=day_end
-            ).filter(real_user_filter).values('session_key').distinct().count()
-
-            pageviews = VisitorLog.objects.filter(
-                visited_at__gte=day_start,
-                visited_at__lt=day_end
-            ).filter(real_user_filter).count()
+            day = (selected_date - timedelta(days=i)).date()
 
             # 날짜 포맷 설정
-            if period == 'day':
-                date_label = day_start.strftime('%m/%d')
-            elif period == 'week':
-                date_label = day_start.strftime('%m/%d')
-            elif period == 'month':
-                date_label = day_start.strftime('%m/%d')
-            else:  # year
-                date_label = day_start.strftime('%y/%m/%d')
+            if period == 'year':
+                date_label = day.strftime('%y/%m/%d')
+            else:
+                date_label = day.strftime('%m/%d')
 
             chart_data.append({
                 'label': date_label,
-                'visitors': visitors,
-                'views': pageviews,
+                'visitors': visitors_dict.get(day, 0),
+                'views': pageviews_dict.get(day, 0),
             })
 
         # === 3. 상위 게시물/페이지 ===
-        top_pages = VisitorLog.objects.filter(
-            visited_at__gte=period_start,
-            visited_at__lt=period_end
-        ).filter(real_user_filter).values('url_path').annotate(
+        top_pages = base_queryset.values('url_path').annotate(
             views=Count('id')
         ).order_by('-views')[:15]
 
         # === 4. 유입 경로 (Referrers) ===
-        top_referrers = VisitorLog.objects.filter(
-            visited_at__gte=period_start,
-            visited_at__lt=period_end,
+        top_referrers = base_queryset.filter(
             referer_domain__isnull=False
-        ).filter(real_user_filter).exclude(
+        ).exclude(
             referer_domain=''
         ).values('referer_domain').annotate(
             visits=Count('id')
         ).order_by('-visits')[:15]
 
-        # === 5. 검색어 추출 ===
-        # referer에서 검색어 추출
-        search_logs = VisitorLog.objects.filter(
-            visited_at__gte=period_start,
-            visited_at__lt=period_end,
+        # === 5. 검색어 추출 (최적화: 검색 엔진 도메인만 필터링 + 제한) ===
+        search_engine_domains = ['google', 'naver', 'daum', 'bing']
+        search_referer_q = Q()
+        for domain in search_engine_domains:
+            search_referer_q |= Q(referer_domain__icontains=domain)
+
+        # 검색 엔진에서 유입된 로그만 가져오기 (최대 1000개로 제한)
+        search_logs = base_queryset.filter(
             referer__isnull=False
-        ).filter(real_user_filter).exclude(referer='').values_list('referer', flat=True)
+        ).filter(search_referer_q).exclude(
+            referer=''
+        ).values_list('referer', flat=True)[:1000]
 
         search_terms_count = {}
         for referer in search_logs:
@@ -338,8 +357,8 @@ class BadmintokAdminSite(admin.AdminSite):
             clicked_at__gte=period_start,
             clicked_at__lt=period_end,
             device_type__in=['desktop', 'mobile', 'tablet']
-        ).exclude(
-            user__is_staff=True
+        ).filter(
+            Q(user__is_staff=False) | Q(user__isnull=True)
         ).values('destination_domain').annotate(
             clicks=Count('id')
         ).order_by('-clicks')[:15]
@@ -369,6 +388,10 @@ class BadmintokAdminSite(admin.AdminSite):
             # 외부 링크 클릭
             'top_outbound_clicks': top_outbound_clicks,
         }
+
+        # 캐시 저장 (오늘 데이터가 아닌 경우, 1시간 캐시)
+        if not is_today:
+            cache.set(cache_key, context, 3600)
 
         return render(request, 'admin/statistics_jetpack.html', context)
 

@@ -122,6 +122,9 @@ class VisitorLog(models.Model):
             models.Index(fields=["session_key", "-visited_at"]),
             models.Index(fields=["url_path", "-visited_at"]),
             models.Index(fields=["referer_domain", "-visited_at"]),
+            # 통계 쿼리 최적화를 위한 복합 인덱스
+            models.Index(fields=["device_type", "-visited_at"]),
+            models.Index(fields=["-visited_at", "device_type"]),
         ]
 
     def __str__(self):
@@ -186,6 +189,8 @@ class OutboundClick(models.Model):
             models.Index(fields=["-clicked_at"]),
             models.Index(fields=["destination_domain", "-clicked_at"]),
             models.Index(fields=["link_type", "-clicked_at"]),
+            # 통계 쿼리 최적화를 위한 복합 인덱스
+            models.Index(fields=["device_type", "-clicked_at"]),
         ]
 
     def __str__(self):

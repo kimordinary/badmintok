@@ -54,7 +54,9 @@
       "Bash(pip install:*)",
       "Bash(pip3 install:*)",
       "Bash(lsof:*)",
-      "Bash(xargs kill -9)"
+      "Bash(xargs kill -9)",
+      "Bash(crontab:*)",
+      "Bash(source:*)"
     ],
     "deny": [],
     "ask": []

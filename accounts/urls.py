@@ -14,6 +14,12 @@ from .views import (
     GoogleMobileLoginView,
     SignupSuccessView,
     SignupView,
+    ProfileAPIView,
+    UserBlockAPIView,
+    ReportAPIView,
+    InquiryAPIView,
+    MypageSummaryAPIView,
+    AccountDeleteAPIView,
     mypage,
     profile_edit,
     enter_real_name,
@@ -63,6 +69,18 @@ urlpatterns = [
     path("google", GoogleCallbackView.as_view(), name="google_callback_no_slash"),
     # 모바일 앱을 위한 구글 로그인 API
     path("api/google/mobile/", GoogleMobileLoginView.as_view(), name="google_mobile_login"),
+    # 프로필 REST API
+    path("api/profile/", ProfileAPIView.as_view(), name="profile_api"),
+    # 사용자 차단 REST API
+    path("api/block/", UserBlockAPIView.as_view(), name="block_api"),
+    # 신고 REST API
+    path("api/report/", ReportAPIView.as_view(), name="report_api"),
+    # 문의 REST API
+    path("api/inquiry/", InquiryAPIView.as_view(), name="inquiry_api"),
+    # 마이페이지 요약 REST API
+    path("api/mypage/summary/", MypageSummaryAPIView.as_view(), name="mypage_summary_api"),
+    # 계정 삭제 REST API
+    path("api/account/delete/", AccountDeleteAPIView.as_view(), name="account_delete_api"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("enter-real-name/", enter_real_name, name="enter_real_name"),
     path("mypage/", mypage, name="mypage"),

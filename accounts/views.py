@@ -1728,5 +1728,624 @@ def account_delete(request):
         from django.contrib.auth import logout
         logout(request)
         return redirect("home")
-    
+
     return render(request, "accounts/account_delete.html")
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ProfileAPIView(View):
+    """
+    프로필 REST API
+    GET: 프로필 조회
+    PUT: 프로필 수정
+    """
+
+    def get(self, request):
+        """프로필 조회"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        user = request.user
+        try:
+            profile = user.profile
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(user=user)
+
+        # 프로필 이미지 URL 생성
+        profile_image_url = None
+        if profile.profile_image:
+            profile_image_url = request.build_absolute_uri(profile.profile_image.url)
+
+        return JsonResponse({
+            "success": True,
+            "data": {
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "activity_name": user.activity_name,
+                    "auth_provider": user.auth_provider or "",
+                    "is_social_auth": user.is_social_auth,
+                    "date_joined": user.date_joined.isoformat(),
+                },
+                "profile": {
+                    "name": profile.name,
+                    "profile_image_url": profile_image_url,
+                    "badminton_level": profile.badminton_level,
+                    "badminton_level_display": profile.get_badminton_level_display() if profile.badminton_level else "",
+                    "gender": profile.gender,
+                    "gender_display": profile.get_gender_display(),
+                    "age_range": profile.age_range,
+                    "birthday": profile.birthday.isoformat() if profile.birthday else None,
+                    "birth_year": profile.birth_year,
+                    "phone_number": profile.phone_number,
+                    "shipping_receiver": profile.shipping_receiver,
+                    "shipping_phone_number": profile.shipping_phone_number,
+                    "shipping_address": profile.shipping_address,
+                    "created_at": profile.created_at.isoformat(),
+                    "updated_at": profile.updated_at.isoformat(),
+                }
+            }
+        })
+
+    def put(self, request):
+        """프로필 수정"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        user = request.user
+        try:
+            profile = user.profile
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(user=user)
+
+        # JSON 또는 multipart/form-data 처리
+        content_type = request.content_type or ""
+        if "application/json" in content_type:
+            try:
+                data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse(
+                    {"success": False, "error": "잘못된 JSON 형식입니다"},
+                    status=400
+                )
+        else:
+            data = request.POST.dict()
+
+        # User 모델 필드 업데이트
+        user_updated = False
+        if "activity_name" in data and data["activity_name"]:
+            user.activity_name = data["activity_name"]
+            user_updated = True
+
+        if user_updated:
+            user.save()
+
+        # Profile 모델 필드 업데이트
+        profile_fields = [
+            "name", "badminton_level", "gender", "age_range",
+            "phone_number", "shipping_receiver", "shipping_phone_number", "shipping_address"
+        ]
+
+        update_fields = []
+        for field in profile_fields:
+            if field in data:
+                setattr(profile, field, data[field])
+                update_fields.append(field)
+
+        # 날짜 필드 처리
+        if "birthday" in data:
+            if data["birthday"]:
+                try:
+                    profile.birthday = datetime.datetime.strptime(data["birthday"], "%Y-%m-%d").date()
+                    update_fields.append("birthday")
+                except ValueError:
+                    return JsonResponse(
+                        {"success": False, "error": "생일 형식이 올바르지 않습니다 (YYYY-MM-DD)"},
+                        status=400
+                    )
+            else:
+                profile.birthday = None
+                update_fields.append("birthday")
+
+        if "birth_year" in data:
+            if data["birth_year"]:
+                try:
+                    profile.birth_year = int(data["birth_year"])
+                    update_fields.append("birth_year")
+                except (ValueError, TypeError):
+                    return JsonResponse(
+                        {"success": False, "error": "출생연도는 숫자여야 합니다"},
+                        status=400
+                    )
+            else:
+                profile.birth_year = None
+                update_fields.append("birth_year")
+
+        # 프로필 이미지 처리 (multipart/form-data인 경우)
+        if request.FILES.get("profile_image"):
+            profile.profile_image = request.FILES["profile_image"]
+            update_fields.append("profile_image")
+
+        if update_fields:
+            profile.save(update_fields=update_fields + ["updated_at"])
+
+        # 업데이트된 프로필 반환
+        profile_image_url = None
+        if profile.profile_image:
+            profile_image_url = request.build_absolute_uri(profile.profile_image.url)
+
+        return JsonResponse({
+            "success": True,
+            "message": "프로필이 수정되었습니다",
+            "data": {
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "activity_name": user.activity_name,
+                },
+                "profile": {
+                    "name": profile.name,
+                    "profile_image_url": profile_image_url,
+                    "badminton_level": profile.badminton_level,
+                    "badminton_level_display": profile.get_badminton_level_display() if profile.badminton_level else "",
+                    "gender": profile.gender,
+                    "gender_display": profile.get_gender_display(),
+                    "age_range": profile.age_range,
+                    "birthday": profile.birthday.isoformat() if profile.birthday else None,
+                    "birth_year": profile.birth_year,
+                    "phone_number": profile.phone_number,
+                    "shipping_receiver": profile.shipping_receiver,
+                    "shipping_phone_number": profile.shipping_phone_number,
+                    "shipping_address": profile.shipping_address,
+                    "updated_at": profile.updated_at.isoformat(),
+                }
+            }
+        })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class UserBlockAPIView(View):
+    """
+    사용자 차단 REST API
+    GET: 차단 목록 조회
+    POST: 사용자 차단
+    DELETE: 차단 해제
+    """
+
+    def get(self, request):
+        """차단 목록 조회"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        blocks = UserBlock.objects.filter(blocker=request.user).select_related("blocked", "blocked__profile")
+        block_list = []
+        for block in blocks:
+            blocked_user = block.blocked
+            profile_image_url = None
+            if hasattr(blocked_user, 'profile') and blocked_user.profile.profile_image:
+                profile_image_url = request.build_absolute_uri(blocked_user.profile.profile_image.url)
+
+            block_list.append({
+                "id": block.id,
+                "blocked_user": {
+                    "id": blocked_user.id,
+                    "activity_name": blocked_user.activity_name,
+                    "profile_image_url": profile_image_url,
+                },
+                "created_at": block.created_at.isoformat(),
+            })
+
+        return JsonResponse({
+            "success": True,
+            "data": block_list
+        })
+
+    def post(self, request):
+        """사용자 차단"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "잘못된 JSON 형식입니다"},
+                status=400
+            )
+
+        user_id = data.get("user_id")
+        if not user_id:
+            return JsonResponse(
+                {"success": False, "error": "user_id가 필요합니다"},
+                status=400
+            )
+
+        if user_id == request.user.id:
+            return JsonResponse(
+                {"success": False, "error": "자기 자신을 차단할 수 없습니다"},
+                status=400
+            )
+
+        try:
+            blocked_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": "사용자를 찾을 수 없습니다"},
+                status=404
+            )
+
+        block, created = UserBlock.objects.get_or_create(
+            blocker=request.user,
+            blocked=blocked_user
+        )
+
+        if not created:
+            return JsonResponse(
+                {"success": False, "error": "이미 차단한 사용자입니다"},
+                status=400
+            )
+
+        return JsonResponse({
+            "success": True,
+            "message": f"{blocked_user.activity_name}님을 차단했습니다",
+            "data": {
+                "id": block.id,
+                "blocked_user_id": blocked_user.id,
+                "created_at": block.created_at.isoformat(),
+            }
+        }, status=201)
+
+    def delete(self, request):
+        """차단 해제"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "잘못된 JSON 형식입니다"},
+                status=400
+            )
+
+        user_id = data.get("user_id")
+        if not user_id:
+            return JsonResponse(
+                {"success": False, "error": "user_id가 필요합니다"},
+                status=400
+            )
+
+        try:
+            block = UserBlock.objects.get(blocker=request.user, blocked_id=user_id)
+            blocked_name = block.blocked.activity_name
+            block.delete()
+            return JsonResponse({
+                "success": True,
+                "message": f"{blocked_name}님의 차단을 해제했습니다"
+            })
+        except UserBlock.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": "차단 정보를 찾을 수 없습니다"},
+                status=404
+            )
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ReportAPIView(View):
+    """
+    신고 REST API
+    GET: 내 신고 목록 조회
+    POST: 신고 생성
+    """
+
+    def get(self, request):
+        """내 신고 목록 조회"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        reports = Report.objects.filter(reporter=request.user).order_by("-created_at")
+        report_list = []
+        for report in reports:
+            report_list.append({
+                "id": report.id,
+                "report_type": report.report_type,
+                "report_type_display": report.get_report_type_display(),
+                "target_id": report.target_id,
+                "reason": report.reason,
+                "status": report.status,
+                "status_display": report.get_status_display(),
+                "created_at": report.created_at.isoformat(),
+            })
+
+        return JsonResponse({
+            "success": True,
+            "data": report_list
+        })
+
+    def post(self, request):
+        """신고 생성"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "잘못된 JSON 형식입니다"},
+                status=400
+            )
+
+        report_type = data.get("report_type")
+        target_id = data.get("target_id")
+        reason = data.get("reason")
+
+        if not all([report_type, target_id, reason]):
+            return JsonResponse(
+                {"success": False, "error": "report_type, target_id, reason이 필요합니다"},
+                status=400
+            )
+
+        valid_types = [choice[0] for choice in Report.ReportType.choices]
+        if report_type not in valid_types:
+            return JsonResponse(
+                {"success": False, "error": f"유효하지 않은 신고 유형입니다. 유효한 값: {valid_types}"},
+                status=400
+            )
+
+        report = Report.objects.create(
+            reporter=request.user,
+            report_type=report_type,
+            target_id=target_id,
+            reason=reason
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "신고가 접수되었습니다",
+            "data": {
+                "id": report.id,
+                "report_type": report.report_type,
+                "target_id": report.target_id,
+                "status": report.status,
+                "created_at": report.created_at.isoformat(),
+            }
+        }, status=201)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class InquiryAPIView(View):
+    """
+    문의 REST API
+    GET: 내 문의 목록 조회
+    POST: 문의 생성
+    """
+
+    def get(self, request):
+        """내 문의 목록 조회"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        inquiry_id = request.GET.get("id")
+
+        if inquiry_id:
+            # 단일 문의 상세 조회
+            try:
+                inquiry = Inquiry.objects.get(id=inquiry_id, user=request.user)
+                return JsonResponse({
+                    "success": True,
+                    "data": {
+                        "id": inquiry.id,
+                        "category": inquiry.category,
+                        "category_display": inquiry.get_category_display(),
+                        "title": inquiry.title,
+                        "content": inquiry.content,
+                        "status": inquiry.status,
+                        "status_display": inquiry.get_status_display(),
+                        "admin_response": inquiry.admin_response,
+                        "created_at": inquiry.created_at.isoformat(),
+                        "answered_at": inquiry.answered_at.isoformat() if inquiry.answered_at else None,
+                    }
+                })
+            except Inquiry.DoesNotExist:
+                return JsonResponse(
+                    {"success": False, "error": "문의를 찾을 수 없습니다"},
+                    status=404
+                )
+
+        # 문의 목록 조회
+        inquiries = Inquiry.objects.filter(user=request.user).order_by("-created_at")
+        inquiry_list = []
+        for inquiry in inquiries:
+            inquiry_list.append({
+                "id": inquiry.id,
+                "category": inquiry.category,
+                "category_display": inquiry.get_category_display(),
+                "title": inquiry.title,
+                "status": inquiry.status,
+                "status_display": inquiry.get_status_display(),
+                "created_at": inquiry.created_at.isoformat(),
+                "answered_at": inquiry.answered_at.isoformat() if inquiry.answered_at else None,
+            })
+
+        return JsonResponse({
+            "success": True,
+            "data": inquiry_list
+        })
+
+    def post(self, request):
+        """문의 생성"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "잘못된 JSON 형식입니다"},
+                status=400
+            )
+
+        category = data.get("category", "general")
+        title = data.get("title")
+        content = data.get("content")
+
+        if not all([title, content]):
+            return JsonResponse(
+                {"success": False, "error": "title과 content가 필요합니다"},
+                status=400
+            )
+
+        valid_categories = [choice[0] for choice in Inquiry.Category.choices]
+        if category not in valid_categories:
+            return JsonResponse(
+                {"success": False, "error": f"유효하지 않은 카테고리입니다. 유효한 값: {valid_categories}"},
+                status=400
+            )
+
+        inquiry = Inquiry.objects.create(
+            user=request.user,
+            category=category,
+            title=title,
+            content=content
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "문의가 등록되었습니다",
+            "data": {
+                "id": inquiry.id,
+                "category": inquiry.category,
+                "title": inquiry.title,
+                "status": inquiry.status,
+                "created_at": inquiry.created_at.isoformat(),
+            }
+        }, status=201)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class MypageSummaryAPIView(View):
+    """
+    마이페이지 요약 REST API
+    GET: 마이페이지 요약 정보 조회
+    """
+
+    def get(self, request):
+        """마이페이지 요약 정보"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        user = request.user
+
+        # 프로필 정보
+        try:
+            profile = user.profile
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(user=user)
+
+        profile_image_url = None
+        if profile.profile_image:
+            profile_image_url = request.build_absolute_uri(profile.profile_image.url)
+
+        # 각 섹션별 카운트
+        my_bands_count = Band.objects.filter(
+            members__user=user,
+            members__status="active"
+        ).count()
+        created_bands_count = Band.objects.filter(created_by=user).count()
+        bookmarked_bands_count = BandBookmark.objects.filter(user=user).count()
+        band_posts_count = BandPost.objects.filter(author=user).count()
+        band_comments_count = BandComment.objects.filter(author=user).count()
+        liked_band_posts_count = BandPost.objects.filter(likes__user=user).distinct().count()
+        schedule_applications_count = BandScheduleApplication.objects.filter(user=user).count()
+        vote_choices_count = BandVoteChoice.objects.filter(user=user).count()
+        community_posts_count = Post.objects.filter(author=user).count()
+        liked_posts_count = Post.objects.filter(likes=user).distinct().count()
+        comments_count = Comment.objects.filter(author=user).count()
+        shared_posts_count = Post.objects.filter(shares__user=user).distinct().count()
+        liked_contests_count = Contest.objects.filter(likes=user).distinct().count()
+
+        return JsonResponse({
+            "success": True,
+            "data": {
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "activity_name": user.activity_name,
+                    "profile_image_url": profile_image_url,
+                },
+                "counts": {
+                    "my_bands": my_bands_count,
+                    "created_bands": created_bands_count,
+                    "bookmarked_bands": bookmarked_bands_count,
+                    "band_posts": band_posts_count,
+                    "band_comments": band_comments_count,
+                    "liked_band_posts": liked_band_posts_count,
+                    "schedule_applications": schedule_applications_count,
+                    "vote_choices": vote_choices_count,
+                    "community_posts": community_posts_count,
+                    "liked_posts": liked_posts_count,
+                    "comments": comments_count,
+                    "shared_posts": shared_posts_count,
+                    "liked_contests": liked_contests_count,
+                }
+            }
+        })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class AccountDeleteAPIView(View):
+    """
+    계정 삭제 REST API
+    POST: 계정 비활성화 (탈퇴)
+    """
+
+    def post(self, request):
+        """계정 탈퇴"""
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"success": False, "error": "로그인이 필요합니다"},
+                status=401
+            )
+
+        user = request.user
+        user.is_active = False
+        user.save()
+
+        # 세션 무효화
+        from django.contrib.auth import logout
+        logout(request)
+
+        return JsonResponse({
+            "success": True,
+            "message": "계정이 탈퇴 처리되었습니다"
+        })
