@@ -15,9 +15,9 @@ def environment_callback(request):
 def dashboard_callback(request, context):
     """대시보드 콜백 - 통계 및 최근 활동 데이터"""
     from django.db.models import Count, Q
-    from accounts.models import User
+    from accounts.models import User, Inquiry, Report
     from contests.models import Contest
-    from community.models import Post
+    from community.models import Post, Comment
     from band.models import Band
     from badmintok.models import VisitorLog
 
@@ -25,6 +25,7 @@ def dashboard_callback(request, context):
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = today_start - timedelta(days=7)
     month_ago = today_start - timedelta(days=30)
+    three_days_later = now.date() + timedelta(days=3)
 
     # 실제 사용자 필터 (봇 제외)
     real_user_filter = (
@@ -95,6 +96,53 @@ def dashboard_callback(request, context):
         'id', 'name', 'band_type', 'created_by__activity_name', 'created_at'
     )
 
+    # === 알림 데이터 ===
+
+    # 1. 미답변 문의
+    pending_inquiries = Inquiry.objects.filter(status='pending').order_by('-created_at')
+    pending_inquiries_count = pending_inquiries.count()
+    pending_inquiries_list = list(pending_inquiries[:5].values(
+        'id', 'title', 'user__activity_name', 'category', 'created_at'
+    ))
+
+    # 2. 밴드 승인 요청 (이미 위에서 계산됨 - pending_bands)
+
+    # 3. 배드민톡 게시물 새 댓글 (오늘)
+    badmintok_comments = Comment.objects.filter(
+        post__source='badmintok',
+        created_at__gte=today_start
+    ).select_related('post', 'author').order_by('-created_at')
+    badmintok_comments_count = badmintok_comments.count()
+    badmintok_comments_list = list(badmintok_comments[:5].values(
+        'id', 'content', 'post__id', 'post__title', 'author__activity_name', 'created_at'
+    ))
+
+    # 4. 미처리 신고
+    pending_reports = Report.objects.filter(status='pending').order_by('-created_at')
+    pending_reports_count = pending_reports.count()
+    pending_reports_list = list(pending_reports[:5].values(
+        'id', 'report_type', 'reason', 'reporter__activity_name', 'created_at'
+    ))
+
+    # 5. 접수 마감 임박 대회 (3일 이내)
+    closing_contests = Contest.objects.filter(
+        registration_end__gte=now.date(),
+        registration_end__lte=three_days_later
+    ).order_by('registration_end')
+    closing_contests_count = closing_contests.count()
+    closing_contests_list = list(closing_contests[:5].values(
+        'id', 'title', 'registration_end'
+    ))
+
+    # 총 알림 수
+    total_notifications = (
+        pending_inquiries_count +
+        pending_bands +
+        badmintok_comments_count +
+        pending_reports_count +
+        closing_contests_count
+    )
+
     # context에 데이터 추가
     context.update({
         # 통계 카드 데이터
@@ -127,6 +175,30 @@ def dashboard_callback(request, context):
             "contests": list(recent_contests),
             "posts": list(recent_posts),
             "pending_bands": list(pending_bands_list),
+        },
+        # 알림 데이터
+        "notifications": {
+            "total": total_notifications,
+            "inquiries": {
+                "count": pending_inquiries_count,
+                "items": pending_inquiries_list,
+            },
+            "bands": {
+                "count": pending_bands,
+                "items": list(pending_bands_list),
+            },
+            "comments": {
+                "count": badmintok_comments_count,
+                "items": badmintok_comments_list,
+            },
+            "reports": {
+                "count": pending_reports_count,
+                "items": pending_reports_list,
+            },
+            "closing_contests": {
+                "count": closing_contests_count,
+                "items": closing_contests_list,
+            },
         },
     })
 

@@ -15,7 +15,115 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">대시보드</h1>
             <p class="text-gray-500 dark:text-gray-400 mt-1">배드민톡 관리자 대시보드에 오신 것을 환영합니다</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 items-center">
+            <!-- 알림 벨 -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" type="button" class="relative inline-flex items-center justify-center w-10 h-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined !text-xl !text-gray-600 dark:!text-gray-300" style="font-size: 20px; color: #4b5563;">notifications</span>
+                    {% if notifications.total > 0 %}
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    {% endif %}
+                </button>
+
+                <!-- 알림 드롭다운 -->
+                <div x-show="open" @click.away="open = false" x-transition
+                     class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg z-50 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <h4 class="font-semibold text-gray-900 dark:text-white">알림</h4>
+                    </div>
+                    <div class="max-h-96 overflow-y-auto">
+                        {% if notifications.total == 0 %}
+                        <div class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <span class="material-symbols-outlined text-3xl mb-2 block">check_circle</span>
+                            새로운 알림이 없습니다
+                        </div>
+                        {% else %}
+
+                        <!-- 미답변 문의 -->
+                        {% if notifications.inquiries.count > 0 %}
+                        <a href="{% url 'admin:accounts_inquiry_changelist' %}?status__exact=pending" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-lg">help</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">미답변 문의</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ notifications.inquiries.count }}건의 문의가 대기 중</p>
+                                </div>
+                                <span class="text-xs font-bold text-white bg-purple-500 px-2 py-0.5 rounded-full">{{ notifications.inquiries.count }}</span>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        <!-- 밴드 승인 요청 -->
+                        {% if notifications.bands.count > 0 %}
+                        <a href="{% url 'admin:band_band_changelist' %}?is_approved__exact=0" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg">groups</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">밴드 승인 요청</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ notifications.bands.count }}건의 승인 대기</p>
+                                </div>
+                                <span class="text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full">{{ notifications.bands.count }}</span>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        <!-- 배드민톡 새 댓글 -->
+                        {% if notifications.comments.count > 0 %}
+                        <a href="{% url 'admin:community_comment_changelist' %}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-green-600 dark:text-green-400 text-lg">chat</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">배드민톡 새 댓글</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">오늘 {{ notifications.comments.count }}개의 새 댓글</p>
+                                </div>
+                                <span class="text-xs font-bold text-white bg-green-500 px-2 py-0.5 rounded-full">{{ notifications.comments.count }}</span>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        <!-- 미처리 신고 -->
+                        {% if notifications.reports.count > 0 %}
+                        <a href="{% url 'admin:accounts_report_changelist' %}?status__exact=pending" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-red-600 dark:text-red-400 text-lg">flag</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">미처리 신고</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ notifications.reports.count }}건의 신고 대기</p>
+                                </div>
+                                <span class="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">{{ notifications.reports.count }}</span>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        <!-- 접수 마감 임박 대회 -->
+                        {% if notifications.closing_contests.count > 0 %}
+                        <a href="{% url 'admin:contests_contest_changelist' %}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400 text-lg">schedule</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">접수 마감 임박</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ notifications.closing_contests.count }}개 대회 3일 이내 마감</p>
+                                </div>
+                                <span class="text-xs font-bold text-white bg-yellow-500 px-2 py-0.5 rounded-full">{{ notifications.closing_contests.count }}</span>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             <a href="{% url 'admin:contests_contest_add' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
                 <span class="material-symbols-outlined text-lg">add</span>
                 대회 추가
