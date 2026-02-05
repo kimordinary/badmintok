@@ -6,7 +6,7 @@ from django.db.models import Exists, OuterRef, Q
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
-from unfold.contrib.filters.admin import DropdownFilter, ChoicesDropdownFilter
+from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter
 
 from .models import Contest, ContestCategory, ContestImage, ContestSchedule, Sponsor
 
@@ -132,8 +132,8 @@ class ContestAdmin(ModelAdmin):
         "created_at",
     )
     list_filter = (
-        ("category", DropdownFilter),
-        ("region", DropdownFilter),
+        ("category", RelatedDropdownFilter),
+        ("region", ChoicesDropdownFilter),
         CompletionFilter,
     )
     search_fields = ("title", "region_detail", "sponsor__name")
