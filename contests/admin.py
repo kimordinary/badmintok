@@ -58,15 +58,8 @@ class ContestImageInline(TabularInline):
     """대회 이미지 인라인"""
     model = ContestImage
     extra = 1
-    fields = ("image_preview", "image", "order")
-    readonly_fields = ("image_preview",)
+    fields = ("image", "order")
     ordering = ("order", "id")
-
-    def image_preview(self, obj):
-        if obj.image:
-            return format_html('<img src="{}" style="max-height: 80px; max-width: 120px; object-fit: contain;" />', obj.image.url)
-        return "-"
-    image_preview.short_description = "미리보기"
 
 
 @admin.register(ContestCategory)
@@ -108,7 +101,7 @@ class ContestAdmin(ModelAdmin):
 
     class Media:
         css = {"all": ("css/admin-contest.css",)}
-        js = ("js/admin-contest-slug.js", "js/admin-image-preview.js")
+        js = ("js/admin-contest-slug.js",)
 
     def has_delete_permission(self, request, obj=None):
         """삭제 권한 확인 - staff 사용자는 삭제 가능"""
