@@ -100,7 +100,6 @@ class ContestAdmin(ModelAdmin):
     actions = ["delete_selected"]
 
     class Media:
-        css = {"all": ("css/admin-contest.css",)}
         js = ("js/admin-contest-slug.js",)
 
     def has_delete_permission(self, request, obj=None):

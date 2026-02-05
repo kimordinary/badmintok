@@ -59,7 +59,10 @@
       "Bash(source:*)",
       "Bash(python3 -m pip install:*)",
       "Bash(python3 manage.py check:*)",
-      "Bash(python3 manage.py collectstatic:*)"
+      "Bash(python3 manage.py collectstatic:*)",
+      "Bash(git status:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": []
