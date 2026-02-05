@@ -2,10 +2,57 @@ from datetime import date
 
 from django import forms
 from django.contrib import admin
+from django.db.models import Exists, OuterRef, Q
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
+from unfold.contrib.filters.admin import DropdownFilter, ChoicesDropdownFilter
 
 from .models import Contest, ContestCategory, ContestImage, ContestSchedule, Sponsor
+
+
+class CompletionFilter(admin.SimpleListFilter):
+    """완성도 필터 (이미지/PDF/접수링크)"""
+    title = _("완성도")
+    parameter_name = "completion"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("complete", "완성 (모두 있음)"),
+            ("incomplete", "미완성 (하나라도 없음)"),
+            ("no_image", "이미지 없음"),
+            ("no_pdf", "PDF 없음"),
+            ("no_link", "접수링크 없음"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "complete":
+            # 이미지, PDF, 접수링크 모두 있는 대회
+            return queryset.annotate(
+                has_image=Exists(ContestImage.objects.filter(contest=OuterRef("pk")))
+            ).filter(
+                has_image=True,
+                pdf_file__isnull=False,
+                registration_link__isnull=False,
+            ).exclude(pdf_file="").exclude(registration_link="")
+        elif self.value() == "incomplete":
+            # 하나라도 없는 대회
+            return queryset.annotate(
+                has_image=Exists(ContestImage.objects.filter(contest=OuterRef("pk")))
+            ).filter(
+                Q(has_image=False) |
+                Q(pdf_file__isnull=True) | Q(pdf_file="") |
+                Q(registration_link__isnull=True) | Q(registration_link="")
+            )
+        elif self.value() == "no_image":
+            return queryset.annotate(
+                has_image=Exists(ContestImage.objects.filter(contest=OuterRef("pk")))
+            ).filter(has_image=False)
+        elif self.value() == "no_pdf":
+            return queryset.filter(Q(pdf_file__isnull=True) | Q(pdf_file=""))
+        elif self.value() == "no_link":
+            return queryset.filter(Q(registration_link__isnull=True) | Q(registration_link=""))
+        return queryset
 
 
 class ContestScheduleInlineForm(forms.ModelForm):
@@ -84,7 +131,11 @@ class ContestAdmin(ModelAdmin):
         "display_completion",
         "created_at",
     )
-    list_filter = ("category", "is_qualifying", "competition_type", "region", "schedule_start", "registration_start")
+    list_filter = (
+        ("category", DropdownFilter),
+        ("region", DropdownFilter),
+        CompletionFilter,
+    )
     search_fields = ("title", "region_detail", "sponsor__name")
     prepopulated_fields = {"slug": ("title",)}
     autocomplete_fields = ("category", "sponsor")
