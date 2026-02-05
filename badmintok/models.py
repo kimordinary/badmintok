@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 import os
 import uuid
 
+from badmintok.fields import WebPImageField
+
 
 def badmintok_banner_upload_to(instance, filename):
     """배너 이미지 파일명 생성 함수 - 파일명을 안전하게 처리"""
@@ -18,7 +20,7 @@ class BadmintokBanner(models.Model):
     """배드민톡 페이지 배너 이미지 (뉴스/리뷰/피드 공통으로 사용)."""
 
     title = models.CharField("배너 제목", max_length=100, blank=True)
-    image = models.ImageField("배너 이미지", upload_to=badmintok_banner_upload_to)
+    image = WebPImageField("배너 이미지", upload_to=badmintok_banner_upload_to)
     link_url = models.URLField("링크 URL", blank=True)
     alt_text = models.CharField("대체 텍스트", max_length=255, blank=True)
     is_active = models.BooleanField("노출 여부", default=True)

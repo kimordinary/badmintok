@@ -11,6 +11,8 @@ urlpatterns = [
     path("badmintok/editor/", views.badmintok_post_editor, name="badmintok_editor"),
     path("badmintok/editor/<int:post_id>/", views.badmintok_post_editor, name="badmintok_editor_update"),
     path("badmintok/image-upload/", views.badmintok_post_image_upload, name="badmintok_image_upload"),
+    # 커뮤니티 게시글 이미지 업로드 (일반 사용자용)
+    path("post-image-upload/", views.community_image_upload, name="community_image_upload"),
     # 댓글 관련 URL
     path("comment/<int:comment_id>/like/", views.CommentLikeView.as_view(), name="comment_like"),
     path("comment/<int:comment_id>/delete/", views.CommentDeleteView.as_view(), name="comment_delete"),

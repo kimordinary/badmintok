@@ -5,6 +5,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.templatetags.static import static
 
+from badmintok.fields import WebPImageField
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -104,7 +106,7 @@ class UserProfile(models.Model):
         UNKNOWN = "unknown", _("선택 안 함")
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    profile_image = models.ImageField(
+    profile_image = WebPImageField(
         _("프로필 사진"),
         storage=profile_storage,
         upload_to="images/userprofile/",

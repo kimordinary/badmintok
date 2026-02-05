@@ -262,11 +262,16 @@ class PostListView(ListView):
                 else:
                     post.excerpt = text_content
 
-                # 첫 번째 이미지 URL 추출
+                # 첫 번째 이미지 URL 추출 (base64 제외)
                 pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
                 match = re.search(pattern, unescaped_content, re.IGNORECASE)
                 if match:
-                    post.content_image_url = match.group(1)
+                    url = match.group(1)
+                    # base64 이미지는 제외 (성능 이슈 방지)
+                    if not url.startswith('data:'):
+                        post.content_image_url = url
+                    else:
+                        post.content_image_url = None
                 else:
                     post.content_image_url = None
             else:
@@ -286,11 +291,16 @@ class PostListView(ListView):
                 else:
                     post.excerpt = text_content
 
-                # 첫 번째 이미지 URL 추출
+                # 첫 번째 이미지 URL 추출 (base64 제외)
                 pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
                 match = re.search(pattern, unescaped_content, re.IGNORECASE)
                 if match:
-                    post.content_image_url = match.group(1)
+                    url = match.group(1)
+                    # base64 이미지는 제외 (성능 이슈 방지)
+                    if not url.startswith('data:'):
+                        post.content_image_url = url
+                    else:
+                        post.content_image_url = None
                 else:
                     post.content_image_url = None
             else:
@@ -813,6 +823,47 @@ def upload_image_for_editorjs(request):
     except Exception as e:
         logger.error(f'이미지 업로드 실패: {str(e)}')
         return JsonResponse({'success': 0, 'message': '이미지 업로드 중 오류가 발생했습니다.'}, status=500)
+
+
+@require_POST
+def community_image_upload(request):
+    """커뮤니티 게시글 Quill 에디터 이미지 업로드 (로그인 사용자용)"""
+    # 로그인 확인
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': '로그인이 필요합니다.'}, status=401)
+
+    try:
+        if 'image' not in request.FILES:
+            return JsonResponse({'success': False, 'error': '이미지 파일이 없습니다.'}, status=400)
+
+        image_file = request.FILES['image']
+
+        # 파일 크기 검증 (5MB)
+        if image_file.size > 5 * 1024 * 1024:
+            return JsonResponse({'success': False, 'error': '이미지 크기는 5MB 이하여야 합니다.'}, status=400)
+
+        # 파일 확장자 검증
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        file_ext = os.path.splitext(image_file.name)[1].lower()
+        if file_ext not in allowed_extensions:
+            return JsonResponse({'success': False, 'error': '지원하지 않는 이미지 형식입니다. (jpg, png, gif, webp만 가능)'}, status=400)
+
+        # 고유 파일명 생성
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = os.path.join('community', 'posts', unique_filename)
+
+        # 파일 저장
+        saved_path = default_storage.save(file_path, image_file)
+        file_url = default_storage.url(saved_path)
+
+        return JsonResponse({
+            'success': True,
+            'url': file_url
+        })
+
+    except Exception as e:
+        logger.error(f'커뮤니티 이미지 업로드 실패: {str(e)}')
+        return JsonResponse({'success': False, 'error': '이미지 업로드 중 오류가 발생했습니다.'}, status=500)
 
 
 @staff_member_required

@@ -36,6 +36,7 @@ from .views import (
     mypage_comments,
     mypage_shared_posts,
     mypage_liked_contests,
+    mypage_my_posts_comments,
     notification_settings,
     privacy_policy,
     terms_of_service,
@@ -99,6 +100,7 @@ urlpatterns = [
     path("mypage/comments/", mypage_comments, name="mypage_comments"),
     path("mypage/shared-posts/", mypage_shared_posts, name="mypage_shared_posts"),
     path("mypage/liked-contests/", mypage_liked_contests, name="mypage_liked_contests"),
+    path("mypage/my-posts-comments/", mypage_my_posts_comments, name="mypage_my_posts_comments"),
     # 설정 및 기타
     path("mypage/notifications/", notification_settings, name="notification_settings"),
     path("mypage/privacy-policy/", privacy_policy, name="privacy_policy"),

@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 from PIL import Image
 import os
 
+from badmintok.fields import WebPImageField
+
 
 class Band(models.Model):
     """밴드(소모임) 모델"""
@@ -40,8 +42,8 @@ class Band(models.Model):
     # 쉼표로 구분된 분류 코드 목록 (flash, group, club 등)
     categories = models.CharField(_("분류 코드"), max_length=100, blank=True, help_text="쉼표로 구분된 분류 코드 (flash,group,club)")
     flash_region_detail = models.CharField(_("번개 구체 지역"), max_length=20, blank=True, help_text="번개 생성 시 선택한 구체 지역 (서울, 경기, 인천 등)")
-    cover_image = models.ImageField(_("커버 이미지"), upload_to="band/covers/", blank=True, null=True)
-    profile_image = models.ImageField(_("프로필 이미지"), upload_to="band/profiles/", blank=True, null=True)
+    cover_image = WebPImageField(_("커버 이미지"), upload_to="band/covers/", blank=True, null=True)
+    profile_image = WebPImageField(_("프로필 이미지"), upload_to="band/profiles/", blank=True, null=True)
     is_public = models.BooleanField(_("공개 여부"), default=True)
     join_approval_required = models.BooleanField(_("가입 승인 필요"), default=False)
     # 관리자 승인 관련 필드 (모임/동호회만 사용)
@@ -298,7 +300,7 @@ class BandPostImage(models.Model):
         null=True,
         blank=True
     )
-    image = models.ImageField(_("이미지"), upload_to="band/posts/")
+    image = WebPImageField(_("이미지"), upload_to="band/posts/")
     order_index = models.IntegerField(_("순서"), default=0)
     created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
 
@@ -622,7 +624,7 @@ class BandScheduleImage(models.Model):
         related_name="images",
         verbose_name=_("일정")
     )
-    image = models.ImageField(
+    image = WebPImageField(
         _("이미지"),
         upload_to=schedule_image_upload_to,
         help_text="번개 이미지 (3:4 비율 권장)"

@@ -75,26 +75,17 @@ def mypage(request):
     schedule_applications_count = BandScheduleApplication.objects.filter(user=user).count()
     vote_choices_count = BandVoteChoice.objects.filter(user=user).count()
     community_posts_count = Post.objects.filter(author=user).count()
-    liked_posts_count = Post.objects.filter(likes=user).distinct().count()
     comments_count = Comment.objects.filter(author=user).count()
-    shared_posts_count = Post.objects.filter(shares__user=user).distinct().count()
-    liked_contests_count = Contest.objects.filter(likes=user).distinct().count()
+
+    # 통합 게시물/댓글 카운트
+    total_posts_comments_count = band_posts_count + band_comments_count + community_posts_count + comments_count
 
     return render(request, "accounts/mypage.html", {
         "profile": profile,
         "my_bands_count": my_bands_count,
         "created_bands_count": created_bands_count,
         "bookmarked_bands_count": bookmarked_bands_count,
-        "band_posts_count": band_posts_count,
-        "band_comments_count": band_comments_count,
-        "liked_band_posts_count": liked_band_posts_count,
-        "schedule_applications_count": schedule_applications_count,
-        "vote_choices_count": vote_choices_count,
-        "community_posts_count": community_posts_count,
-        "liked_posts_count": liked_posts_count,
-        "comments_count": comments_count,
-        "shared_posts_count": shared_posts_count,
-        "liked_contests_count": liked_contests_count,
+        "total_posts_comments_count": total_posts_comments_count,
     })
 
 
@@ -344,14 +335,74 @@ def mypage_liked_contests(request):
     user = request.user
     per_page = 20
     page = request.GET.get('page', 1)
-    
+
     liked_contests = Contest.objects.filter(likes=user).order_by("-created_at").distinct()
     paginator = Paginator(liked_contests, per_page)
     contests_page = paginator.get_page(page)
-    
+
     return render(request, "accounts/mypage_contests.html", {
         "contests_page": contests_page,
         "title": "좋아요한 대회",
+    })
+
+
+@login_required
+def mypage_my_posts_comments(request):
+    """통합 내 게시물/댓글 페이지"""
+    user = request.user
+    tab = request.GET.get('tab', 'posts')
+    per_page = 20
+    page = request.GET.get('page', 1)
+
+    # 카운트 계산
+    band_posts_count = BandPost.objects.filter(author=user).count()
+    band_comments_count = BandComment.objects.filter(author=user).count()
+    community_posts_count = Post.objects.filter(author=user).count()
+    community_comments_count = Comment.objects.filter(author=user).count()
+
+    total_posts_count = band_posts_count + community_posts_count
+    total_comments_count = band_comments_count + community_comments_count
+
+    if tab == 'comments':
+        # 모임 댓글 + 커뮤니티 댓글 통합
+        band_comments_list = list(BandComment.objects.filter(author=user).order_by("-created_at"))
+        community_comments_list = list(Comment.objects.filter(author=user).order_by("-created_at"))
+
+        # 타입 구분을 위한 wrapper
+        all_comments = []
+        for c in band_comments_list:
+            all_comments.append({'type': 'band', 'item': c, 'created_at': c.created_at})
+        for c in community_comments_list:
+            all_comments.append({'type': 'community', 'item': c, 'created_at': c.created_at})
+
+        # 날짜순 정렬
+        all_comments.sort(key=lambda x: x['created_at'], reverse=True)
+
+        paginator = Paginator(all_comments, per_page)
+        items_page = paginator.get_page(page)
+    else:
+        # 모임 게시글 + 커뮤니티 게시글 통합
+        band_posts_list = list(BandPost.objects.filter(author=user).order_by("-created_at"))
+        community_posts_list = list(Post.objects.filter(author=user).order_by("-created_at"))
+
+        all_posts = []
+        for p in band_posts_list:
+            all_posts.append({'type': 'band', 'item': p, 'created_at': p.created_at})
+        for p in community_posts_list:
+            all_posts.append({'type': 'community', 'item': p, 'created_at': p.created_at})
+
+        # 날짜순 정렬
+        all_posts.sort(key=lambda x: x['created_at'], reverse=True)
+
+        paginator = Paginator(all_posts, per_page)
+        items_page = paginator.get_page(page)
+
+    return render(request, "accounts/mypage_my_posts_comments.html", {
+        "items_page": items_page,
+        "tab": tab,
+        "total_posts_count": total_posts_count,
+        "total_comments_count": total_comments_count,
+        "title": "내 게시물/댓글",
     })
 
 

@@ -13,7 +13,13 @@
                 {% for banner in banner_images %}
                     <div class="badmintok-banner-item">
                         <span class="banner-sponsored-label">Sponsored</span>
-                        <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy">
+                        {% if banner.link_url %}
+                            <a href="{{ banner.link_url }}" target="_blank" rel="nofollow noopener noreferrer" style="display: block; width: 100%; height: 100%;">
+                                <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy">
+                            </a>
+                        {% else %}
+                            <img src="{{ banner.url }}" alt="{{ banner.alt }}" loading="lazy">
+                        {% endif %}
                     </div>
                 {% endfor %}
             </div>

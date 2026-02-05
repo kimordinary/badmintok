@@ -188,24 +188,149 @@
 <!-- Quill Editor -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
+    // 이미지 업로드 함수
+    async function uploadImage(file) {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const response = await fetch('{% url "community:community_image_upload" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                return data.url;
+            } else {
+                alert(data.error || '이미지 업로드에 실패했습니다.');
+                return null;
+            }
+        } catch (error) {
+            console.error('Image upload error:', error);
+            alert('이미지 업로드 중 오류가 발생했습니다.');
+            return null;
+        }
+    }
+
+    // 이미지 삽입 함수
+    function insertImage(url) {
+        const range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'image', url);
+        quill.setSelection(range.index + 1);
+    }
+
+    // 커스텀 이미지 핸들러
+    function imageHandler() {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            // 파일 크기 체크 (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('이미지 크기는 5MB 이하여야 합니다.');
+                return;
+            }
+
+            // 업로드 중 표시
+            const range = quill.getSelection(true);
+            quill.insertText(range.index, '이미지 업로드 중...', { italic: true, color: '#999' });
+
+            const url = await uploadImage(file);
+
+            // 임시 텍스트 제거
+            quill.deleteText(range.index, '이미지 업로드 중...'.length);
+
+            if (url) {
+                insertImage(url);
+            }
+        };
+    }
+
     // Quill Editor 초기화
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
-            toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ 'color': [] }, { 'background': [] }],
-                [{ 'font': [] }],
-                [{ 'size': ['small', false, 'large', 'huge'] }],
-                [{ 'align': [] }],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['blockquote', 'code-block'],
-                ['link', 'image'],
-                ['clean']
-            ]
+            toolbar: {
+                container: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'font': [] }],
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                    [{ 'align': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['blockquote', 'code-block'],
+                    ['link', 'image'],
+                    ['clean']
+                ],
+                handlers: {
+                    image: imageHandler  // 커스텀 이미지 핸들러 사용
+                }
+            }
         },
         placeholder: '내용을 입력하세요...',
+    });
+
+    // 이미지 붙여넣기 처리
+    quill.root.addEventListener('paste', async function(e) {
+        const clipboardData = e.clipboardData || window.clipboardData;
+        const items = clipboardData.items;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                e.preventDefault();
+                const file = items[i].getAsFile();
+
+                // 파일 크기 체크 (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('이미지 크기는 5MB 이하여야 합니다.');
+                    return;
+                }
+
+                const url = await uploadImage(file);
+                if (url) {
+                    insertImage(url);
+                }
+                return;
+            }
+        }
+    });
+
+    // 이미지 드래그앤드롭 처리
+    quill.root.addEventListener('drop', async function(e) {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+
+        for (let i = 0; i < files.length; i++) {
+            if (files[i].type.indexOf('image') !== -1) {
+                const file = files[i];
+
+                // 파일 크기 체크 (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('이미지 크기는 5MB 이하여야 합니다.');
+                    continue;
+                }
+
+                const url = await uploadImage(file);
+                if (url) {
+                    insertImage(url);
+                }
+            }
+        }
+    });
+
+    // 드래그오버 이벤트 (드롭 허용)
+    quill.root.addEventListener('dragover', function(e) {
+        e.preventDefault();
     });
 
     // 기존 내용이 있으면 에디터에 로드
@@ -217,7 +342,7 @@
     // 폼 제출 시 에디터 내용을 textarea에 복사 및 중복 제출 방지
     const postForm = document.getElementById('postForm');
     let isSubmitting = false;
-    
+
     postForm.addEventListener('submit', function(e) {
         // 이미 제출 중이면 중복 제출 방지
         if (isSubmitting) {
@@ -225,11 +350,11 @@
             alert('게시글을 저장 중입니다. 잠시만 기다려주세요.');
             return false;
         }
-        
+
         // 에디터 내용을 가져옴
         const editorContent = quill.root.innerHTML;
         const editorText = quill.getText().trim(); // 실제 텍스트만 추출
-        
+
         // 빈 내용 체크 (텍스트가 없거나 기본 HTML만 있는 경우)
         if (!editorText || editorContent === '<p><br></p>' || editorContent === '<p></p>') {
             e.preventDefault();
@@ -237,10 +362,10 @@
             quill.focus();
             return false;
         }
-        
+
         // 에디터 내용을 textarea에 저장
         hiddenContent.value = editorContent;
-        
+
         // 제출 상태로 설정 및 버튼 비활성화
         isSubmitting = true;
         const submitButton = postForm.querySelector('button[type="submit"]');

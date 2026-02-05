@@ -6,12 +6,20 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.core.cache import cache
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from datetime import timedelta
 import json
 import hashlib
 from unfold.admin import ModelAdmin
 
 from .models import BadmintokBanner, Notice, VisitorLog, OutboundClick
+from .fields import (
+    get_unconverted_images_stats,
+    convert_existing_image_to_webp,
+    is_convertible,
+    get_all_image_fields_info,
+)
 
 
 @admin.register(BadmintokBanner)
@@ -374,6 +382,208 @@ def statistics_view(request):
     return render(request, 'admin/statistics_jetpack.html', context)
 
 
+# ===== WebP 이미지 관리 뷰 =====
+
+def image_management_view(request):
+    """WebP 이미지 변환 관리 페이지"""
+    stats = get_unconverted_images_stats()
+
+    # 통계 요약
+    total_images = sum(s['total'] for s in stats.values())
+    total_unconverted = sum(s['unconverted'] for s in stats.values())
+    total_converted = sum(s['converted'] for s in stats.values())
+
+    context = {
+        'site_header': '이미지 WebP 변환 관리',
+        'site_title': '이미지 관리',
+        'stats': stats,
+        'total_images': total_images,
+        'total_unconverted': total_unconverted,
+        'total_converted': total_converted,
+        'conversion_rate': round((total_converted / total_images * 100) if total_images > 0 else 0, 1),
+    }
+
+    return render(request, 'admin/image_management.html', context)
+
+
+def get_unconverted_images_list(request):
+    """특정 모델/필드의 미변환 이미지 목록 반환"""
+    from django.apps import apps
+
+    app = request.GET.get('app')
+    model_name = request.GET.get('model')
+    field_name = request.GET.get('field')
+    page = int(request.GET.get('page', 1))
+    per_page = 20
+
+    if not all([app, model_name, field_name]):
+        return JsonResponse({'error': '필수 파라미터가 없습니다.'}, status=400)
+
+    try:
+        model_class = apps.get_model(app, model_name)
+    except LookupError:
+        return JsonResponse({'error': '모델을 찾을 수 없습니다.'}, status=404)
+
+    # 미변환 이미지 조회
+    queryset = model_class.objects.exclude(**{f"{field_name}__exact": ''})
+    queryset = queryset.exclude(**{f"{field_name}__isnull": True})
+
+    unconverted_items = []
+    for obj in queryset.iterator():
+        field_value = getattr(obj, field_name)
+        if field_value and field_value.name and is_convertible(field_value.name):
+            try:
+                file_size = field_value.size
+            except Exception:
+                file_size = 0
+
+            unconverted_items.append({
+                'id': obj.pk,
+                'filename': field_value.name,
+                'size': file_size,
+                'size_display': _format_file_size(file_size),
+                'url': field_value.url if hasattr(field_value, 'url') else '',
+            })
+
+    # 페이지네이션
+    total = len(unconverted_items)
+    start = (page - 1) * per_page
+    end = start + per_page
+    items = unconverted_items[start:end]
+
+    return JsonResponse({
+        'items': items,
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page,
+    })
+
+
+@require_POST
+def convert_single_image(request):
+    """단일 이미지 WebP 변환"""
+    from django.apps import apps
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON 파싱 오류'}, status=400)
+
+    app = data.get('app')
+    model_name = data.get('model')
+    field_name = data.get('field')
+    pk = data.get('id')
+
+    if not all([app, model_name, field_name, pk]):
+        return JsonResponse({'error': '필수 파라미터가 없습니다.'}, status=400)
+
+    try:
+        model_class = apps.get_model(app, model_name)
+        obj = model_class.objects.get(pk=pk)
+    except LookupError:
+        return JsonResponse({'error': '모델을 찾을 수 없습니다.'}, status=404)
+    except model_class.DoesNotExist:
+        return JsonResponse({'error': '객체를 찾을 수 없습니다.'}, status=404)
+
+    result = convert_existing_image_to_webp(obj, field_name)
+
+    return JsonResponse(result)
+
+
+@require_POST
+def convert_bulk_images(request):
+    """일괄 이미지 WebP 변환 (선택 변환 또는 전체 변환)"""
+    from django.apps import apps
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON 파싱 오류'}, status=400)
+
+    app = data.get('app')
+    model_name = data.get('model')
+    field_name = data.get('field')
+    limit = data.get('limit', 10)  # 한 번에 변환할 최대 개수
+    selected_ids = data.get('ids')  # 특정 ID 목록 (선택 변환용)
+
+    if not all([app, model_name, field_name]):
+        return JsonResponse({'error': '필수 파라미터가 없습니다.'}, status=400)
+
+    try:
+        model_class = apps.get_model(app, model_name)
+    except LookupError:
+        return JsonResponse({'error': '모델을 찾을 수 없습니다.'}, status=404)
+
+    converted = 0
+    failed = 0
+    total_old_size = 0
+    total_new_size = 0
+    results = []
+
+    # 특정 ID가 지정된 경우 (선택 변환)
+    if selected_ids and isinstance(selected_ids, list):
+        queryset = model_class.objects.filter(pk__in=selected_ids)
+        for obj in queryset:
+            field_value = getattr(obj, field_name)
+            if field_value and field_value.name and is_convertible(field_value.name):
+                result = convert_existing_image_to_webp(obj, field_name)
+                results.append({
+                    'id': obj.pk,
+                    **result
+                })
+
+                if result['success']:
+                    converted += 1
+                    total_old_size += result.get('old_size', 0)
+                    total_new_size += result.get('new_size', 0)
+                else:
+                    failed += 1
+    else:
+        # 전체 변환 (limit 적용)
+        queryset = model_class.objects.exclude(**{f"{field_name}__exact": ''})
+        queryset = queryset.exclude(**{f"{field_name}__isnull": True})
+
+        for obj in queryset.iterator():
+            if converted >= limit:
+                break
+
+            field_value = getattr(obj, field_name)
+            if field_value and field_value.name and is_convertible(field_value.name):
+                result = convert_existing_image_to_webp(obj, field_name)
+                results.append({
+                    'id': obj.pk,
+                    **result
+                })
+
+                if result['success']:
+                    converted += 1
+                    total_old_size += result.get('old_size', 0)
+                    total_new_size += result.get('new_size', 0)
+                else:
+                    failed += 1
+
+    return JsonResponse({
+        'converted': converted,
+        'failed': failed,
+        'total_old_size': total_old_size,
+        'total_new_size': total_new_size,
+        'saved_size': total_old_size - total_new_size,
+        'saved_display': _format_file_size(total_old_size - total_new_size),
+        'results': results,
+    })
+
+
+def _format_file_size(size_bytes):
+    """파일 크기를 읽기 좋은 형식으로 변환"""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    else:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+
 # 커스텀 Admin Site에 통계 뷰 추가
 original_get_urls = admin.site.get_urls
 
@@ -381,6 +591,10 @@ original_get_urls = admin.site.get_urls
 def custom_get_urls():
     custom_urls = [
         path('statistics/', admin.site.admin_view(statistics_view), name='statistics'),
+        path('image-management/', admin.site.admin_view(image_management_view), name='image_management'),
+        path('api/images/list/', admin.site.admin_view(get_unconverted_images_list), name='api_images_list'),
+        path('api/images/convert/', admin.site.admin_view(convert_single_image), name='api_images_convert'),
+        path('api/images/convert-bulk/', admin.site.admin_view(convert_bulk_images), name='api_images_convert_bulk'),
     ]
     return custom_urls + original_get_urls()
 

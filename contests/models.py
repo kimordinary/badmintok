@@ -7,6 +7,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.text import slugify
 
+from badmintok.fields import WebPImageField
+
 
 class ContestCategory(models.Model):
     name = models.CharField("분류명", max_length=100)
@@ -108,6 +110,9 @@ class Contest(models.Model):
     description = models.TextField("대회 요강 AI 요약", blank=True)
     pdf_file = models.FileField("대회 요강 PDF", upload_to=contest_pdf_upload_to, blank=True, null=True, help_text="대회 요강 원본 PDF 파일을 업로드하세요.")
     participant_target = models.TextField("참가 대상 (종목 / 연령 / 급수)", blank=True, help_text="참가 대상, 종목, 연령, 급수 정보를 입력하세요.")
+    participant_events = models.CharField("종목", max_length=200, blank=True, help_text="예: 남복, 여복, 혼복, 단식")
+    participant_ages = models.CharField("연령", max_length=200, blank=True, help_text="예: 20대 ~ 60대, 전연령")
+    participant_grades = models.CharField("급수", max_length=200, blank=True, help_text="예: A, B, C, D, 초심, 입문")
     award_reward_text = models.TextField("입상상품", blank=True, help_text="입상상품에 대한 상세 정보를 입력하세요.")
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="liked_contests", blank=True, verbose_name="좋아요")
     view_count = models.PositiveIntegerField("조회수", default=0)
@@ -293,7 +298,7 @@ class ContestImage(models.Model):
         related_name="images",
         verbose_name="대회",
     )
-    image = models.ImageField("이미지", upload_to=contest_image_upload_to)
+    image = WebPImageField("이미지", upload_to=contest_image_upload_to)
     order = models.PositiveIntegerField("순서", default=0, help_text="이미지 표시 순서 (작은 숫자가 먼저 표시됨)")
     created_at = models.DateTimeField("등록일", auto_now_add=True)
 

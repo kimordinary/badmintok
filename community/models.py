@@ -2,6 +2,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from badmintok.fields import WebPImageField
+
 
 class Category(models.Model):
     """게시글 카테고리 모델 (계층 구조 지원)"""
@@ -141,7 +143,7 @@ class Post(models.Model):
     # SEO 및 발행 관련
     slug = models.SlugField(_("슬러그"), max_length=45, blank=True, help_text=_("URL에 사용될 고유 식별자 (한글 가능)"))
     published_at = models.DateTimeField(_("발행 일시"), null=True, blank=True, help_text=_("예약 발행 시간 설정 (비어있으면 즉시 발행)"))
-    thumbnail = models.ImageField(_("썸네일"), upload_to="community/thumbnails/%Y/%m/%d/", blank=True, null=True, help_text=_("게시글 썸네일 이미지"))
+    thumbnail = WebPImageField(_("썸네일"), upload_to="community/thumbnails/%Y/%m/%d/", blank=True, null=True, help_text=_("게시글 썸네일 이미지"))
     thumbnail_alt = models.CharField(_("썸네일 대체 텍스트"), max_length=200, blank=True, help_text=_("썸네일 이미지의 Alt 텍스트"))
     focus_keyword = models.CharField(_("포커스 키워드"), max_length=100, blank=True, help_text=_("SEO 최적화를 위한 포커스 키워드"))
     meta_description = models.TextField(_("메타 설명"), max_length=160, blank=True, help_text=_("검색 엔진에 표시될 설명 (160자 이내 권장)"))
@@ -287,7 +289,7 @@ class PostImage(models.Model):
         related_name="images",
         verbose_name=_("게시글")
     )
-    image = models.ImageField(
+    image = WebPImageField(
         _("이미지"),
         upload_to="community/post_images/%Y/%m/%d/",
     )

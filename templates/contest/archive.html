@@ -37,27 +37,6 @@
         margin: 0;
     }
 
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        color: #475569;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s;
-        margin-bottom: 24px;
-    }
-
-    .back-link:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-    }
-
     /* 대회 카드 스타일 */
     .contest-post-list {
         display: flex;
@@ -211,14 +190,6 @@
 {% block content %}
 <section class="section" aria-labelledby="archive-title">
     <div class="container" style="margin-top: 24px;">
-        <!-- 뒤로 가기 링크 -->
-        <a href="{% url 'contests:list' %}" class="back-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-            대회 목록으로 돌아가기
-        </a>
-
         <!-- 헤더 -->
         <div class="archive-header">
             <h1 class="archive-title" id="archive-title">종료된 대회 아카이브</h1>

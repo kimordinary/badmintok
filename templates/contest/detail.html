@@ -15,8 +15,6 @@
 {% block content %}
 <section class="section" aria-labelledby="contest-title" style="position: relative;">
     <div class="container contest-detail">
-        <a href="{% url 'contests:list' %}" class="btn btn-ghost" style="margin-bottom: 20px;">← 전체 대회 일정으로 돌아가기</a>
-
         <!-- 메인 콘텐츠 -->
         <div>
 
@@ -91,21 +89,14 @@
                             <th scope="row">일정</th>
                             <td>
                                 {% if schedule_entries %}
-                                    <ul class="contest-schedule-list" style="list-style: none; padding: 0; margin: 0;">
+                                    <div class="schedule-list">
                                         {% for entry in schedule_entries %}
-                                            <li class="contest-schedule-item" style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;{% if forloop.first %} margin-bottom: 5px;{% endif %}">
-                                                <span style="min-width: 120px;">{{ entry.date|date:"n월 j일 (D)" }}</span>
-                                                {% for event in entry.get_events_display %}
-                                                    <span class="contest-event-badge
-                                                        {% if event == '여복' %}event-badge-female{% elif event == '혼복' %}event-badge-mixed{% elif event == '남복' %}event-badge-male{% elif event == '단식' %}event-badge-single{% else %}event-badge-default{% endif %}
-                                                    ">{{ event }}</span>
-                                                {% endfor %}
-                                                {% if entry.get_age_display %}
-                                                    <span style="color: #64748b; font-size: 14px;">{{ entry.get_age_display }}</span>
-                                                {% endif %}
-                                            </li>
+                                            <div class="schedule-item">
+                                                <span class="schedule-item__date">{{ entry.date|date:"n/j" }}({{ entry.date|date:"D" }})</span>
+                                                <span class="schedule-item__events">{% for event in entry.get_events_display %}<span class="contest-event-badge {% if event == '여복' %}event-badge-female{% elif event == '혼복' %}event-badge-mixed{% elif event == '남복' %}event-badge-male{% elif event == '단식' %}event-badge-single{% else %}event-badge-default{% endif %}">{{ event }}</span>{% endfor %}</span>{% if entry.get_age_display and entry.get_age_display != '전연령' %}<span class="schedule-item__age">{{ entry.get_age_display }}</span>{% endif %}
+                                            </div>
                                         {% endfor %}
-                                    </ul>
+                                    </div>
                                 {% else %}
                                     -
                                 {% endif %}
@@ -184,12 +175,44 @@
         <div class="contest-detail__accordions">
             <div class="contest-accordion">
                 <button class="contest-accordion__header" type="button" aria-expanded="false">
-                    <span>참가 대상 (종목 / 연령 / 급수)</span>
+                    <span>참가 대상</span>
                     <span class="contest-accordion__icon">▼</span>
                 </button>
                 <div class="contest-accordion__content">
                     <div class="contest-accordion__body">
-                        {% if contest.participant_target %}
+                        {% if contest.participant_events or contest.participant_ages or contest.participant_grades %}
+                            <ul class="participant-list">
+                                {% if contest.participant_events %}
+                                <li class="participant-item">
+                                    <svg class="participant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 6v6l4 2"/>
+                                    </svg>
+                                    <span class="participant-text">{{ contest.participant_events }}</span>
+                                </li>
+                                {% endif %}
+                                {% if contest.participant_ages %}
+                                <li class="participant-item">
+                                    <svg class="participant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                    <span class="participant-text">{{ contest.participant_ages }}</span>
+                                </li>
+                                {% endif %}
+                                {% if contest.participant_grades %}
+                                <li class="participant-item">
+                                    <svg class="participant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                        <polyline points="22,4 12,14.01 9,11.01"/>
+                                    </svg>
+                                    <span class="participant-text">{{ contest.participant_grades }}</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        {% elif contest.participant_target %}
                             {{ contest.participant_target|linebreaksbr }}
                         {% else %}
                             -
@@ -674,13 +697,14 @@
     /* 그라데이션 페이드 효과 */
     .ai-summary-fade {
         position: absolute;
-        bottom: 56px;
+        bottom: 52px;
         left: 0;
         right: 0;
-        height: 80px;
-        background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.9) 60%, rgba(255, 255, 255, 0.98) 100%);
+        height: 50px;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%);
         pointer-events: none;
         transition: opacity 0.3s ease;
+        z-index: 1;
     }
 
     .ai-summary-fade.hidden {
@@ -689,34 +713,51 @@
 
     /* 더보기/접기 버튼 */
     .ai-summary-toggle-btn {
+        position: relative;
+        z-index: 2;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        gap: 0;
         width: 100%;
-        padding: 12px;
-        margin-top: 12px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        color: var(--brand);
-        font-size: 14px;
-        font-weight: 600;
+        padding: 8px;
+        margin-top: 4px;
+        background: #fff;
+        border: none;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: color 0.2s ease;
+        line-height: 1.4;
     }
 
     .ai-summary-toggle-btn:hover {
-        background: #f1f5f9;
-        border-color: var(--brand);
-    }
-
-    .ai-summary-toggle-btn:active {
-        transform: scale(0.98);
+        color: var(--brand);
     }
 
     .ai-summary-toggle-btn svg {
         transition: transform 0.2s ease;
+        animation: bounce-down 2s infinite;
+    }
+
+    @keyframes bounce-down {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(4px);
+        }
+        60% {
+            transform: translateY(2px);
+        }
+    }
+
+    /* 펼쳐진 상태에서는 애니메이션 제거 */
+    .ai-summary-content.expanded ~ .ai-summary-toggle-btn svg,
+    .ai-summary-toggle-btn:hover svg {
+        animation: none;
     }
 
     /* PDF 다운로드 버튼 */
@@ -1061,14 +1102,10 @@
             font-size: 15px;
         }
 
-        .contest-event-badge {
+        .contest-event-badge,
+        .category-badge {
             font-size: 11px;
             padding: 3px 8px;
-        }
-
-        .category-badge {
-            font-size: 12px;
-            padding: 5px 9px;
         }
 
         .contest-detail__description-header h2 {

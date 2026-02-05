@@ -476,43 +476,19 @@ main > section {
 }
 
 .category-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 999px;
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
     background: var(--badge-color, var(--brand));
     color: #fff;
     font-weight: 600;
-    font-size: 13px;
-    position: relative;
+    font-size: 12px;
 }
 
-.category-badge::before {
-    content: \"\";
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #fff;
-    opacity: 0.8;
-}
-
-.category-badge-qualifying {
-    background: #3b82f6 !important;
-}
-
-.category-badge-qualifying::before {
-    background: #fff;
-    opacity: 0.8;
-}
-
+.category-badge-qualifying,
 .category-badge-non-qualifying {
-    background: #64748b !important;
-}
-
-.category-badge-non-qualifying::before {
-    background: #fff;
-    opacity: 0.8;
+    background: #f1f5f9;
+    color: #64748b;
 }
 
 .contest-event-badge {
@@ -520,38 +496,46 @@ main > section {
     padding: 4px 10px;
     border-radius: 4px;
     font-size: 12px;
-    font-weight: 500;
-    color: #fff;
-    background: #3b82f6;
+    font-weight: 600;
+    color: #31AA60;
+    background: #f1f5f9;
 }
 
-.contest-event-badge.event-badge-female {
-    background: #ec4899;
+/* 일정 리스트 스타일 */
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.contest-event-badge.event-badge-mixed {
-    background: #14b8a6;
-    position: relative;
+.schedule-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-.contest-event-badge.event-badge-mixed span,
-.contest-event-badge.event-badge-mixed {
-    transform: translateY(-1px);
-    text-shadow: 
-        0 -1px 1px rgba(255, 255, 255, 0.3),
-        0 1px 2px rgba(0, 0, 0, 0.3);
+.schedule-item__date {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    min-width: 70px;
 }
 
-.contest-event-badge.event-badge-male {
-    background: #3b82f6;
+.schedule-item__events {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 
-.contest-event-badge.event-badge-single {
-    background: #a855f7;
+.schedule-item__age {
+    font-size: 13px;
+    color: #64748b;
 }
 
-.contest-event-badge.event-badge-default {
-    background: #475569;
+.schedule-item__age::before {
+    content: "·";
+    margin-right: 6px;
 }
 
 .contest-detail {
@@ -660,10 +644,9 @@ main > section {
 }
 
 .contest-accordion {
-    border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 12px;
     overflow: hidden;
-    background: #fff;
+    background: #f1f5f9;
 }
 
 .contest-accordion__header {
@@ -672,18 +655,18 @@ main > section {
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    background: var(--surface-2);
+    background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--brand-800);
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
     text-align: left;
     transition: background .2s ease;
 }
 
 .contest-accordion__header:hover {
-    background: rgba(49, 170, 96, 0.08);
+    background: rgba(0, 0, 0, 0.03);
 }
 
 .contest-accordion__header[aria-expanded="true"] .contest-accordion__icon {
@@ -692,26 +675,57 @@ main > section {
 
 .contest-accordion__icon {
     transition: transform .3s ease;
-    font-size: 14px;
-    color: var(--brand);
+    font-size: 12px;
+    color: #31AA60;
 }
 
 .contest-accordion__content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height .3s ease;
+    transition: max-height .3s ease-out;
 }
 
 .contest-accordion__content[aria-hidden="false"],
 .contest-accordion__content:not([aria-hidden]) {
-    max-height: 2000px;
+    max-height: 500px;
+    transition: max-height .4s ease-in;
 }
 
 .contest-accordion__body {
     padding: 20px;
-    font-size: 20px;
-    color: var(--text);
+    font-size: 15px;
+    color: #374151;
     line-height: 1.6;
+}
+
+/* 참가 대상 리스트 스타일 */
+.participant-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.participant-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: #9ca3af;
+}
+
+.participant-text {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.4;
 }
 
 .contest-award-list {
@@ -1893,20 +1907,22 @@ main > section {
 
 .form-input {
     width: 100%;
-    border-radius: 12px;
-    border: 1px solid rgba(15,23,42,.12);
-    padding: 12px 14px;
+    border: none;
+    border-bottom: 1px solid rgba(15,23,42,.2);
+    border-radius: 0;
+    padding: 12px 0;
     font-size: 16px;
+    background: transparent;
     transition: border-color .2s ease;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: rgba(49,170,96,.6);
+    border-bottom-color: var(--brand);
 }
 
 .form-field.has-error .form-input {
-    border-color: rgba(220,38,38,.5);
+    border-bottom-color: rgba(220,38,38,.5);
 }
 
 .help-text {

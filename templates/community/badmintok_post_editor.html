@@ -2341,6 +2341,155 @@
             }
         }
 
+        // 커스텀 FAQ 도구
+        class FAQTool {
+            constructor({data, api}) {
+                this.api = api;
+                this.data = {
+                    items: (data && Array.isArray(data.items)) ? data.items : []
+                };
+                this.wrapper = null;
+            }
+
+            static get toolbox() {
+                return {
+                    title: 'FAQ',
+                    icon: '<svg width="17" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/><path d="M9 9C9 7.34315 10.3431 6 12 6C13.6569 6 15 7.34315 15 9C15 10.6569 13.6569 12 12 12V14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="18" r="1" fill="currentColor"/></svg>'
+                };
+            }
+
+            render() {
+                this.wrapper = document.createElement('div');
+                this.wrapper.classList.add('faq-tool');
+
+                // 새로 생성된 경우 빈 항목 하나 추가
+                if (this.data.items.length === 0) {
+                    this.data.items.push({ question: '', answer: '' });
+                }
+
+                this._renderEditor();
+                return this.wrapper;
+            }
+
+            _renderEditor() {
+                this.wrapper.innerHTML = `
+                    <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff;">
+                        <div style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; font-size: 14px; color: #334155;">FAQ 컴포넌트</span>
+                            <button type="button" class="faq-add-btn" style="padding: 6px 12px; background: #31AA60; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                + 항목 추가
+                            </button>
+                        </div>
+                        <div class="faq-items-container" style="padding: 16px;"></div>
+                    </div>
+                `;
+
+                // 기존 항목 렌더링
+                const container = this.wrapper.querySelector('.faq-items-container');
+                container.innerHTML = '';
+                this.data.items.forEach((item, index) => {
+                    container.appendChild(this._createItemElement(item, index));
+                });
+
+                // 항목 추가 버튼 이벤트
+                const addBtn = this.wrapper.querySelector('.faq-add-btn');
+                addBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._addItem();
+                });
+
+                // 첫 번째 질문 입력란에 포커스 (새로 생성된 경우)
+                setTimeout(() => {
+                    const firstInput = this.wrapper.querySelector('.faq-question-input');
+                    if (firstInput && !firstInput.value) {
+                        firstInput.focus();
+                    }
+                }, 100);
+            }
+
+            _createItemElement(item, index) {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'faq-item-editor';
+                itemEl.style.cssText = 'margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;';
+
+                const isOnlyItem = this.data.items.length <= 1;
+                const deleteDisabledStyle = isOnlyItem ? 'opacity: 0.4; cursor: not-allowed;' : '';
+
+                itemEl.innerHTML = `
+                    <div style="padding: 12px; background: #f8fafc;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span style="font-size: 12px; color: #64748b; font-weight: 500;">질문 ${index + 1}</span>
+                            <button type="button" class="faq-delete-btn" data-index="${index}" ${isOnlyItem ? 'disabled' : ''} style="margin-left: auto; padding: 4px 8px; background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; ${deleteDisabledStyle}">삭제</button>
+                        </div>
+                        <input type="text" class="faq-question-input" data-index="${index}" value="${this._escapeHtml(item.question || '')}" placeholder="질문을 입력하세요" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; font-weight: 500; box-sizing: border-box;">
+                    </div>
+                    <div style="padding: 12px;">
+                        <span style="font-size: 12px; color: #64748b; font-weight: 500; display: block; margin-bottom: 8px;">답변</span>
+                        <textarea class="faq-answer-input" data-index="${index}" placeholder="답변을 입력하세요" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical; box-sizing: border-box; line-height: 1.5;">${this._escapeHtml(item.answer || '')}</textarea>
+                    </div>
+                `;
+
+                // 삭제 버튼 이벤트
+                const deleteBtn = itemEl.querySelector('.faq-delete-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._deleteItem(index);
+                });
+
+                // 입력 이벤트
+                const questionInput = itemEl.querySelector('.faq-question-input');
+                const answerInput = itemEl.querySelector('.faq-answer-input');
+
+                questionInput.addEventListener('input', (e) => {
+                    this.data.items[index].question = e.target.value;
+                });
+
+                answerInput.addEventListener('input', (e) => {
+                    this.data.items[index].answer = e.target.value;
+                });
+
+                return itemEl;
+            }
+
+            _addItem() {
+                this.data.items.push({ question: '', answer: '' });
+                this._renderEditor();
+
+                // 새로 추가된 항목의 질문 입력란에 포커스
+                const inputs = this.wrapper.querySelectorAll('.faq-question-input');
+                if (inputs.length > 0) {
+                    inputs[inputs.length - 1].focus();
+                }
+            }
+
+            _deleteItem(index) {
+                // 최소 1개 항목은 유지
+                if (this.data.items.length <= 1) {
+                    return;
+                }
+                this.data.items.splice(index, 1);
+                this._renderEditor();
+            }
+
+            _escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            save() {
+                // 빈 항목 필터링
+                const validItems = this.data.items.filter(item => {
+                    const question = (item.question || '').trim();
+                    const answer = (item.answer || '').trim();
+                    return question || answer;
+                });
+                return { items: validItems };
+            }
+        }
+
         function initializeEditor() {
         // CSRF 토큰 가져오기
         function getCookie(name) {
@@ -2627,6 +2776,10 @@
         editorTools.button = ButtonTool;
         console.log('✅ 커스텀 버튼 도구가 추가되었습니다');
 
+        // 커스텀 FAQ 도구 추가
+        editorTools.faq = FAQTool;
+        console.log('✅ 커스텀 FAQ 도구가 추가되었습니다');
+
         console.log('전달할 tools 객체:', Object.keys(editorTools));
 
         // Editor.js 초기화
@@ -2873,6 +3026,22 @@
                                 htmlContent += '</tr>';
                             });
                             htmlContent += '</table>';
+                        } else if (block.type === 'faq' && block.data.items) {
+                            htmlContent += '<div class="faq-container">';
+                            block.data.items.forEach((item, idx) => {
+                                htmlContent += `
+                                    <div class="faq-item">
+                                        <button type="button" class="faq-question" onclick="toggleFaq(this)">
+                                            <span>${item.question}</span>
+                                            <svg class="faq-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                        </button>
+                                        <div class="faq-answer">
+                                            <div class="faq-answer-content">${item.answer}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            htmlContent += '</div>';
                         }
                     });
 
@@ -2899,7 +3068,37 @@
                                 mark { background: #fef08a; padding: 2px 4px; }
                                 code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
                                 u { text-decoration: underline; }
+                                .faq-container { margin: 24px 0; }
+                                .faq-item { border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 8px; overflow: hidden; background: #fff; }
+                                .faq-question { width: 100%; padding: 16px 20px; background: #fff; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-align: left; font-size: 15px; font-weight: 600; color: #1e293b; transition: background 0.2s; }
+                                .faq-question:hover { background: #f8fafc; }
+                                .faq-arrow { transition: transform 0.3s ease; flex-shrink: 0; margin-left: 12px; }
+                                .faq-item.open .faq-arrow { transform: rotate(180deg); }
+                                .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease-out; }
+                                .faq-item.open .faq-answer { transition: max-height 0.35s ease-in; }
+                                .faq-answer-content { padding: 0 20px 16px; color: #475569; font-size: 14px; line-height: 1.6; }
                             </style>
+                            <script>
+                                function toggleFaq(button) {
+                                    const faqItem = button.parentElement;
+                                    const answer = faqItem.querySelector('.faq-answer');
+                                    if (faqItem.classList.contains('open')) {
+                                        answer.style.maxHeight = answer.scrollHeight + 'px';
+                                        answer.offsetHeight;
+                                        answer.style.maxHeight = '0';
+                                        faqItem.classList.remove('open');
+                                    } else {
+                                        faqItem.classList.add('open');
+                                        answer.style.maxHeight = answer.scrollHeight + 'px';
+                                        answer.addEventListener('transitionend', function handler() {
+                                            if (faqItem.classList.contains('open')) {
+                                                answer.style.maxHeight = 'none';
+                                            }
+                                            answer.removeEventListener('transitionend', handler);
+                                        });
+                                    }
+                                }
+                            </script>
                         </head>
                         <body>
                             <h1>${title}</h1>

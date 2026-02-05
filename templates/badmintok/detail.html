@@ -636,6 +636,58 @@
                 color: var(--brand-700);
             }
 
+            /* FAQ 스타일 */
+            .post-content .faq-container {
+                margin: 24px 0;
+            }
+            .post-content .faq-item {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                margin-bottom: 8px;
+                overflow: hidden;
+                background: #fff;
+            }
+            .post-content .faq-toggle-btn {
+                width: 100%;
+                padding: 16px 20px;
+                background: #fff;
+                border: none;
+                cursor: pointer;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                text-align: left;
+                font-size: 15px;
+                font-weight: 600;
+                color: #1e293b;
+                transition: background 0.2s;
+            }
+            .post-content .faq-toggle-btn:hover {
+                background: #f8fafc;
+            }
+            .post-content .faq-arrow {
+                transition: transform 0.3s ease;
+                flex-shrink: 0;
+                margin-left: 12px;
+            }
+            .post-content .faq-item.open .faq-arrow {
+                transform: rotate(180deg);
+            }
+            .post-content .faq-answer {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.35s ease-out;
+            }
+            .post-content .faq-item.open .faq-answer {
+                transition: max-height 0.35s ease-in;
+            }
+            .post-content .faq-answer-content {
+                padding: 0 20px 16px;
+                color: #475569;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+
             /* 첫 번째 단락 강조 */
             .post-content > p:first-of-type {
                 font-size: 19px;
@@ -906,6 +958,32 @@
                                         </a>
                                     </div>
                                 `;
+                            }
+                            break;
+
+                        case 'faq':
+                            // FAQTool 형식
+                            if (block.data.items && Array.isArray(block.data.items) && block.data.items.length > 0) {
+                                htmlContent += `<div class="faq-container" style="margin: 24px 0;">`;
+                                block.data.items.forEach((item, idx) => {
+                                    const question = escapeHtmlForEditor(item.question || '');
+                                    const answer = item.answer || '';
+                                    htmlContent += `
+                                        <div class="faq-item" style="border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 8px; overflow: hidden; background: #fff;">
+                                            <button type="button" class="faq-toggle-btn" onclick="toggleFaq(this)"
+                                                    style="width: 100%; padding: 16px 20px; background: #fff; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-align: left; font-size: 15px; font-weight: 600; color: #1e293b; transition: background 0.2s;">
+                                                <span>${question}</span>
+                                                <svg class="faq-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s ease; flex-shrink: 0; margin-left: 12px;">
+                                                    <path d="M6 9l6 6 6-6"/>
+                                                </svg>
+                                            </button>
+                                            <div class="faq-answer">
+                                                <div class="faq-answer-content">${answer}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                htmlContent += `</div>`;
                             }
                             break;
 
@@ -1347,6 +1425,33 @@
                 }
                 document.body.removeChild(textarea);
             });
+        }
+
+        // FAQ 토글 함수 (부드러운 트랜지션)
+        function toggleFaq(button) {
+            const faqItem = button.parentElement;
+            const answer = faqItem.querySelector('.faq-answer');
+
+            if (faqItem.classList.contains('open')) {
+                // 닫기
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+                // 강제 리플로우
+                answer.offsetHeight;
+                answer.style.maxHeight = '0';
+                faqItem.classList.remove('open');
+            } else {
+                // 열기
+                faqItem.classList.add('open');
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+
+                // 트랜지션 완료 후 max-height 제거 (내용이 동적으로 변할 경우 대비)
+                answer.addEventListener('transitionend', function handler() {
+                    if (faqItem.classList.contains('open')) {
+                        answer.style.maxHeight = 'none';
+                    }
+                    answer.removeEventListener('transitionend', handler);
+                });
+            }
         }
 
         // Editor.js JSON 렌더링 실행

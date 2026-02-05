@@ -1,0 +1,1074 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+    :root {
+        --brand-green: #31AA60;
+        --brand-dark: #279254;
+        --gray-900: #1e1e1e;
+        --gray-600: #757575;
+        --gray-200: #e0e0e0;
+        --gray-100: #f6f7f7;
+        --success: #00a32a;
+        --warning: #dba617;
+        --danger: #d63638;
+    }
+
+    body {
+        background: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .image-mgmt-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .image-mgmt-header {
+        margin-bottom: 30px;
+    }
+
+    .image-mgmt-header h1 {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0 0 8px 0;
+    }
+
+    .image-mgmt-header p {
+        color: var(--gray-600);
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* 통계 카드 */
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .stat-card-title {
+        font-size: 13px;
+        color: var(--gray-600);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-card-value {
+        font-size: 32px;
+        font-weight: 600;
+        color: var(--gray-900);
+    }
+
+    .stat-card-value.success { color: var(--success); }
+    .stat-card-value.warning { color: var(--warning); }
+
+    /* 모델 테이블 */
+    .model-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .model-table th,
+    .model-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .model-table th {
+        background: var(--gray-100);
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--gray-600);
+        text-transform: uppercase;
+    }
+
+    .model-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .model-table tr:hover {
+        background: var(--gray-100);
+    }
+
+    .model-table tr:has(.model-checkbox:checked) {
+        background: #f0fdf4;
+    }
+
+    .model-table tr:has(.model-checkbox:checked):hover {
+        background: #dcfce7;
+    }
+
+    /* 진행 바 */
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--gray-200);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: var(--brand-green);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    /* 버튼 */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--brand-green);
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background: var(--brand-dark);
+    }
+
+    .btn-primary:disabled {
+        background: var(--gray-200);
+        color: var(--gray-600);
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background: var(--gray-100);
+        color: var(--gray-900);
+        border: 1px solid var(--gray-200);
+    }
+
+    .btn-secondary:hover {
+        background: var(--gray-200);
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    /* 상태 배지 */
+    .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 4px;
+    }
+
+    .badge-success {
+        background: #e6f4ea;
+        color: var(--success);
+    }
+
+    .badge-warning {
+        background: #fef7e0;
+        color: var(--warning);
+    }
+
+    /* 모달 */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal {
+        background: #fff;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--gray-600);
+        line-height: 1;
+    }
+
+    .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .modal-footer {
+        padding: 16px 20px;
+        border-top: 1px solid var(--gray-200);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* 이미지 목록 */
+    .image-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .image-list-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: var(--gray-100);
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+
+    .image-list-header label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .image-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        transition: background 0.2s;
+    }
+
+    .image-item:has(input:checked) {
+        background: #f0fdf4;
+        border-color: var(--brand-green);
+    }
+
+    .image-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--brand-green);
+    }
+
+    .image-item img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+        background: var(--gray-100);
+    }
+
+    .image-item-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .image-item-name {
+        font-size: 14px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .image-item-size {
+        font-size: 12px;
+        color: var(--gray-600);
+    }
+
+    .image-item-status {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .image-item-status.converting {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .image-item-status.converted {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .image-item-status.failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    /* 로딩 스피너 */
+    .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--gray-200);
+        border-top-color: var(--brand-green);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* 변환 결과 */
+    .conversion-result {
+        margin-top: 16px;
+        padding: 16px;
+        background: var(--gray-100);
+        border-radius: 8px;
+    }
+
+    .conversion-result h4 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .conversion-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .conversion-stat {
+        text-align: center;
+    }
+
+    .conversion-stat-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--brand-green);
+    }
+
+    .conversion-stat-label {
+        font-size: 12px;
+        color: var(--gray-600);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="image-mgmt-wrap">
+    <div class="image-mgmt-header">
+        <h1>이미지 WebP 변환 관리</h1>
+        <p>PNG, JPG 등의 이미지를 WebP로 변환하여 웹사이트 성능을 개선합니다.</p>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="stats-cards">
+        <div class="stat-card">
+            <div class="stat-card-title">전체 이미지</div>
+            <div class="stat-card-value">{{ total_images }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-title">변환 완료</div>
+            <div class="stat-card-value success">{{ total_converted }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-title">미변환</div>
+            <div class="stat-card-value warning">{{ total_unconverted }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-title">변환율</div>
+            <div class="stat-card-value">{{ conversion_rate }}%</div>
+        </div>
+    </div>
+
+    <!-- 일괄 변환 액션 바 -->
+    <div id="bulkActionBar" style="display: none; margin-bottom: 16px; padding: 16px; background: #f0fdf4; border: 1px solid var(--brand-green); border-radius: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 500; color: var(--brand-dark);">
+                    <span id="bulkSelectedCount">0</span>개 모델 선택됨
+                </span>
+                <span style="color: var(--gray-600); font-size: 13px;">
+                    (총 <span id="bulkTotalImages">0</span>개 이미지)
+                </span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="clearBulkSelection()">선택 해제</button>
+                <button class="btn btn-primary" id="bulkConvertBtn" onclick="startBulkConvert()">
+                    선택 일괄 변환
+                </button>
+            </div>
+        </div>
+        <!-- 일괄 변환 진행 상황 -->
+        <div id="bulkProgress" style="display: none; margin-top: 16px;">
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 13px;">
+                <span id="bulkProgressText">변환 중...</span>
+                <span id="bulkProgressPercent">0%</span>
+            </div>
+            <div class="progress-bar" style="height: 12px;">
+                <div class="progress-bar-fill" id="bulkProgressBar" style="width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모델별 상태 테이블 -->
+    <table class="model-table">
+        <thead>
+            <tr>
+                <th style="width: 40px;">
+                    <input type="checkbox" id="selectAllModels" onchange="toggleAllModels(this)" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--brand-green);">
+                </th>
+                <th>모델</th>
+                <th>필드</th>
+                <th>전체</th>
+                <th>변환 완료</th>
+                <th>미변환</th>
+                <th>진행률</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key, stat in stats.items %}
+            <tr data-app="{{ stat.app }}" data-model="{{ stat.model }}" data-field="{{ stat.field }}" data-unconverted="{{ stat.unconverted }}">
+                <td>
+                    {% if stat.unconverted > 0 %}
+                    <input type="checkbox" class="model-checkbox"
+                           data-app="{{ stat.app }}"
+                           data-model="{{ stat.model }}"
+                           data-field="{{ stat.field }}"
+                           data-unconverted="{{ stat.unconverted }}"
+                           data-verbose="{{ stat.model_verbose }}"
+                           onchange="updateBulkSelection()"
+                           style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--brand-green);">
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ stat.model_verbose }}</strong>
+                    <br><small style="color: var(--gray-600);">{{ stat.app }}.{{ stat.model }}</small>
+                </td>
+                <td>{{ stat.field_verbose }}</td>
+                <td>{{ stat.total }}</td>
+                <td><span class="badge badge-success">{{ stat.converted }}</span></td>
+                <td>
+                    {% if stat.unconverted > 0 %}
+                    <span class="badge badge-warning" id="unconverted-{{ stat.app }}-{{ stat.model }}-{{ stat.field }}">{{ stat.unconverted }}</span>
+                    {% else %}
+                    <span class="badge badge-success">0</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% widthratio stat.converted stat.total 100 as progress %}
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="progress-{{ stat.app }}-{{ stat.model }}-{{ stat.field }}" style="width: {{ progress|default:0 }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {% if stat.unconverted > 0 %}
+                    <button class="btn btn-primary btn-sm" id="btn-{{ stat.app }}-{{ stat.model }}-{{ stat.field }}" onclick="openConvertModal('{{ stat.app }}', '{{ stat.model }}', '{{ stat.field }}', '{{ stat.model_verbose }}', {{ stat.unconverted }})">
+                        변환하기
+                    </button>
+                    {% else %}
+                    <span style="color: var(--gray-600); font-size: 13px;">완료</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 40px; color: var(--gray-600);">
+                    이미지 필드가 없습니다.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 변환 모달 -->
+<div class="modal-overlay" id="convertModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">이미지 변환</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="imageListContainer">
+                <p style="color: var(--gray-600); text-align: center; padding: 40px;">
+                    <span class="spinner" style="margin: 0 auto 12px; display: block;"></span>
+                    이미지 목록을 불러오는 중...
+                </p>
+            </div>
+            <div id="conversionResult" class="conversion-result" style="display: none;">
+                <h4>변환 완료</h4>
+                <div class="conversion-stats">
+                    <div class="conversion-stat">
+                        <div class="conversion-stat-value" id="resultConverted">0</div>
+                        <div class="conversion-stat-label">변환 성공</div>
+                    </div>
+                    <div class="conversion-stat">
+                        <div class="conversion-stat-value" id="resultFailed" style="color: var(--danger);">0</div>
+                        <div class="conversion-stat-label">변환 실패</div>
+                    </div>
+                    <div class="conversion-stat">
+                        <div class="conversion-stat-value" id="resultSaved">0</div>
+                        <div class="conversion-stat-label">절약된 용량</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <div id="modalStatus" style="font-size: 13px; color: var(--gray-600);"></div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+                <button class="btn btn-secondary" id="convertSelectedBtn" onclick="convertSelected()" style="display: none;">
+                    선택 변환 (<span id="selectedCount">0</span>개)
+                </button>
+                <button class="btn btn-primary" id="convertAllBtn" onclick="convertAll()">
+                    전체 변환
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentApp = '';
+let currentModel = '';
+let currentField = '';
+let isConverting = false;
+let isBulkConverting = false;
+
+// ===== 일괄 변환 관련 함수 =====
+
+function toggleAllModels(checkbox) {
+    const checkboxes = document.querySelectorAll('.model-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateBulkSelection();
+}
+
+function updateBulkSelection() {
+    const checkboxes = document.querySelectorAll('.model-checkbox:checked');
+    const allCheckboxes = document.querySelectorAll('.model-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllModels');
+    const actionBar = document.getElementById('bulkActionBar');
+    const countEl = document.getElementById('bulkSelectedCount');
+    const totalImagesEl = document.getElementById('bulkTotalImages');
+
+    const selectedCount = checkboxes.length;
+    let totalImages = 0;
+
+    checkboxes.forEach(cb => {
+        totalImages += parseInt(cb.dataset.unconverted) || 0;
+    });
+
+    countEl.textContent = selectedCount;
+    totalImagesEl.textContent = totalImages;
+
+    if (selectedCount > 0) {
+        actionBar.style.display = 'block';
+    } else {
+        actionBar.style.display = 'none';
+    }
+
+    // 전체 선택 체크박스 상태 업데이트
+    if (allCheckboxes.length > 0) {
+        selectAllCheckbox.checked = selectedCount === allCheckboxes.length;
+        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < allCheckboxes.length;
+    }
+}
+
+function clearBulkSelection() {
+    const checkboxes = document.querySelectorAll('.model-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAllModels').checked = false;
+    updateBulkSelection();
+}
+
+async function startBulkConvert() {
+    if (isBulkConverting) return;
+
+    const checkboxes = document.querySelectorAll('.model-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('선택된 모델이 없습니다.');
+        return;
+    }
+
+    if (!confirm(`선택된 ${checkboxes.length}개 모델의 이미지를 모두 변환하시겠습니까?`)) {
+        return;
+    }
+
+    isBulkConverting = true;
+    const btn = document.getElementById('bulkConvertBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 변환 중...';
+
+    // 진행 상황 표시
+    const progressDiv = document.getElementById('bulkProgress');
+    const progressText = document.getElementById('bulkProgressText');
+    const progressPercent = document.getElementById('bulkProgressPercent');
+    const progressBar = document.getElementById('bulkProgressBar');
+    progressDiv.style.display = 'block';
+
+    // 선택된 모델 목록 수집
+    const models = Array.from(checkboxes).map(cb => ({
+        app: cb.dataset.app,
+        model: cb.dataset.model,
+        field: cb.dataset.field,
+        verbose: cb.dataset.verbose,
+        unconverted: parseInt(cb.dataset.unconverted) || 0
+    }));
+
+    let totalToConvert = models.reduce((sum, m) => sum + m.unconverted, 0);
+    let totalConverted = 0;
+    let totalFailed = 0;
+    let totalSaved = 0;
+
+    try {
+        for (let i = 0; i < models.length; i++) {
+            const model = models[i];
+            progressText.textContent = `${model.verbose} 변환 중... (${i + 1}/${models.length})`;
+
+            // 해당 모델의 모든 이미지 변환
+            while (true) {
+                const response = await fetch('/admin/api/images/convert-bulk/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({
+                        app: model.app,
+                        model: model.model,
+                        field: model.field,
+                        limit: 10
+                    })
+                });
+
+                const data = await response.json();
+
+                totalConverted += data.converted || 0;
+                totalFailed += data.failed || 0;
+                totalSaved += data.saved_size || 0;
+
+                // 진행률 업데이트
+                const percent = Math.round((totalConverted / totalToConvert) * 100);
+                progressPercent.textContent = `${percent}%`;
+                progressBar.style.width = `${percent}%`;
+
+                // 더 이상 변환할 이미지가 없으면 다음 모델로
+                if (data.converted === 0) {
+                    break;
+                }
+            }
+
+            // 체크박스 비활성화 및 행 업데이트
+            const checkbox = checkboxes[i];
+            checkbox.checked = false;
+            checkbox.disabled = true;
+
+            // 미변환 배지 업데이트
+            const badgeId = `unconverted-${model.app}-${model.model}-${model.field}`;
+            const badge = document.getElementById(badgeId);
+            if (badge) {
+                badge.textContent = '0';
+                badge.className = 'badge badge-success';
+            }
+
+            // 진행률 바 업데이트
+            const progressBarId = `progress-${model.app}-${model.model}-${model.field}`;
+            const modelProgressBar = document.getElementById(progressBarId);
+            if (modelProgressBar) {
+                modelProgressBar.style.width = '100%';
+            }
+
+            // 버튼 업데이트
+            const btnId = `btn-${model.app}-${model.model}-${model.field}`;
+            const modelBtn = document.getElementById(btnId);
+            if (modelBtn) {
+                modelBtn.outerHTML = '<span style="color: var(--gray-600); font-size: 13px;">완료</span>';
+            }
+        }
+
+        // 완료
+        progressText.textContent = `완료! ${totalConverted}개 변환, ${totalFailed}개 실패, ${formatFileSize(totalSaved)} 절약`;
+        progressPercent.textContent = '100%';
+        progressBar.style.width = '100%';
+        btn.textContent = '완료';
+
+        // 3초 후 페이지 새로고침
+        setTimeout(() => {
+            location.reload();
+        }, 3000);
+
+    } catch (error) {
+        progressText.textContent = `오류: ${error.message}`;
+        btn.textContent = '다시 시도';
+        btn.disabled = false;
+    }
+
+    isBulkConverting = false;
+}
+
+// ===== 개별 모달 관련 함수 =====
+
+function openConvertModal(app, model, field, modelVerbose, unconvertedCount) {
+    currentApp = app;
+    currentModel = model;
+    currentField = field;
+
+    document.getElementById('modalTitle').textContent = `${modelVerbose} 이미지 변환`;
+    document.getElementById('convertModal').classList.add('active');
+    document.getElementById('conversionResult').style.display = 'none';
+    document.getElementById('convertAllBtn').disabled = false;
+    document.getElementById('convertAllBtn').textContent = `전체 변환 (${unconvertedCount}개)`;
+    document.getElementById('modalStatus').textContent = '';
+
+    loadImageList();
+}
+
+function closeModal() {
+    if (isConverting) {
+        if (!confirm('변환 중입니다. 정말 닫으시겠습니까?')) {
+            return;
+        }
+    }
+    document.getElementById('convertModal').classList.remove('active');
+    // 페이지 새로고침하여 통계 갱신
+    if (document.getElementById('conversionResult').style.display !== 'none') {
+        location.reload();
+    }
+}
+
+async function loadImageList() {
+    const container = document.getElementById('imageListContainer');
+    container.innerHTML = `
+        <p style="color: var(--gray-600); text-align: center; padding: 40px;">
+            <span class="spinner" style="margin: 0 auto 12px; display: block;"></span>
+            이미지 목록을 불러오는 중...
+        </p>
+    `;
+
+    // 선택 변환 버튼 숨기기
+    document.getElementById('convertSelectedBtn').style.display = 'none';
+
+    try {
+        const response = await fetch(`/admin/api/images/list/?app=${currentApp}&model=${currentModel}&field=${currentField}`);
+        const data = await response.json();
+
+        if (data.items && data.items.length > 0) {
+            let html = `
+                <div class="image-list-header">
+                    <label>
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                        전체 선택
+                    </label>
+                    <span style="color: var(--gray-600); font-size: 13px;">총 ${data.total}개</span>
+                </div>
+                <div class="image-list">
+            `;
+            data.items.forEach(item => {
+                html += `
+                    <div class="image-item" id="image-${item.id}">
+                        <input type="checkbox" class="image-checkbox" data-id="${item.id}" onchange="updateSelectedCount()">
+                        <img src="${item.url}" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/></svg>'">
+                        <div class="image-item-info">
+                            <div class="image-item-name">${item.filename.split('/').pop()}</div>
+                            <div class="image-item-size">${item.size_display}</div>
+                        </div>
+                        <span class="image-item-status" id="status-${item.id}">대기 중</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            if (data.total > data.items.length) {
+                html += `<p style="text-align: center; margin-top: 16px; color: var(--gray-600); font-size: 13px;">
+                    외 ${data.total - data.items.length}개 더 있음 (전체 변환 시 모두 변환됩니다)
+                </p>`;
+            }
+
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p style="color: var(--gray-600); text-align: center; padding: 40px;">변환할 이미지가 없습니다.</p>';
+            document.getElementById('convertAllBtn').disabled = true;
+        }
+    } catch (error) {
+        container.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 40px;">오류: ${error.message}</p>`;
+    }
+}
+
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.image-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.image-checkbox:checked');
+    const count = checkboxes.length;
+    const selectedCountEl = document.getElementById('selectedCount');
+    const convertSelectedBtn = document.getElementById('convertSelectedBtn');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const allCheckboxes = document.querySelectorAll('.image-checkbox');
+
+    selectedCountEl.textContent = count;
+
+    if (count > 0) {
+        convertSelectedBtn.style.display = 'inline-flex';
+    } else {
+        convertSelectedBtn.style.display = 'none';
+    }
+
+    // 전체 선택 체크박스 상태 업데이트
+    if (selectAllCheckbox && allCheckboxes.length > 0) {
+        selectAllCheckbox.checked = count === allCheckboxes.length;
+        selectAllCheckbox.indeterminate = count > 0 && count < allCheckboxes.length;
+    }
+}
+
+async function convertSelected() {
+    if (isConverting) return;
+
+    const checkboxes = document.querySelectorAll('.image-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
+
+    if (selectedIds.length === 0) {
+        alert('선택된 이미지가 없습니다.');
+        return;
+    }
+
+    isConverting = true;
+    const btn = document.getElementById('convertSelectedBtn');
+    const allBtn = document.getElementById('convertAllBtn');
+    btn.disabled = true;
+    allBtn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 변환 중...';
+
+    const statusEl = document.getElementById('modalStatus');
+    let totalConverted = 0;
+    let totalFailed = 0;
+    let totalSaved = 0;
+
+    try {
+        statusEl.textContent = `선택된 ${selectedIds.length}개 변환 중...`;
+
+        const response = await fetch('/admin/api/images/convert-bulk/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                app: currentApp,
+                model: currentModel,
+                field: currentField,
+                ids: selectedIds
+            })
+        });
+
+        const data = await response.json();
+
+        totalConverted = data.converted || 0;
+        totalFailed = data.failed || 0;
+        totalSaved = data.saved_size || 0;
+
+        // 각 아이템 상태 업데이트
+        if (data.results) {
+            data.results.forEach(result => {
+                const statusEl = document.getElementById(`status-${result.id}`);
+                const checkbox = document.querySelector(`.image-checkbox[data-id="${result.id}"]`);
+                if (statusEl) {
+                    if (result.success) {
+                        statusEl.className = 'image-item-status converted';
+                        statusEl.textContent = '완료';
+                        if (checkbox) {
+                            checkbox.checked = false;
+                            checkbox.disabled = true;
+                        }
+                    } else {
+                        statusEl.className = 'image-item-status failed';
+                        statusEl.textContent = '실패';
+                    }
+                }
+            });
+        }
+
+        // 결과 표시
+        document.getElementById('conversionResult').style.display = 'block';
+        document.getElementById('resultConverted').textContent = totalConverted;
+        document.getElementById('resultFailed').textContent = totalFailed;
+        document.getElementById('resultSaved').textContent = formatFileSize(totalSaved);
+
+        statusEl.textContent = '선택 항목 변환이 완료되었습니다.';
+        btn.textContent = '완료';
+        updateSelectedCount();
+
+    } catch (error) {
+        statusEl.textContent = `오류: ${error.message}`;
+        btn.textContent = '다시 시도';
+        btn.disabled = false;
+        allBtn.disabled = false;
+    }
+
+    isConverting = false;
+}
+
+async function convertAll() {
+    if (isConverting) return;
+
+    isConverting = true;
+    const btn = document.getElementById('convertAllBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 변환 중...';
+
+    const statusEl = document.getElementById('modalStatus');
+    let totalConverted = 0;
+    let totalFailed = 0;
+    let totalSaved = 0;
+
+    try {
+        // 10개씩 일괄 변환 반복
+        while (true) {
+            statusEl.textContent = `변환 중... (${totalConverted}개 완료)`;
+
+            const response = await fetch('/admin/api/images/convert-bulk/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({
+                    app: currentApp,
+                    model: currentModel,
+                    field: currentField,
+                    limit: 10
+                })
+            });
+
+            const data = await response.json();
+
+            totalConverted += data.converted || 0;
+            totalFailed += data.failed || 0;
+            totalSaved += data.saved_size || 0;
+
+            // 각 아이템 상태 업데이트
+            if (data.results) {
+                data.results.forEach(result => {
+                    const statusEl = document.getElementById(`status-${result.id}`);
+                    if (statusEl) {
+                        if (result.success) {
+                            statusEl.className = 'image-item-status converted';
+                            statusEl.textContent = '완료';
+                        } else {
+                            statusEl.className = 'image-item-status failed';
+                            statusEl.textContent = '실패';
+                        }
+                    }
+                });
+            }
+
+            // 더 이상 변환할 이미지가 없으면 종료
+            if (data.converted === 0) {
+                break;
+            }
+        }
+
+        // 결과 표시
+        document.getElementById('conversionResult').style.display = 'block';
+        document.getElementById('resultConverted').textContent = totalConverted;
+        document.getElementById('resultFailed').textContent = totalFailed;
+        document.getElementById('resultSaved').textContent = formatFileSize(totalSaved);
+
+        statusEl.textContent = '변환이 완료되었습니다.';
+        btn.textContent = '완료';
+
+    } catch (error) {
+        statusEl.textContent = `오류: ${error.message}`;
+        btn.textContent = '다시 시도';
+        btn.disabled = false;
+    }
+
+    isConverting = false;
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// ESC 키로 모달 닫기
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

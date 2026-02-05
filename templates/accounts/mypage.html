@@ -30,15 +30,15 @@
 
         <!-- 리스트 형태 메뉴 -->
         <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-            <!-- 모임 -->
+            <!-- 내 활동 -->
             <div style="border-bottom: 1px solid #e2e8f0;">
                 <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">모임</h2>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">내 활동</h2>
                 </div>
                 <a href="{% url 'accounts:mypage_bands' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">👥</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">내 모임</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">가입한 모임/동호회</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 14px; color: var(--muted);">{{ my_bands_count }}</span>
@@ -50,7 +50,7 @@
                 <a href="{% url 'accounts:mypage_created_bands' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">✨</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">내가 만든 모임</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">내가 만든 모임/동호회</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 14px; color: var(--muted);">{{ created_bands_count }}</span>
@@ -59,10 +59,10 @@
                         </svg>
                     </div>
                 </a>
-                <a href="{% url 'accounts:mypage_bookmarked_bands' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                <a href="{% url 'accounts:mypage_bookmarked_bands' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">⭐</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">관심 모임</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">북마크</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 14px; color: var(--muted);">{{ bookmarked_bands_count }}</span>
@@ -71,99 +71,18 @@
                         </svg>
                     </div>
                 </a>
-            </div>
-
-            <!-- 모임 활동 내역 -->
-            <div style="border-bottom: 1px solid #e2e8f0;">
-                <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">모임 활동 내역</h2>
-                </div>
-                <a href="{% url 'accounts:mypage_band_posts' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
+                <a href="{% url 'accounts:mypage_my_posts_comments' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">📝</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">게시글</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">내 게시물/댓글</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 14px; color: var(--muted);">{{ band_posts_count }}</span>
+                        <span style="font-size: 14px; color: var(--muted);">{{ total_posts_comments_count }}</span>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
                             <path d="M9 18l6-6-6-6"/>
                         </svg>
                     </div>
                 </a>
-                <a href="{% url 'accounts:mypage_band_comments' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">💬</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">댓글</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 14px; color: var(--muted);">{{ band_comments_count }}</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
-                            <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                    </div>
-                </a>
-                <a href="{% url 'accounts:mypage_schedule_applications' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">⚡</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">참여한 번개</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 14px; color: var(--muted);">{{ schedule_applications_count }}</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
-                            <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                    </div>
-                </a>
-            </div>
-
-            <!-- 커뮤니티 활동 -->
-            <div style="border-bottom: 1px solid #e2e8f0;">
-                <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">커뮤니티 활동</h2>
-                </div>
-                <a href="{% url 'accounts:mypage_community_posts' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">📝</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">게시글</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 14px; color: var(--muted);">{{ community_posts_count }}</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
-                            <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                    </div>
-                </a>
-                <a href="{% url 'accounts:mypage_comments' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">💬</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">댓글</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 14px; color: var(--muted);">{{ comments_count }}</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
-                            <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                    </div>
-                </a>
-            </div>
-
-            <!-- 대회 -->
-            <div style="border-bottom: 1px solid #e2e8f0;">
-                <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">대회</h2>
-                </div>
-                <a href="{% url 'accounts:mypage_liked_contests' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">🏆</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">좋아요한 대회</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 14px; color: var(--muted);">{{ liked_contests_count }}</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
-                            <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                            </div>
-                        </a>
             </div>
 
             <!-- 설정 -->
@@ -171,15 +90,6 @@
                 <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
                     <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">설정</h2>
                 </div>
-                <a href="{% url 'accounts:notification_settings' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">🔔</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">알림 설정</span>
-                    </div>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
-                        <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                </a>
                 <a href="{% url 'privacy' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">🔒</span>
@@ -207,7 +117,7 @@
                         <path d="M9 18l6-6-6-6"/>
                     </svg>
                 </a>
-                <a href="{% url 'accounts:inquiry_list' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                <a href="{% url 'accounts:inquiry_list' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">📋</span>
                         <span style="font-size: 16px; font-weight: 500; color: #1e293b;">문의 내역</span>
@@ -216,35 +126,10 @@
                         <path d="M9 18l6-6-6-6"/>
                     </svg>
                 </a>
-            </div>
-
-            <!-- 관리자 기능 (staff만 표시) -->
-            {% if user.is_staff %}
-            <div style="border-bottom: 1px solid #e2e8f0;">
-                <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">관리자 기능</h2>
-                </div>
-                <a href="{% url 'accounts:signup' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">👤</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">계정 생성</span>
-                    </div>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
-                        <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                </a>
-            </div>
-            {% endif %}
-
-            <!-- 차단 관리 -->
-            <div>
-                <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
-                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">차단 관리</h2>
-                </div>
                 <a href="{% url 'accounts:blocked_users' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">🚫</span>
-                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">차단한 사용자</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">차단 사용자 관리</span>
                     </div>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
                         <path d="M9 18l6-6-6-6"/>
@@ -260,6 +145,24 @@
                     </svg>
                 </a>
             </div>
+
+            <!-- 관리자 기능 (staff만 표시) -->
+            {% if user.is_staff %}
+            <div>
+                <div style="padding: 16px 20px; background: var(--surface-2); border-bottom: 1px solid #e2e8f0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--brand-800);">관리자 기능</h2>
+                </div>
+                <a href="{% url 'accounts:signup' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px;">👤</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">계정 생성</span>
+                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </section>

@@ -118,7 +118,8 @@ class ContestDetailSerializer(serializers.ModelSerializer):
             'region', 'region_detail', 'entry_fee', 'competition_type',
             'sponsor', 'award_reward_text',
             'registration_name', 'registration_link', 'description', 'pdf_url',
-            'participant_target', 'd_day', 'd_day_display',
+            'participant_target', 'participant_events', 'participant_ages', 'participant_grades',
+            'd_day', 'd_day_display',
             'view_count', 'like_count', 'is_liked',
             'schedules', 'images', 'created_at', 'updated_at'
         ]
