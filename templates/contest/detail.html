@@ -10,6 +10,52 @@
 {% block og_tags %}
 <meta name="description" content="{{ contest.title }} | 일정: {{ contest.get_period_display }} | 장소: {{ contest.get_location_display }} | 접수마감: {{ contest.registration_end|date:'Y.m.d' }} | 배드민톡에서 전국 배드민턴 대회 일정을 확인하세요.">
 <meta property="og:description" content="일정: {{ contest.get_period_display }} | 장소: {{ contest.get_location_display }} | 접수마감: {{ contest.registration_end|date:'Y.m.d' }}">
+
+<!-- SportsEvent JSON-LD Schema for Google Search Console -->
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    "name": "{{ contest.title|escapejs }}",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
+    "startDate": "{{ contest.schedule_start|date:'Y-m-d' }}",
+    {% if contest.schedule_end %}"endDate": "{{ contest.schedule_end|date:'Y-m-d' }}",{% endif %}
+    "description": "{{ contest.title|escapejs }} - 일정: {{ contest.get_period_display|escapejs }}, 장소: {{ contest.get_location_display|escapejs }}, 접수마감: {{ contest.registration_end|date:'Y.m.d' }}{% if contest.description %}, {{ contest.description|truncatewords:30|escapejs }}{% endif %}",
+    "image": {% if contest_images %}"{{ request.scheme }}://{{ request.get_host }}{{ contest_images.0.image.url }}"{% else %}"{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}"{% endif %},
+    "location": {
+        "@type": "Place",
+        "name": "{{ contest.venue|default:contest.region|escapejs }}",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "{{ contest.region|escapejs }}",
+            "addressRegion": "{{ contest.region|escapejs }}",
+            "addressCountry": "KR"{% if contest.region_detail %},
+            "streetAddress": "{{ contest.region_detail|escapejs }}"{% endif %}
+        }
+    },
+    "organizer": {
+        "@type": "Organization",
+        "name": "{% if contest.sponsor %}{{ contest.sponsor.name|escapejs }}{% else %}{{ contest.title|escapejs }} 주최측{% endif %}"{% if contest.registration_link %},
+        "url": "{{ contest.registration_link }}"{% endif %}
+    },
+    "performer": {
+        "@type": "SportsTeam",
+        "name": "배드민턴 참가자",
+        "sport": "Badminton"
+    },
+    "sport": "Badminton",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"{% if contest.entry_fee %},
+    "offers": {
+        "@type": "Offer",
+        "price": "{{ contest.entry_fee|escapejs }}",
+        "priceCurrency": "KRW",
+        "url": "{% if contest.registration_link %}{{ contest.registration_link }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}{% endif %}",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "{{ contest.registration_start|date:'Y-m-d' }}"
+    }{% endif %}
+}
+</script>
 {% endblock %}
 
 {% block content %}
