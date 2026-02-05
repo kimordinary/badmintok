@@ -1,20 +1,11 @@
+from datetime import date
+
 from django import forms
 from django.contrib import admin
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import Contest, ContestCategory, ContestImage, ContestSchedule, Sponsor
-
-
-class ContestAdminForm(forms.ModelForm):
-    """Contest 어드민 폼 - textarea 크기 조정"""
-    class Meta:
-        model = Contest
-        fields = "__all__"
-        widgets = {
-            "description": forms.Textarea(attrs={"rows": 6}),
-            "participant_target": forms.Textarea(attrs={"rows": 4}),
-            "award_reward_text": forms.Textarea(attrs={"rows": 4}),
-        }
 
 
 class ContestScheduleInlineForm(forms.ModelForm):
@@ -56,14 +47,14 @@ class ContestScheduleInlineForm(forms.ModelForm):
         return data or []
 
 
-class ContestScheduleInline(admin.TabularInline):
+class ContestScheduleInline(TabularInline):
     model = ContestSchedule
     form = ContestScheduleInlineForm
     extra = 0
     ordering = ("date",)
 
 
-class ContestImageInline(admin.TabularInline):
+class ContestImageInline(TabularInline):
     """대회 이미지 인라인"""
     model = ContestImage
     extra = 1
@@ -79,31 +70,26 @@ class ContestImageInline(admin.TabularInline):
 
 
 @admin.register(ContestCategory)
-class ContestCategoryAdmin(admin.ModelAdmin):
+class ContestCategoryAdmin(ModelAdmin):
     list_display = ("name", "color", "description")
     search_fields = ("name",)
 
 
 @admin.register(Sponsor)
-class SponsorAdmin(admin.ModelAdmin):
+class SponsorAdmin(ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
 
 
 @admin.register(Contest)
-class ContestAdmin(admin.ModelAdmin):
-    form = ContestAdminForm
+class ContestAdmin(ModelAdmin):
     inlines = [ContestImageInline, ContestScheduleInline]
     list_display = (
         "title",
-        "category",
-        "is_qualifying",
-        "competition_type",
-        "schedule_start",
-        "schedule_end",
-        "region",
-        "registration_start",
-        "registration_end",
+        "display_status",
+        "display_d_day",
+        "display_completion",
+        "created_at",
     )
     list_filter = ("category", "is_qualifying", "competition_type", "region", "schedule_start", "registration_start")
     search_fields = ("title", "region_detail", "sponsor__name")
@@ -122,8 +108,58 @@ class ContestAdmin(admin.ModelAdmin):
 
     class Media:
         css = {"all": ("css/admin-contest.css",)}
-        js = ("js/admin-contest-slug.js", "js/admin-contest-textarea.js")
+        js = ("js/admin-contest-slug.js", "js/admin-image-preview.js")
 
     def has_delete_permission(self, request, obj=None):
         """삭제 권한 확인 - staff 사용자는 삭제 가능"""
         return request.user.is_staff
+
+    def display_status(self, obj):
+        """대회 상태 표시 (접수중/접수마감/종료)"""
+        today = date.today()
+        if obj.schedule_start and today > obj.schedule_start:
+            return format_html('<span style="color: #9ca3af;">종료</span>')
+        if obj.registration_end and today > obj.registration_end:
+            return format_html('<span style="color: #f59e0b;">접수마감</span>')
+        if obj.registration_start and today >= obj.registration_start:
+            return format_html('<span style="color: #10b981;">접수중</span>')
+        if obj.registration_start and today < obj.registration_start:
+            return format_html('<span style="color: #3b82f6;">접수예정</span>')
+        return "-"
+    display_status.short_description = "상태"
+
+    def display_d_day(self, obj):
+        """대회 시작일 D-day 표시"""
+        if not obj.schedule_start:
+            return "-"
+        today = date.today()
+        delta = (obj.schedule_start - today).days
+        if delta < 0:
+            return format_html('<span style="color: #9ca3af;">{}</span>', obj.schedule_start.strftime("%Y.%m.%d"))
+        elif delta == 0:
+            return format_html('<span style="color: #ef4444; font-weight: bold;">D-Day</span>')
+        else:
+            return format_html('{} <span style="color: #3b82f6;">(D-{})</span>', obj.schedule_start.strftime("%Y.%m.%d"), delta)
+    display_d_day.short_description = "대회일"
+
+    def display_completion(self, obj):
+        """필수 항목 완성 여부 체크"""
+        checks = []
+        # 이미지 체크
+        has_image = obj.images.exists()
+        checks.append(("이미지", has_image))
+        # PDF 체크
+        has_pdf = bool(obj.pdf_file)
+        checks.append(("PDF", has_pdf))
+        # 접수링크 체크
+        has_link = bool(obj.registration_link)
+        checks.append(("접수링크", has_link))
+
+        result = []
+        for label, status in checks:
+            if status:
+                result.append(f'<span style="color: #10b981;" title="{label}">●</span>')
+            else:
+                result.append(f'<span style="color: #ef4444;" title="{label}">○</span>')
+        return format_html(" ".join(result))
+    display_completion.short_description = "완성도"

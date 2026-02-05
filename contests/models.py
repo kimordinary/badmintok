@@ -91,8 +91,8 @@ class Contest(models.Model):
     schedule_end = models.DateField("대회 종료일", blank=True, null=True)
     region = models.CharField("지역", max_length=20, choices=Region.choices, default=Region.SEOUL)
     region_detail = models.CharField("상세 장소", max_length=200, blank=True)
-    registration_start = models.DateField("접수 시작일")
-    registration_end = models.DateField("접수 종료일")
+    registration_start = models.DateField("접수 시작일", blank=True, null=True)
+    registration_end = models.DateField("접수 종료일", blank=True, null=True)
     entry_fee = models.CharField("접수비", max_length=100, blank=True)
     competition_type = models.CharField("대회구", max_length=100, blank=True)
     sponsor = models.ForeignKey(

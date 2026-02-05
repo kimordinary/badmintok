@@ -73,6 +73,9 @@ else:
 # Application definition
 
 INSTALLED_APPS = [
+    'unfold',  # Django Unfold - must be before django.contrib.admin
+    'unfold.contrib.filters',
+    'unfold.contrib.forms',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -353,4 +356,204 @@ REST_FRAMEWORK = {
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
     'DATE_FORMAT': '%Y-%m-%d',
     'TIME_FORMAT': '%H:%M:%S',
+}
+
+# Django Unfold 설정
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+
+UNFOLD = {
+    "SITE_TITLE": "배드민톡",
+    "SITE_HEADER": "BADMINTOK",
+    "SITE_URL": "/",
+    "SITE_ICON": {
+        "light": lambda request: static("images/favicon/favicon.ico"),
+        "dark": lambda request: static("images/favicon/favicon.ico"),
+    },
+    "SITE_LOGO": {
+        "light": lambda request: static("images/favicon/favicon.ico"),
+        "dark": lambda request: static("images/favicon/favicon.ico"),
+    },
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "THEME": "light",  # 라이트모드 고정
+    "ENVIRONMENT": "badmintok.unfold_callbacks.environment_callback",
+    "DASHBOARD_CALLBACK": "badmintok.unfold_callbacks.dashboard_callback",
+    "COLORS": {
+        "primary": {
+            "50": "240 253 244",
+            "100": "220 252 231",
+            "200": "187 247 208",
+            "300": "134 239 172",
+            "400": "74 222 128",
+            "500": "59 174 103",
+            "600": "22 163 74",
+            "700": "21 128 61",
+            "800": "22 101 52",
+            "900": "20 83 45",
+            "950": "5 46 22",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "대시보드",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "홈",
+                        "icon": "home",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                    {
+                        "title": "통계",
+                        "icon": "analytics",
+                        "link": reverse_lazy("admin:statistics"),
+                    },
+                ],
+            },
+            {
+                "title": "대회 관리",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "전체 대회",
+                        "icon": "emoji_events",
+                        "link": reverse_lazy("admin:contests_contest_changelist"),
+                    },
+                    {
+                        "title": "대회 추가",
+                        "icon": "add_circle",
+                        "link": reverse_lazy("admin:contests_contest_add"),
+                    },
+                    {
+                        "title": "카테고리",
+                        "icon": "category",
+                        "link": reverse_lazy("admin:contests_contestcategory_changelist"),
+                    },
+                    {
+                        "title": "스폰서",
+                        "icon": "handshake",
+                        "link": reverse_lazy("admin:contests_sponsor_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "콘텐츠",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "배드민톡 글",
+                        "icon": "article",
+                        "link": reverse_lazy("admin:badmintok_badmintokpost_changelist"),
+                    },
+                    {
+                        "title": "커뮤니티 글",
+                        "icon": "forum",
+                        "link": reverse_lazy("admin:community_communitypost_changelist"),
+                    },
+                    {
+                        "title": "댓글",
+                        "icon": "chat",
+                        "link": reverse_lazy("admin:community_comment_changelist"),
+                    },
+                    {
+                        "title": "카테고리 (배드민톡)",
+                        "icon": "folder",
+                        "link": reverse_lazy("admin:badmintok_badmintokcategory_changelist"),
+                    },
+                    {
+                        "title": "카테고리 (커뮤니티)",
+                        "icon": "folder_open",
+                        "link": reverse_lazy("admin:community_communitycategory_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "밴드/모임",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "전체 밴드",
+                        "icon": "groups",
+                        "link": reverse_lazy("admin:band_band_changelist"),
+                    },
+                    {
+                        "title": "밴드 멤버",
+                        "icon": "person_add",
+                        "link": reverse_lazy("admin:band_bandmember_changelist"),
+                    },
+                    {
+                        "title": "밴드 게시글",
+                        "icon": "post_add",
+                        "link": reverse_lazy("admin:band_bandpost_changelist"),
+                    },
+                    {
+                        "title": "밴드 일정",
+                        "icon": "event",
+                        "link": reverse_lazy("admin:band_bandschedule_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "사용자 관리",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "전체 사용자",
+                        "icon": "people",
+                        "link": reverse_lazy("admin:accounts_user_changelist"),
+                    },
+                    {
+                        "title": "프로필",
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:accounts_userprofile_changelist"),
+                    },
+                    {
+                        "title": "문의",
+                        "icon": "help",
+                        "link": reverse_lazy("admin:accounts_inquiry_changelist"),
+                    },
+                    {
+                        "title": "신고",
+                        "icon": "report",
+                        "link": reverse_lazy("admin:accounts_report_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "시스템",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "배너",
+                        "icon": "image",
+                        "link": reverse_lazy("admin:badmintok_badmintokbanner_changelist"),
+                    },
+                    {
+                        "title": "공지사항",
+                        "icon": "campaign",
+                        "link": reverse_lazy("admin:badmintok_notice_changelist"),
+                    },
+                    {
+                        "title": "방문 로그",
+                        "icon": "visibility",
+                        "link": reverse_lazy("admin:badmintok_visitorlog_changelist"),
+                    },
+                    {
+                        "title": "외부 링크 클릭",
+                        "icon": "open_in_new",
+                        "link": reverse_lazy("admin:badmintok_outboundclick_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
 }

@@ -56,7 +56,10 @@
       "Bash(lsof:*)",
       "Bash(xargs kill -9)",
       "Bash(crontab:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(python3 -m pip install:*)",
+      "Bash(python3 manage.py check:*)",
+      "Bash(python3 manage.py collectstatic:*)"
     ],
     "deny": [],
     "ask": []

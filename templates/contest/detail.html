@@ -192,7 +192,7 @@
                         {% if contest.participant_target %}
                             {{ contest.participant_target|linebreaksbr }}
                         {% else %}
-                            {{ contest.event_division|default:'-' }}
+                            -
                         {% endif %}
                     </div>
                 </div>
@@ -207,19 +207,6 @@
                     <div class="contest-accordion__body">
                         {% if contest.award_reward_text %}
                             {{ contest.award_reward_text|linebreaksbr }}
-                        {% elif contest.award_reward %}
-                            <div class="contest-award-list">
-                                {% for award in contest.award_reward %}
-                                    <div class="contest-award-group">
-                                        <strong>{{ award.division }}</strong>
-                                        <ul>
-                                            {% for prize in award.prizes %}
-                                                <li>{{ prize.rank }} : {{ prize.prize }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                {% endfor %}
-                            </div>
                         {% else %}
                             -
                         {% endif %}

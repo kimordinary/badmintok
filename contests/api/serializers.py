@@ -72,7 +72,7 @@ class ContestListSerializer(serializers.ModelSerializer):
             'id', 'slug', 'title', 'category_name', 'is_qualifying',
             'schedule_start', 'schedule_end', 'period_display',
             'registration_start', 'registration_end', 'registration_period_display',
-            'region', 'region_detail', 'event_division',
+            'region', 'region_detail',
             'd_day', 'd_day_display', 'view_count', 'is_liked', 'first_image',
             'created_at', 'updated_at'
         ]
@@ -115,8 +115,8 @@ class ContestDetailSerializer(serializers.ModelSerializer):
             'id', 'slug', 'title', 'category', 'is_qualifying',
             'schedule_start', 'schedule_end', 'period_display',
             'registration_start', 'registration_end', 'registration_period_display',
-            'region', 'region_detail', 'event_division', 'entry_fee', 'competition_type',
-            'participant_reward', 'sponsor', 'award_reward', 'award_reward_text',
+            'region', 'region_detail', 'entry_fee', 'competition_type',
+            'sponsor', 'award_reward_text',
             'registration_name', 'registration_link', 'description', 'pdf_url',
             'participant_target', 'd_day', 'd_day_display',
             'view_count', 'like_count', 'is_liked',

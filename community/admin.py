@@ -4,6 +4,7 @@ from django.db.models import Q, Case, When
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from unfold.admin import ModelAdmin
 from .models import (
     Category, Post, PostImage, Comment, PostShare,
     BadmintokCategory, CommunityCategory,
@@ -13,14 +14,14 @@ from .widgets import EditorJSWidget
 
 
 # 기본 Category Admin 클래스 (계층 구조 로직 공유용)
-class BaseCategoryAdmin(admin.ModelAdmin):
+class BaseCategoryAdmin(ModelAdmin):
     list_display = ["id", "hierarchy_name", "slug", "source", "parent", "display_order", "is_active", "created_at"]
     list_filter = ["is_active", "source", "parent", "created_at"]
     search_fields = ["name", "slug"]
     list_editable = ["display_order", "is_active"]
     prepopulated_fields = {"slug": ("name",)}
-    list_per_page = 100  # 계층 구조를 한 페이지에서 볼 수 있도록
-    ordering = []  # get_queryset의 정렬을 사용하도록 admin 자동 정렬 비활성화
+    list_per_page = 100
+    ordering = []
 
     fieldsets = (
         ("기본 정보", {
@@ -45,20 +46,15 @@ class BaseCategoryAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         """URL의 정렬 파라미터를 무시하고 계층 구조 유지"""
-        # URL에서 정렬 파라미터 제거
         request.GET = request.GET.copy()
         if 'o' in request.GET:
             del request.GET['o']
 
-        # 부모 클래스의 changelist_view 호출
         response = super().changelist_view(request, extra_context)
 
-        # TemplateResponse인 경우 context_data의 result_list를 정렬된 순서로 유지
         if hasattr(response, 'context_data') and 'cl' in response.context_data:
             cl = response.context_data['cl']
-            # cl.result_list는 이미 get_queryset()의 순서를 유지하고 있어야 함
-            # 하지만 Django Admin이 다시 정렬할 수 있으므로 강제로 순서 유지
-            result_list = list(cl.result_list)  # QuerySet을 list로 변환하여 순서 고정
+            result_list = list(cl.result_list)
             cl.result_list = result_list
 
         return response
@@ -66,7 +62,6 @@ class BaseCategoryAdmin(admin.ModelAdmin):
     def hierarchy_name(self, obj):
         """계층 구조를 시각적으로 표시 (WordPress 스타일)"""
         if obj.parent:
-            # 하위 카테고리는 들여쓰기와 구분선 표시 (WordPress 스타일)
             return format_html(
                 '<span style="display: inline-block; padding-left: 30px; color: #666;">'
                 '<span style="color: #999;">— </span>{}'
@@ -74,13 +69,11 @@ class BaseCategoryAdmin(admin.ModelAdmin):
                 obj.name
             )
         else:
-            # 상위 카테고리는 굵게 표시
             return format_html(
                 '<strong style="color: #2c3338; font-weight: 600;">{}</strong>',
                 obj.name
             )
     hierarchy_name.short_description = "카테고리명"
-    # admin_order_field 제거 - 계층 구조 유지를 위해 컬럼 정렬 비활성화
 
 
 # 배드민톡 카테고리 Admin
@@ -91,10 +84,8 @@ class BadmintokCategoryAdmin(BaseCategoryAdmin):
         """배드민톡 카테고리만 계층 구조로 표시"""
         from community.models import Category
 
-        # 배드민톡 소스 카테고리들
         all_categories = Category.objects.filter(source='badmintok')
 
-        # 계층 구조로 정렬
         ordered_pks = []
         parents = all_categories.filter(parent__isnull=True).order_by('display_order', 'name')
 
@@ -106,7 +97,6 @@ class BadmintokCategoryAdmin(BaseCategoryAdmin):
         if not ordered_pks:
             return all_categories
 
-        # pk 순서를 Case/When으로 강제
         preserved_order = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(ordered_pks)])
         return all_categories.filter(pk__in=ordered_pks).order_by(preserved_order)
 
@@ -134,10 +124,8 @@ class CommunityCategoryAdmin(BaseCategoryAdmin):
         """동호인톡 카테고리만 계층 구조로 표시"""
         from community.models import Category
 
-        # 동호인톡 소스 카테고리들
         all_categories = Category.objects.filter(source='community')
 
-        # 계층 구조로 정렬
         ordered_pks = []
         parents = all_categories.filter(parent__isnull=True).order_by('display_order', 'name')
 
@@ -175,17 +163,15 @@ class PostAdminForm(forms.ModelForm):
         model = Post
         fields = "__all__"
         widgets = {
-            "content": EditorJSWidget(),  # 항상 Editor.js 사용
+            "content": EditorJSWidget(),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 배드민톡 글 작성 시에만 탭 기반 카테고리 필터링 적용
-        # 이 Form은 BadmintokPostAdmin에서만 사용되므로 여기서 처리
         pass
 
 
-class BasePostAdmin(admin.ModelAdmin):
+class BasePostAdmin(ModelAdmin):
     """공통 Post Admin 기능"""
     form = PostAdminForm
     list_display = ["id", "title", "category", "author", "status_badge", "view_count", "like_count", "comment_count", "is_pinned", "created_at", "actions_column"]
@@ -235,7 +221,7 @@ class BasePostAdmin(admin.ModelAdmin):
             )
         return "-"
     actions_column.short_description = "작업"
-    
+
     fieldsets = (
         ("기본 정보", {
             "fields": ("title", "author", "source")
@@ -267,7 +253,6 @@ class BasePostAdmin(admin.ModelAdmin):
     )
 
     class Media:
-        # Editor.js 및 플러그인 로드 (UMD 번들 사용)
         css = {
             "all": (
                 "https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest/dist/editor.css",
@@ -291,7 +276,6 @@ class BasePostAdmin(admin.ModelAdmin):
 class BadmintokPostAdmin(BasePostAdmin):
     """배드민톡 게시글 Admin"""
 
-    # 배드민톡 카테고리 매핑
     BADMINTOK_CATEGORIES = {
         'news': ['tournament', 'player', 'equipment', 'community'],
         'reviews': ['racket', 'shoes', 'apparel', 'shuttlecock', 'protective', 'accessories'],
@@ -299,7 +283,6 @@ class BadmintokPostAdmin(BasePostAdmin):
         'feed': []
     }
 
-    # 임시저장 글이 먼저 표시되도록 정렬
     ordering = ['-is_draft', '-created_at']
 
     def get_queryset(self, request):
@@ -309,10 +292,9 @@ class BadmintokPostAdmin(BasePostAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        # 새 글 작성 시 기본값을 배드민톡으로 설정
         if obj is None:
             form.base_fields['source'].initial = Post.Source.BADMINTOK
-            form.base_fields['source'].widget = forms.HiddenInput()  # source는 숨김
+            form.base_fields['source'].widget = forms.HiddenInput()
 
         return form
 
@@ -325,29 +307,26 @@ class BadmintokPostAdmin(BasePostAdmin):
         """수정 버튼 클릭 시 워드프레스 스타일 에디터로 리다이렉트"""
         from django.shortcuts import redirect
         return redirect('community:badmintok_editor_update', post_id=object_id)
-    
+
     def changelist_view(self, request, extra_context=None):
         """목록 페이지에 카테고리 정보 전달"""
         extra_context = extra_context or {}
-        # 카테고리 slug 정보를 JavaScript에 전달
         from .models import Category
         categories = Category.objects.filter(is_active=True).values('id', 'name', 'slug')
         extra_context['category_data'] = list(categories)
         return super().changelist_view(request, extra_context)
-    
+
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """작성/수정 페이지에 카테고리 정보 전달"""
         extra_context = extra_context or {}
-        # 카테고리 slug 정보를 JavaScript에 전달
         from .models import Category
         import json
         categories = list(Category.objects.filter(is_active=True).values('id', 'name', 'slug'))
-        # id를 문자열로 변환 (JSON 직렬화를 위해)
         for cat in categories:
             cat['id'] = str(cat['id'])
         extra_context['category_data'] = json.dumps(categories, ensure_ascii=False)
         return super().changeform_view(request, object_id, form_url, extra_context)
-    
+
     class Media:
         css = {
             "all": (
@@ -367,12 +346,10 @@ class BadmintokPostAdmin(BasePostAdmin):
             "js/admin-editorjs.js",
             "js/admin-badmintok-category.js",
         )
-    
+
     def actions_column(self, obj):
         """수정/삭제 버튼 컬럼"""
         if obj.pk:
-            # Django admin URL 이름은 Proxy 모델의 app_label을 사용
-            # BadmintokPost의 app_label이 'badmintok'이므로 badmintok_badmintokpost
             change_url = reverse('admin:badmintok_badmintokpost_change', args=[obj.pk])
             delete_url = reverse('admin:badmintok_badmintokpost_delete', args=[obj.pk])
             return format_html(
@@ -390,19 +367,18 @@ class BadmintokPostAdmin(BasePostAdmin):
 @admin.register(CommunityPost)
 class CommunityPostAdmin(BasePostAdmin):
     """동호인톡 게시글 Admin (커뮤니티 + 동호인 리뷰)"""
-    
+
     def get_queryset(self, request):
         """동호인톡과 동호인 리뷰 글만 표시"""
         qs = super().get_queryset(request)
         return qs.filter(source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS])
-    
+
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        # 새 글 작성 시 기본값을 커뮤니티로 설정
         if obj is None:
             form.base_fields['source'].initial = Post.Source.COMMUNITY
         return form
-    
+
     def actions_column(self, obj):
         """수정/삭제 버튼 컬럼"""
         if obj.pk:
@@ -421,7 +397,7 @@ class CommunityPostAdmin(BasePostAdmin):
 
 
 @admin.register(PostImage)
-class PostImageAdmin(admin.ModelAdmin):
+class PostImageAdmin(ModelAdmin):
     list_display = ["id", "post", "order", "image", "created_at"]
     list_filter = ["created_at"]
     search_fields = ["post__title"]
@@ -429,12 +405,12 @@ class PostImageAdmin(admin.ModelAdmin):
 
 
 @admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
+class CommentAdmin(ModelAdmin):
     list_display = ["id", "post", "author", "parent", "like_count", "is_deleted", "created_at"]
     list_filter = ["is_deleted", "created_at"]
     search_fields = ["content", "author__activity_name", "post__title"]
     readonly_fields = ["like_count", "created_at", "updated_at"]
-    
+
     fieldsets = (
         ("기본 정보", {
             "fields": ("post", "author", "parent")
@@ -455,7 +431,7 @@ class CommentAdmin(admin.ModelAdmin):
 
 
 @admin.register(PostShare)
-class PostShareAdmin(admin.ModelAdmin):
+class PostShareAdmin(ModelAdmin):
     list_display = ["id", "post", "user", "shared_at"]
     list_filter = ["shared_at"]
     search_fields = ["post__title", "user__activity_name"]

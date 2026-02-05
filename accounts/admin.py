@@ -1,12 +1,14 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin
+from unfold.contrib.forms.widgets import WysiwygWidget
 
 from .models import User, UserProfile, Inquiry, Report, UserBlock
 
 
 @admin.register(User)
-class UserAdmin(DjangoUserAdmin):
+class UserAdmin(DjangoUserAdmin, ModelAdmin):
     ordering = ("email",)
     list_display = ("email", "activity_name", "is_staff", "is_active")
     search_fields = ("email", "activity_name")
@@ -29,7 +31,7 @@ class UserAdmin(DjangoUserAdmin):
 
 
 @admin.register(UserProfile)
-class UserProfileAdmin(admin.ModelAdmin):
+class UserProfileAdmin(ModelAdmin):
     list_display = ("user", "name", "gender", "phone_number", "shipping_receiver")
     search_fields = ("user__email", "name", "phone_number", "shipping_receiver")
     list_filter = ("gender", "age_range", "created_at")
@@ -37,7 +39,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 
 @admin.register(Inquiry)
-class InquiryAdmin(admin.ModelAdmin):
+class InquiryAdmin(ModelAdmin):
     list_display = ("user", "title", "category", "status", "created_at", "answered_at")
     list_filter = ("status", "category", "created_at")
     search_fields = ("user__email", "user__activity_name", "title", "content")
@@ -53,7 +55,7 @@ class InquiryAdmin(admin.ModelAdmin):
             "fields": ("created_at", "updated_at")
         }),
     )
-    
+
     def save_model(self, request, obj, form, change):
         # 답변을 작성하면 상태를 answered로 변경하고 답변일시 기록
         if obj.admin_response and not obj.answered_at:
@@ -65,7 +67,7 @@ class InquiryAdmin(admin.ModelAdmin):
 
 
 @admin.register(Report)
-class ReportAdmin(admin.ModelAdmin):
+class ReportAdmin(ModelAdmin):
     list_display = ("reporter", "report_type", "target_id", "status", "created_at", "processed_at")
     list_filter = ("status", "report_type", "created_at")
     search_fields = ("reporter__email", "reporter__activity_name", "reason")
@@ -81,7 +83,7 @@ class ReportAdmin(admin.ModelAdmin):
             "fields": ("created_at", "updated_at")
         }),
     )
-    
+
     def save_model(self, request, obj, form, change):
         # 처리 상태가 변경되면 처리일시 기록
         if obj.status in [Report.Status.RESOLVED, Report.Status.REJECTED] and not obj.processed_at:
@@ -92,7 +94,7 @@ class ReportAdmin(admin.ModelAdmin):
 
 
 @admin.register(UserBlock)
-class UserBlockAdmin(admin.ModelAdmin):
+class UserBlockAdmin(ModelAdmin):
     list_display = ("blocker", "blocked", "created_at")
     list_filter = ("created_at",)
     search_fields = ("blocker__email", "blocker__activity_name", "blocked__email", "blocked__activity_name")

@@ -1,53 +1,273 @@
-{% extends "admin/base_site.html" %}
+{% extends "unfold/layouts/base_simple.html" %}
+{% load i18n unfold %}
 
-{% block content %}
-<div class="admin-dashboard">
-  <div class="admin-dashboard-header">
-    <div>
-      <h1>관리자 대시보드</h1>
-      <p class="admin-dashboard-subtitle">배드민톡 콘텐츠와 데이터를 한 곳에서 관리하세요.</p>
-    </div>
-  </div>
+{% block breadcrumbs %}{% endblock %}
 
-  {% if app_list %}
-    <div class="admin-dashboard-grid">
-      {% for app in app_list %}
-        <section class="admin-dashboard-app">
-          <header class="admin-dashboard-app__header">
-            <h2>{{ app.name }}</h2>
-            {% if app.app_url %}
-              <a href="{{ app.app_url }}" class="admin-dashboard-app__more">전체 보기</a>
-            {% endif %}
-          </header>
-          <ul class="admin-dashboard-model-list">
-            {% for model in app.models %}
-              <li class="admin-dashboard-model{% if not model.admin_url %} admin-dashboard-model--disabled{% endif %}">
-                <div class="admin-dashboard-model__main">
-                  {% if model.admin_url %}
-                    <a href="{{ model.admin_url }}" class="admin-dashboard-model__name">{{ model.name }}</a>
-                  {% else %}
-                    <span class="admin-dashboard-model__name">{{ model.name }}</span>
-                  {% endif %}
-                  {% if model.add_url %}
-                    <a href="{{ model.add_url }}" class="admin-dashboard-tag">새로 추가</a>
-                  {% endif %}
-                </div>
-                {% if model.view_only %}
-                  <span class="admin-dashboard-model__meta">읽기 전용</span>
-                {% else %}
-                  {% if model.admin_url %}
-                    <span class="admin-dashboard-model__meta">데이터 관리</span>
-                  {% endif %}
-                {% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        </section>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p>관리할 수 있는 앱이 없습니다.</p>
-  {% endif %}
-</div>
+{% block title %}
+    대시보드 | {{ site_title }}
 {% endblock %}
 
+{% block content %}
+<div class="flex flex-col gap-8 mb-8">
+    <!-- 헤더 -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">대시보드</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">배드민톡 관리자 대시보드에 오신 것을 환영합니다</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'admin:contests_contest_add' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
+                <span class="material-symbols-outlined text-lg">add</span>
+                대회 추가
+            </a>
+            <a href="{% url 'admin:statistics' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg font-medium text-sm transition-colors">
+                <span class="material-symbols-outlined text-lg">analytics</span>
+                상세 통계
+            </a>
+        </div>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- 사용자 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <div class="flex items-center justify-between">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl">people</span>
+                </div>
+                {% if stats.users.today > 0 %}
+                <span class="text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                    +{{ stats.users.today }} 오늘
+                </span>
+                {% endif %}
+            </div>
+            <div class="mt-4">
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.users.total|default:0 }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">전체 사용자</p>
+            </div>
+        </div>
+
+        <!-- 오늘 방문자 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <div class="flex items-center justify-between">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-green-600 dark:text-green-400 text-2xl">visibility</span>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.visitors.today|default:0 }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">오늘 방문자</p>
+            </div>
+        </div>
+
+        <!-- 대회 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <div class="flex items-center justify-between">
+                <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400 text-2xl">emoji_events</span>
+                </div>
+                {% if stats.contests.upcoming > 0 %}
+                <span class="text-xs font-medium text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded-full">
+                    {{ stats.contests.upcoming }} 예정
+                </span>
+                {% endif %}
+            </div>
+            <div class="mt-4">
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.contests.total|default:0 }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">전체 대회</p>
+            </div>
+        </div>
+
+        <!-- 게시글 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <div class="flex items-center justify-between">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-2xl">article</span>
+                </div>
+                {% if stats.posts.week > 0 %}
+                <span class="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded-full">
+                    +{{ stats.posts.week }} 주간
+                </span>
+                {% endif %}
+            </div>
+            <div class="mt-4">
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.posts.total|default:0 }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">전체 게시글</p>
+            </div>
+        </div>
+
+        <!-- 밴드/모임 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <div class="flex items-center justify-between">
+                <div class="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-pink-600 dark:text-pink-400 text-2xl">groups</span>
+                </div>
+                {% if stats.bands.pending > 0 %}
+                <span class="text-xs font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
+                    {{ stats.bands.pending }} 대기
+                </span>
+                {% endif %}
+            </div>
+            <div class="mt-4">
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.bands.total|default:0 }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">전체 밴드</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 그리드 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 최근 등록된 대회 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-yellow-500">emoji_events</span>
+                    최근 등록된 대회
+                </h3>
+                <a href="{% url 'admin:contests_contest_changelist' %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">전체 보기</a>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for contest in recent.contests %}
+                <a href="{% url 'admin:contests_contest_change' contest.id %}" class="block px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ contest.title }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ contest.region }} · {{ contest.schedule_start|date:"Y.m.d" }}</p>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                    등록된 대회가 없습니다
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 최근 게시글 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-purple-500">article</span>
+                    최근 게시글
+                </h3>
+                <a href="{% url 'admin:badmintok_badmintokpost_changelist' %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">전체 보기</a>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for post in recent.posts %}
+                <div class="px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ post.title }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ post.author__activity_name|default:"익명" }} · {{ post.created_at|date:"m.d H:i" }}</p>
+                        </div>
+                        <span class="text-xs font-medium px-2 py-1 rounded-full {% if post.source == 'badmintok' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
+                            {% if post.source == 'badmintok' %}배드민톡{% else %}커뮤니티{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                    게시글이 없습니다
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 최근 가입한 사용자 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-500">person_add</span>
+                    최근 가입한 사용자
+                </h3>
+                <a href="{% url 'admin:accounts_user_changelist' %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">전체 보기</a>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for user in recent.users %}
+                <div class="px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                            <span class="material-symbols-outlined text-gray-500 dark:text-gray-400 text-lg">person</span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.activity_name|default:user.email }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ user.date_joined|date:"m.d H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                    가입한 사용자가 없습니다
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 승인 대기 중인 밴드 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-500">pending_actions</span>
+                    승인 대기 밴드
+                    {% if stats.bands.pending > 0 %}
+                    <span class="ml-1 text-xs font-medium text-white bg-red-500 px-2 py-0.5 rounded-full">{{ stats.bands.pending }}</span>
+                    {% endif %}
+                </h3>
+                <a href="{% url 'admin:band_band_changelist' %}?is_approved__exact=0" class="text-sm text-primary-600 hover:text-primary-700 font-medium">전체 보기</a>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for band in recent.pending_bands %}
+                <a href="{% url 'admin:band_band_change' band.id %}" class="block px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ band.name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ band.created_by__activity_name }} · {{ band.created_at|date:"m.d H:i" }}</p>
+                        </div>
+                        <span class="text-xs font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                            {% if band.band_type == 'group' %}모임{% else %}동호회{% endif %}
+                        </span>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <span class="material-symbols-outlined text-3xl text-gray-300 dark:text-gray-600 mb-2 block">check_circle</span>
+                    승인 대기 중인 밴드가 없습니다
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 퀵 액션 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-4">퀵 액션</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            <a href="{% url 'admin:contests_contest_add' %}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="material-symbols-outlined text-2xl text-yellow-500">add_circle</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">대회 추가</span>
+            </a>
+            <a href="{% url 'admin:badmintok_badmintokbanner_changelist' %}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="material-symbols-outlined text-2xl text-blue-500">image</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">배너 관리</span>
+            </a>
+            <a href="{% url 'admin:accounts_user_changelist' %}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="material-symbols-outlined text-2xl text-green-500">people</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">사용자 관리</span>
+            </a>
+            <a href="{% url 'admin:band_band_changelist' %}?is_approved__exact=0" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="material-symbols-outlined text-2xl text-orange-500">pending_actions</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">밴드 승인</span>
+            </a>
+            <a href="{% url 'admin:accounts_inquiry_changelist' %}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="material-symbols-outlined text-2xl text-purple-500">help</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">문의 관리</span>
+            </a>
+            <a href="{% url 'admin:statistics' %}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="material-symbols-outlined text-2xl text-pink-500">analytics</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">상세 통계</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -146,7 +146,7 @@ class ContestListView(ListView):
         # sponsor_id는 마이그레이션 이슈로 인해 제외 (나중에 안전하게 접근)
         all_contests = Contest.objects.all().prefetch_related('images', 'category').only(
             'id', 'title', 'slug', 'schedule_start', 'schedule_end',
-            'region', 'region_detail', 'participant_reward', 'category_id', 'is_qualifying'
+            'region', 'region_detail', 'category_id', 'is_qualifying'
         )
 
         # contest_data 생성 시 category가 None이거나 잘못된 경우 처리
@@ -198,7 +198,6 @@ class ContestListView(ListView):
                     "location": contest.get_location_display(),
                     "image_url": None,
                     # contest.images.first.image.url if contest.images.first else None,
-                    "participant_reward": contest.participant_reward or None,
                     "sponsor": sponsor_name,
                     "category": category_data,
                 })
@@ -281,7 +280,6 @@ class ContestListView(ListView):
                     "schedule_end",
                     "region",
                     "region_detail",
-                    "participant_reward",
                     "category_id",
                     "sponsor_id",
                     "is_qualifying",

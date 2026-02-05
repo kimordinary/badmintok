@@ -55,7 +55,7 @@ def contest_list(request):
         contests = contests.filter(
             Q(title__icontains=search) |
             Q(region_detail__icontains=search) |
-            Q(event_division__icontains=search)
+            Q(competition_type__icontains=search)
         )
 
     # 정렬

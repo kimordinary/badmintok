@@ -1,0 +1,12 @@
+{% load i18n unfold %}
+
+<div class="bg-transparent flex font-semibold gap-3 grow min-w-0 h-[64px] items-center px-3">
+    <a href="{% url 'admin:index' %}" class="flex items-center gap-3">
+        {% with site_logo=request|site_logo %}
+            {% if site_logo %}
+                <img src="{{ site_logo }}" alt="홈" class="h-8">
+            {% endif %}
+        {% endwith %}
+        <span class="text-gray-900 text-lg font-bold">BADMINTOK</span>
+    </a>
+</div>
