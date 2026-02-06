@@ -528,12 +528,24 @@ UNFOLD = {
                 ],
             },
             {
+                "title": "앱",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "모바일 배너",
+                        "icon": "smartphone",
+                        "link": reverse_lazy("admin:badmintok_banner_changelist"),
+                    },
+                ],
+            },
+            {
                 "title": "시스템",
                 "separator": True,
                 "collapsible": True,
                 "items": [
                     {
-                        "title": "배너",
+                        "title": "배드민톡 배너",
                         "icon": "image",
                         "link": reverse_lazy("admin:badmintok_badmintokbanner_changelist"),
                     },
