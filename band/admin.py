@@ -1,3 +1,6 @@
+import os
+
+from django import forms
 from django.contrib import admin
 from django.contrib import messages
 from django.utils import timezone
@@ -13,11 +16,36 @@ from .models import (
 )
 
 
+class BandAdminForm(forms.ModelForm):
+    """밴드 관리자 폼 - 누락된 이미지 파일 처리"""
+    class Meta:
+        model = Band
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 인스턴스가 있고 이미지 필드에 값이 있지만 파일이 없는 경우 처리
+        if self.instance and self.instance.pk:
+            if self.instance.cover_image:
+                try:
+                    if not os.path.exists(self.instance.cover_image.path):
+                        self.initial["cover_image"] = None
+                except (ValueError, FileNotFoundError):
+                    self.initial["cover_image"] = None
+            if self.instance.profile_image:
+                try:
+                    if not os.path.exists(self.instance.profile_image.path):
+                        self.initial["profile_image"] = None
+                except (ValueError, FileNotFoundError):
+                    self.initial["profile_image"] = None
+
+
 @admin.register(Band)
 class BandAdmin(ModelAdmin):
+    form = BandAdminForm
     list_display = [
         "name", "band_type", "created_by", "is_approved", "is_public",
-        "join_approval_required", "approved_at", "deletion_requested", "created_at", "approval_actions", "deletion_actions", "delete_action"
+        "join_approval_required", "display_approved_at", "deletion_requested", "created_at", "approval_actions", "deletion_actions", "delete_action"
     ]
     list_filter = ["is_approved", "is_public", "band_type", "join_approval_required", "deletion_requested", "created_at", "approved_at"]
     search_fields = ["name", "description", "created_by__email", "created_by__activity_name"]
@@ -48,6 +76,19 @@ class BandAdmin(ModelAdmin):
     )
 
     actions = ["approve_selected", "reject_selected", "approve_deletion_selected", "delete_selected"]
+
+    def display_approved_at(self, obj):
+        """승인 일시 표시"""
+        if obj.approved_at:
+            return format_html(
+                '<span style="color: #10b981;">{}</span>',
+                obj.approved_at.strftime("%Y.%m.%d %H:%M")
+            )
+        elif obj.band_type == "flash":
+            return format_html('<span style="color: #9ca3af;">-</span>')
+        else:
+            return format_html('<span style="color: #f59e0b;">미승인</span>')
+    display_approved_at.short_description = "승인 일시"
 
     def approval_actions(self, obj):
         """승인/거부 버튼"""
@@ -197,6 +238,40 @@ class BandAdmin(ModelAdmin):
                 messages.SUCCESS
             )
     delete_selected.short_description = "선택한 모임 삭제 (관련 데이터 포함)"
+
+    def save_model(self, request, obj, form, change):
+        """모델 저장 시 승인 정보 자동 설정"""
+        if change:
+            # 기존 객체와 비교
+            old_obj = Band.objects.get(pk=obj.pk)
+
+            # 존재하지 않는 이미지 파일 참조 제거
+            if old_obj.cover_image:
+                try:
+                    if not os.path.exists(old_obj.cover_image.path):
+                        # 파일이 없으면 필드 클리어
+                        if not obj.cover_image or obj.cover_image == old_obj.cover_image:
+                            obj.cover_image = None
+                except (ValueError, FileNotFoundError):
+                    obj.cover_image = None
+
+            if old_obj.profile_image:
+                try:
+                    if not os.path.exists(old_obj.profile_image.path):
+                        if not obj.profile_image or obj.profile_image == old_obj.profile_image:
+                            obj.profile_image = None
+                except (ValueError, FileNotFoundError):
+                    obj.profile_image = None
+
+            # is_approved가 False → True로 변경된 경우
+            if not old_obj.is_approved and obj.is_approved:
+                if not obj.approved_at:
+                    obj.approved_at = timezone.now()
+                if not obj.approved_by:
+                    obj.approved_by = request.user
+                # 승인 시 공개로 전환
+                obj.is_public = True
+        super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
         """모든 모임을 표시 (필터로 제어 가능)"""
