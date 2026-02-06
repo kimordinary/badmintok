@@ -50,39 +50,68 @@ class WebPImageField(ImageField):
     def pre_save(self, model_instance, add):
         file = super().pre_save(model_instance, add)
 
-        if file and hasattr(file, 'file'):
-            # 이미 WebP인 경우 변환하지 않음
-            if file.name and file.name.lower().endswith('.webp'):
-                return file
+        if not file:
+            return file
 
-            try:
-                # 이미지 열기
-                img = Image.open(file)
+        # 이미 WebP인 경우 변환하지 않음
+        if file.name and file.name.lower().endswith('.webp'):
+            return file
 
-                # RGBA 모드인 경우 (투명도가 있는 PNG 등)
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    # 투명도 유지
-                    pass
-                elif img.mode != 'RGB':
+        # 새로 업로드된 파일인지 확인 (committed=False인 경우 새 파일)
+        # FieldFile의 경우 _committed 속성으로 확인
+        is_new_upload = hasattr(file, '_committed') and not file._committed
+
+        # InMemoryUploadedFile 또는 TemporaryUploadedFile인 경우도 새 파일
+        if not is_new_upload:
+            from django.core.files.uploadedfile import UploadedFile
+            is_new_upload = isinstance(file, UploadedFile)
+
+        # 새 파일이 아니면 변환하지 않음 (이미 저장된 파일)
+        if not is_new_upload:
+            return file
+
+        try:
+            # 파일 포지션을 처음으로 이동
+            if hasattr(file, 'seek'):
+                file.seek(0)
+
+            # 이미지 열기
+            img = Image.open(file)
+            img.load()  # 이미지 데이터를 메모리에 완전히 로드
+
+            # 모드 변환: 팔레트 모드(P)는 RGBA로, 기타는 RGB로
+            if img.mode == 'P':
+                # 팔레트 모드: 투명도 정보가 있으면 RGBA로, 없으면 RGB로
+                if 'transparency' in img.info:
+                    img = img.convert('RGBA')
+                else:
                     img = img.convert('RGB')
+            elif img.mode == 'LA':
+                img = img.convert('RGBA')
+            elif img.mode not in ('RGB', 'RGBA'):
+                img = img.convert('RGB')
 
-                # WebP로 변환
-                output = BytesIO()
-                img.save(output, format='WEBP', quality=self.quality, optimize=True)
-                output.seek(0)
+            # WebP로 변환
+            output = BytesIO()
+            img.save(output, format='WEBP', quality=self.quality, optimize=True)
+            output.seek(0)
 
-                # 파일명 변경 (.webp로)
-                original_name = os.path.splitext(file.name)[0]
-                new_name = f"{original_name}.webp"
+            # 파일명 변경 (.webp로)
+            # 경로에서 파일명만 추출하여 처리
+            basename = os.path.basename(file.name)
+            name_without_ext = os.path.splitext(basename)[0]
+            new_name = f"{name_without_ext}.webp"
 
-                # 새 파일로 저장
-                new_file = ContentFile(output.read(), name=new_name)
-                setattr(model_instance, self.attname, new_file)
+            # 새 파일로 저장
+            new_file = ContentFile(output.read(), name=new_name)
+            setattr(model_instance, self.attname, new_file)
 
-                return new_file
-            except Exception:
-                # 변환 실패 시 원본 그대로 저장
-                return file
+            return new_file
+        except Exception as e:
+            # 변환 실패 시 원본 그대로 저장
+            import logging
+            logging.getLogger(__name__).warning(f"WebP 변환 실패: {e}")
+            return file
 
         return file
 
