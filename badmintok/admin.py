@@ -13,7 +13,7 @@ import json
 import hashlib
 from unfold.admin import ModelAdmin
 
-from .models import BadmintokBanner, Notice, VisitorLog, OutboundClick
+from .models import BadmintokBanner, Banner, Notice, VisitorLog, OutboundClick
 from .fields import (
     get_unconverted_images_stats,
     convert_existing_image_to_webp,
@@ -64,6 +64,53 @@ class BadmintokBannerAdmin(ModelAdmin):
         }),
         ("설정", {
             "fields": ("is_active", "display_order")
+        }),
+        ("날짜 정보", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
+        }),
+    )
+
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(Banner)
+class BannerAdmin(ModelAdmin):
+    list_display = (
+        "id", "image_preview", "title", "is_active", "display_status",
+        "order", "start_date", "end_date", "created_at"
+    )
+    list_editable = ("is_active", "order")
+    list_filter = ("is_active", "start_date", "end_date")
+    search_fields = ("title", "link_url")
+    ordering = ("order", "-created_at")
+
+    def image_preview(self, obj):
+        """배너 이미지 미리보기"""
+        if obj.mobile_image:
+            return format_html(
+                '<img src="{}" style="max-width: 150px; max-height: 80px; object-fit: contain;" />',
+                obj.mobile_image.url
+            )
+        return "-"
+    image_preview.short_description = "이미지"
+
+    def display_status(self, obj):
+        """현재 노출 상태 표시"""
+        if obj.is_currently_active:
+            return format_html('<span style="color: #10b981;">● 노출중</span>')
+        elif not obj.is_active:
+            return format_html('<span style="color: #9ca3af;">● 비활성</span>')
+        else:
+            return format_html('<span style="color: #f59e0b;">● 기간외</span>')
+    display_status.short_description = "노출 상태"
+
+    fieldsets = (
+        ("배너 정보", {
+            "fields": ("title", "mobile_image", "link_url")
+        }),
+        ("노출 설정", {
+            "fields": ("is_active", "order", ("start_date", "end_date"))
         }),
         ("날짜 정보", {
             "fields": ("created_at", "updated_at"),

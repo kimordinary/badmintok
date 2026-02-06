@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from badmintok.models import BadmintokBanner, Notice
+from badmintok.models import BadmintokBanner, Banner, Notice
 from community.models import Post, PostImage
 from accounts.models import User
 
@@ -98,6 +98,23 @@ class BannerSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
+        return None
+
+
+class AppBannerSerializer(serializers.ModelSerializer):
+    """앱/웹 메인 배너 Serializer"""
+    mobile_image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Banner
+        fields = ['id', 'title', 'mobile_image_url', 'link_url', 'order']
+
+    def get_mobile_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.mobile_image and hasattr(obj.mobile_image, 'url'):
+            if request:
+                return request.build_absolute_uri(obj.mobile_image.url)
+            return obj.mobile_image.url
         return None
 
 

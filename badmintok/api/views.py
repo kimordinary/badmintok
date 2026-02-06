@@ -8,10 +8,10 @@ from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from django.core.paginator import Paginator
 
-from badmintok.models import BadmintokBanner, Notice
+from badmintok.models import BadmintokBanner, Banner, Notice
 from community.models import Post, Category
 from badmintok.api.serializers import (
-    BannerSerializer, NoticeListSerializer, NoticeSerializer,
+    BannerSerializer, AppBannerSerializer, NoticeListSerializer, NoticeSerializer,
     PostListSerializer, PostDetailSerializer
 )
 
@@ -212,6 +212,37 @@ def banner_list(request):
     """배너 목록 API"""
     banners = BadmintokBanner.objects.filter(is_active=True).order_by('display_order', 'id')
     serializer = BannerSerializer(banners, many=True, context={'request': request})
+    return Response({
+        'banners': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def app_banner_list(request):
+    """앱/웹 메인 배너 목록 API
+
+    활성화된 배너만 반환 (is_active=True)
+    현재 날짜가 노출 기간 내인 것만
+    order 순으로 정렬
+    """
+    from datetime import date
+    today = date.today()
+
+    banners = Banner.objects.filter(is_active=True).order_by('order', '-created_at')
+
+    # 노출 기간 필터링
+    active_banners = []
+    for banner in banners:
+        # start_date가 있고 오늘보다 미래이면 제외
+        if banner.start_date and today < banner.start_date:
+            continue
+        # end_date가 있고 오늘보다 과거이면 제외
+        if banner.end_date and today > banner.end_date:
+            continue
+        active_banners.append(banner)
+
+    serializer = AppBannerSerializer(active_banners, many=True, context={'request': request})
     return Response({
         'banners': serializer.data
     }, status=status.HTTP_200_OK)

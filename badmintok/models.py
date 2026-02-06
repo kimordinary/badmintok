@@ -42,6 +42,57 @@ class BadmintokBanner(models.Model):
         return self.title or f"배너 #{self.pk}"
 
 
+def banner_mobile_image_upload_to(instance, filename):
+    """배너 모바일 이미지 파일명 생성 함수"""
+    ext = os.path.splitext(filename)[1].lower()
+    unique_filename = f"{uuid.uuid4().hex[:12]}{ext}"
+    return f"banners/mobile/{unique_filename}"
+
+
+class Banner(models.Model):
+    """앱/웹 메인 배너 모델"""
+
+    title = models.CharField("제목", max_length=200)
+    mobile_image = WebPImageField(
+        "모바일 이미지",
+        upload_to=banner_mobile_image_upload_to,
+        help_text="권장 비율: 16:9 또는 앱에서 사용하는 비율"
+    )
+    link_url = models.URLField("클릭 시 이동 URL", blank=True, help_text="클릭 시 이동할 URL (선택)")
+    is_active = models.BooleanField("활성화", default=True)
+    order = models.PositiveIntegerField(
+        "정렬 순서",
+        default=0,
+        help_text="숫자가 낮을수록 먼저 노출됩니다."
+    )
+    start_date = models.DateField("노출 시작일", blank=True, null=True, help_text="비워두면 즉시 노출")
+    end_date = models.DateField("노출 종료일", blank=True, null=True, help_text="비워두면 무기한 노출")
+    created_at = models.DateTimeField("등록일", auto_now_add=True)
+    updated_at = models.DateTimeField("수정일", auto_now=True)
+
+    class Meta:
+        verbose_name = "배너"
+        verbose_name_plural = "배너"
+        ordering = ["order", "-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_currently_active(self):
+        """현재 노출 중인지 확인"""
+        from datetime import date
+        today = date.today()
+
+        if not self.is_active:
+            return False
+        if self.start_date and today < self.start_date:
+            return False
+        if self.end_date and today > self.end_date:
+            return False
+        return True
+
+
 class Notice(models.Model):
     """공지사항 모델"""
     title = models.CharField(_("제목"), max_length=200)
