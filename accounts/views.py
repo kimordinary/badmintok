@@ -808,7 +808,11 @@ class KakaoMobileLoginView(View):
             
             # 로그인 처리
             auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-            
+
+            # JWT 토큰 발급
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+
             # 응답 데이터 구성
             response_data = {
                 'success': True,
@@ -818,12 +822,16 @@ class KakaoMobileLoginView(View):
                     'activity_name': user.activity_name,
                     'profile_image_url': request.build_absolute_uri(profile_obj.profile_image.url) if profile_obj.profile_image else None,
                 },
+                'token': {
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh),
+                },
                 'session_id': request.session.session_key,
                 'requires_real_name': not bool(profile_obj.name),
             }
-            
+
             return JsonResponse(response_data)
-            
+
         except json.JSONDecodeError:
             return JsonResponse({
                 'success': False,
@@ -1209,7 +1217,11 @@ class NaverMobileLoginView(View):
             
             # 로그인 처리
             auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-            
+
+            # JWT 토큰 발급
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+
             # 응답 데이터 구성
             response_data = {
                 'success': True,
@@ -1219,12 +1231,16 @@ class NaverMobileLoginView(View):
                     'activity_name': user.activity_name,
                     'profile_image_url': request.build_absolute_uri(profile_obj.profile_image.url) if profile_obj.profile_image else None,
                 },
+                'token': {
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh),
+                },
                 'session_id': request.session.session_key,
                 'requires_real_name': not bool(profile_obj.name),
             }
-            
+
             return JsonResponse(response_data)
-            
+
         except json.JSONDecodeError:
             return JsonResponse({
                 'success': False,
@@ -1579,6 +1595,10 @@ class GoogleMobileLoginView(View):
             # 로그인 처리
             auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
+            # JWT 토큰 발급
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+
             response_data = {
                 "success": True,
                 "user": {
@@ -1590,6 +1610,10 @@ class GoogleMobileLoginView(View):
                     )
                     if profile_obj.profile_image
                     else None,
+                },
+                "token": {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
                 },
                 "session_id": request.session.session_key,
                 "requires_real_name": not bool(profile_obj.name),

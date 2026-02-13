@@ -1,5 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from .forms import UserLoginForm
 from .views import (
@@ -82,6 +83,8 @@ urlpatterns = [
     path("api/mypage/summary/", MypageSummaryAPIView.as_view(), name="mypage_summary_api"),
     # 계정 삭제 REST API
     path("api/account/delete/", AccountDeleteAPIView.as_view(), name="account_delete_api"),
+    # JWT 토큰 갱신
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("enter-real-name/", enter_real_name, name="enter_real_name"),
     path("mypage/", mypage, name="mypage"),
