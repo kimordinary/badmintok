@@ -97,7 +97,13 @@ def post_list(request):
     elif category:
         try:
             category_obj = Category.objects.get(slug=category, source=Category.Source.COMMUNITY, is_active=True)
-            posts = posts.filter(Q(category=category_obj) | Q(categories=category_obj)).distinct()
+            # 부모 카테고리인 경우 하위 카테고리 게시물도 포함
+            category_slugs = [category_obj.slug]
+            child_categories = Category.objects.filter(parent=category_obj, is_active=True)
+            category_slugs.extend([c.slug for c in child_categories])
+            posts = posts.filter(
+                Q(category__slug__in=category_slugs) | Q(categories__slug__in=category_slugs)
+            ).distinct()
         except Category.DoesNotExist:
             pass
     
