@@ -66,6 +66,15 @@ class CommunityPostListSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(first_image.image.url)
             return first_image.image.url
+        # HTML 콘텐츠에서 첫 번째 이미지 URL 추출 (PostImage가 없는 경우)
+        if obj.content:
+            import re
+            match = re.search(r'<img\s+[^>]*src="([^"]*)"', obj.content)
+            if match:
+                img_url = match.group(1)
+                if request and img_url.startswith('/'):
+                    return request.build_absolute_uri(img_url)
+                return img_url
         return None
 
     def get_excerpt(self, obj):
