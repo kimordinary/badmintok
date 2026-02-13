@@ -6,6 +6,7 @@ from django.db.models import Q, F, Case, When, ExpressionWrapper, FloatField, Pr
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
+from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta
 import os
 import uuid
@@ -172,6 +173,7 @@ def post_detail(request, slug):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_create(request):
@@ -186,6 +188,7 @@ def post_create(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def post_update(request, slug):
@@ -220,6 +223,7 @@ def post_update(request, slug):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def post_delete(request, slug):
@@ -245,6 +249,7 @@ def post_delete(request, slug):
     return Response({'message': '게시글이 삭제되었습니다.'}, status=status.HTTP_200_OK)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_like(request, slug):
@@ -302,6 +307,7 @@ def comment_list(request, slug):
     }, status=status.HTTP_200_OK)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def comment_create(request, slug):
@@ -324,6 +330,7 @@ def comment_create(request, slug):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def comment_update(request, comment_id):
@@ -351,6 +358,7 @@ def comment_update(request, comment_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def comment_delete(request, comment_id):
@@ -376,6 +384,7 @@ def comment_delete(request, comment_id):
     return Response({'message': '댓글이 삭제되었습니다.'}, status=status.HTTP_200_OK)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def comment_like(request, comment_id):
@@ -397,6 +406,7 @@ def comment_like(request, comment_id):
         return Response({'message': '좋아요가 추가되었습니다.', 'is_liked': True}, status=status.HTTP_200_OK)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def image_upload(request):
