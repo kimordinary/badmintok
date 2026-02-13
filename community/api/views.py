@@ -179,12 +179,19 @@ def post_detail(request, slug):
 def post_create(request):
     """동호인톡 게시글 생성 API"""
     serializer = CommunityPostCreateSerializer(data=request.data, context={'request': request})
-    
+
     if serializer.is_valid():
         post = serializer.save()
+
+        # request.FILES에서 직접 이미지 처리 (DRF ListField 병합 이슈 대응)
+        if not post.images.exists():
+            images = request.FILES.getlist('images')
+            for idx, image in enumerate(images):
+                PostImage.objects.create(post=post, image=image, order=idx)
+
         response_serializer = CommunityPostDetailSerializer(post, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-    
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -217,9 +224,17 @@ def post_update(request, slug):
     
     if serializer.is_valid():
         post = serializer.save()
+
+        # request.FILES에서 직접 이미지 처리 (DRF ListField 병합 이슈 대응)
+        images = request.FILES.getlist('images')
+        if images:
+            post.images.all().delete()
+            for idx, image in enumerate(images):
+                PostImage.objects.create(post=post, image=image, order=idx)
+
         response_serializer = CommunityPostDetailSerializer(post, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_200_OK)
-    
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
