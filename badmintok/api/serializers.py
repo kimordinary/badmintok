@@ -66,9 +66,31 @@ class PostListSerializer(serializers.ModelSerializer):
     def get_excerpt(self, obj):
         """본문에서 발췌문 생성 (100자)"""
         if obj.content:
-            # HTML 태그 제거
-            import re
-            text = re.sub(r'<[^>]+>', '', obj.content)
+            import re, json
+            content = obj.content.strip()
+            # Editor.js JSON 형식인 경우 텍스트 추출
+            if content.startswith('{') and '"blocks"' in content:
+                try:
+                    data = json.loads(content)
+                    blocks = data.get('blocks', [])
+                    parts = []
+                    for block in blocks:
+                        btype = block.get('type', '')
+                        bdata = block.get('data', {})
+                        if btype in ('paragraph', 'header', 'h2', 'h3', 'h4', 'quote'):
+                            t = re.sub(r'<[^>]+>', '', bdata.get('text', '')).replace('&nbsp;', ' ').strip()
+                            if t:
+                                parts.append(t)
+                        elif btype == 'list':
+                            for item in bdata.get('items', []):
+                                t = re.sub(r'<[^>]+>', '', str(item)).strip()
+                                if t:
+                                    parts.append(t)
+                    text = ' '.join(parts)
+                except (json.JSONDecodeError, KeyError):
+                    text = re.sub(r'<[^>]+>', '', content)
+            else:
+                text = re.sub(r'<[^>]+>', '', content)
             text = text.strip()
             return text[:100] + '...' if len(text) > 100 else text
         return ''
