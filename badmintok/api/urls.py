@@ -5,6 +5,7 @@ app_name = 'api'
 
 # Badmintok API URLs
 badmintok_patterns = [
+    path('categories/', views.category_list, name='badmintok_category_list'),
     path('posts/', views.post_list, name='badmintok_post_list'),
     path('posts/<str:slug>/', views.post_detail, name='badmintok_post_detail'),
     path('hot-posts/', views.hot_posts, name='badmintok_hot_posts'),

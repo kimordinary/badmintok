@@ -10,6 +10,7 @@ from django.core.paginator import Paginator
 
 from badmintok.models import BadmintokBanner, Banner, Notice
 from community.models import Post, Category
+from community.api.serializers import CategorySerializer
 from badmintok.api.serializers import (
     BannerSerializer, AppBannerSerializer, NoticeListSerializer, NoticeSerializer,
     PostListSerializer, PostDetailSerializer
@@ -203,6 +204,21 @@ def hot_posts(request):
     serializer = PostListSerializer(hot_posts_qs, many=True, context={'request': request})
     return Response({
         'hot_posts': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def category_list(request):
+    """배드민톡 카테고리 목록 API"""
+    categories = Category.objects.filter(
+        source=Category.Source.BADMINTOK,
+        is_active=True
+    ).order_by('display_order', 'name')
+
+    serializer = CategorySerializer(categories, many=True)
+    return Response({
+        'categories': serializer.data
     }, status=status.HTTP_200_OK)
 
 
