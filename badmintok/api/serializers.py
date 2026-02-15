@@ -34,20 +34,33 @@ class PostListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='get_category_display', read_only=True)
     first_image = serializers.SerializerMethodField()
     excerpt = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = [
-            'id', 'slug', 'title', 'excerpt', 'author', 'category_name',
-            'view_count', 'like_count', 'comment_count',
-            'created_at', 'updated_at', 'published_at',
-            'first_image', 'is_pinned'
+            'id', 'title', 'slug', 'author', 'category_name', 'source',
+            'created_at', 'updated_at', 'view_count', 'like_count', 'comment_count',
+            'is_pinned', 'first_image', 'excerpt', 'is_liked', 'thumbnail_url'
         ]
 
     def get_first_image(self, obj):
+        request = self.context.get('request')
         first_image = obj.images.first()
-        if first_image:
-            return PostImageSerializer(first_image, context=self.context).data
+        if first_image and first_image.image:
+            if request:
+                return request.build_absolute_uri(first_image.image.url)
+            return first_image.image.url
+        # HTML 콘텐츠에서 첫 번째 이미지 URL 추출
+        if obj.content:
+            import re
+            match = re.search(r'<img\s+[^>]*src="([^"]*)"', obj.content)
+            if match:
+                img_url = match.group(1)
+                if request and img_url.startswith('/'):
+                    return request.build_absolute_uri(img_url)
+                return img_url
         return None
 
     def get_excerpt(self, obj):
@@ -60,6 +73,20 @@ class PostListSerializer(serializers.ModelSerializer):
             return text[:100] + '...' if len(text) > 100 else text
         return ''
 
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False
+
+    def get_thumbnail_url(self, obj):
+        request = self.context.get('request')
+        if obj.thumbnail and hasattr(obj.thumbnail, 'url'):
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+            return obj.thumbnail.url
+        return None
+
 
 class PostDetailSerializer(serializers.ModelSerializer):
     """게시물 상세 Serializer"""
@@ -67,14 +94,15 @@ class PostDetailSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='get_category_display', read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = [
-            'id', 'slug', 'title', 'content', 'author', 'category_name',
-            'view_count', 'like_count', 'comment_count',
-            'created_at', 'updated_at', 'published_at',
-            'images', 'is_liked', 'is_pinned'
+            'id', 'title', 'slug', 'content', 'author', 'category_name',
+            'source', 'created_at', 'updated_at',
+            'view_count', 'like_count', 'comment_count', 'is_pinned',
+            'published_at', 'images', 'is_liked', 'thumbnail_url'
         ]
 
     def get_is_liked(self, obj):
@@ -82,6 +110,14 @@ class PostDetailSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(id=request.user.id).exists()
         return False
+
+    def get_thumbnail_url(self, obj):
+        request = self.context.get('request')
+        if obj.thumbnail and hasattr(obj.thumbnail, 'url'):
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+            return obj.thumbnail.url
+        return None
 
 
 class BannerSerializer(serializers.ModelSerializer):
