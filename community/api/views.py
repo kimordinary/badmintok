@@ -302,7 +302,7 @@ def comment_list(request, slug):
     post = get_object_or_404(
         Post.objects.filter(
             slug=slug,
-            source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS],
+            source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS, Post.Source.BADMINTOK],
             is_deleted=False
         )
     )
@@ -336,7 +336,7 @@ def comment_create(request, slug):
     post = get_object_or_404(
         Post.objects.filter(
             slug=slug,
-            source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS],
+            source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS, Post.Source.BADMINTOK],
             is_deleted=False
         )
     )
