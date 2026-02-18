@@ -63,7 +63,8 @@
       "Bash(git status:*)",
       "Bash(git ls-files:*)",
       "Bash(git check-ignore:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(pip show:*)"
     ],
     "deny": [],
     "ask": []
