@@ -128,11 +128,15 @@ class Contest(models.Model):
         return self.title
 
     def get_period_display(self):
+        if not self.schedule_start:
+            return "-"
         if self.schedule_end and self.schedule_end != self.schedule_start:
             return f"{self.schedule_start:%Y.%m.%d} ~ {self.schedule_end:%Y.%m.%d}"
         return f"{self.schedule_start:%Y.%m.%d}"
 
     def get_registration_period_display(self):
+        if not self.registration_start:
+            return "-"
         if self.registration_end and self.registration_end != self.registration_start:
             return f"{self.registration_start:%Y.%m.%d} ~ {self.registration_end:%Y.%m.%d}"
         return f"{self.registration_start:%Y.%m.%d}"

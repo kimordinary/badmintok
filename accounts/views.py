@@ -1807,6 +1807,18 @@ def account_delete(request):
     return render(request, "accounts/account_delete.html")
 
 
+def _authenticate_jwt(request):
+    """JWT Bearer 토큰으로 사용자 인증 (DRF 미사용 뷰용)"""
+    from rest_framework_simplejwt.authentication import JWTAuthentication
+    jwt_auth = JWTAuthentication()
+    try:
+        result = jwt_auth.authenticate(request)
+        if result is not None:
+            request.user, request.auth = result
+    except Exception:
+        pass
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class ProfileAPIView(View):
     """
@@ -1814,6 +1826,10 @@ class ProfileAPIView(View):
     GET: 프로필 조회
     PUT: 프로필 수정
     """
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
         """프로필 조회"""
