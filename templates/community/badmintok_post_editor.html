@@ -3078,7 +3078,7 @@
                                 .faq-item.open .faq-answer { transition: max-height 0.35s ease-in; }
                                 .faq-answer-content { padding: 0 20px 16px; color: #475569; font-size: 14px; line-height: 1.6; }
                             </style>
-                            <script>
+                            <scr` + `ipt>
                                 function toggleFaq(button) {
                                     const faqItem = button.parentElement;
                                     const answer = faqItem.querySelector('.faq-answer');
@@ -3098,7 +3098,7 @@
                                         });
                                     }
                                 }
-                            </script>
+                            </scr` + `ipt>
                         </head>
                         <body>
                             <h1>${title}</h1>
@@ -3116,11 +3116,70 @@
         }
 
         // SEO 분석
-        const focusKeywordInput = document.getElementById('focus_keyword');
-        const metaDescInput = document.getElementById('meta_description');
-        const slugInput = document.getElementById('slug');
-        const seoScore = document.getElementById('seo-score');
-        const seoCheckList = document.getElementById('seo-check-list');
+        const focusKeywordInput = document.getElementById('id_focus_keyword');
+        const metaDescInput = document.getElementById('id_meta_description');
+        const slugInput = document.getElementById('id_slug');
+        const seoScoreEl = document.getElementById('seoScore');
+        const seoScoreBar = document.getElementById('seoScoreBar');
+        const seoScoreLabel = document.getElementById('seoScoreLabel');
+        const seoCheckCount = document.getElementById('seoCheckCount');
+        const keywordDensityEl = document.getElementById('keywordDensity');
+        const keywordDensityPercentEl = document.getElementById('keywordDensityPercent');
+        const metaDescLengthEl = document.getElementById('metaDescLength');
+
+        // SEO 체크리스트 토글
+        const seoChecklistToggle = document.getElementById('seoChecklistToggle');
+        const seoChecklist = document.getElementById('seoChecklist');
+        const seoChecklistIcon = document.getElementById('seoChecklistIcon');
+        if (seoChecklistToggle && seoChecklist) {
+            seoChecklistToggle.addEventListener('click', function() {
+                const isVisible = seoChecklist.style.display !== 'none';
+                seoChecklist.style.display = isVisible ? 'none' : 'block';
+                if (seoChecklistIcon) {
+                    seoChecklistIcon.textContent = isVisible ? 'expand_more' : 'expand_less';
+                }
+            });
+        }
+
+        // 메타 설명 글자수 실시간 표시
+        if (metaDescInput && metaDescLengthEl) {
+            metaDescInput.addEventListener('input', function() {
+                metaDescLengthEl.textContent = this.value.length;
+            });
+            metaDescLengthEl.textContent = metaDescInput.value.length;
+        }
+
+        function setCheckItem(dataCheck, passed) {
+            const item = document.querySelector(`.seo-check-item[data-check="${dataCheck}"]`);
+            if (!item) return;
+            const icon = item.querySelector('.seo-check-icon');
+            if (passed) {
+                item.classList.add('passed');
+                item.classList.remove('failed');
+                if (icon) icon.textContent = '●';
+            } else {
+                item.classList.add('failed');
+                item.classList.remove('passed');
+                if (icon) icon.textContent = '○';
+            }
+        }
+
+        function resetCheckItems() {
+            document.querySelectorAll('.seo-check-item').forEach(item => {
+                item.classList.remove('passed', 'failed');
+                const icon = item.querySelector('.seo-check-icon');
+                if (icon) icon.textContent = '○';
+            });
+        }
+
+        async function getEditorContent() {
+            try {
+                const data = await editor.save();
+                return data;
+            } catch (e) {
+                return { blocks: [] };
+            }
+        }
 
         async function performSEOAnalysis() {
             if (!titleInput || !editor || !focusKeywordInput || !metaDescInput || !slugInput) {
@@ -3129,106 +3188,303 @@
 
             const title = titleInput.value.trim();
             const content = await getEditorText();
+            const editorData = await getEditorContent();
             const focusKeyword = focusKeywordInput.value.trim().toLowerCase();
             const metaDescription = metaDescInput.value.trim();
             const slug = slugInput.value.trim();
+            const contentLower = content.toLowerCase();
+            const titleLower = title.toLowerCase();
 
-            let score = 0;
-            let maxScore = 10;
-            let checks = [];
+            let passedCount = 0;
+            const totalChecks = 28;
 
-            // 1. 포커스 키워드가 제목에 있는지
-            if (focusKeyword && title.toLowerCase().includes(focusKeyword)) {
-                score += 2;
-                checks.push({ status: 'good', text: '포커스 키워드가 제목에 포함되어 있습니다.' });
-            } else if (focusKeyword) {
-                checks.push({ status: 'bad', text: '포커스 키워드가 제목에 없습니다.' });
-            }
+            resetCheckItems();
 
-            // 2. 포커스 키워드가 본문에 있는지
-            if (focusKeyword && content.toLowerCase().includes(focusKeyword)) {
-                score += 2;
-                checks.push({ status: 'good', text: '포커스 키워드가 본문에 포함되어 있습니다.' });
-            } else if (focusKeyword) {
-                checks.push({ status: 'bad', text: '포커스 키워드가 본문에 없습니다.' });
-            }
+            // ── 기본 SEO (11) ──
 
-            // 3. 메타 설명 길이 체크
-            if (metaDescription.length >= 120 && metaDescription.length <= 160) {
-                score += 2;
-                checks.push({ status: 'good', text: `메타 설명 길이가 적절합니다. (${metaDescription.length}자)` });
-            } else if (metaDescription.length > 0) {
-                checks.push({ status: 'warning', text: `메타 설명 길이를 120-160자로 조정하세요. (현재 ${metaDescription.length}자)` });
-                score += 1;
-            } else {
-                checks.push({ status: 'bad', text: '메타 설명을 입력하세요.' });
-            }
+            // 1. keyword-in-title
+            const kwInTitle = focusKeyword && titleLower.includes(focusKeyword);
+            setCheckItem('keyword-in-title', kwInTitle);
+            if (kwInTitle) passedCount++;
 
-            // 4. 제목 길이 체크
-            if (title.length >= 30 && title.length <= 60) {
-                score += 1;
-                checks.push({ status: 'good', text: `제목 길이가 적절합니다. (${title.length}자)` });
-            } else if (title.length > 0) {
-                checks.push({ status: 'warning', text: `제목 길이를 30-60자로 조정하세요. (현재 ${title.length}자)` });
-            }
+            // 2. keyword-in-meta
+            const kwInMeta = focusKeyword && metaDescription.toLowerCase().includes(focusKeyword);
+            setCheckItem('keyword-in-meta', kwInMeta);
+            if (kwInMeta) passedCount++;
 
-            // 5. 본문 길이 체크
-            if (content.length >= 300) {
-                score += 1;
-                checks.push({ status: 'good', text: `본문이 충분합니다. (${content.length}자)` });
-            } else {
-                checks.push({ status: 'warning', text: `본문을 300자 이상 작성하세요. (현재 ${content.length}자)` });
-            }
+            // 3. keyword-in-url
+            const kwInUrl = focusKeyword && slug.toLowerCase().includes(focusKeyword);
+            setCheckItem('keyword-in-url', kwInUrl);
+            if (kwInUrl) passedCount++;
 
-            // 6. Slug 체크
-            if (slug.length > 0 && /^[a-z0-9-]+$/.test(slug)) {
-                score += 1;
-                checks.push({ status: 'good', text: 'URL 슬러그가 적절합니다.' });
-            } else if (slug.length > 0) {
-                checks.push({ status: 'warning', text: 'URL 슬러그는 영문 소문자, 숫자, 하이픈만 사용하세요.' });
-            }
+            // 4. keyword-in-content
+            const kwInContent = focusKeyword && contentLower.includes(focusKeyword);
+            setCheckItem('keyword-in-content', kwInContent);
+            if (kwInContent) passedCount++;
 
-            // 7. 키워드 밀도 체크
+            // 5. keyword-density (0.5-2.5%)
+            let keywordCount = 0;
+            let density = 0;
             if (focusKeyword && content) {
-                const keywordCount = (content.toLowerCase().match(new RegExp(focusKeyword, 'g')) || []).length;
-                const wordCount = content.split(/\s+/).length;
-                const density = wordCount > 0 ? (keywordCount / wordCount * 100) : 0;
+                try {
+                    const escaped = focusKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    keywordCount = (contentLower.match(new RegExp(escaped, 'g')) || []).length;
+                } catch (e) { keywordCount = 0; }
+                const charCount = content.length;
+                density = charCount > 0 ? (keywordCount / charCount * 100) : 0;
+            }
+            const densityOk = focusKeyword && density >= 0.5 && density <= 2.5;
+            setCheckItem('keyword-density', densityOk);
+            if (densityOk) passedCount++;
 
-                if (density >= 0.5 && density <= 2.5) {
-                    score += 1;
-                    checks.push({ status: 'good', text: `키워드 밀도가 적절합니다. (${density.toFixed(1)}%)` });
-                } else if (density > 0) {
-                    checks.push({ status: 'warning', text: `키워드 밀도를 0.5-2.5%로 조정하세요. (현재 ${density.toFixed(1)}%)` });
-                }
+            // 키워드 밀도 표시
+            if (keywordDensityEl) keywordDensityEl.textContent = keywordCount + '회';
+            if (keywordDensityPercentEl) keywordDensityPercentEl.textContent = `(${density.toFixed(1)}%)`;
+
+            // 6. content-length (600자 이상)
+            const contentLengthOk = content.length >= 600;
+            setCheckItem('content-length', contentLengthOk);
+            if (contentLengthOk) passedCount++;
+
+            // 7. title-length (15-60자)
+            const titleLengthOk = title.length >= 15 && title.length <= 60;
+            setCheckItem('title-length', titleLengthOk);
+            if (titleLengthOk) passedCount++;
+
+            // 8. meta-length (120-160자)
+            const metaLengthOk = metaDescription.length >= 120 && metaDescription.length <= 160;
+            setCheckItem('meta-length', metaLengthOk);
+            if (metaLengthOk) passedCount++;
+
+            // 9. url-length (75자 이하)
+            const urlLengthOk = slug.length > 0 && slug.length <= 75;
+            setCheckItem('url-length', urlLengthOk);
+            if (urlLengthOk) passedCount++;
+
+            // 10. keyword-beginning
+            const kwBeginning = focusKeyword && titleLower.indexOf(focusKeyword) < titleLower.length / 2;
+            setCheckItem('keyword-beginning', kwBeginning && focusKeyword);
+            if (kwBeginning && focusKeyword) passedCount++;
+
+            // 11. keyword-in-first-paragraph
+            const firstPara = content.substring(0, 200).toLowerCase();
+            const kwFirstPara = focusKeyword && firstPara.includes(focusKeyword);
+            setCheckItem('keyword-in-first-paragraph', kwFirstPara);
+            if (kwFirstPara) passedCount++;
+
+            // ── 고급 SEO (8) ──
+
+            // 12. has-images
+            const hasImages = editorData.blocks && editorData.blocks.some(b => b.type === 'image');
+            setCheckItem('has-images', hasImages);
+            if (hasImages) passedCount++;
+
+            // 13. images-have-alt (Editor.js image blocks with caption)
+            const imageBlocks = editorData.blocks ? editorData.blocks.filter(b => b.type === 'image') : [];
+            const imagesHaveAlt = imageBlocks.length > 0 && imageBlocks.every(b => b.data && b.data.caption && b.data.caption.trim().length > 0);
+            setCheckItem('images-have-alt', imagesHaveAlt);
+            if (imagesHaveAlt) passedCount++;
+
+            // 14. has-internal-links (2개 이상)
+            let internalLinkCount = 0;
+            if (editorData.blocks) {
+                editorData.blocks.forEach(b => {
+                    if (b.data && b.data.text) {
+                        const matches = b.data.text.match(/href=["'][^"']*["']/g) || [];
+                        internalLinkCount += matches.filter(m => !m.includes('http')).length;
+                    }
+                    if (b.type === 'linkTool' && b.data && b.data.link && !b.data.link.startsWith('http')) {
+                        internalLinkCount++;
+                    }
+                });
+            }
+            const hasInternalLinks = internalLinkCount >= 2;
+            setCheckItem('has-internal-links', hasInternalLinks);
+            if (hasInternalLinks) passedCount++;
+
+            // 15. has-external-links (1개 이상)
+            let externalLinkCount = 0;
+            if (editorData.blocks) {
+                editorData.blocks.forEach(b => {
+                    if (b.data && b.data.text) {
+                        const matches = b.data.text.match(/href=["']https?:\/\/[^"']*["']/g) || [];
+                        externalLinkCount += matches.length;
+                    }
+                    if (b.type === 'linkTool' && b.data && b.data.link && b.data.link.startsWith('http')) {
+                        externalLinkCount++;
+                    }
+                });
+            }
+            const hasExternalLinks = externalLinkCount >= 1;
+            setCheckItem('has-external-links', hasExternalLinks);
+            if (hasExternalLinks) passedCount++;
+
+            // 16. has-headings
+            const hasHeadings = editorData.blocks && editorData.blocks.some(b => b.type === 'header');
+            setCheckItem('has-headings', hasHeadings);
+            if (hasHeadings) passedCount++;
+
+            // 17. keyword-in-headings
+            const headingBlocks = editorData.blocks ? editorData.blocks.filter(b => b.type === 'header') : [];
+            const kwInHeadings = focusKeyword && headingBlocks.some(b => b.data && b.data.text && b.data.text.toLowerCase().includes(focusKeyword));
+            setCheckItem('keyword-in-headings', kwInHeadings);
+            if (kwInHeadings) passedCount++;
+
+            // 18. has-thumbnail
+            const thumbnailInput2 = document.getElementById('id_thumbnail');
+            const thumbnailPreview2 = document.getElementById('thumbnail-preview');
+            const hasThumbnail = (thumbnailInput2 && thumbnailInput2.files && thumbnailInput2.files.length > 0) || (thumbnailPreview2 && thumbnailPreview2.querySelector('img'));
+            setCheckItem('has-thumbnail', hasThumbnail);
+            if (hasThumbnail) passedCount++;
+
+            // 19. links-open-new-tab (외부 링크에 target="_blank" 있는지)
+            let linksNewTab = true;
+            if (editorData.blocks) {
+                editorData.blocks.forEach(b => {
+                    if (b.data && b.data.text) {
+                        const extLinks = b.data.text.match(/href=["']https?:\/\/[^"']*["']/g) || [];
+                        if (extLinks.length > 0 && !b.data.text.includes('target=')) {
+                            linksNewTab = false;
+                        }
+                    }
+                });
+            }
+            setCheckItem('links-open-new-tab', linksNewTab);
+            if (linksNewTab) passedCount++;
+
+            // ── 제목 분석 (5) ──
+
+            // 20. title-has-number
+            const titleHasNumber = /\d/.test(title);
+            setCheckItem('title-has-number', titleHasNumber);
+            if (titleHasNumber) passedCount++;
+
+            // 21. title-has-power-word
+            const powerWords = ['완벽', '최고', '필수', '꿀팁', '핵심', '비법', '전략', '비결', '꼭', '반드시', '추천', '인기', '화제', '놀라운', '충격', 'TOP', 'BEST'];
+            const titleHasPower = powerWords.some(w => title.includes(w));
+            setCheckItem('title-has-power-word', titleHasPower);
+            if (titleHasPower) passedCount++;
+
+            // 22. title-has-emotional-word
+            const emotionalWords = ['감동', '행복', '즐거운', '신나는', '짜릿', '설레', '사랑', '기쁨', '웃음', '환상', '멋진', '아름다운', '매력', '특별'];
+            const titleHasEmotion = emotionalWords.some(w => title.includes(w));
+            setCheckItem('title-has-emotional-word', titleHasEmotion);
+            if (titleHasEmotion) passedCount++;
+
+            // 23. title-not-too-long (단어 수 6-13개)
+            const titleWords = title.split(/\s+/).filter(w => w.length > 0);
+            const titleWordCountOk = titleWords.length >= 6 && titleWords.length <= 13;
+            setCheckItem('title-not-too-long', titleWordCountOk);
+            if (titleWordCountOk) passedCount++;
+
+            // 24. title-sentiment-positive
+            const positiveWords = ['좋은', '훌륭', '최고', '추천', '인기', '베스트', '완벽', '성공', '향상', '발전', '꿀팁', '유용', '효과적'];
+            const titlePositive = positiveWords.some(w => title.includes(w));
+            setCheckItem('title-sentiment-positive', titlePositive);
+            if (titlePositive) passedCount++;
+
+            // ── 가독성 (4) ──
+
+            // 25. sentence-length (평균 25자 이하)
+            const sentences = content.split(/[.!?。]\s*/).filter(s => s.trim().length > 0);
+            const avgSentenceLen = sentences.length > 0 ? content.length / sentences.length : 0;
+            const sentenceLenOk = content.length > 0 && avgSentenceLen <= 25;
+            setCheckItem('sentence-length', sentenceLenOk);
+            if (sentenceLenOk) passedCount++;
+
+            // 26. paragraph-length (150자 이하)
+            const paragraphs = editorData.blocks ? editorData.blocks.filter(b => b.type === 'paragraph') : [];
+            const longParas = paragraphs.filter(b => b.data && b.data.text && b.data.text.replace(/<[^>]*>/g, '').length > 150);
+            const paraLenOk = paragraphs.length > 0 && longParas.length === 0;
+            setCheckItem('paragraph-length', paraLenOk);
+            if (paraLenOk) passedCount++;
+
+            // 27. has-lists
+            const hasLists = editorData.blocks && editorData.blocks.some(b => b.type === 'list' || b.type === 'checklist');
+            setCheckItem('has-lists', hasLists);
+            if (hasLists) passedCount++;
+
+            // 28. passive-voice-low (한국어 수동태: ~되다, ~지다 패턴)
+            const passivePatterns = content.match(/(되었|됐|되는|되고|되며|졌|지는|지고|지며)/g) || [];
+            const passiveRatio = content.length > 0 ? passivePatterns.length / (content.length / 100) : 0;
+            const passiveOk = passiveRatio < 3;
+            setCheckItem('passive-voice-low', passiveOk);
+            if (passiveOk) passedCount++;
+
+            // ── 점수 계산 및 표시 ──
+            const percentage = Math.round((passedCount / totalChecks) * 100);
+
+            if (seoScoreEl) {
+                seoScoreEl.textContent = percentage;
+                seoScoreEl.style.color = percentage >= 70 ? '#10b981' : percentage >= 40 ? '#f59e0b' : '#ef4444';
             }
 
-            // SEO 점수 표시
-            const percentage = Math.round((score / maxScore) * 100);
-            if (seoScore) {
-                seoScore.textContent = percentage;
-                const scoreElement = seoScore.parentElement;
-                if (percentage >= 80) {
-                    scoreElement.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                } else if (percentage >= 50) {
-                    scoreElement.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+            if (seoScoreBar) {
+                seoScoreBar.style.width = percentage + '%';
+                if (percentage >= 70) {
+                    seoScoreBar.style.background = '#10b981';
+                } else if (percentage >= 40) {
+                    seoScoreBar.style.background = '#f59e0b';
                 } else {
-                    scoreElement.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    seoScoreBar.style.background = '#ef4444';
                 }
             }
 
-            // SEO 체크리스트 표시
-            if (seoCheckList) {
-                seoCheckList.innerHTML = checks.map(check => {
-                    let emoji = check.status === 'good' ? '✅' : check.status === 'warning' ? '⚠️' : '❌';
-                    let color = check.status === 'good' ? '#10b981' : check.status === 'warning' ? '#f59e0b' : '#ef4444';
-                    return `<li style="color: ${color}; margin-bottom: 8px;">${emoji} ${check.text}</li>`;
-                }).join('');
+            if (seoScoreLabel) {
+                if (percentage >= 70) {
+                    seoScoreLabel.textContent = '좋음 - SEO가 잘 최적화되어 있습니다';
+                    seoScoreLabel.style.color = '#10b981';
+                } else if (percentage >= 40) {
+                    seoScoreLabel.textContent = '보통 - 개선이 필요합니다';
+                    seoScoreLabel.style.color = '#f59e0b';
+                } else {
+                    seoScoreLabel.textContent = '개선 필요 - SEO 최적화를 진행하세요';
+                    seoScoreLabel.style.color = '#ef4444';
+                }
             }
+
+            if (seoCheckCount) {
+                seoCheckCount.textContent = passedCount;
+            }
+
+            // 섹션별 카운트 업데이트
+            document.querySelectorAll('#seoChecklist > div').forEach(section => {
+                const items = section.querySelectorAll('.seo-check-item');
+                if (items.length === 0) return;
+                const passed = section.querySelectorAll('.seo-check-item.passed').length;
+                const headerDiv = section.querySelector('div[style*="font-weight: 700"]');
+                if (headerDiv) {
+                    const label = headerDiv.textContent.replace(/\(\d+\/\d+\)/, `(${passed}/${items.length})`);
+                    headerDiv.textContent = label;
+                }
+            });
+        }
+
+        // 슬러그 자동 생성 (제목 입력 시, 수동 수정 전까지)
+        let slugManuallyEdited = !!(slugInput && slugInput.value.trim());
+        if (slugInput) {
+            slugInput.addEventListener('input', function() {
+                slugManuallyEdited = true;
+            });
+        }
+        function generateSlug(text) {
+            return text.trim()
+                .toLowerCase()
+                .replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .substring(0, 45);
         }
 
         // SEO 분석 트리거
         if (titleInput) {
-            titleInput.addEventListener('input', performSEOAnalysis);
+            titleInput.addEventListener('input', function() {
+                if (!slugManuallyEdited && slugInput) {
+                    slugInput.value = generateSlug(this.value);
+                }
+                performSEOAnalysis();
+            });
         }
         if (focusKeywordInput) {
             focusKeywordInput.addEventListener('input', performSEOAnalysis);
@@ -3244,8 +3500,8 @@
         editor.isReady.then(() => {
             performSEOAnalysis();
 
-            // 에디터 변경 시 SEO 분석 (30초 간격)
-            setInterval(performSEOAnalysis, 30000);
+            // 에디터 변경 시 SEO 분석 (15초 간격)
+            setInterval(performSEOAnalysis, 15000);
         });
 
         // 전체 화면 토글
