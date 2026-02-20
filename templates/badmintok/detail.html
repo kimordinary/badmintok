@@ -145,6 +145,7 @@
                 <div class="post-content" id="post-content-body" style="word-wrap: break-word;">
                     {{ post.content|safe }}
                 </div>
+                <script type="application/json" id="post-content-json">{{ post.content|escapejs }}</script>
             </article>
 
             <!-- 좋아요 / 공유 버튼 -->
@@ -790,8 +791,17 @@
             const container = document.getElementById('post-content-body');
             if (!container) return;
 
-            // 콘텐츠 가져오기
-            let contentText = container.textContent.trim();
+            // JSON 원본을 <script> 태그에서 안전하게 가져오기
+            // ({{ post.content|safe }}로 렌더링 시 브라우저가 JSON 내부의 <a> 태그를 HTML로 파싱하여
+            //  textContent로 읽으면 앵커 태그가 소실되는 문제 방지)
+            const jsonScript = document.getElementById('post-content-json');
+            let contentText = '';
+            if (jsonScript) {
+                contentText = jsonScript.textContent.trim();
+            }
+            if (!contentText) {
+                contentText = container.textContent.trim();
+            }
 
             // JSON인지 확인 (Editor.js 형식)
             if (!contentText.startsWith('{') || !contentText.includes('"blocks"')) {
