@@ -145,7 +145,7 @@
                 <div class="post-content" id="post-content-body" style="word-wrap: break-word;">
                     {{ post.content|safe }}
                 </div>
-                <script type="application/json" id="post-content-json">{{ post.content|safe }}</script>
+                <textarea id="post-content-raw" style="display:none">{{ post.content }}</textarea>
             </article>
 
             <!-- 좋아요 / 공유 버튼 -->
@@ -791,13 +791,13 @@
             const container = document.getElementById('post-content-body');
             if (!container) return;
 
-            // JSON 원본을 <script> 태그에서 안전하게 가져오기
-            // ({{ post.content|safe }}로 렌더링 시 브라우저가 JSON 내부의 <a> 태그를 HTML로 파싱하여
-            //  textContent로 읽으면 앵커 태그가 소실되는 문제 방지)
-            const jsonScript = document.getElementById('post-content-json');
+            // 숨겨진 textarea에서 JSON 원본을 안전하게 가져오기
+            // (div에 |safe로 렌더링하면 브라우저가 JSON 내부의 <a>, <b> 태그를
+            //  실제 HTML로 파싱하여 textContent로 읽을 때 태그가 소실되는 문제 방지)
+            const rawTextarea = document.getElementById('post-content-raw');
             let contentText = '';
-            if (jsonScript) {
-                contentText = jsonScript.textContent.trim();
+            if (rawTextarea) {
+                contentText = rawTextarea.value.trim();
             }
             if (!contentText) {
                 contentText = container.textContent.trim();

@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from band.models import (
     Band, BandMember, BandPost, BandPostImage, BandComment,
+    BandPostLike, BandCommentLike,
+    BandVote, BandVoteOption, BandVoteChoice,
     BandSchedule, BandScheduleApplication, BandScheduleImage, BandBookmark
 )
 from accounts.models import User
@@ -158,21 +160,66 @@ class BandPostListSerializer(serializers.ModelSerializer):
         return None
 
 
+class BandVoteOptionSerializer(serializers.ModelSerializer):
+    """투표 옵션 시리얼라이저"""
+    class Meta:
+        model = BandVoteOption
+        fields = ['id', 'option_text', 'vote_count', 'order_index']
+        read_only_fields = fields
+
+
+class BandVoteSerializer(serializers.ModelSerializer):
+    """투표 시리얼라이저"""
+    options = BandVoteOptionSerializer(many=True, read_only=True)
+    user_choices = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BandVote
+        fields = ['id', 'title', 'is_multiple_choice', 'end_datetime', 'options', 'user_choices', 'created_at']
+        read_only_fields = fields
+
+    def get_user_choices(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return list(
+                BandVoteChoice.objects.filter(
+                    vote=obj, user=request.user
+                ).values_list('option_id', flat=True)
+            )
+        return []
+
+
 class BandPostDetailSerializer(serializers.ModelSerializer):
     """밴드 게시글 상세 시리얼라이저"""
     author = UserSerializer(read_only=True)
     band_name = serializers.CharField(source='band.name', read_only=True)
     images = BandPostImageSerializer(many=True, read_only=True)
+    is_liked = serializers.SerializerMethodField()
+    vote = serializers.SerializerMethodField()
 
     class Meta:
         model = BandPost
         fields = [
             'id', 'band', 'band_name', 'author', 'title', 'content',
             'post_type', 'is_pinned', 'is_notice', 'view_count',
-            'like_count', 'comment_count', 'images',
+            'like_count', 'comment_count', 'images', 'is_liked', 'vote',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return BandPostLike.objects.filter(post=obj, user=request.user).exists()
+        return False
+
+    def get_vote(self, obj):
+        if obj.post_type == 'vote' and hasattr(obj, 'vote'):
+            try:
+                return BandVoteSerializer(obj.vote, context=self.context).data
+            except BandVote.DoesNotExist:
+                pass
+        return None
 
 
 class BandScheduleImageSerializer(serializers.ModelSerializer):
@@ -181,7 +228,7 @@ class BandScheduleImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BandScheduleImage
-        fields = ['id', 'image_url', 'order_index']
+        fields = ['id', 'image_url', 'order']
         read_only_fields = fields
 
     def get_image_url(self, obj):
@@ -233,6 +280,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     images = BandScheduleImageSerializer(many=True, read_only=True)
     is_full = serializers.SerializerMethodField()
     is_applied = serializers.SerializerMethodField()
+    applications = serializers.SerializerMethodField()
 
     class Meta:
         model = BandSchedule
@@ -242,7 +290,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'bank_account', 'is_closed', 'created_by',
-            'images', 'is_full', 'is_applied',
+            'images', 'is_full', 'is_applied', 'applications',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
@@ -259,3 +307,128 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
                 schedule=obj, user=request.user
             ).exclude(status='cancelled').exists()
         return False
+
+    def get_applications(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            # owner/admin만 전체 신청 목록 확인 가능
+            is_manager = BandMember.objects.filter(
+                band=obj.band, user=request.user,
+                role__in=['owner', 'admin'], status='active'
+            ).exists()
+            if is_manager:
+                apps = obj.applications.select_related('user').exclude(status='cancelled')
+                return BandScheduleApplicationSerializer(apps, many=True).data
+        return []
+
+
+# ========== 생성/수정용 시리얼라이저 ==========
+
+class BandCreateSerializer(serializers.ModelSerializer):
+    """밴드 생성 시리얼라이저"""
+    class Meta:
+        model = Band
+        fields = [
+            'name', 'description', 'detailed_description', 'band_type',
+            'region', 'flash_region_detail', 'categories', 'cover_image',
+            'profile_image', 'is_public', 'join_approval_required'
+        ]
+
+
+class BandUpdateSerializer(serializers.ModelSerializer):
+    """밴드 수정 시리얼라이저"""
+    class Meta:
+        model = Band
+        fields = [
+            'name', 'description', 'detailed_description', 'region',
+            'categories', 'cover_image', 'profile_image',
+            'is_public', 'join_approval_required'
+        ]
+
+
+class BandMemberSerializer(serializers.ModelSerializer):
+    """밴드 멤버 시리얼라이저"""
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = BandMember
+        fields = ['id', 'user', 'role', 'status', 'joined_at']
+        read_only_fields = fields
+
+
+class BandPostCreateSerializer(serializers.ModelSerializer):
+    """게시글 생성 시리얼라이저"""
+    image_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, write_only=True
+    )
+
+    class Meta:
+        model = BandPost
+        fields = ['title', 'content', 'post_type', 'is_pinned', 'is_notice', 'image_ids']
+
+
+class BandPostUpdateSerializer(serializers.ModelSerializer):
+    """게시글 수정 시리얼라이저"""
+    image_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, write_only=True
+    )
+
+    class Meta:
+        model = BandPost
+        fields = ['title', 'content', 'image_ids']
+
+
+class BandCommentSerializer(serializers.ModelSerializer):
+    """댓글 시리얼라이저"""
+    author = UserSerializer(read_only=True)
+    replies = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BandComment
+        fields = [
+            'id', 'author', 'content', 'parent', 'like_count',
+            'is_liked', 'replies', 'created_at', 'updated_at'
+        ]
+        read_only_fields = fields
+
+    def get_replies(self, obj):
+        if obj.parent is None:
+            replies = obj.replies.select_related('author').all()
+            return BandCommentSerializer(
+                replies, many=True, context=self.context
+            ).data
+        return []
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return BandCommentLike.objects.filter(comment=obj, user=request.user).exists()
+        return False
+
+
+class BandCommentCreateSerializer(serializers.Serializer):
+    """댓글 생성 시리얼라이저"""
+    content = serializers.CharField()
+    parent_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class BandScheduleCreateSerializer(serializers.ModelSerializer):
+    """일정 생성 시리얼라이저"""
+    class Meta:
+        model = BandSchedule
+        fields = [
+            'title', 'description', 'start_datetime', 'end_datetime',
+            'location', 'max_participants', 'requires_approval',
+            'application_deadline', 'bank_account'
+        ]
+
+
+class BandScheduleApplicationSerializer(serializers.ModelSerializer):
+    """일정 신청 시리얼라이저"""
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = BandScheduleApplication
+        fields = ['id', 'user', 'status', 'notes', 'applied_at', 'reviewed_at']
+        read_only_fields = fields
