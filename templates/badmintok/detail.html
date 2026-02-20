@@ -145,7 +145,7 @@
                 <div class="post-content" id="post-content-body" style="word-wrap: break-word;">
                     {{ post.content|safe }}
                 </div>
-                <script type="application/json" id="post-content-json">{{ post.content|escapejs }}</script>
+                <script type="application/json" id="post-content-json">{{ post.content|safe }}</script>
             </article>
 
             <!-- 좋아요 / 공유 버튼 -->
