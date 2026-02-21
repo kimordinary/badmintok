@@ -2062,22 +2062,22 @@ def schedule_update(request, band_id, schedule_id):
                 "경기": "capital",
                 "인천": "capital",
                 # 영남권
-                "부산": "yeongnam",
-                "대구": "yeongnam",
-                "울산": "yeongnam",
-                "경남": "yeongnam",
-                "경북": "yeongnam",
+                "부산": "busan",
+                "대구": "busan",
+                "울산": "busan",
+                "경남": "busan",
+                "경북": "busan",
                 # 호남권
-                "광주": "honam",
-                "전남": "honam",
-                "전북": "honam",
+                "광주": "gwangju",
+                "전남": "gwangju",
+                "전북": "gwangju",
                 # 충청권
-                "대전": "chungcheong",
-                "충남": "chungcheong",
-                "충북": "chungcheong",
-                "세종": "chungcheong",
-                # 강원권
-                "강원": "gangwon",
+                "대전": "daejeon",
+                "충남": "daejeon",
+                "충북": "daejeon",
+                "세종": "daejeon",
+                # 강원 (별도 권역 없음)
+                "강원": "all",
                 # 제주권
                 "제주": "jeju",
             }

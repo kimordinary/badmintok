@@ -43,12 +43,10 @@ def band_list(request):
     if band_type:
         bands = bands.filter(band_type=band_type)
 
-    # 카테고리/유형 필터 (band_type 또는 categories에서 검색)
+    # 카테고리/유형 필터 (band_type 기준)
     category_type = request.GET.get('type', '')
     if category_type:
-        bands = bands.filter(
-            Q(band_type=category_type) | Q(categories__contains=category_type)
-        )
+        bands = bands.filter(band_type=category_type)
 
     # 지역 필터
     region = request.GET.get('region', '')
@@ -227,7 +225,7 @@ def band_schedule_list(request, band_id):
     ).select_related('band', 'created_by', 'created_by__profile').prefetch_related(
         Prefetch('images', queryset=BandScheduleImage.objects.order_by('order')),
         'applications'
-    ).order_by('start_datetime')
+    ).order_by('-start_datetime')
 
     # 페이지네이션
     page_number = request.GET.get('page', 1)
@@ -415,7 +413,7 @@ def band_member_list(request, band_id):
     """밴드 멤버 목록 API"""
     band = get_object_or_404(Band, id=band_id)
 
-    members = BandMember.objects.filter(
+    base_qs = BandMember.objects.filter(
         band=band
     ).select_related('user', 'user__profile').annotate(
         role_order=Case(
@@ -426,13 +424,17 @@ def band_member_list(request, band_id):
         )
     ).order_by('role_order', 'joined_at')
 
-    # status 필터 (기본: active)
-    member_status = request.GET.get('status', 'active')
-    if member_status:
-        members = members.filter(status=member_status)
+    active_members = base_qs.filter(status='active')
+    pending_members = base_qs.filter(status='pending')
 
-    serializer = BandMemberSerializer(members, many=True, context={'request': request})
-    return Response({'results': serializer.data}, status=status.HTTP_200_OK)
+    active_serializer = BandMemberSerializer(active_members, many=True, context={'request': request})
+    pending_serializer = BandMemberSerializer(pending_members, many=True, context={'request': request})
+
+    return Response({
+        'results': active_serializer.data,
+        'active_members': active_serializer.data,
+        'pending_members': pending_serializer.data,
+    }, status=status.HTTP_200_OK)
 
 
 @csrf_exempt

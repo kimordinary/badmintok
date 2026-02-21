@@ -39,6 +39,7 @@ class BandListSerializer(serializers.ModelSerializer):
     cover_image_url = serializers.SerializerMethodField()
     profile_image_url = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
+    member_role = serializers.SerializerMethodField()
     region_display = serializers.SerializerMethodField()
 
     class Meta:
@@ -48,7 +49,7 @@ class BandListSerializer(serializers.ModelSerializer):
             'flash_region_detail', 'is_public', 'join_approval_required',
             'is_approved', 'created_by', 'member_count', 'bookmark_count',
             'post_count', 'category_labels', 'cover_image_url', 'profile_image_url',
-            'is_bookmarked', 'created_at', 'updated_at'
+            'is_bookmarked', 'member_role', 'created_at', 'updated_at'
         ]
         read_only_fields = fields
 
@@ -74,6 +75,16 @@ class BandListSerializer(serializers.ModelSerializer):
             return BandBookmark.objects.filter(band=obj, user=request.user).exists()
         return False
 
+    def get_member_role(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            member = BandMember.objects.filter(
+                band=obj, user=request.user, status='active'
+            ).first()
+            if member:
+                return member.role
+        return None
+
     def get_region_display(self, obj):
         return obj.get_region_display()
 
@@ -89,6 +100,7 @@ class BandDetailSerializer(serializers.ModelSerializer):
     profile_image_url = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
     is_member = serializers.SerializerMethodField()
+    member_role = serializers.SerializerMethodField()
     region_display = serializers.SerializerMethodField()
 
     class Meta:
@@ -99,7 +111,7 @@ class BandDetailSerializer(serializers.ModelSerializer):
             'is_public', 'join_approval_required', 'is_approved',
             'created_by', 'member_count', 'bookmark_count', 'post_count',
             'category_labels', 'cover_image_url', 'profile_image_url',
-            'is_bookmarked', 'is_member', 'created_at', 'updated_at'
+            'is_bookmarked', 'is_member', 'member_role', 'created_at', 'updated_at'
         ]
         read_only_fields = fields
 
@@ -132,6 +144,16 @@ class BandDetailSerializer(serializers.ModelSerializer):
                 band=obj, user=request.user, status='active'
             ).exists()
         return False
+
+    def get_member_role(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            member = BandMember.objects.filter(
+                band=obj, user=request.user, status='active'
+            ).first()
+            if member:
+                return member.role
+        return None
 
     def get_region_display(self, obj):
         return obj.get_region_display()
@@ -314,6 +336,8 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     images = BandScheduleImageSerializer(many=True, read_only=True)
     is_full = serializers.SerializerMethodField()
     is_applied = serializers.SerializerMethodField()
+    user_application = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
     applications = serializers.SerializerMethodField()
     d_day = serializers.SerializerMethodField()
 
@@ -325,7 +349,8 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'bank_account', 'is_closed', 'created_by',
-            'images', 'is_full', 'is_applied', 'applications', 'd_day',
+            'images', 'is_full', 'is_applied', 'user_application',
+            'can_manage', 'applications', 'd_day',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
@@ -341,6 +366,25 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             return BandScheduleApplication.objects.filter(
                 schedule=obj, user=request.user
             ).exclude(status='cancelled').exists()
+        return False
+
+    def get_user_application(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            application = obj.applications.filter(
+                user=request.user
+            ).exclude(status='cancelled').first()
+            if application:
+                return BandScheduleApplicationSerializer(application, context=self.context).data
+        return None
+
+    def get_can_manage(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return BandMember.objects.filter(
+                band=obj.band, user=request.user,
+                role__in=['owner', 'admin'], status='active'
+            ).exists()
         return False
 
     def get_applications(self, obj):
@@ -394,11 +438,15 @@ class BandUpdateSerializer(serializers.ModelSerializer):
 class BandMemberSerializer(serializers.ModelSerializer):
     """밴드 멤버 시리얼라이저"""
     user = UserSerializer(read_only=True)
+    role_display = serializers.SerializerMethodField()
 
     class Meta:
         model = BandMember
-        fields = ['id', 'user', 'role', 'status', 'joined_at']
+        fields = ['id', 'user', 'role', 'role_display', 'status', 'joined_at']
         read_only_fields = fields
+
+    def get_role_display(self, obj):
+        return obj.get_role_display()
 
 
 class BandPostCreateSerializer(serializers.ModelSerializer):
