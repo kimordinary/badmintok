@@ -10,10 +10,23 @@ from accounts.models import User
 
 class UserSerializer(serializers.ModelSerializer):
     """사용자 정보 시리얼라이저"""
+    name = serializers.SerializerMethodField()
+    profile_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'activity_name']
-        read_only_fields = ['id', 'email', 'activity_name']
+        fields = ['id', 'name', 'activity_name', 'profile_image_url']
+        read_only_fields = fields
+
+    def get_name(self, obj):
+        return obj.real_name
+
+    def get_profile_image_url(self, obj):
+        request = self.context.get('request')
+        url = obj.profile_image_url
+        if url and request:
+            return request.build_absolute_uri(url)
+        return url
 
 
 class BandListSerializer(serializers.ModelSerializer):
@@ -26,11 +39,12 @@ class BandListSerializer(serializers.ModelSerializer):
     cover_image_url = serializers.SerializerMethodField()
     profile_image_url = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
+    region_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Band
         fields = [
-            'id', 'name', 'description', 'band_type', 'region',
+            'id', 'name', 'description', 'band_type', 'region', 'region_display',
             'flash_region_detail', 'is_public', 'join_approval_required',
             'is_approved', 'created_by', 'member_count', 'bookmark_count',
             'post_count', 'category_labels', 'cover_image_url', 'profile_image_url',
@@ -60,6 +74,9 @@ class BandListSerializer(serializers.ModelSerializer):
             return BandBookmark.objects.filter(band=obj, user=request.user).exists()
         return False
 
+    def get_region_display(self, obj):
+        return obj.get_region_display()
+
 
 class BandDetailSerializer(serializers.ModelSerializer):
     """밴드 상세 시리얼라이저"""
@@ -72,12 +89,13 @@ class BandDetailSerializer(serializers.ModelSerializer):
     profile_image_url = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
     is_member = serializers.SerializerMethodField()
+    region_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Band
         fields = [
             'id', 'name', 'description', 'detailed_description',
-            'band_type', 'region', 'flash_region_detail', 'categories',
+            'band_type', 'region', 'region_display', 'flash_region_detail', 'categories',
             'is_public', 'join_approval_required', 'is_approved',
             'created_by', 'member_count', 'bookmark_count', 'post_count',
             'category_labels', 'cover_image_url', 'profile_image_url',
@@ -114,6 +132,9 @@ class BandDetailSerializer(serializers.ModelSerializer):
                 band=obj, user=request.user, status='active'
             ).exists()
         return False
+
+    def get_region_display(self, obj):
+        return obj.get_region_display()
 
 
 class BandPostImageSerializer(serializers.ModelSerializer):
@@ -244,8 +265,10 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
     """밴드 일정 목록 시리얼라이저"""
     band_name = serializers.CharField(source='band.name', read_only=True)
     created_by = UserSerializer(read_only=True)
+    images = BandScheduleImageSerializer(many=True, read_only=True)
     is_full = serializers.SerializerMethodField()
     is_applied = serializers.SerializerMethodField()
+    d_day = serializers.SerializerMethodField()
 
     class Meta:
         model = BandSchedule
@@ -255,7 +278,8 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'bank_account', 'is_closed', 'created_by',
-            'is_full', 'is_applied', 'created_at', 'updated_at'
+            'images', 'is_full', 'is_applied', 'd_day',
+            'created_at', 'updated_at'
         ]
         read_only_fields = fields
 
@@ -272,6 +296,16 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
             ).exclude(status='cancelled').exists()
         return False
 
+    def get_d_day(self, obj):
+        from django.utils import timezone
+        now = timezone.now()
+        if obj.is_closed or obj.start_datetime < now:
+            return '종료'
+        delta = (obj.start_datetime.date() - now.date()).days
+        if delta == 0:
+            return 'D-Day'
+        return f'D-{delta}'
+
 
 class BandScheduleDetailSerializer(serializers.ModelSerializer):
     """밴드 일정 상세 시리얼라이저"""
@@ -281,6 +315,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     is_full = serializers.SerializerMethodField()
     is_applied = serializers.SerializerMethodField()
     applications = serializers.SerializerMethodField()
+    d_day = serializers.SerializerMethodField()
 
     class Meta:
         model = BandSchedule
@@ -290,7 +325,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'bank_account', 'is_closed', 'created_by',
-            'images', 'is_full', 'is_applied', 'applications',
+            'images', 'is_full', 'is_applied', 'applications', 'd_day',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
@@ -317,9 +352,19 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
                 role__in=['owner', 'admin'], status='active'
             ).exists()
             if is_manager:
-                apps = obj.applications.select_related('user').exclude(status='cancelled')
-                return BandScheduleApplicationSerializer(apps, many=True).data
+                apps = obj.applications.select_related('user', 'user__profile').exclude(status='cancelled')
+                return BandScheduleApplicationSerializer(apps, many=True, context=self.context).data
         return []
+
+    def get_d_day(self, obj):
+        from django.utils import timezone
+        now = timezone.now()
+        if obj.is_closed or obj.start_datetime < now:
+            return '종료'
+        delta = (obj.start_datetime.date() - now.date()).days
+        if delta == 0:
+            return 'D-Day'
+        return f'D-{delta}'
 
 
 # ========== 생성/수정용 시리얼라이저 ==========
@@ -394,7 +439,7 @@ class BandCommentSerializer(serializers.ModelSerializer):
 
     def get_replies(self, obj):
         if obj.parent is None:
-            replies = obj.replies.select_related('author').all()
+            replies = obj.replies.select_related('author', 'author__profile').all()
             return BandCommentSerializer(
                 replies, many=True, context=self.context
             ).data

@@ -35,13 +35,20 @@ def band_list(request):
         is_approved=True,
         is_public=True,
         deletion_requested=False
-    ).select_related('created_by').prefetch_related('members', 'bookmarks', 'posts')
+    ).select_related('created_by', 'created_by__profile').prefetch_related('members', 'bookmarks', 'posts')
 
     # 필터링
-    # 유형 필터
+    # 유형 필터 (band_type 필드)
     band_type = request.GET.get('band_type', '')
     if band_type:
         bands = bands.filter(band_type=band_type)
+
+    # 카테고리/유형 필터 (band_type 또는 categories에서 검색)
+    category_type = request.GET.get('type', '')
+    if category_type:
+        bands = bands.filter(
+            Q(band_type=category_type) | Q(categories__contains=category_type)
+        )
 
     # 지역 필터
     region = request.GET.get('region', '')
@@ -106,7 +113,7 @@ def band_detail(request, band_id):
             is_approved=True,
             is_public=True,
             deletion_requested=False
-        ).select_related('created_by').prefetch_related('members', 'bookmarks', 'posts'),
+        ).select_related('created_by', 'created_by__profile').prefetch_related('members', 'bookmarks', 'posts'),
         id=band_id
     )
 
@@ -114,6 +121,7 @@ def band_detail(request, band_id):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def band_bookmark(request, band_id):
@@ -145,7 +153,7 @@ def band_post_list(request, band_id):
 
     posts = BandPost.objects.filter(
         band=band
-    ).select_related('author', 'band').prefetch_related(
+    ).select_related('author', 'author__profile', 'band').prefetch_related(
         Prefetch('images', queryset=BandPostImage.objects.order_by('order_index'))
     ).order_by('-is_pinned', '-is_notice', '-created_at')
 
@@ -194,7 +202,7 @@ def band_post_list(request, band_id):
 def band_post_detail(request, band_id, post_id):
     """밴드 게시글 상세 API"""
     post = get_object_or_404(
-        BandPost.objects.filter(band_id=band_id).select_related('author', 'band').prefetch_related(
+        BandPost.objects.filter(band_id=band_id).select_related('author', 'author__profile', 'band').prefetch_related(
             Prefetch('images', queryset=BandPostImage.objects.order_by('order_index'))
         ),
         id=post_id
@@ -216,7 +224,7 @@ def band_schedule_list(request, band_id):
 
     schedules = BandSchedule.objects.filter(
         band=band
-    ).select_related('band', 'created_by').prefetch_related(
+    ).select_related('band', 'created_by', 'created_by__profile').prefetch_related(
         Prefetch('images', queryset=BandScheduleImage.objects.order_by('order')),
         'applications'
     ).order_by('start_datetime')
@@ -254,7 +262,7 @@ def band_schedule_list(request, band_id):
 def band_schedule_detail(request, band_id, schedule_id):
     """밴드 일정 상세 API"""
     schedule = get_object_or_404(
-        BandSchedule.objects.filter(band_id=band_id).select_related('band', 'created_by').prefetch_related(
+        BandSchedule.objects.filter(band_id=band_id).select_related('band', 'created_by', 'created_by__profile').prefetch_related(
             Prefetch('images', queryset=BandScheduleImage.objects.order_by('order')),
             'applications'
         ),
@@ -273,7 +281,7 @@ def hot_bands(request):
         is_approved=True,
         is_public=True,
         deletion_requested=False
-    ).select_related('created_by').prefetch_related('members', 'bookmarks', 'posts').annotate(
+    ).select_related('created_by', 'created_by__profile').prefetch_related('members', 'bookmarks', 'posts').annotate(
         member_count_annotated=Count('members')
     ).order_by('-member_count_annotated', '-created_at')[:10]
 
@@ -409,7 +417,7 @@ def band_member_list(request, band_id):
 
     members = BandMember.objects.filter(
         band=band
-    ).select_related('user').annotate(
+    ).select_related('user', 'user__profile').annotate(
         role_order=Case(
             When(role='owner', then=Value(0)),
             When(role='admin', then=Value(1)),
@@ -423,7 +431,7 @@ def band_member_list(request, band_id):
     if member_status:
         members = members.filter(status=member_status)
 
-    serializer = BandMemberSerializer(members, many=True)
+    serializer = BandMemberSerializer(members, many=True, context={'request': request})
     return Response({'results': serializer.data}, status=status.HTTP_200_OK)
 
 
@@ -505,21 +513,23 @@ def band_post_create(request, band_id):
     """게시글 작성 API"""
     band = get_object_or_404(Band, id=band_id)
 
-    # 멤버 확인
-    member = BandMember.objects.filter(
-        band=band, user=request.user, status='active'
-    ).first()
-    if not member:
-        return Response({'error': '멤버만 게시글을 작성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
-
     serializer = BandPostCreateSerializer(data=request.data)
     if not serializer.is_valid():
         return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+    post_type = serializer.validated_data.get('post_type', 'general')
+
+    # 멤버 확인 (FAQ/질문 게시글은 비멤버도 작성 가능)
+    member = BandMember.objects.filter(
+        band=band, user=request.user, status='active'
+    ).first()
+    if not member and post_type != 'question':
+        return Response({'error': '멤버만 게시글을 작성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
     # is_pinned, is_notice는 owner/admin만 설정 가능
     is_pinned = serializer.validated_data.get('is_pinned', False)
     is_notice = serializer.validated_data.get('is_notice', False)
-    if (is_pinned or is_notice) and member.role not in ['owner', 'admin']:
+    if (is_pinned or is_notice) and (not member or member.role not in ['owner', 'admin']):
         return Response(
             {'error': '고정/공지는 방장 또는 관리자만 설정할 수 있습니다.'},
             status=status.HTTP_403_FORBIDDEN
@@ -627,8 +637,8 @@ def band_comment_list(request, band_id, post_id):
     # 최상위 댓글만 조회 (대댓글은 serializer에서 nested)
     comments = BandComment.objects.filter(
         post=post, parent__isnull=True
-    ).select_related('author').prefetch_related(
-        Prefetch('replies', queryset=BandComment.objects.select_related('author'))
+    ).select_related('author', 'author__profile').prefetch_related(
+        Prefetch('replies', queryset=BandComment.objects.select_related('author', 'author__profile'))
     ).order_by('created_at')
 
     serializer = BandCommentSerializer(comments, many=True, context={'request': request})
@@ -643,12 +653,13 @@ def band_comment_create(request, band_id, post_id):
     band = get_object_or_404(Band, id=band_id)
     post = get_object_or_404(BandPost, id=post_id, band=band)
 
-    # 멤버 확인
-    is_member = BandMember.objects.filter(
-        band=band, user=request.user, status='active'
-    ).exists()
-    if not is_member:
-        return Response({'error': '멤버만 댓글을 작성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+    # 멤버 확인 (FAQ/질문 게시글은 비멤버도 댓글 작성 가능)
+    if post.post_type != 'question':
+        is_member = BandMember.objects.filter(
+            band=band, user=request.user, status='active'
+        ).exists()
+        if not is_member:
+            return Response({'error': '멤버만 댓글을 작성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = BandCommentCreateSerializer(data=request.data)
     if not serializer.is_valid():
@@ -701,17 +712,26 @@ def band_comment_update(request, comment_id):
 def band_comment_delete(request, comment_id):
     """댓글 삭제 API"""
     comment = get_object_or_404(BandComment, id=comment_id)
-
-    # 작성자 또는 owner/admin만 삭제 가능
-    if comment.author != request.user:
-        is_manager = BandMember.objects.filter(
-            band=comment.post.band, user=request.user,
-            role__in=['owner', 'admin'], status='active'
-        ).exists()
-        if not is_manager:
-            return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
-
     post = comment.post
+
+    # FAQ(질문) 게시글 댓글은 모임장(owner)만 삭제 가능
+    if post.post_type == 'question':
+        is_owner = BandMember.objects.filter(
+            band=post.band, user=request.user,
+            role='owner', status='active'
+        ).exists()
+        if not is_owner:
+            return Response({'error': 'FAQ 답변은 모임장만 삭제할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+    else:
+        # 일반 게시글: 작성자 또는 owner/admin만 삭제 가능
+        if comment.author != request.user:
+            is_manager = BandMember.objects.filter(
+                band=post.band, user=request.user,
+                role__in=['owner', 'admin'], status='active'
+            ).exists()
+            if not is_manager:
+                return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
     comment.delete()
 
     # 댓글 수 업데이트
@@ -883,11 +903,19 @@ def band_schedule_apply(request, band_id, schedule_id):
 
     notes = request.data.get('notes', '')
 
+    # 승인 필요 여부에 따라 상태 결정
+    if schedule.requires_approval:
+        initial_status = 'pending'
+        message = '참가 신청이 완료되었습니다. 승인을 기다려주세요.'
+    else:
+        initial_status = 'approved'
+        message = '참가 신청이 완료되었습니다.'
+
     if existing and existing.status in ['rejected', 'cancelled']:
         # 기존 신청 재활용
-        existing.status = 'pending'
+        existing.status = initial_status
         existing.notes = notes
-        existing.reviewed_at = None
+        existing.reviewed_at = timezone.now() if not schedule.requires_approval else None
         existing.reviewed_by = None
         existing.rejection_reason = ''
         existing.save()
@@ -896,11 +924,16 @@ def band_schedule_apply(request, band_id, schedule_id):
         BandScheduleApplication.objects.create(
             schedule=schedule,
             user=request.user,
-            status='pending',
+            status=initial_status,
             notes=notes
         )
 
-    return Response({'message': '참가 신청이 완료되었습니다.'}, status=status.HTTP_201_CREATED)
+    # 자동승인 시 참가 인원 증가
+    if initial_status == 'approved':
+        schedule.current_participants += 1
+        schedule.save(update_fields=['current_participants'])
+
+    return Response({'message': message}, status=status.HTTP_201_CREATED)
 
 
 @csrf_exempt
@@ -953,3 +986,138 @@ def band_schedule_toggle_close(request, band_id, schedule_id):
         'message': message,
         'is_closed': schedule.is_closed
     }, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_application_approve(request, band_id, schedule_id, application_id):
+    """일정 신청 승인 API"""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    # owner/admin 권한 확인
+    manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).first()
+    if not manager:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    application = get_object_or_404(
+        BandScheduleApplication, id=application_id, schedule=schedule, status='pending'
+    )
+
+    # 정원 확인
+    if schedule.max_participants and schedule.current_participants >= schedule.max_participants:
+        return Response({'error': '참가 인원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    application.status = 'approved'
+    application.reviewed_at = timezone.now()
+    application.reviewed_by = request.user
+    application.save(update_fields=['status', 'reviewed_at', 'reviewed_by'])
+
+    # 참가 인원 증가
+    schedule.current_participants += 1
+    schedule.save(update_fields=['current_participants'])
+
+    return Response({'message': '신청이 승인되었습니다.'}, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_application_reject(request, band_id, schedule_id, application_id):
+    """일정 신청 거절 API"""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    # owner/admin 권한 확인
+    manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).first()
+    if not manager:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    application = get_object_or_404(
+        BandScheduleApplication, id=application_id, schedule=schedule, status='pending'
+    )
+
+    rejection_reason = request.data.get('rejection_reason', '')
+
+    application.status = 'rejected'
+    application.reviewed_at = timezone.now()
+    application.reviewed_by = request.user
+    application.rejection_reason = rejection_reason
+    application.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'rejection_reason'])
+
+    return Response({'message': '신청이 거절되었습니다.'}, status=status.HTTP_200_OK)
+
+
+# ========== 댓글 좋아요 ==========
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_comment_like(request, comment_id):
+    """댓글 좋아요 토글 API"""
+    comment = get_object_or_404(BandComment, id=comment_id)
+
+    like = BandCommentLike.objects.filter(comment=comment, user=request.user).first()
+    if like:
+        like.delete()
+        comment.like_count = max(0, comment.like_count - 1)
+        comment.save(update_fields=['like_count'])
+        return Response({'message': '좋아요가 취소되었습니다.', 'is_liked': False, 'like_count': comment.like_count})
+    else:
+        BandCommentLike.objects.create(comment=comment, user=request.user)
+        comment.like_count += 1
+        comment.save(update_fields=['like_count'])
+        return Response({'message': '좋아요를 눌렀습니다.', 'is_liked': True, 'like_count': comment.like_count})
+
+
+# ========== 일정 수정/삭제 ==========
+
+@csrf_exempt
+@api_view(['PUT', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def band_schedule_update(request, band_id, schedule_id):
+    """일정 수정 API"""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    # 생성자 또는 owner/admin만 수정 가능
+    is_creator = schedule.created_by == request.user
+    is_manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).exists()
+    if not is_creator and not is_manager:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = BandScheduleCreateSerializer(schedule, data=request.data, partial=True)
+    if not serializer.is_valid():
+        return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer.save()
+
+    detail_serializer = BandScheduleDetailSerializer(schedule, context={'request': request})
+    return Response(detail_serializer.data, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_delete(request, band_id, schedule_id):
+    """일정 삭제 API"""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    # 생성자 또는 owner/admin만 삭제 가능
+    is_creator = schedule.created_by == request.user
+    is_manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).exists()
+    if not is_creator and not is_manager:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    schedule.delete()
+    return Response({'message': '일정이 삭제되었습니다.'}, status=status.HTTP_200_OK)

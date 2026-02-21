@@ -33,6 +33,7 @@ urlpatterns = [
     path('<int:band_id>/posts/<int:post_id>/comments/create/', views.band_comment_create, name='band_comment_create'),
     path('comments/<int:comment_id>/update/', views.band_comment_update, name='band_comment_update'),
     path('comments/<int:comment_id>/delete/', views.band_comment_delete, name='band_comment_delete'),
+    path('comments/<int:comment_id>/like/', views.band_comment_like, name='band_comment_like'),
 
     # 투표
     path('<int:band_id>/votes/create/', views.band_vote_create, name='band_vote_create'),
@@ -42,7 +43,11 @@ urlpatterns = [
     path('<int:band_id>/schedules/', views.band_schedule_list, name='band_schedule_list'),
     path('<int:band_id>/schedules/create/', views.band_schedule_create, name='band_schedule_create'),
     path('<int:band_id>/schedules/<int:schedule_id>/', views.band_schedule_detail, name='band_schedule_detail'),
+    path('<int:band_id>/schedules/<int:schedule_id>/update/', views.band_schedule_update, name='band_schedule_update'),
+    path('<int:band_id>/schedules/<int:schedule_id>/delete/', views.band_schedule_delete, name='band_schedule_delete'),
     path('<int:band_id>/schedules/<int:schedule_id>/apply/', views.band_schedule_apply, name='band_schedule_apply'),
     path('<int:band_id>/schedules/<int:schedule_id>/cancel/', views.band_schedule_cancel, name='band_schedule_cancel'),
     path('<int:band_id>/schedules/<int:schedule_id>/toggle-close/', views.band_schedule_toggle_close, name='band_schedule_toggle_close'),
+    path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/approve/', views.band_schedule_application_approve, name='band_schedule_application_approve'),
+    path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/', views.band_schedule_application_reject, name='band_schedule_application_reject'),
 ]
