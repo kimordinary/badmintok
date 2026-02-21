@@ -41,6 +41,7 @@ class BandListSerializer(serializers.ModelSerializer):
     is_bookmarked = serializers.SerializerMethodField()
     member_role = serializers.SerializerMethodField()
     region_display = serializers.SerializerMethodField()
+    flash_region_detail = serializers.SerializerMethodField()
 
     class Meta:
         model = Band
@@ -88,6 +89,9 @@ class BandListSerializer(serializers.ModelSerializer):
     def get_region_display(self, obj):
         return obj.get_region_display()
 
+    def get_flash_region_detail(self, obj):
+        return obj.flash_region_detail or obj.get_region_display()
+
 
 class BandDetailSerializer(serializers.ModelSerializer):
     """밴드 상세 시리얼라이저"""
@@ -102,6 +106,7 @@ class BandDetailSerializer(serializers.ModelSerializer):
     is_member = serializers.SerializerMethodField()
     member_role = serializers.SerializerMethodField()
     region_display = serializers.SerializerMethodField()
+    flash_region_detail = serializers.SerializerMethodField()
 
     class Meta:
         model = Band
@@ -157,6 +162,9 @@ class BandDetailSerializer(serializers.ModelSerializer):
 
     def get_region_display(self, obj):
         return obj.get_region_display()
+
+    def get_flash_region_detail(self, obj):
+        return obj.flash_region_detail or obj.get_region_display()
 
 
 class BandPostImageSerializer(serializers.ModelSerializer):
