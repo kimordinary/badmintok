@@ -1,3 +1,6 @@
+import os
+import uuid
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -1123,3 +1126,54 @@ def band_schedule_delete(request, band_id, schedule_id):
 
     schedule.delete()
     return Response({'message': '일정이 삭제되었습니다.'}, status=status.HTTP_200_OK)
+
+
+# ──────────────────────────────────────────────
+# 이미지 업로드
+# ──────────────────────────────────────────────
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def image_upload(request):
+    """밴드 게시글 이미지 업로드 API (2단계 업로드: 먼저 업로드 → 게시글 작성 시 연결)"""
+    if 'image' not in request.FILES:
+        return Response(
+            {'error': '이미지 파일이 필요합니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    image_file = request.FILES['image']
+
+    # 파일 크기 제한 (10MB)
+    if image_file.size > 10 * 1024 * 1024:
+        return Response(
+            {'error': '이미지 크기는 10MB 이하여야 합니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # 파일 확장자 검증
+    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    file_extension = os.path.splitext(image_file.name)[1][1:].lower()
+    if file_extension not in allowed_extensions:
+        return Response(
+            {'error': f'허용되지 않는 파일 형식입니다. ({", ".join(allowed_extensions)}만 가능)'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # BandPostImage 생성 (post=None, 게시글 작성 시 연결)
+    order_index = int(request.data.get('order_index', 0))
+    band_post_image = BandPostImage.objects.create(
+        post=None,
+        image=image_file,
+        order_index=order_index,
+    )
+
+    image_url = request.build_absolute_uri(band_post_image.image.url)
+
+    return Response({
+        'id': band_post_image.id,
+        'url': image_url,
+        'order_index': band_post_image.order_index,
+        'message': '이미지가 업로드되었습니다.'
+    }, status=status.HTTP_201_CREATED)

@@ -398,14 +398,17 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     def get_applications(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # owner/admin만 전체 신청 목록 확인 가능
             is_manager = BandMember.objects.filter(
                 band=obj.band, user=request.user,
                 role__in=['owner', 'admin'], status='active'
             ).exists()
             if is_manager:
+                # 관리자: approved + pending 모두 반환
                 apps = obj.applications.select_related('user', 'user__profile').exclude(status='cancelled')
-                return BandScheduleApplicationSerializer(apps, many=True, context=self.context).data
+            else:
+                # 일반 사용자: approved만 반환
+                apps = obj.applications.select_related('user', 'user__profile').filter(status='approved')
+            return BandScheduleApplicationSerializer(apps, many=True, context=self.context).data
         return []
 
     def get_d_day(self, obj):
@@ -528,8 +531,12 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
 class BandScheduleApplicationSerializer(serializers.ModelSerializer):
     """일정 신청 시리얼라이저"""
     user = UserSerializer(read_only=True)
+    status_display = serializers.SerializerMethodField()
 
     class Meta:
         model = BandScheduleApplication
-        fields = ['id', 'user', 'status', 'notes', 'applied_at', 'reviewed_at']
+        fields = ['id', 'user', 'status', 'status_display', 'notes', 'applied_at', 'reviewed_at']
         read_only_fields = fields
+
+    def get_status_display(self, obj):
+        return obj.get_status_display()

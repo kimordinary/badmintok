@@ -39,6 +39,9 @@ urlpatterns = [
     path('<int:band_id>/votes/create/', views.band_vote_create, name='band_vote_create'),
     path('<int:band_id>/posts/<int:post_id>/vote/', views.band_vote_participate, name='band_vote_participate'),
 
+    # 이미지 업로드
+    path('images/upload/', views.image_upload, name='image_upload'),
+
     # 밴드 일정
     path('<int:band_id>/schedules/', views.band_schedule_list, name='band_schedule_list'),
     path('<int:band_id>/schedules/create/', views.band_schedule_create, name='band_schedule_create'),
