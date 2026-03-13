@@ -12,10 +12,11 @@ class UserSerializer(serializers.ModelSerializer):
     """사용자 정보 시리얼라이저"""
     name = serializers.SerializerMethodField()
     profile_image_url = serializers.SerializerMethodField()
+    grade = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'activity_name', 'profile_image_url']
+        fields = ['id', 'name', 'activity_name', 'profile_image_url', 'grade']
         read_only_fields = fields
 
     def get_name(self, obj):
@@ -27,6 +28,12 @@ class UserSerializer(serializers.ModelSerializer):
         if url and request:
             return request.build_absolute_uri(url)
         return url
+
+    def get_grade(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile and profile.badminton_level:
+            return profile.badminton_level.upper() if profile.badminton_level in ('a', 'b', 'c', 'd', 's') else profile.get_badminton_level_display()
+        return None
 
 
 class BandListSerializer(serializers.ModelSerializer):
