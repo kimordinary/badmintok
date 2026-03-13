@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Prefetch
 from contests.models import Contest, ContestCategory, ContestSchedule, ContestImage, Sponsor
 from accounts.models import User
 
@@ -29,6 +30,8 @@ class SponsorSerializer(serializers.ModelSerializer):
 
 class ContestScheduleSerializer(serializers.ModelSerializer):
     """경기 일정 시리얼라이저"""
+    date = serializers.SerializerMethodField()
+    events = serializers.SerializerMethodField()
     events_display = serializers.CharField(source='get_events_display', read_only=True)
     age_display = serializers.CharField(source='get_age_display', read_only=True)
 
@@ -36,6 +39,17 @@ class ContestScheduleSerializer(serializers.ModelSerializer):
         model = ContestSchedule
         fields = ['id', 'date', 'events', 'ages', 'events_display', 'age_display']
         read_only_fields = fields
+
+    def get_date(self, obj):
+        """날짜를 '3/14(토요일)' 형식으로 반환"""
+        if not obj.date:
+            return None
+        weekdays = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
+        return f"{obj.date.month}/{obj.date.day}({weekdays[obj.date.weekday()]})"
+
+    def get_events(self, obj):
+        """events를 배열로 반환"""
+        return obj.get_events_display() or []
 
 
 class ContestImageSerializer(serializers.ModelSerializer):
@@ -59,6 +73,7 @@ class ContestImageSerializer(serializers.ModelSerializer):
 class ContestListSerializer(serializers.ModelSerializer):
     """대회 목록 시리얼라이저"""
     category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
+    sponsor = serializers.CharField(source='sponsor.name', read_only=True, allow_null=True)
     period_display = serializers.CharField(source='get_period_display', read_only=True)
     registration_period_display = serializers.CharField(source='get_registration_period_display', read_only=True)
     d_day = serializers.IntegerField(source='get_d_day', read_only=True)
@@ -72,7 +87,7 @@ class ContestListSerializer(serializers.ModelSerializer):
             'id', 'slug', 'title', 'category_name', 'is_qualifying',
             'schedule_start', 'schedule_end', 'period_display',
             'registration_start', 'registration_end', 'registration_period_display',
-            'region', 'region_detail',
+            'region', 'region_detail', 'sponsor',
             'd_day', 'd_day_display', 'view_count', 'is_liked', 'first_image',
             'created_at', 'updated_at'
         ]
@@ -98,9 +113,10 @@ class ContestListSerializer(serializers.ModelSerializer):
 class ContestDetailSerializer(serializers.ModelSerializer):
     """대회 상세 시리얼라이저"""
     category = ContestCategorySerializer(read_only=True)
-    sponsor = SponsorSerializer(read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
+    sponsor = serializers.CharField(source='sponsor.name', read_only=True, allow_null=True)
     schedules = ContestScheduleSerializer(many=True, read_only=True)
-    images = ContestImageSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
     period_display = serializers.CharField(source='get_period_display', read_only=True)
     registration_period_display = serializers.CharField(source='get_registration_period_display', read_only=True)
     d_day = serializers.IntegerField(source='get_d_day', read_only=True)
@@ -108,20 +124,29 @@ class ContestDetailSerializer(serializers.ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
     like_count = serializers.SerializerMethodField()
+    # 앱 호환 필드명
+    registration_url = serializers.URLField(source='registration_link', read_only=True)
+    registration_office = serializers.CharField(source='registration_name', read_only=True)
+    prizes = serializers.CharField(source='award_reward_text', read_only=True)
+    ai_summary = serializers.CharField(source='description', read_only=True)
+    participant_info = serializers.SerializerMethodField()
+    same_week_contests = serializers.SerializerMethodField()
 
     class Meta:
         model = Contest
         fields = [
-            'id', 'slug', 'title', 'category', 'is_qualifying',
+            'id', 'slug', 'title', 'category', 'category_name', 'is_qualifying',
             'schedule_start', 'schedule_end', 'period_display',
             'registration_start', 'registration_end', 'registration_period_display',
             'region', 'region_detail', 'entry_fee', 'competition_type',
-            'sponsor', 'award_reward_text',
-            'registration_name', 'registration_link', 'description', 'pdf_url',
-            'participant_target', 'participant_events', 'participant_ages', 'participant_grades',
+            'shuttlecock', 'sponsor', 'prizes',
+            'registration_office', 'registration_url', 'registration_link',
+            'ai_summary', 'description', 'pdf_url',
+            'participant_info', 'participant_target', 'participant_events', 'participant_ages', 'participant_grades',
             'd_day', 'd_day_display',
             'view_count', 'like_count', 'is_liked',
-            'schedules', 'images', 'created_at', 'updated_at'
+            'schedules', 'images', 'same_week_contests',
+            'created_at', 'updated_at'
         ]
         read_only_fields = fields
 
@@ -142,3 +167,37 @@ class ContestDetailSerializer(serializers.ModelSerializer):
 
     def get_like_count(self, obj):
         return obj.likes.count()
+
+    def get_images(self, obj):
+        """이미지 URL 문자열 배열로 반환"""
+        request = self.context.get('request')
+        urls = []
+        for img in obj.images.all():
+            if img.image and hasattr(img.image, 'url'):
+                if request:
+                    urls.append(request.build_absolute_uri(img.image.url))
+                else:
+                    urls.append(img.image.url)
+        return urls
+
+    def get_participant_info(self, obj):
+        return {
+            'events': obj.participant_events,
+            'ages': obj.participant_ages,
+            'grades': obj.participant_grades,
+        }
+
+    def get_same_week_contests(self, obj):
+        """같은 주 대회 목록"""
+        if not obj.schedule_start:
+            return []
+        from datetime import timedelta
+        week_start = obj.schedule_start - timedelta(days=obj.schedule_start.weekday())
+        week_end = week_start + timedelta(days=6)
+        same_week = Contest.objects.filter(
+            schedule_start__gte=week_start,
+            schedule_start__lte=week_end,
+        ).exclude(id=obj.id).select_related('category', 'sponsor').prefetch_related(
+            Prefetch('images', queryset=ContestImage.objects.order_by('order'))
+        )[:10]
+        return ContestListSerializer(same_week, many=True, context=self.context).data

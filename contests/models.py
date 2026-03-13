@@ -97,6 +97,7 @@ class Contest(models.Model):
     registration_end = models.DateField("접수 종료일", blank=True, null=True)
     entry_fee = models.CharField("접수비", max_length=100, blank=True)
     competition_type = models.CharField("대회구", max_length=100, blank=True)
+    shuttlecock = models.CharField("사용구", max_length=100, blank=True, help_text="예: 닉텐 T-Black, 요넥스 AS-50 등")
     sponsor = models.ForeignKey(
         "Sponsor",
         on_delete=models.SET_NULL,
