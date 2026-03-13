@@ -14,6 +14,7 @@ urlpatterns = [
     path('hot/', views.hot_contests, name='hot_contests'),
 
     # 대회 상세 및 좋아요 (반드시 마지막에 위치)
-    path('<slug:slug>/', views.contest_detail, name='contest_detail'),
-    path('<slug:slug>/like/', views.contest_like, name='contest_like'),
+    # slug에 한글이 포함되므로 str 사용 (Django slug 컨버터는 ASCII만 매칭)
+    path('<str:slug>/', views.contest_detail, name='contest_detail'),
+    path('<str:slug>/like/', views.contest_like, name='contest_like'),
 ]
