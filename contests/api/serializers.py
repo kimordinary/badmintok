@@ -139,7 +139,7 @@ class ContestDetailSerializer(serializers.ModelSerializer):
             'schedule_start', 'schedule_end', 'period_display',
             'registration_start', 'registration_end', 'registration_period_display',
             'region', 'region_detail', 'entry_fee', 'competition_type',
-            'shuttlecock', 'sponsor', 'prizes',
+            'sponsor', 'prizes',
             'registration_office', 'registration_url', 'registration_link',
             'ai_summary', 'description', 'pdf_url',
             'participant_info', 'participant_target', 'participant_events', 'participant_ages', 'participant_grades',
