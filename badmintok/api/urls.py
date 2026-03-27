@@ -27,6 +27,9 @@ urlpatterns = [
     # Bands API (외부 앱)
     path('bands/', include('band.api.urls', namespace='band_api')),
 
+    # Notifications API
+    path('notifications/', include('notifications.api.urls', namespace='notifications_api')),
+
     # 공통 리소스
     path('banners/', views.banner_list, name='banner_list'),  # 기존 배드민톡 배너
     path('app-banners/', views.app_banner_list, name='app_banner_list'),  # 새 앱/웹 메인 배너

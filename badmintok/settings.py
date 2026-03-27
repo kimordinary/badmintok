@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     'contests',
     'community',
     'band',
+    'notifications',
 ]
 
 MIDDLEWARE = [
