@@ -100,7 +100,7 @@ jobs:
           
           # 임시 디렉토리에 필요한 파일들 복사
           mkdir -p deploy-temp
-          cp -r accounts badmintok band community contests templates static nginx mysql scripts deploy-temp/ 2>/dev/null || true
+          cp -r accounts badmintok band community contests notifications templates static nginx mysql scripts deploy-temp/ 2>/dev/null || true
           cp Dockerfile docker-compose.prod.yml entrypoint.sh requirements.txt manage.py deploy-temp/ 2>/dev/null || true
           cp .env.prod env.prod.example deploy-temp/ 2>/dev/null || true
           

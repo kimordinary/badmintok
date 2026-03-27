@@ -64,7 +64,10 @@
       "Bash(git ls-files:*)",
       "Bash(git check-ignore:*)",
       "Bash(python3:*)",
-      "Bash(pip show:*)"
+      "Bash(pip show:*)",
+      "Bash(git -C /Users/ordinary/Documents/Documents/project/badmintok status --short)",
+      "Bash(git -C /Users/ordinary/Documents/Documents/project/badmintok log --oneline -5)",
+      "Bash(git -C /Users/ordinary/Documents/Documents/project/badmintok show --stat 14be818)"
     ],
     "deny": [],
     "ask": []
