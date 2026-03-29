@@ -35,16 +35,18 @@ class ContestScheduleSerializer(serializers.ModelSerializer):
     events_display = serializers.CharField(source='get_events_display', read_only=True)
     age_display = serializers.CharField(source='get_age_display', read_only=True)
 
+    description = serializers.CharField(read_only=True, allow_blank=True)
+
     class Meta:
         model = ContestSchedule
-        fields = ['id', 'date', 'events', 'ages', 'events_display', 'age_display']
+        fields = ['id', 'date', 'events', 'ages', 'events_display', 'age_display', 'description']
         read_only_fields = fields
 
     def get_date(self, obj):
-        """날짜를 '3/14(토요일)' 형식으로 반환"""
+        """날짜를 '3/14(토)' 형식으로 반환"""
         if not obj.date:
             return None
-        weekdays = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
+        weekdays = ['월', '화', '수', '목', '금', '토', '일']
         return f"{obj.date.month}/{obj.date.day}({weekdays[obj.date.weekday()]})"
 
     def get_events(self, obj):
