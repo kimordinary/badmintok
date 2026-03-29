@@ -2045,40 +2045,35 @@
             sortedContests.forEach((contest) => {
                 if (!contest.schedule_start) return;
 
-                const startYear = contest.schedule_start.getFullYear();
-                const startMonth = contest.schedule_start.getMonth() + 1;
-                const startDay = contest.schedule_start.getDate();
+                const contestStart = contest.schedule_start;
+                const contestEnd = contest.schedule_end || contestStart;
 
-                const endYear = contest.schedule_end ? contest.schedule_end.getFullYear() : startYear;
-                const endMonth = contest.schedule_end ? contest.schedule_end.getMonth() + 1 : startMonth;
-                const endDay = contest.schedule_end ? contest.schedule_end.getDate() : startDay;
+                // 현재 달력 월의 첫날과 마지막날
+                const monthStart = new Date(year, month - 1, 1);
+                const monthEnd = new Date(year, month, 0);
 
-                let displayDay = null;
+                // 대회 기간과 현재 월이 겹치는 범위 계산
+                const displayStart = new Date(Math.max(contestStart.getTime(), monthStart.getTime()));
+                const displayEnd = new Date(Math.min(contestEnd.getTime(), monthEnd.getTime()));
 
-                // 시작일이 현재 달력의 월에 속하면 시작일에 표시
-                if (startYear === year && startMonth === month) {
-                    displayDay = startDay;
+                if (displayStart > displayEnd) return;
+
+                // 겹치는 범위의 모든 날짜에 배너 표시
+                for (let d = new Date(displayStart); d <= displayEnd; d.setDate(d.getDate() + 1)) {
+                    const displayDay = d.getDate();
+                    const cellInfo = dayToCellMap.get(displayDay);
+                    if (!cellInfo) continue;
+
+                    const color = contest.category && contest.category.color ? contest.category.color : "#31AA60";
+                    const banner = document.createElement("a");
+                    banner.className = "calendar-event-item";
+                    banner.href = `/badminton-tournament/${contest.slug}/`;
+                    banner.textContent = contest.title;
+                    banner.style.backgroundColor = color;
+                    banner.title = `${contest.title} (${contest.period_display || ""})`;
+
+                    cellInfo.content.appendChild(banner);
                 }
-                // 시작일이 현재 월이 아니고 종료일이 현재 월에 속하면 종료일에 표시
-                else if (endYear === year && endMonth === month) {
-                    displayDay = endDay;
-                }
-
-                if (!displayDay) return;
-
-                // 해당 날짜의 셀에 배너 추가
-                const cellInfo = dayToCellMap.get(displayDay);
-                if (!cellInfo) return;
-
-                const color = contest.category && contest.category.color ? contest.category.color : "#31AA60";
-                const banner = document.createElement("a");
-                banner.className = "calendar-event-item";
-                banner.href = `/badminton-tournament/${contest.slug}/`;
-                banner.textContent = contest.title;
-                banner.style.backgroundColor = color;
-                banner.title = `${contest.title} (${contest.period_display || ""})`;
-
-                cellInfo.content.appendChild(banner);
             });
         }
 
@@ -2163,12 +2158,12 @@
                         filteredContests.forEach(contest => {
                             if (!contest.schedule_start) return;
 
-                            const contestDay = contest.schedule_start.getDate();
-                            const contestMonth = contest.schedule_start.getMonth() + 1;
-                            const contestEndDay = contest.schedule_end ? contest.schedule_end.getDate() : contestDay;
+                            const contestStart = contest.schedule_start;
+                            const contestEnd = contest.schedule_end || contestStart;
+                            const cellDate = new Date(year, month - 1, day);
 
                             // 해당 날짜에 시작하거나 포함되는 대회
-                            if (contestMonth === month && contestDay <= day && day <= contestEndDay) {
+                            if (cellDate >= contestStart && cellDate <= contestEnd) {
                                 const banner = document.createElement("a");
                                 banner.className = "weekend-contest-banner";
                                 banner.href = `/badminton-tournament/${contest.slug}/`;
