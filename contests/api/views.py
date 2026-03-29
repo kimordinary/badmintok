@@ -129,6 +129,7 @@ def contest_detail(request, slug):
         Contest.objects.select_related('category', 'sponsor').prefetch_related(
             Prefetch('images', queryset=ContestImage.objects.order_by('order')),
             Prefetch('schedules', queryset=ContestSchedule.objects.order_by('date')),
+            'prizes',
             'likes'
         ),
         slug=slug

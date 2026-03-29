@@ -288,7 +288,38 @@
                 </button>
                 <div class="contest-accordion__content">
                     <div class="contest-accordion__body">
-                        {% if contest.award_reward_text %}
+                        {% if contest.prizes.exists or contest.participation_prize %}
+                            {% for prize in contest.prizes.all %}
+                                <div class="prize-block">
+                                    <div class="prize-block__header">
+                                        <svg class="participant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="8" r="7"/>
+                                            <polyline points="8.21,13.89 7,23 12,20 17,23 15.79,13.88"/>
+                                        </svg>
+                                        <strong>{{ prize.division }}</strong>
+                                    </div>
+                                    <ul class="prize-block__list">
+                                        {% if prize.first_prize %}<li>1위 {{ prize.first_prize }}</li>{% endif %}
+                                        {% if prize.second_prize %}<li>2위 {{ prize.second_prize }}</li>{% endif %}
+                                        {% if prize.third_prize %}<li>3위 {{ prize.third_prize }}</li>{% endif %}
+                                    </ul>
+                                </div>
+                            {% endfor %}
+                            {% if contest.participation_prize %}
+                                <div class="prize-block">
+                                    <div class="prize-block__header">
+                                        <svg class="participant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20 12v10H4V12"/>
+                                            <rect x="2" y="7" width="20" height="5" rx="1"/>
+                                            <path d="M12 22V7"/>
+                                            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                                            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                                        </svg>
+                                        <span>{{ contest.participation_prize }}</span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% elif contest.award_reward_text %}
                             {{ contest.award_reward_text|linebreaksbr }}
                         {% else %}
                             -

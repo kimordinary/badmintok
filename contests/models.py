@@ -114,7 +114,9 @@ class Contest(models.Model):
     participant_events = models.CharField("종목", max_length=200, blank=True, help_text="예: 남복, 여복, 혼복, 단식")
     participant_ages = models.CharField("연령", max_length=200, blank=True, help_text="예: 20대 ~ 60대, 전연령")
     participant_grades = models.CharField("급수", max_length=200, blank=True, help_text="예: A, B, C, D, 초심, 입문")
-    award_reward_text = models.TextField("입상상품", blank=True, help_text="입상상품에 대한 상세 정보를 입력하세요.")
+    award_reward_text = models.TextField("입상상품 (텍스트)", blank=True, help_text="기존 입상상품 텍스트. 조별 입상상품이 등록되면 조별 데이터가 우선 표시됩니다.")
+    participation_prize = models.CharField("참가상", max_length=200, blank=True, help_text="예: 셔틀콕 1통, 수건 등")
+    raffle_prize = models.CharField("경품", max_length=200, blank=True, help_text="예: 라켓 추첨, 가방 추첨 등")
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="liked_contests", blank=True, verbose_name="좋아요")
     view_count = models.PositiveIntegerField("조회수", default=0)
     created_at = models.DateTimeField("등록일", auto_now_add=True)
@@ -300,6 +302,36 @@ class ContestSchedule(models.Model):
         return ", ".join(parts)
 
     # ContestSchedule does not override save/clean; no extra logic needed.
+
+
+class ContestPrize(models.Model):
+    """대회 입상상품 (조별)"""
+    DIVISION_CHOICES = (
+        ("동호인조", "동호인조"),
+        ("준자강조", "준자강조"),
+        ("자강조", "자강조"),
+    )
+
+    contest = models.ForeignKey(
+        Contest,
+        on_delete=models.CASCADE,
+        related_name="prizes",
+        verbose_name="대회",
+    )
+    division = models.CharField("조 구분", max_length=100, help_text="동호인조, 준자강조, 자강조 등")
+    first_prize = models.CharField("1위 상품", max_length=200, blank=True)
+    second_prize = models.CharField("2위 상품", max_length=200, blank=True)
+    third_prize = models.CharField("3위 상품", max_length=200, blank=True)
+    created_at = models.DateTimeField("등록일", auto_now_add=True)
+    updated_at = models.DateTimeField("수정일", auto_now=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "입상상품 (조별)"
+        verbose_name_plural = "입상상품 (조별)"
+
+    def __str__(self):
+        return f"{self.contest.title} - {self.division}"
 
 
 class ContestImage(models.Model):

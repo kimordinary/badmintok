@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Prefetch
-from contests.models import Contest, ContestCategory, ContestSchedule, ContestImage, Sponsor
+from contests.models import Contest, ContestCategory, ContestPrize, ContestSchedule, ContestImage, Sponsor
 from accounts.models import User
 
 
@@ -52,6 +52,14 @@ class ContestScheduleSerializer(serializers.ModelSerializer):
     def get_events(self, obj):
         """events를 배열로 반환"""
         return obj.get_events_display() or []
+
+
+class ContestPrizeSerializer(serializers.ModelSerializer):
+    """조별 입상상품 시리얼라이저"""
+    class Meta:
+        model = ContestPrize
+        fields = ['id', 'division', 'first_prize', 'second_prize', 'third_prize']
+        read_only_fields = fields
 
 
 class ContestImageSerializer(serializers.ModelSerializer):
@@ -129,7 +137,8 @@ class ContestDetailSerializer(serializers.ModelSerializer):
     # 앱 호환 필드명
     registration_url = serializers.URLField(source='registration_link', read_only=True)
     registration_office = serializers.CharField(source='registration_name', read_only=True)
-    prizes = serializers.CharField(source='award_reward_text', read_only=True)
+    prizes = ContestPrizeSerializer(many=True, read_only=True)
+    award_reward_text = serializers.CharField(read_only=True)
     ai_summary = serializers.CharField(source='description', read_only=True)
     participant_info = serializers.SerializerMethodField()
     same_week_contests = serializers.SerializerMethodField()
@@ -141,7 +150,7 @@ class ContestDetailSerializer(serializers.ModelSerializer):
             'schedule_start', 'schedule_end', 'period_display',
             'registration_start', 'registration_end', 'registration_period_display',
             'region', 'region_detail', 'entry_fee', 'competition_type',
-            'sponsor', 'prizes',
+            'sponsor', 'prizes', 'award_reward_text', 'participation_prize',
             'registration_office', 'registration_url', 'registration_link',
             'ai_summary', 'description', 'pdf_url',
             'participant_info', 'participant_target', 'participant_events', 'participant_ages', 'participant_grades',

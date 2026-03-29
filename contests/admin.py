@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter
 
-from .models import Contest, ContestCategory, ContestImage, ContestSchedule, Sponsor
+from .models import Contest, ContestCategory, ContestImage, ContestPrize, ContestSchedule, Sponsor
 
 
 class CompletionFilter(admin.SimpleListFilter):
@@ -101,6 +101,13 @@ class ContestScheduleInline(TabularInline):
     ordering = ("date",)
 
 
+class ContestPrizeInline(TabularInline):
+    """조별 입상상품 인라인"""
+    model = ContestPrize
+    extra = 0
+    fields = ("division", "first_prize", "second_prize", "third_prize")
+
+
 class ContestImageInline(TabularInline):
     """대회 이미지 인라인"""
     model = ContestImage
@@ -123,7 +130,7 @@ class SponsorAdmin(ModelAdmin):
 
 @admin.register(Contest)
 class ContestAdmin(ModelAdmin):
-    inlines = [ContestImageInline, ContestScheduleInline]
+    inlines = [ContestImageInline, ContestScheduleInline, ContestPrizeInline]
     list_display = (
         "title",
         "display_status",
@@ -145,7 +152,7 @@ class ContestAdmin(ModelAdmin):
         ("대회 일정", {"fields": (("schedule_start", "schedule_end"),)}),
         ("접수 정보", {"fields": (("registration_start", "registration_end"), "registration_name", "registration_link", "entry_fee")}),
         ("참가 대상", {"fields": ("participant_events", "participant_ages", "participant_grades")}),
-        ("입상상품", {"fields": ("award_reward_text",)}),
+        ("입상상품", {"fields": ("participation_prize", "award_reward_text")}),
         ("장소 및 기타", {"fields": ("region", "region_detail", "competition_type", "sponsor")}),
     )
     actions = ["delete_selected"]
