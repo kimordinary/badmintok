@@ -135,11 +135,25 @@
                             <th scope="row">일정</th>
                             <td>
                                 {% if schedule_entries %}
-                                    <div class="schedule-list">
+                                    <div class="schedule-toggle">
+                                        <span class="schedule-toggle__period">{{ contest.get_period_display }}</span>
+                                        <button type="button" class="schedule-toggle__btn" onclick="this.closest('.schedule-toggle').classList.toggle('is-open')">
+                                            <span class="schedule-toggle__btn-open">자세히 ›</span>
+                                            <span class="schedule-toggle__btn-close">접기 ‹</span>
+                                        </button>
+                                    </div>
+                                    <div class="schedule-detail">
                                         {% for entry in schedule_entries %}
-                                            <div class="schedule-item">
-                                                <span class="schedule-item__date">{{ entry.date|date:"n/j" }}({{ entry.date|date:"D" }})</span>
-                                                <span class="schedule-item__events">{% for event in entry.get_events_display %}<span class="contest-event-badge {% if event == '여복' %}event-badge-female{% elif event == '혼복' %}event-badge-mixed{% elif event == '남복' %}event-badge-male{% elif event == '단식' %}event-badge-single{% else %}event-badge-default{% endif %}">{{ event }}</span>{% endfor %}</span>{% if entry.get_age_display and entry.get_age_display != '전연령' %}<span class="schedule-item__age">{{ entry.get_age_display }}</span>{% endif %}
+                                            <div class="schedule-detail__day">
+                                                <span class="schedule-detail__date">{{ entry.date|date:"n" }}월 {{ entry.date|date:"j" }}일({{ entry.date|short_weekday }})</span>
+                                                {% if entry.get_events_display %}
+                                                    <span class="schedule-detail__events">{% for event in entry.get_events_display %}<span class="contest-event-badge {% if event == '여복' %}event-badge-female{% elif event == '혼복' %}event-badge-mixed{% elif event == '남복' %}event-badge-male{% elif event == '단식' %}event-badge-single{% else %}event-badge-default{% endif %}">{{ event }}</span>{% endfor %}</span>
+                                                {% endif %}
+                                                {% if entry.description %}
+                                                    <p class="schedule-detail__desc">{{ entry.description }}</p>
+                                                {% elif entry.get_age_display and entry.get_age_display != '전연령' %}
+                                                    <p class="schedule-detail__desc">{{ entry.get_age_display }}</p>
+                                                {% endif %}
                                             </div>
                                         {% endfor %}
                                     </div>
@@ -1082,15 +1096,13 @@
             width: 90px;
         }
 
-        .contest-schedule-item {
-            flex-direction: row;
-            align-items: center;
-            flex-wrap: nowrap;
-            overflow-x: auto;
+        .schedule-detail__date {
+            font-size: 15px;
         }
-        
-        .contest-schedule-item span:first-child {
-            flex-shrink: 0;
+
+        .schedule-detail__list li,
+        .schedule-detail__desc {
+            font-size: 14px;
         }
 
         .contest-accordion__header {

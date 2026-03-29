@@ -75,7 +75,7 @@ class ContestScheduleInlineForm(forms.ModelForm):
 
     class Meta:
         model = ContestSchedule
-        fields = ("date", "events", "ages")
+        fields = ("date", "events", "ages", "description")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

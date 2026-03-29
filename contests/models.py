@@ -128,12 +128,18 @@ class Contest(models.Model):
     def __str__(self):
         return self.title
 
+    DAY_NAMES = ["월", "화", "수", "목", "금", "토", "일"]
+
     def get_period_display(self):
         if not self.schedule_start:
             return "-"
+        start_day = self.DAY_NAMES[self.schedule_start.weekday()]
         if self.schedule_end and self.schedule_end != self.schedule_start:
-            return f"{self.schedule_start:%Y.%m.%d} ~ {self.schedule_end:%Y.%m.%d}"
-        return f"{self.schedule_start:%Y.%m.%d}"
+            end_day = self.DAY_NAMES[self.schedule_end.weekday()]
+            if self.schedule_start.year == self.schedule_end.year:
+                return f"{self.schedule_start:%Y.%m.%d}({start_day}) ~ {self.schedule_end:%m.%d}({end_day})"
+            return f"{self.schedule_start:%Y.%m.%d}({start_day}) ~ {self.schedule_end:%Y.%m.%d}({end_day})"
+        return f"{self.schedule_start:%Y.%m.%d}({start_day})"
 
     def get_registration_period_display(self):
         if not self.registration_start:
@@ -230,6 +236,7 @@ class ContestSchedule(models.Model):
     date = models.DateField("경기일")
     events = models.JSONField("경기 종목", blank=True, null=True, help_text="혼복/여복/남복 복수 선택")
     ages = models.JSONField("연령대", blank=True, null=True, help_text="10대~70대 또는 전연령 복수 선택")
+    description = models.CharField("일정 설명", max_length=500, blank=True, help_text="직접 입력 시 체크박스 대신 이 내용이 표시됩니다. 예: 혼복 전 경기, 60대 이상 남·여복 전 경기")
     created_at = models.DateTimeField("등록일", auto_now_add=True)
     updated_at = models.DateTimeField("수정일", auto_now=True)
 

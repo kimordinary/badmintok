@@ -501,41 +501,102 @@ main > section {
     background: #f1f5f9;
 }
 
-/* 일정 리스트 스타일 */
-.schedule-list {
+/* 일정 토글 스타일 */
+.schedule-toggle {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.schedule-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    align-items: baseline;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
-.schedule-item__date {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1e293b;
-    min-width: 70px;
+.schedule-toggle__period {
+    font-size: inherit;
+    color: inherit;
 }
 
-.schedule-item__events {
-    display: flex;
+.schedule-toggle__btn {
+    font-size: inherit;
+    font-weight: 700;
+    color: var(--brand);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.schedule-toggle__btn:hover {
+    opacity: 0.7;
+}
+
+.schedule-toggle__btn-close {
+    display: none;
+}
+
+.schedule-toggle.is-open .schedule-toggle__btn-open {
+    display: none;
+}
+
+.schedule-toggle.is-open .schedule-toggle__btn-close {
+    display: inline;
+}
+
+.schedule-toggle.is-open + .schedule-detail {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 10px;
+}
+
+/* 일정 상세 (접힌 상태) */
+.schedule-detail {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+    margin-top: 0;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.schedule-detail__day {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.schedule-detail__day:last-child {
+    border-bottom: none;
+}
+
+.schedule-detail__date {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.schedule-detail__list {
+    margin: 4px 0 0 0;
+    padding-left: 18px;
+    list-style: disc;
+}
+
+.schedule-detail__list li {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.schedule-detail__events {
+    display: inline-flex;
     flex-wrap: wrap;
     gap: 4px;
+    margin-top: 6px;
 }
 
-.schedule-item__age {
+.schedule-detail__desc {
+    margin: 4px 0 0 0;
     font-size: 13px;
-    color: #64748b;
-}
-
-.schedule-item__age::before {
-    content: "·";
-    margin-right: 6px;
+    color: #475569;
+    line-height: 1.6;
 }
 
 .contest-detail {

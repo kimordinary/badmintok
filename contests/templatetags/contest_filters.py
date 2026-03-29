@@ -4,6 +4,16 @@ from django.utils.safestring import mark_safe
 
 register = template.Library()
 
+DAY_NAMES = ["월", "화", "수", "목", "금", "토", "일"]
+
+
+@register.filter
+def short_weekday(value):
+    """날짜에서 한 글자 요일 반환 (예: 토, 일)"""
+    if hasattr(value, 'weekday'):
+        return DAY_NAMES[value.weekday()]
+    return ""
+
 
 @register.filter
 def bold_region(value):

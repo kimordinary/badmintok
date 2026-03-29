@@ -426,7 +426,19 @@ class ContestDetailView(DetailView):
             viewed_contests[contest_id_str] = current_time.isoformat()
             self.request.session[session_key] = viewed_contests
             self.request.session.modified = True
-        context["schedule_entries"] = contest.schedules.all()
+        schedule_entries = contest.schedules.all()
+        context["schedule_entries"] = schedule_entries
+
+        # 종목 요약 텍스트 생성 (예: "혼복, 여복, 남복, 단식")
+        all_events = []
+        seen = set()
+        for entry in schedule_entries:
+            for event in entry.get_events_display():
+                if event not in seen:
+                    seen.add(event)
+                    all_events.append(event)
+        context["events_summary"] = ", ".join(all_events)
+        context["all_events"] = all_events
 
         # 대회 이미지들 가져오기 (순서대로)
         context["contest_images"] = contest.images.all().order_by('order', 'id')
