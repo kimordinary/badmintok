@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Q, F, Case, When, ExpressionWrapper, FloatField, Count
 from django.utils import timezone
@@ -170,6 +170,28 @@ def post_detail(request, slug):
     
     serializer = PostDetailSerializer(post, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def post_like(request, slug):
+    """배드민톡 게시글 좋아요 API"""
+    post = get_object_or_404(
+        Post.objects.filter(
+            slug=slug,
+            source=Post.Source.BADMINTOK,
+            is_deleted=False
+        )
+    )
+
+    if post.likes.filter(id=request.user.id).exists():
+        post.likes.remove(request.user)
+        post.update_like_count()
+        return Response({'message': '좋아요가 취소되었습니다.', 'is_liked': False, 'like_count': post.like_count}, status=status.HTTP_200_OK)
+    else:
+        post.likes.add(request.user)
+        post.update_like_count()
+        return Response({'message': '좋아요가 추가되었습니다.', 'is_liked': True, 'like_count': post.like_count}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
