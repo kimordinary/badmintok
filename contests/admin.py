@@ -158,7 +158,7 @@ class ContestAdmin(ModelAdmin):
     actions = ["delete_selected"]
 
     class Media:
-        js = ("js/admin-contest-slug.js",)
+        js = ("js/admin-contest-slug.js", "js/admin-schedule-autofill.js")
 
     def has_delete_permission(self, request, obj=None):
         """삭제 권한 확인 - staff 사용자는 삭제 가능"""
