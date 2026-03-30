@@ -2058,11 +2058,16 @@
 
                 if (displayStart > displayEnd) return;
 
-                // 겹치는 범위의 모든 날짜에 배너 표시
+                // 겹치는 범위의 모든 날짜에 배너 표시 (합산 셀 중복 방지)
+                const addedCells = new Set();
                 for (let d = new Date(displayStart); d <= displayEnd; d.setDate(d.getDate() + 1)) {
                     const displayDay = d.getDate();
                     const cellInfo = dayToCellMap.get(displayDay);
                     if (!cellInfo) continue;
+
+                    // 토~일 합산 셀인 경우 같은 셀에 이미 추가했으면 건너뛰기
+                    if (addedCells.has(cellInfo.content)) continue;
+                    addedCells.add(cellInfo.content);
 
                     const color = contest.category && contest.category.color ? contest.category.color : "#31AA60";
                     const banner = document.createElement("a");
