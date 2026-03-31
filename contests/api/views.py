@@ -70,6 +70,27 @@ def contest_list(request):
         # upcoming (기본값): 대회 시작일 기준
         contests = contests.order_by('schedule_start', '-created_at')
 
+    # 월별 필터 (예: schedule_month=2026-04)
+    schedule_month = request.GET.get('schedule_month', '')
+    if schedule_month:
+        try:
+            parts = schedule_month.split('-')
+            y, m = int(parts[0]), int(parts[1])
+            month_start = date(y, m, 1)
+            if m == 12:
+                month_end = date(y + 1, 1, 1)
+            else:
+                month_end = date(y, m + 1, 1)
+            # 해당 월에 걸치는 대회 (시작일이 해당 월이거나, 기간이 해당 월을 포함)
+            contests = contests.filter(
+                schedule_start__lt=month_end,
+            ).filter(
+                Q(schedule_end__gte=month_start) |
+                Q(schedule_end__isnull=True, schedule_start__gte=month_start)
+            )
+        except (ValueError, IndexError):
+            pass
+
     # 기간 필터
     period = request.GET.get('period', '')
     today = date.today()
