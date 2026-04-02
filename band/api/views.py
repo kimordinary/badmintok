@@ -631,6 +631,40 @@ def band_post_like(request, band_id, post_id):
         return Response({'message': '좋아요를 눌렀습니다.', 'is_liked': True, 'like_count': post.like_count})
 
 
+# ========== FAQ 답변 ==========
+
+
+@csrf_exempt
+@api_view(['POST', 'PUT'])
+@permission_classes([IsAuthenticated])
+def band_post_answer(request, band_id, post_id):
+    """FAQ 답변 작성/수정 API (owner/admin만 가능)"""
+    post = get_object_or_404(BandPost, id=post_id, band_id=band_id)
+
+    if post.post_type != 'question':
+        return Response({'error': 'FAQ 게시글만 답변할 수 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # owner/admin만 답변 가능
+    is_manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).exists()
+    if not is_manager:
+        return Response({'error': '관리자만 답변할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    content = request.data.get('content', '').strip()
+    if not content:
+        return Response({'error': '답변 내용을 입력해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    post.answer = content
+    post.answered_by = request.user
+    post.answered_at = timezone.now()
+    post.save(update_fields=['answer', 'answered_by', 'answered_at'])
+
+    serializer = BandPostDetailSerializer(post, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 # ========== 댓글 ==========
 
 @api_view(['GET'])

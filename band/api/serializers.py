@@ -197,16 +197,22 @@ class BandPostListSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     band_name = serializers.CharField(source='band.name', read_only=True)
     first_image = serializers.SerializerMethodField()
+    has_answer = serializers.SerializerMethodField()
 
     class Meta:
         model = BandPost
         fields = [
             'id', 'band', 'band_name', 'author', 'title', 'content',
             'post_type', 'is_pinned', 'is_notice', 'view_count',
-            'like_count', 'comment_count', 'first_image',
+            'like_count', 'comment_count', 'first_image', 'has_answer',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
+
+    def get_has_answer(self, obj):
+        if obj.post_type == 'question':
+            return bool(obj.answer)
+        return None
 
     def get_first_image(self, obj):
         request = self.context.get('request')
@@ -254,6 +260,7 @@ class BandPostDetailSerializer(serializers.ModelSerializer):
     images = BandPostImageSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
     vote = serializers.SerializerMethodField()
+    answered_by = UserSerializer(read_only=True)
 
     class Meta:
         model = BandPost
@@ -261,6 +268,7 @@ class BandPostDetailSerializer(serializers.ModelSerializer):
             'id', 'band', 'band_name', 'author', 'title', 'content',
             'post_type', 'is_pinned', 'is_notice', 'view_count',
             'like_count', 'comment_count', 'images', 'is_liked', 'vote',
+            'answer', 'answered_by', 'answered_at',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields

@@ -271,6 +271,16 @@ class BandPost(models.Model):
     view_count = models.IntegerField(_("조회수"), default=0)
     like_count = models.IntegerField(_("좋아요 수"), default=0)
     comment_count = models.IntegerField(_("댓글 수"), default=0)
+    answer = models.TextField(_("FAQ 답변"), blank=True, help_text="질문(FAQ) 게시글의 답변")
+    answered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="band_answers",
+        verbose_name=_("답변자")
+    )
+    answered_at = models.DateTimeField(_("답변일"), null=True, blank=True)
     created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
     updated_at = models.DateTimeField(_("수정일"), auto_now=True)
 

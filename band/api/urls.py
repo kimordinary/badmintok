@@ -27,6 +27,7 @@ urlpatterns = [
     path('<int:band_id>/posts/<int:post_id>/update/', views.band_post_update, name='band_post_update'),
     path('<int:band_id>/posts/<int:post_id>/delete/', views.band_post_delete, name='band_post_delete'),
     path('<int:band_id>/posts/<int:post_id>/like/', views.band_post_like, name='band_post_like'),
+    path('<int:band_id>/posts/<int:post_id>/answer/', views.band_post_answer, name='band_post_answer'),
 
     # 댓글
     path('<int:band_id>/posts/<int:post_id>/comments/', views.band_comment_list, name='band_comment_list'),
