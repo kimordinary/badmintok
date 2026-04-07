@@ -106,6 +106,85 @@ def band_list(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_joined_bands(request):
+    """가입한 모임/동호회 목록 API"""
+    bands = Band.objects.filter(
+        members__user=request.user,
+        members__status='active',
+        deletion_requested=False
+    ).select_related('created_by', 'created_by__profile').prefetch_related('members', 'bookmarks', 'posts')
+
+    page_number = request.GET.get('page', 1)
+    page_size = min(int(request.GET.get('page_size', 20) or 20), 100)
+    paginator = Paginator(bands.order_by('-created_at'), page_size)
+    page_obj = paginator.get_page(page_number)
+
+    serializer = BandListSerializer(page_obj, many=True, context={'request': request})
+    return Response({
+        'count': paginator.count,
+        'page_size': page_size,
+        'current_page': page_obj.number,
+        'total_pages': paginator.num_pages,
+        'results': serializer.data,
+        'next': page_obj.next_page_number() if page_obj.has_next() else None,
+        'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_created_bands(request):
+    """내가 만든 모임/동호회 목록 API"""
+    bands = Band.objects.filter(
+        created_by=request.user,
+        deletion_requested=False
+    ).select_related('created_by', 'created_by__profile').prefetch_related('members', 'bookmarks', 'posts')
+
+    page_number = request.GET.get('page', 1)
+    page_size = min(int(request.GET.get('page_size', 20) or 20), 100)
+    paginator = Paginator(bands.order_by('-created_at'), page_size)
+    page_obj = paginator.get_page(page_number)
+
+    serializer = BandListSerializer(page_obj, many=True, context={'request': request})
+    return Response({
+        'count': paginator.count,
+        'page_size': page_size,
+        'current_page': page_obj.number,
+        'total_pages': paginator.num_pages,
+        'results': serializer.data,
+        'next': page_obj.next_page_number() if page_obj.has_next() else None,
+        'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_bookmarked_bands(request):
+    """북마크 모임/동호회 목록 API"""
+    bands = Band.objects.filter(
+        bookmarks__user=request.user,
+        deletion_requested=False
+    ).select_related('created_by', 'created_by__profile').prefetch_related('members', 'bookmarks', 'posts')
+
+    page_number = request.GET.get('page', 1)
+    page_size = min(int(request.GET.get('page_size', 20) or 20), 100)
+    paginator = Paginator(bands.order_by('-created_at'), page_size)
+    page_obj = paginator.get_page(page_number)
+
+    serializer = BandListSerializer(page_obj, many=True, context={'request': request})
+    return Response({
+        'count': paginator.count,
+        'page_size': page_size,
+        'current_page': page_obj.number,
+        'total_pages': paginator.num_pages,
+        'results': serializer.data,
+        'next': page_obj.next_page_number() if page_obj.has_next() else None,
+        'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
 @permission_classes([AllowAny])
 def band_detail(request, band_id):
     """밴드 상세 API"""

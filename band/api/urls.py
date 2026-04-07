@@ -7,6 +7,9 @@ urlpatterns = [
     # 밴드 목록 및 상세
     path('', views.band_list, name='band_list'),
     path('hot/', views.hot_bands, name='hot_bands'),
+    path('my-joined/', views.my_joined_bands, name='my_joined_bands'),
+    path('my-created/', views.my_created_bands, name='my_created_bands'),
+    path('my-bookmarks/', views.my_bookmarked_bands, name='my_bookmarked_bands'),
     path('create/', views.band_create, name='band_create'),
     path('<int:band_id>/', views.band_detail, name='band_detail'),
     path('<int:band_id>/update/', views.band_update, name='band_update'),

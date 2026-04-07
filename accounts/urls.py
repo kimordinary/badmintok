@@ -21,6 +21,11 @@ from .views import (
     InquiryAPIView,
     MypageSummaryAPIView,
     AccountDeleteAPIView,
+    MyPostsAPIView,
+    MyCommentsAPIView,
+    BlockedUsersAPIView,
+    ChangePasswordAPIView,
+    WithdrawAPIView,
     mypage,
     profile_edit,
     enter_real_name,
@@ -83,6 +88,16 @@ urlpatterns = [
     path("api/mypage/summary/", MypageSummaryAPIView.as_view(), name="mypage_summary_api"),
     # 계정 삭제 REST API
     path("api/account/delete/", AccountDeleteAPIView.as_view(), name="account_delete_api"),
+    # 내 게시물/댓글 REST API
+    path("api/my-posts/", MyPostsAPIView.as_view(), name="my_posts_api"),
+    path("api/my-comments/", MyCommentsAPIView.as_view(), name="my_comments_api"),
+    # 차단 사용자 관리 REST API (앱용)
+    path("api/blocked-users/", BlockedUsersAPIView.as_view(), name="blocked_users_api"),
+    path("api/blocked-users/<int:user_id>/", BlockedUsersAPIView.as_view(), name="blocked_users_detail_api"),
+    # 비밀번호 변경 REST API
+    path("api/change-password/", ChangePasswordAPIView.as_view(), name="change_password_api"),
+    # 계정 탈퇴 REST API (앱용 - 비밀번호 확인 포함)
+    path("api/withdraw/", WithdrawAPIView.as_view(), name="withdraw_api"),
     # JWT 토큰 갱신
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),

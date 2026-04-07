@@ -2440,3 +2440,272 @@ class AccountDeleteAPIView(View):
             "success": True,
             "message": "계정이 탈퇴 처리되었습니다"
         })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class MyPostsAPIView(View):
+    """내 게시물 API"""
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return JsonResponse({"success": False, "error": "로그인이 필요합니다"}, status=401)
+
+        source = request.GET.get('source', 'all')
+        results = []
+
+        # 밴드 게시물
+        if source in ('all', 'band'):
+            band_posts = BandPost.objects.filter(author=request.user).select_related('band').order_by('-created_at')
+            for p in band_posts:
+                results.append({
+                    "id": p.id,
+                    "title": p.title,
+                    "content": p.content[:100] if p.content else "",
+                    "source": "band",
+                    "source_id": p.band_id,
+                    "source_name": p.band.name if p.band else None,
+                    "slug": None,
+                    "like_count": p.like_count,
+                    "comment_count": p.comment_count,
+                    "created_at": p.created_at.isoformat(),
+                })
+
+        # 커뮤니티/배드민톡 게시물
+        if source in ('all', 'community', 'badmintok'):
+            post_qs = Post.objects.filter(author=request.user, is_deleted=False).order_by('-created_at')
+            if source == 'badmintok':
+                post_qs = post_qs.filter(source='badmintok')
+            elif source == 'community':
+                post_qs = post_qs.filter(source='community')
+            for p in post_qs:
+                results.append({
+                    "id": p.id,
+                    "title": p.title,
+                    "content": p.content[:100] if p.content else "",
+                    "source": p.source or "community",
+                    "source_id": None,
+                    "source_name": None,
+                    "slug": p.slug,
+                    "like_count": p.like_count,
+                    "comment_count": p.comment_count,
+                    "created_at": p.created_at.isoformat(),
+                })
+
+        # 날짜순 정렬
+        results.sort(key=lambda x: x['created_at'], reverse=True)
+
+        # 페이지네이션
+        page = int(request.GET.get('page', 1))
+        page_size = min(int(request.GET.get('page_size', 20) or 20), 100)
+        paginator = Paginator(results, page_size)
+        page_obj = paginator.get_page(page)
+
+        return JsonResponse({
+            "count": paginator.count,
+            "page_size": page_size,
+            "current_page": page_obj.number,
+            "total_pages": paginator.num_pages,
+            "results": list(page_obj),
+        })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class MyCommentsAPIView(View):
+    """내 댓글 API"""
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return JsonResponse({"success": False, "error": "로그인이 필요합니다"}, status=401)
+
+        results = []
+
+        # 밴드 댓글
+        band_comments = BandComment.objects.filter(author=request.user).select_related('post', 'post__band').order_by('-created_at')
+        for c in band_comments:
+            results.append({
+                "id": c.id,
+                "content": c.content[:100] if c.content else "",
+                "post_title": c.post.title if c.post else "",
+                "post_slug": None,
+                "source": "band",
+                "source_id": c.post.band_id if c.post else None,
+                "post_id": c.post_id,
+                "created_at": c.created_at.isoformat(),
+            })
+
+        # 커뮤니티 댓글
+        community_comments = Comment.objects.filter(author=request.user).select_related('post').order_by('-created_at')
+        for c in community_comments:
+            results.append({
+                "id": c.id,
+                "content": c.content[:100] if c.content else "",
+                "post_title": c.post.title if c.post else "",
+                "post_slug": c.post.slug if c.post else None,
+                "source": c.post.source if c.post else "community",
+                "source_id": None,
+                "post_id": c.post_id,
+                "created_at": c.created_at.isoformat(),
+            })
+
+        results.sort(key=lambda x: x['created_at'], reverse=True)
+
+        page = int(request.GET.get('page', 1))
+        page_size = min(int(request.GET.get('page_size', 20) or 20), 100)
+        paginator = Paginator(results, page_size)
+        page_obj = paginator.get_page(page)
+
+        return JsonResponse({
+            "count": paginator.count,
+            "page_size": page_size,
+            "current_page": page_obj.number,
+            "total_pages": paginator.num_pages,
+            "results": list(page_obj),
+        })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class BlockedUsersAPIView(View):
+    """차단 사용자 관리 API (URL path로 user_id 받는 버전)"""
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, user_id=None):
+        if not request.user.is_authenticated:
+            return JsonResponse({"success": False, "error": "로그인이 필요합니다"}, status=401)
+
+        blocks = UserBlock.objects.filter(blocker=request.user).select_related("blocked", "blocked__profile")
+        blocked_users = []
+        for block in blocks:
+            profile_image_url = None
+            if hasattr(block.blocked, 'profile') and block.blocked.profile.profile_image:
+                profile_image_url = request.build_absolute_uri(block.blocked.profile.profile_image.url)
+            blocked_users.append({
+                "id": block.blocked.id,
+                "activity_name": block.blocked.activity_name,
+                "profile_image_url": profile_image_url,
+                "blocked_at": block.created_at.isoformat(),
+            })
+
+        return JsonResponse({"success": True, "data": {"blocked_users": blocked_users}})
+
+    def post(self, request, user_id=None):
+        if not request.user.is_authenticated:
+            return JsonResponse({"success": False, "error": "로그인이 필요합니다"}, status=401)
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "잘못된 JSON 형식입니다"}, status=400)
+
+        target_id = data.get("user_id")
+        if not target_id:
+            return JsonResponse({"success": False, "error": "user_id가 필요합니다"}, status=400)
+        if target_id == request.user.id:
+            return JsonResponse({"success": False, "error": "자기 자신을 차단할 수 없습니다"}, status=400)
+
+        try:
+            blocked_user = User.objects.get(id=target_id)
+        except User.DoesNotExist:
+            return JsonResponse({"success": False, "error": "사용자를 찾을 수 없습니다"}, status=404)
+
+        _, created = UserBlock.objects.get_or_create(blocker=request.user, blocked=blocked_user)
+        if not created:
+            return JsonResponse({"success": False, "error": "이미 차단한 사용자입니다"}, status=400)
+
+        return JsonResponse({"success": True, "message": "사용자를 차단했습니다."}, status=201)
+
+    def delete(self, request, user_id=None):
+        if not request.user.is_authenticated:
+            return JsonResponse({"success": False, "error": "로그인이 필요합니다"}, status=401)
+
+        if not user_id:
+            return JsonResponse({"success": False, "error": "user_id가 필요합니다"}, status=400)
+
+        try:
+            block = UserBlock.objects.get(blocker=request.user, blocked_id=user_id)
+            block.delete()
+            return JsonResponse({"success": True, "message": "차단을 해제했습니다."})
+        except UserBlock.DoesNotExist:
+            return JsonResponse({"success": False, "error": "차단 정보를 찾을 수 없습니다"}, status=404)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ChangePasswordAPIView(View):
+    """비밀번호 변경 API"""
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def put(self, request):
+        if not request.user.is_authenticated:
+            return JsonResponse({"success": False, "error": "로그인이 필요합니다"}, status=401)
+
+        user = request.user
+        if user.is_social_auth:
+            return JsonResponse({"success": False, "error": "소셜 로그인 사용자는 비밀번호를 변경할 수 없습니다."}, status=400)
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "잘못된 JSON 형식입니다"}, status=400)
+
+        current_password = data.get("current_password", "")
+        new_password = data.get("new_password", "")
+        new_password_confirm = data.get("new_password_confirm", "")
+
+        if not user.check_password(current_password):
+            return JsonResponse({"success": False, "error": "현재 비밀번호가 일치하지 않습니다."}, status=400)
+
+        if not new_password or len(new_password) < 8:
+            return JsonResponse({"success": False, "error": "새 비밀번호는 8자 이상이어야 합니다."}, status=400)
+
+        if new_password != new_password_confirm:
+            return JsonResponse({"success": False, "error": "새 비밀번호가 일치하지 않습니다."}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+
+        return JsonResponse({"success": True, "message": "비밀번호가 변경되었습니다."})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class WithdrawAPIView(View):
+    """계정 탈퇴 API (비밀번호 확인 포함)"""
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return JsonResponse({"success": False, "error": "로그인이 필요합니다"}, status=401)
+
+        user = request.user
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "잘못된 JSON 형식입니다"}, status=400)
+
+        # OAuth 사용자는 password 불필요
+        if not user.is_social_auth:
+            password = data.get("password", "")
+            if not user.check_password(password):
+                return JsonResponse({"success": False, "error": "비밀번호가 일치하지 않습니다."}, status=400)
+
+        # 소프트 삭제
+        user.is_active = False
+        user.save()
+
+        return JsonResponse({"success": True, "message": "계정이 삭제되었습니다."})
