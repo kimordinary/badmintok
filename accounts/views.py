@@ -2014,6 +2014,10 @@ class UserBlockAPIView(View):
     DELETE: 차단 해제
     """
 
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
         """차단 목록 조회"""
         if not request.user.is_authenticated:
@@ -2149,6 +2153,10 @@ class ReportAPIView(View):
     POST: 신고 생성
     """
 
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
         """내 신고 목록 조회"""
         if not request.user.is_authenticated:
@@ -2236,6 +2244,10 @@ class InquiryAPIView(View):
     GET: 내 문의 목록 조회
     POST: 문의 생성
     """
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
         """내 문의 목록 조회"""
@@ -2352,6 +2364,10 @@ class MypageSummaryAPIView(View):
     GET: 마이페이지 요약 정보 조회
     """
 
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
         """마이페이지 요약 정보"""
         if not request.user.is_authenticated:
@@ -2424,6 +2440,10 @@ class AccountDeleteAPIView(View):
     계정 삭제 REST API
     POST: 계정 비활성화 (탈퇴)
     """
+
+    def dispatch(self, request, *args, **kwargs):
+        _authenticate_jwt(request)
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
         """계정 탈퇴"""
