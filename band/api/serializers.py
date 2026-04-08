@@ -198,6 +198,7 @@ class BandPostListSerializer(serializers.ModelSerializer):
     band_name = serializers.CharField(source='band.name', read_only=True)
     first_image = serializers.SerializerMethodField()
     has_answer = serializers.SerializerMethodField()
+    answered_by = UserSerializer(read_only=True)
 
     class Meta:
         model = BandPost
@@ -205,6 +206,7 @@ class BandPostListSerializer(serializers.ModelSerializer):
             'id', 'band', 'band_name', 'author', 'title', 'content',
             'post_type', 'is_pinned', 'is_notice', 'view_count',
             'like_count', 'comment_count', 'first_image', 'has_answer',
+            'answer', 'answered_by', 'answered_at',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
