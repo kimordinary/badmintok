@@ -13,7 +13,7 @@ import json
 import hashlib
 from unfold.admin import ModelAdmin
 
-from .models import BadmintokBanner, Banner, Notice, VisitorLog, OutboundClick
+from .models import BadmintokBanner, Banner, Notice, VisitorLog, OutboundClick, YoutubeVideo
 from .fields import (
     get_unconverted_images_stats,
     convert_existing_image_to_webp,
@@ -142,6 +142,33 @@ class NoticeAdmin(ModelAdmin):
         }),
         ("날짜 정보", {
             "fields": ("created_at", "updated_at")
+        }),
+    )
+
+
+@admin.register(YoutubeVideo)
+class YoutubeVideoAdmin(ModelAdmin):
+    list_display = ['title', 'video_id', 'is_active', 'order', 'created_at']
+    list_editable = ['is_active', 'order']
+    list_filter = ['is_active']
+    search_fields = ['title', 'youtube_url']
+    readonly_fields = ['video_id', 'thumbnail_url', 'created_at', 'updated_at']
+
+    fieldsets = (
+        ("영상 정보", {
+            "fields": ("title", "youtube_url", "description")
+        }),
+        ("자동 생성 필드", {
+            "fields": ("video_id", "thumbnail_url"),
+            "classes": ("collapse",),
+            "description": "유튜브 URL에서 자동으로 추출됩니다."
+        }),
+        ("설정", {
+            "fields": ("is_active", "order")
+        }),
+        ("날짜 정보", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
         }),
     )
 

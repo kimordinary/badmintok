@@ -126,6 +126,48 @@ class Notice(models.Model):
         self.save(update_fields=["view_count"])
 
 
+class YoutubeVideo(models.Model):
+    """유튜브 영상"""
+    title = models.CharField("영상 제목", max_length=200)
+    youtube_url = models.URLField("유튜브 URL")
+    video_id = models.CharField("YouTube Video ID", max_length=20, blank=True)
+    thumbnail_url = models.URLField("썸네일 URL", blank=True)
+    description = models.TextField("설명", blank=True)
+    is_active = models.BooleanField("노출 여부", default=True)
+    order = models.IntegerField("정렬 순서", default=0, help_text="숫자가 높을수록 먼저 노출됩니다.")
+    created_at = models.DateTimeField("등록일", auto_now_add=True)
+    updated_at = models.DateTimeField("수정일", auto_now=True)
+
+    class Meta:
+        ordering = ['-order', '-created_at']
+        verbose_name = "유튜브 영상"
+        verbose_name_plural = "유튜브 영상"
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if self.youtube_url and not self.video_id:
+            self.video_id = self.extract_video_id(self.youtube_url)
+        if self.video_id and not self.thumbnail_url:
+            self.thumbnail_url = f'https://img.youtube.com/vi/{self.video_id}/hqdefault.jpg'
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def extract_video_id(url):
+        """유튜브 URL에서 Video ID 추출"""
+        import re
+        patterns = [
+            r'(?:v=|\/v\/|youtu\.be\/|\/embed\/)([a-zA-Z0-9_-]{11})',
+            r'(?:shorts\/)([a-zA-Z0-9_-]{11})',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        return ''
+
+
 class VisitorLog(models.Model):
     """사이트 방문 로그 - 젯팩 스타일 통계를 위한 모델"""
 

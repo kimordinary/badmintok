@@ -36,4 +36,5 @@ urlpatterns = [
     path('app-banners/', views.app_banner_list, name='app_banner_list'),  # 새 앱/웹 메인 배너
     path('notices/', views.notice_list, name='notice_list'),
     path('notices/<int:notice_id>/', views.notice_detail, name='notice_detail'),
+    path('youtube-videos/', views.youtube_video_list, name='youtube_video_list'),
 ]

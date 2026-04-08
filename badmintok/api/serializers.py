@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from badmintok.models import BadmintokBanner, Banner, Notice
+from badmintok.models import BadmintokBanner, Banner, Notice, YoutubeVideo
 from community.models import Post, PostImage
 from accounts.models import User
 
@@ -197,4 +197,14 @@ class NoticeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'content', 'author', 'view_count',
             'created_at', 'updated_at', 'is_pinned'
+        ]
+
+
+class YoutubeVideoSerializer(serializers.ModelSerializer):
+    """유튜브 영상 Serializer"""
+    class Meta:
+        model = YoutubeVideo
+        fields = [
+            'id', 'title', 'youtube_url', 'video_id',
+            'thumbnail_url', 'description', 'order', 'created_at',
         ]

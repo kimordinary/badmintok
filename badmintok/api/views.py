@@ -8,12 +8,12 @@ from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from django.core.paginator import Paginator
 
-from badmintok.models import BadmintokBanner, Banner, Notice
+from badmintok.models import BadmintokBanner, Banner, Notice, YoutubeVideo
 from community.models import Post, Category
 from community.api.serializers import CategorySerializer
 from badmintok.api.serializers import (
     BannerSerializer, AppBannerSerializer, NoticeListSerializer, NoticeSerializer,
-    PostListSerializer, PostDetailSerializer
+    PostListSerializer, PostDetailSerializer, YoutubeVideoSerializer
 )
 
 
@@ -327,4 +327,27 @@ def notice_detail(request, notice_id):
     
     serializer = NoticeSerializer(notice, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def youtube_video_list(request):
+    """유튜브 영상 목록 API"""
+    page_number = request.GET.get('page', 1)
+    page_size = min(int(request.GET.get('page_size', 10) or 10), 100)
+
+    videos = YoutubeVideo.objects.filter(is_active=True)
+    paginator = Paginator(videos, page_size)
+    page_obj = paginator.get_page(page_number)
+
+    serializer = YoutubeVideoSerializer(page_obj, many=True)
+    return Response({
+        'count': paginator.count,
+        'page_size': page_size,
+        'current_page': page_obj.number,
+        'total_pages': paginator.num_pages,
+        'results': serializer.data,
+        'next': page_obj.next_page_number() if page_obj.has_next() else None,
+        'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
+    }, status=status.HTTP_200_OK)
 
