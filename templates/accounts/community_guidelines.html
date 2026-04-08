@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}커뮤니티 가이드라인 - 배드민톡{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative; margin-top: 20px;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0; max-width: 900px;">
+        <div style="margin-bottom: 24px;">
+            <h1 style="font-size: 28px; font-weight: 700; margin: 0; color: var(--brand-800);">커뮤니티 가이드라인</h1>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px;">
+            <div style="font-size: 16px; line-height: 1.8; color: #1e293b;">
+                <p style="margin: 0 0 32px 0; font-size: 14px; color: var(--muted);">시행일: 2026년 4월 8일</p>
+
+                <!-- 1. 기본 원칙 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제1조 (기본 원칙)</h2>
+                <p style="margin: 0 0 24px 0;">
+                    배드민톡은 배드민턴을 즐기는 모든 사람이 안전하고 즐겁게 소통하는 공간입니다.
+                    모든 이용자는 서로를 존중하며, 건전한 커뮤니티 문화를 함께 만들어 나갑니다.
+                </p>
+
+                <!-- 2. 허용되는 활동 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제2조 (허용되는 활동)</h2>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 8px;">배드민턴 관련 정보 공유 (라켓, 셔틀콕, 체육관, 기술 등)</li>
+                    <li style="margin-bottom: 8px;">번개/모임/동호회 모집 및 참여</li>
+                    <li style="margin-bottom: 8px;">대회 정보 공유 및 후기 작성</li>
+                    <li style="margin-bottom: 8px;">운동 사진/영상 공유</li>
+                    <li style="margin-bottom: 8px;">배드민턴 관련 질문과 답변</li>
+                    <li>건전한 의견 교환 및 토론</li>
+                </ul>
+
+                <!-- 3. 금지 행위 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제3조 (금지 행위)</h2>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">1. 폭력적·공격적 콘텐츠</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">욕설, 비속어, 인신공격</li>
+                    <li style="margin-bottom: 6px;">특정 개인 또는 단체에 대한 비방, 명예훼손</li>
+                    <li style="margin-bottom: 6px;">위협, 협박, 스토킹 행위</li>
+                    <li>타인의 실명, 연락처, 주소 등 개인정보 무단 공개</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">2. 차별 및 혐오</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">성별, 나이, 지역, 인종, 종교, 장애, 성적 지향에 대한 차별적 표현</li>
+                    <li>급수(실력)를 이유로 한 조롱 또는 비하</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">3. 음란물 및 부적절한 콘텐츠</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">성적 콘텐츠, 음란물, 선정적 이미지</li>
+                    <li>과도한 폭력적 이미지 또는 영상</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">4. 상업적 활동</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">사전 승인 없는 광고, 홍보, 스팸 게시</li>
+                    <li style="margin-bottom: 6px;">물품 판매 목적의 반복 게시</li>
+                    <li style="margin-bottom: 6px;">타 서비스/앱 홍보 및 회원 유인</li>
+                    <li>금전 거래 유도 (장비 거래는 지정된 게시판에서만 허용)</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">5. 사기 및 허위 정보</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">허위 대회 정보, 가짜 모임 모집</li>
+                    <li style="margin-bottom: 6px;">타인 사칭 (선수, 코치, 관계자 등)</li>
+                    <li style="margin-bottom: 6px;">허위 급수 기재를 통한 부정 참가</li>
+                    <li>피싱, 악성 링크 공유</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">6. 서비스 악용</h3>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">동일 내용 반복 게시 (도배)</li>
+                    <li style="margin-bottom: 6px;">번개/일정 반복 무단 불참</li>
+                    <li style="margin-bottom: 6px;">허위 신고 또는 신고 기능 남용</li>
+                    <li>여러 계정을 이용한 조작 행위</li>
+                </ul>
+
+                <!-- 4. 게시물 작성 규칙 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제4조 (게시물 작성 규칙)</h2>
+                <div style="overflow-x: auto; margin: 0 0 24px 0;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+                        <thead>
+                            <tr style="background: var(--surface-2);">
+                                <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600; width: 120px;">항목</th>
+                                <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">기준</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">제목</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">내용을 파악할 수 있는 명확한 제목 작성</td></tr>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">본문</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">주제와 관련 있는 내용만 작성</td></tr>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">이미지</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">타인이 포함된 사진은 본인 동의 후 게시</td></tr>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">게시판</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">해당 게시판의 목적에 맞는 글만 작성</td></tr>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">중복</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">동일 내용을 여러 게시판에 반복 게시 금지</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 5. 모임/번개 운영 규칙 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제5조 (모임/번개 운영 규칙)</h2>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 8px;">모임 정보(장소, 시간, 참가비, 급수 제한)를 정확하게 기재</li>
+                    <li style="margin-bottom: 8px;">참가 확정 후 무단 불참 시 제재 대상</li>
+                    <li style="margin-bottom: 8px;">참가비는 운동 관련 비용(체육관 대관료, 셔틀콕 등)에만 사용</li>
+                    <li>모임장은 참가자 안전에 유의하며, 부적절한 행위 발생 시 즉시 조치</li>
+                </ul>
+
+                <!-- 6. 신고 및 처리 절차 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제6조 (신고 및 처리 절차)</h2>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">1. 신고 방법</h3>
+                <ul style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">게시글/댓글의 <strong>신고</strong> 버튼을 통해 접수</li>
+                    <li style="margin-bottom: 6px;">사용자 프로필에서 <strong>사용자 차단/신고</strong> 가능</li>
+                    <li>앱 내 <strong>문의하기</strong>를 통해 상세 신고 가능</li>
+                </ul>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">2. 처리 절차</h3>
+                <ol style="margin: 0 0 16px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 6px;">신고 접수 → 운영팀 검토 (영업일 기준 1~3일 내)</li>
+                    <li style="margin-bottom: 6px;">가이드라인 위반 확인 시 해당 콘텐츠 삭제 또는 비공개 처리</li>
+                    <li style="margin-bottom: 6px;">위반 정도에 따라 아래 제재 적용</li>
+                    <li>처리 결과 알림 발송</li>
+                </ol>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; color: #334155;">3. 제재 기준</h3>
+                <div style="overflow-x: auto; margin: 0 0 16px 0;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+                        <thead>
+                            <tr style="background: var(--surface-2);">
+                                <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600; width: 80px;">단계</th>
+                                <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">조건</th>
+                                <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">제재 내용</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">1단계</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">경미한 위반 (첫 위반)</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">경고 + 해당 콘텐츠 삭제</td></tr>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">2단계</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">반복 위반 (2~3회)</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">7일 게시 제한</td></tr>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">3단계</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">심각한 위반 또는 4회 이상</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">30일 서비스 이용 정지</td></tr>
+                            <tr><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">4단계</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">중대한 위반 또는 개선 의지 없음</td><td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">영구 이용 정지</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px 20px; margin: 16px 0 24px 0;">
+                    <p style="margin: 0 0 8px 0; font-weight: 600; color: #dc2626;">즉시 영구 정지 대상</p>
+                    <ul style="margin: 0; padding-left: 20px; color: #991b1b;">
+                        <li style="margin-bottom: 4px;">불법 콘텐츠 게시</li>
+                        <li style="margin-bottom: 4px;">타인 개인정보 유출</li>
+                        <li style="margin-bottom: 4px;">사기/금전 피해 유발</li>
+                        <li>심각한 위협/협박</li>
+                    </ul>
+                </div>
+
+                <!-- 7. 이의 제기 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제7조 (이의 제기)</h2>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 8px;">제재에 대해 이의가 있는 경우 <strong>문의하기</strong>를 통해 접수</li>
+                    <li style="margin-bottom: 8px;">이의 제기 접수 후 영업일 기준 5일 내 재검토 결과 안내</li>
+                    <li>재검토 결과에 따라 제재가 유지, 변경 또는 해제될 수 있음</li>
+                </ul>
+
+                <!-- 8. 가이드라인 변경 -->
+                <h2 style="font-size: 22px; font-weight: 700; margin: 32px 0 16px 0; color: var(--brand-800);">제8조 (가이드라인 변경)</h2>
+                <ul style="margin: 0 0 24px 0; padding-left: 24px; line-height: 1.8;">
+                    <li style="margin-bottom: 8px;">본 가이드라인은 서비스 운영 상황에 따라 변경될 수 있습니다.</li>
+                    <li style="margin-bottom: 8px;">변경 시 앱 내 공지사항을 통해 사전 안내합니다.</li>
+                    <li>변경된 가이드라인은 공지 후 즉시 적용됩니다.</li>
+                </ul>
+
+                <div style="background: var(--surface-2); padding: 20px; border-radius: 8px; margin: 32px 0 0 0; text-align: center;">
+                    <p style="margin: 0 0 4px 0; font-weight: 600; color: var(--brand-800);">배드민톡 운영팀</p>
+                    <p style="margin: 0; font-size: 14px; color: var(--muted);">문의: <a href="mailto:kimyukim99@naver.com" style="color: var(--brand);">kimyukim99@naver.com</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
