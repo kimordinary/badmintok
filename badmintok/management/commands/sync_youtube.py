@@ -13,5 +13,5 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f"오류: {result['error']}"))
         else:
             self.stdout.write(self.style.SUCCESS(
-                f"완료: {result['created']}개 추가, {result['updated']}개 업데이트"
+                f"완료: {result['created']}개 추가, {result['updated']}개 업데이트, {result.get('skipped', 0)}개 숏폼 제외"
             ))

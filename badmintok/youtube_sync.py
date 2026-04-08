@@ -18,6 +18,7 @@ def sync_youtube_playlist():
 
     created_count = 0
     updated_count = 0
+    skipped_count = 0
     next_page_token = None
 
     while True:
@@ -73,10 +74,25 @@ def sync_youtube_playlist():
                 for v in detail_response.json().get("items", []):
                     video_details[v["id"]] = v
 
-        # 4. DB에 저장/업데이트
+        # 4. DB에 저장/업데이트 (60초 이하 숏폼 필터링)
         for idx, vid in enumerate(video_ids):
             snippet = video_snippets.get(vid, {})
             detail = video_details.get(vid, {})
+
+            # duration 필터링: 60초 이하면 숏폼으로 판단
+            duration_str = detail.get("contentDetails", {}).get("duration", "")
+            if duration_str:
+                try:
+                    duration_seconds = isodate.parse_duration(duration_str).total_seconds()
+                except Exception:
+                    duration_seconds = 0
+
+                if duration_seconds <= 60:
+                    # 기존 DB에 있으면 비활성화
+                    YoutubeVideo.objects.filter(video_id=vid).update(is_active=False)
+                    skipped_count += 1
+                    logger.info(f"숏폼 제외: {snippet.get('title', '')} ({int(duration_seconds)}초)")
+                    continue
 
             title = snippet.get("title", "")
             description = snippet.get("description", "")
@@ -115,6 +131,6 @@ def sync_youtube_playlist():
         if not next_page_token:
             break
 
-    result = {"created": created_count, "updated": updated_count, "error": None}
-    logger.info(f"YouTube 동기화 완료: {created_count}개 추가, {updated_count}개 업데이트")
+    result = {"created": created_count, "updated": updated_count, "skipped": skipped_count, "error": None}
+    logger.info(f"YouTube 동기화 완료: {created_count}개 추가, {updated_count}개 업데이트, {skipped_count}개 숏폼 제외")
     return result
