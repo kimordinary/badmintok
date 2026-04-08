@@ -553,6 +553,11 @@ UNFOLD = {
                         "icon": "smartphone",
                         "link": reverse_lazy("admin:badmintok_banner_changelist"),
                     },
+                    {
+                        "title": "유튜브 영상",
+                        "icon": "play_circle",
+                        "link": reverse_lazy("admin:badmintok_youtubevideo_changelist"),
+                    },
                 ],
             },
             {
