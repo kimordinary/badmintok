@@ -64,7 +64,7 @@ def sync_youtube_playlist():
             detail_response = requests.get(
                 "https://www.googleapis.com/youtube/v3/videos",
                 params={
-                    "part": "contentDetails,snippet",
+                    "part": "contentDetails,snippet,statistics",
                     "id": ",".join(video_ids),
                     "key": api_key,
                 },
@@ -109,6 +109,16 @@ def sync_youtube_playlist():
             # position을 order로 사용 (플레이리스트 순서)
             position = snippet.get("position", idx)
 
+            # published_at 파싱
+            published_at_str = snippet.get("publishedAt", "")
+            published_at = None
+            if published_at_str:
+                from django.utils.dateparse import parse_datetime
+                published_at = parse_datetime(published_at_str)
+
+            # view_count
+            yt_view_count = int(detail.get("statistics", {}).get("viewCount", 0))
+
             obj, created = YoutubeVideo.objects.update_or_create(
                 video_id=vid,
                 defaults={
@@ -116,6 +126,8 @@ def sync_youtube_playlist():
                     "youtube_url": youtube_url,
                     "thumbnail_url": thumbnail_url,
                     "description": description[:500] if description else "",
+                    "published_at": published_at,
+                    "view_count": yt_view_count,
                     "order": 1000 - position,  # 높을수록 먼저 표시
                     "is_active": True,
                 },

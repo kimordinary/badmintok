@@ -133,6 +133,8 @@ class YoutubeVideo(models.Model):
     video_id = models.CharField("YouTube Video ID", max_length=20, blank=True)
     thumbnail_url = models.URLField("썸네일 URL", blank=True)
     description = models.TextField("설명", blank=True)
+    published_at = models.DateTimeField("유튜브 업로드일", null=True, blank=True)
+    view_count = models.PositiveIntegerField("조회수", default=0)
     is_active = models.BooleanField("노출 여부", default=True)
     order = models.IntegerField("정렬 순서", default=0, help_text="숫자가 높을수록 먼저 노출됩니다.")
     created_at = models.DateTimeField("등록일", auto_now_add=True)

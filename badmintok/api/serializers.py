@@ -206,5 +206,6 @@ class YoutubeVideoSerializer(serializers.ModelSerializer):
         model = YoutubeVideo
         fields = [
             'id', 'title', 'youtube_url', 'video_id',
-            'thumbnail_url', 'description', 'order', 'created_at',
+            'thumbnail_url', 'description', 'published_at',
+            'view_count', 'order', 'created_at',
         ]
