@@ -56,7 +56,11 @@ jobs:
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
-          
+
+          # YouTube 설정
+          YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_PLAYLIST_ID=${{ secrets.YOUTUBE_PLAYLIST_ID }}
+
           # Nginx 설정
           NGINX_HTTP_PORT=${NGINX_HTTP_PORT:-80}
           NGINX_HTTPS_PORT=${NGINX_HTTPS_PORT:-443}

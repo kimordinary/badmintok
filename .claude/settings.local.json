@@ -67,7 +67,8 @@
       "Bash(pip show:*)",
       "Bash(git -C /Users/ordinary/Documents/Documents/project/badmintok status --short)",
       "Bash(git -C /Users/ordinary/Documents/Documents/project/badmintok log --oneline -5)",
-      "Bash(git -C /Users/ordinary/Documents/Documents/project/badmintok show --stat 14be818)"
+      "Bash(git -C /Users/ordinary/Documents/Documents/project/badmintok show --stat 14be818)",
+      "Bash(gh auth:*)"
     ],
     "deny": [],
     "ask": []
