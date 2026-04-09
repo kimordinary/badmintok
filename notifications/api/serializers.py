@@ -36,6 +36,23 @@ class NotificationSerializer(serializers.ModelSerializer):
                 "band_id": obj.related_band_post.band_id,
                 "post_id": obj.related_band_post.id,
             }
+        if obj.related_band_schedule:
+            return {
+                "type": "band_schedule",
+                "band_id": obj.related_band_schedule.band_id,
+                "schedule_id": obj.related_band_schedule.id,
+            }
+        if obj.related_band:
+            return {
+                "type": "band",
+                "band_id": obj.related_band.id,
+            }
+        if obj.related_community_post:
+            return {
+                "type": "community_post",
+                "post_id": obj.related_community_post.id,
+                "slug": obj.related_community_post.slug,
+            }
         if obj.related_notice:
             return {
                 "type": "notice",

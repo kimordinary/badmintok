@@ -11,6 +11,10 @@ class Notification(models.Model):
         REPLY = "reply", _("답글")
         NOTICE = "notice", _("공지사항")
         BAND = "band", _("모임")
+        SCHEDULE = "schedule", _("일정")
+        APPLICATION = "application", _("참가신청")
+        MEMBERSHIP = "membership", _("가입")
+        LIKE = "like", _("좋아요")
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -42,6 +46,30 @@ class Notification(models.Model):
         blank=True,
         related_name="notifications",
         verbose_name=_("관련 공지사항"),
+    )
+    related_band_schedule = models.ForeignKey(
+        "band.BandSchedule",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+        verbose_name=_("관련 밴드 일정"),
+    )
+    related_band = models.ForeignKey(
+        "band.Band",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+        verbose_name=_("관련 밴드"),
+    )
+    related_community_post = models.ForeignKey(
+        "community.Post",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+        verbose_name=_("관련 커뮤니티 게시글"),
     )
 
     # 알림을 발생시킨 사용자 (댓글/답글 작성자)
