@@ -1657,6 +1657,11 @@ def terms_of_service(request):
     return render(request, "accounts/terms_of_service.html")
 
 
+def support(request):
+    """고객 지원 (비회원도 접근 가능)"""
+    return render(request, "accounts/support.html")
+
+
 def community_guidelines(request):
     """커뮤니티 가이드라인 (비회원도 접근 가능)"""
     return render(request, "accounts/community_guidelines.html")

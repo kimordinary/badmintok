@@ -30,7 +30,7 @@ from band.feeds import BandFeed, BandPostFeed
 from band import views as band_views
 from contests.feeds import ContestFeed
 from .feeds import AllPostsFeed
-from accounts.views import privacy_policy, terms_of_service
+from accounts.views import privacy_policy, terms_of_service, support
 
 urlpatterns = [
     # Admin에서 사용하는 에디터 이미지 업로드 엔드포인트 (admin 기본 URL보다 먼저 선언)
@@ -60,6 +60,7 @@ urlpatterns = [
     # SEO를 위한 상위 레벨 URL
     path("privacy/", privacy_policy, name="privacy"),
     path("terms/", terms_of_service, name="terms"),
+    path("support/", support, name="support"),
     path("notices/", views.notice_list, name="notice_list"),
     path("notices/<int:notice_id>/", views.notice_detail, name="notice_detail"),
     path("accounts/", include("accounts.urls", namespace="accounts")),
