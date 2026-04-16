@@ -241,6 +241,7 @@ def contest_create(request):
         {
             'id': contest.id,
             'slug': contest.slug,
+            'is_test': contest.is_test,
             'url': request.build_absolute_uri(f'/badminton-tournament/{contest.slug}/'),
         },
         status=status.HTTP_201_CREATED,

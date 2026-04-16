@@ -158,6 +158,7 @@ class ContestDetailSerializer(serializers.ModelSerializer):
             'd_day', 'd_day_display',
             'view_count', 'like_count', 'is_liked',
             'schedules', 'images', 'same_week_contests',
+            'is_test',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
