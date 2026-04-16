@@ -357,6 +357,10 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ],
+    # Throttle 설정
+    'DEFAULT_THROTTLE_RATES': {
+        'contest_write': '100/hour',
+    },
     # 예외 핸들러
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
     # 날짜/시간 형식

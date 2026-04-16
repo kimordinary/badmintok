@@ -73,6 +73,7 @@ class Contest(models.Model):
         GYEONGBUK = "경북", "경북"
         GYEONGNAM = "경남", "경남"
         JEJU = "제주", "제주"
+        ETC = "기타", "기타"
 
     category = models.ForeignKey(
         ContestCategory,
@@ -88,7 +89,7 @@ class Contest(models.Model):
         help_text="승급 대회인 경우 체크하세요. 비승급 대회는 체크하지 않습니다.",
     )
     title = models.CharField("대회명", max_length=200)
-    slug = models.SlugField("슬러그", unique=True, max_length=37, allow_unicode=True, help_text="URL에서 사용할 고유 값입니다.")
+    slug = models.SlugField("슬러그", unique=True, max_length=100, allow_unicode=True, help_text="URL에서 사용할 고유 값입니다.")
     schedule_start = models.DateField("대회 시작일")
     schedule_end = models.DateField("대회 종료일", blank=True, null=True)
     region = models.CharField("지역", max_length=20, choices=Region.choices, default=Region.SEOUL)
@@ -119,6 +120,11 @@ class Contest(models.Model):
     raffle_prize = models.CharField("경품", max_length=200, blank=True, help_text="예: 라켓 추첨, 가방 추첨 등")
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="liked_contests", blank=True, verbose_name="좋아요")
     view_count = models.PositiveIntegerField("조회수", default=0)
+    is_test = models.BooleanField(
+        "테스트 데이터",
+        default=False,
+        help_text="자동 업로더 테스트용 데이터. 관리자 목록에서 일괄 필터·삭제에 사용합니다.",
+    )
     created_at = models.DateTimeField("등록일", auto_now_add=True)
     updated_at = models.DateTimeField("수정일", auto_now=True)
 
@@ -126,6 +132,10 @@ class Contest(models.Model):
         ordering = ["schedule_start", "-created_at"]
         verbose_name = "전국 배드민턴 대회"
         verbose_name_plural = "전국 배드민턴 대회"
+        indexes = [
+            models.Index(fields=["title", "schedule_start"], name="contest_title_start_idx"),
+            models.Index(fields=["is_test"], name="contest_is_test_idx"),
+        ]
 
     def __str__(self):
         return self.title

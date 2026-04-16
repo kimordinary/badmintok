@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .forms import UserLoginForm
 from .views import (
@@ -99,6 +99,8 @@ urlpatterns = [
     path("api/change-password/", ChangePasswordAPIView.as_view(), name="change_password_api"),
     # 계정 탈퇴 REST API (앱용 - 비밀번호 확인 포함)
     path("api/withdraw/", WithdrawAPIView.as_view(), name="withdraw_api"),
+    # JWT 토큰 발급 (이메일 + 비밀번호)
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain"),
     # JWT 토큰 갱신
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),

@@ -136,12 +136,14 @@ class ContestAdmin(ModelAdmin):
         "display_status",
         "display_d_day",
         "display_completion",
+        "is_test",
         "created_at",
     )
     list_filter = (
         ("category", RelatedDropdownFilter),
         ("region", ChoicesDropdownFilter),
         CompletionFilter,
+        "is_test",
     )
     search_fields = ("title", "region_detail", "sponsor__name")
     prepopulated_fields = {"slug": ("title",)}
@@ -154,6 +156,7 @@ class ContestAdmin(ModelAdmin):
         ("참가 대상", {"fields": ("participant_events", "participant_ages", "participant_grades")}),
         ("입상상품", {"fields": ("participation_prize", "award_reward_text")}),
         ("장소 및 기타", {"fields": ("region", "region_detail", "competition_type", "sponsor")}),
+        ("관리", {"fields": ("is_test",), "classes": ("collapse",)}),
     )
     actions = ["delete_selected"]
 

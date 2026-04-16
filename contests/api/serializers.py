@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Prefetch
+from django.utils.text import slugify
 from contests.models import Contest, ContestCategory, ContestPrize, ContestSchedule, ContestImage, Sponsor
 from accounts.models import User
 
@@ -212,3 +213,97 @@ class ContestDetailSerializer(serializers.ModelSerializer):
             Prefetch('images', queryset=ContestImage.objects.order_by('order'))
         )[:10]
         return ContestListSerializer(same_week, many=True, context=self.context).data
+
+
+class ContestWriteSerializer(serializers.ModelSerializer):
+    """대회 생성/수정 시리얼라이저 (업로더 API 전용)
+
+    - category: 이름(string) 입력 시 매칭, 없으면 null 저장
+    - sponsor: 이름(string) 입력 시 get_or_create
+    - region: 17개 시도 외 값은 '기타'로 자동 매핑
+    """
+    category = serializers.CharField(required=False, allow_null=True, allow_blank=True, write_only=True)
+    sponsor = serializers.CharField(required=False, allow_null=True, allow_blank=True, write_only=True)
+    slug = serializers.SlugField(required=False, allow_unicode=True, max_length=100)
+
+    class Meta:
+        model = Contest
+        fields = [
+            'id', 'slug', 'title', 'category', 'is_qualifying',
+            'schedule_start', 'schedule_end',
+            'region', 'region_detail',
+            'registration_start', 'registration_end',
+            'entry_fee', 'competition_type', 'shuttlecock',
+            'sponsor', 'registration_name', 'registration_link',
+            'description',
+            'participant_target', 'participant_events', 'participant_ages', 'participant_grades',
+            'award_reward_text', 'participation_prize', 'raffle_prize',
+            'is_test',
+        ]
+        read_only_fields = ['id']
+
+    def validate_region(self, value):
+        valid = {c.value for c in Contest.Region}
+        if value not in valid:
+            return Contest.Region.ETC.value
+        return value
+
+    def _resolve_category(self, name):
+        if not name:
+            return None
+        try:
+            return ContestCategory.objects.get(name=name)
+        except ContestCategory.DoesNotExist:
+            return None
+
+    def _resolve_sponsor(self, name):
+        if not name:
+            return None
+        sponsor, _ = Sponsor.objects.get_or_create(name=name.strip())
+        return sponsor
+
+    def create(self, validated_data):
+        category_name = validated_data.pop('category', None)
+        sponsor_name = validated_data.pop('sponsor', None)
+        validated_data['category'] = self._resolve_category(category_name)
+        validated_data['sponsor'] = self._resolve_sponsor(sponsor_name)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if 'category' in validated_data:
+            instance.category = self._resolve_category(validated_data.pop('category'))
+        if 'sponsor' in validated_data:
+            instance.sponsor = self._resolve_sponsor(validated_data.pop('sponsor'))
+        return super().update(instance, validated_data)
+
+
+class ContestImageWriteSerializer(serializers.ModelSerializer):
+    """대회 이미지 업로드 시리얼라이저"""
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ContestImage
+        fields = ['id', 'image', 'image_url', 'order']
+        extra_kwargs = {'image': {'write_only': True}}
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image and hasattr(obj.image, 'url'):
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+
+
+class ContestScheduleWriteSerializer(serializers.ModelSerializer):
+    """대회 일정 생성 시리얼라이저"""
+    class Meta:
+        model = ContestSchedule
+        fields = ['id', 'date', 'events', 'ages', 'description']
+
+
+class ContestPrizeWriteSerializer(serializers.ModelSerializer):
+    """대회 조별 입상상품 시리얼라이저"""
+    class Meta:
+        model = ContestPrize
+        fields = ['id', 'division', 'first_prize', 'second_prize', 'third_prize']

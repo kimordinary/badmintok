@@ -1,17 +1,26 @@
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes, throttle_classes, parser_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.throttling import UserRateThrottle
 from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
 from datetime import date, timedelta
 
-from contests.models import Contest, ContestCategory, ContestSchedule, ContestImage
+from contests.models import Contest, ContestCategory, ContestSchedule, ContestImage, ContestPrize
 from .serializers import (
     ContestListSerializer, ContestDetailSerializer,
-    ContestCategorySerializer
+    ContestCategorySerializer,
+    ContestWriteSerializer, ContestImageWriteSerializer,
+    ContestScheduleWriteSerializer, ContestPrizeWriteSerializer,
 )
+
+
+class ContestWriteThrottle(UserRateThrottle):
+    """업로더 전용 throttle (시간당 100 요청)"""
+    scope = 'contest_write'
 
 
 @api_view(['GET'])
@@ -212,3 +221,101 @@ def hot_contests(request):
     return Response({
         'results': serializer.data
     }, status=status.HTTP_200_OK)
+
+
+# ======================================================================
+# 업로더 API (IsAdminUser + throttle)
+# ======================================================================
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+@throttle_classes([ContestWriteThrottle])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
+def contest_create(request):
+    """대회 생성"""
+    serializer = ContestWriteSerializer(data=request.data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    contest = serializer.save()
+    return Response(
+        {
+            'id': contest.id,
+            'slug': contest.slug,
+            'url': request.build_absolute_uri(f'/badminton-tournament/{contest.slug}/'),
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([IsAdminUser])
+@throttle_classes([ContestWriteThrottle])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
+def contest_update(request, slug):
+    """대회 수정 (보완 병합)"""
+    contest = get_object_or_404(Contest, slug=slug)
+    partial = request.method == 'PATCH'
+    serializer = ContestWriteSerializer(contest, data=request.data, partial=partial, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    contest = serializer.save()
+    return Response(
+        {'id': contest.id, 'slug': contest.slug},
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+@throttle_classes([ContestWriteThrottle])
+@parser_classes([MultiPartParser, FormParser])
+def contest_image_upload(request, slug):
+    """대회 이미지 1장 업로드 (여러 번 호출하여 다중 업로드)"""
+    contest = get_object_or_404(Contest, slug=slug)
+    data = request.data.copy()
+    serializer = ContestImageWriteSerializer(data=data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    image = serializer.save(contest=contest)
+    return Response(
+        ContestImageWriteSerializer(image, context={'request': request}).data,
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+@throttle_classes([ContestWriteThrottle])
+@parser_classes([MultiPartParser, FormParser])
+def contest_pdf_upload(request, slug):
+    """대회 요강 PDF 업로드"""
+    contest = get_object_or_404(Contest, slug=slug)
+    pdf_file = request.data.get('pdf_file')
+    if not pdf_file:
+        return Response({'error': 'pdf_file 필드가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    contest.pdf_file = pdf_file
+    contest.save(update_fields=['pdf_file', 'updated_at'])
+    pdf_url = request.build_absolute_uri(contest.pdf_file.url) if contest.pdf_file else None
+    return Response({'slug': contest.slug, 'pdf_url': pdf_url}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+@throttle_classes([ContestWriteThrottle])
+def contest_schedule_create(request, slug):
+    """대회 경기 일정 생성 (1건)"""
+    contest = get_object_or_404(Contest, slug=slug)
+    serializer = ContestScheduleWriteSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    schedule = serializer.save(contest=contest)
+    return Response(ContestScheduleWriteSerializer(schedule).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+@throttle_classes([ContestWriteThrottle])
+def contest_prize_create(request, slug):
+    """대회 조별 입상상품 생성 (1건)"""
+    contest = get_object_or_404(Contest, slug=slug)
+    serializer = ContestPrizeWriteSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    prize = serializer.save(contest=contest)
+    return Response(ContestPrizeWriteSerializer(prize).data, status=status.HTTP_201_CREATED)
