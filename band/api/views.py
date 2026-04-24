@@ -27,6 +27,7 @@ from .serializers import (
     BandVoteSerializer, BandVoteOptionSerializer,
     BandScheduleCreateSerializer, BandScheduleApplicationSerializer,
 )
+from accounts.permissions import is_site_admin
 
 
 @api_view(['GET'])
@@ -418,11 +419,11 @@ def band_update(request, band_id):
     """밴드 수정 API"""
     band = get_object_or_404(Band, id=band_id)
 
-    # owner/admin 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인
     member = BandMember.objects.filter(
         band=band, user=request.user, role__in=['owner', 'admin'], status='active'
     ).first()
-    if not member:
+    if not member and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = BandUpdateSerializer(band, data=request.data, partial=True)
@@ -526,11 +527,11 @@ def band_member_approve(request, band_id, member_id):
     """멤버 승인 API"""
     band = get_object_or_404(Band, id=band_id)
 
-    # owner/admin 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인
     manager = BandMember.objects.filter(
         band=band, user=request.user, role__in=['owner', 'admin'], status='active'
     ).first()
-    if not manager:
+    if not manager and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     member = get_object_or_404(BandMember, id=member_id, band=band, status='pending')
@@ -550,7 +551,7 @@ def band_member_reject(request, band_id, member_id):
     manager = BandMember.objects.filter(
         band=band, user=request.user, role__in=['owner', 'admin'], status='active'
     ).first()
-    if not manager:
+    if not manager and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     member = get_object_or_404(BandMember, id=member_id, band=band, status='pending')
@@ -566,10 +567,11 @@ def band_member_kick(request, band_id, member_id):
     """멤버 추방 API"""
     band = get_object_or_404(Band, id=band_id)
 
+    site_admin = is_site_admin(request.user)
     manager = BandMember.objects.filter(
         band=band, user=request.user, role__in=['owner', 'admin'], status='active'
     ).first()
-    if not manager:
+    if not manager and not site_admin:
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     member = get_object_or_404(BandMember, id=member_id, band=band, status='active')
@@ -578,8 +580,8 @@ def band_member_kick(request, band_id, member_id):
     if member.role == 'owner':
         return Response({'error': '방장은 추방할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # admin은 owner만 추방 가능
-    if member.role == 'admin' and manager.role != 'owner':
+    # admin은 owner만 추방 가능 (사이트 관리자는 우회)
+    if member.role == 'admin' and not site_admin and (not manager or manager.role != 'owner'):
         return Response({'error': '관리자는 방장만 추방할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     member.status = 'banned'
@@ -603,17 +605,18 @@ def band_post_create(request, band_id):
 
     post_type = serializer.validated_data.get('post_type', 'general')
 
-    # 멤버 확인 (FAQ/질문 게시글은 비멤버도 작성 가능)
+    # 멤버 또는 사이트 관리자 확인 (FAQ/질문 게시글은 비멤버도 작성 가능)
+    site_admin = is_site_admin(request.user)
     member = BandMember.objects.filter(
         band=band, user=request.user, status='active'
     ).first()
-    if not member and post_type != 'question':
+    if not member and not site_admin and post_type != 'question':
         return Response({'error': '멤버만 게시글을 작성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
-    # is_pinned, is_notice는 owner/admin만 설정 가능
+    # is_pinned, is_notice는 owner/admin 또는 사이트 관리자만 설정 가능
     is_pinned = serializer.validated_data.get('is_pinned', False)
     is_notice = serializer.validated_data.get('is_notice', False)
-    if (is_pinned or is_notice) and (not member or member.role not in ['owner', 'admin']):
+    if (is_pinned or is_notice) and not site_admin and (not member or member.role not in ['owner', 'admin']):
         return Response(
             {'error': '고정/공지는 방장 또는 관리자만 설정할 수 있습니다.'},
             status=status.HTTP_403_FORBIDDEN
@@ -644,7 +647,7 @@ def band_post_update(request, band_id, post_id):
     """게시글 수정 API"""
     post = get_object_or_404(BandPost, id=post_id, band_id=band_id)
 
-    if post.author != request.user:
+    if post.author != request.user and not is_site_admin(request.user):
         return Response({'error': '작성자만 수정할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = BandPostUpdateSerializer(data=request.data, partial=True)
@@ -677,8 +680,8 @@ def band_post_delete(request, band_id, post_id):
     """게시글 삭제 API"""
     post = get_object_or_404(BandPost, id=post_id, band_id=band_id)
 
-    # 작성자 또는 owner/admin만 삭제 가능
-    if post.author != request.user:
+    # 작성자 또는 owner/admin, 또는 사이트 관리자만 삭제 가능
+    if post.author != request.user and not is_site_admin(request.user):
         is_manager = BandMember.objects.filter(
             band_id=band_id, user=request.user,
             role__in=['owner', 'admin'], status='active'
@@ -723,12 +726,12 @@ def band_post_answer(request, band_id, post_id):
     if post.post_type != 'question':
         return Response({'error': 'FAQ 게시글만 답변할 수 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # owner/admin만 답변 가능
+    # owner/admin 또는 사이트 관리자만 답변 가능
     is_manager = BandMember.objects.filter(
         band_id=band_id, user=request.user,
         role__in=['owner', 'admin'], status='active'
     ).exists()
-    if not is_manager:
+    if not is_manager and not is_site_admin(request.user):
         return Response({'error': '관리자만 답변할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     content = request.data.get('content', '').strip()
@@ -771,12 +774,12 @@ def band_comment_create(request, band_id, post_id):
     band = get_object_or_404(Band, id=band_id)
     post = get_object_or_404(BandPost, id=post_id, band=band)
 
-    # 멤버 확인 (FAQ/질문 게시글은 비멤버도 댓글 작성 가능)
+    # 멤버 또는 사이트 관리자 확인 (FAQ/질문 게시글은 비멤버도 댓글 작성 가능)
     if post.post_type != 'question':
         is_member = BandMember.objects.filter(
             band=band, user=request.user, status='active'
         ).exists()
-        if not is_member:
+        if not is_member and not is_site_admin(request.user):
             return Response({'error': '멤버만 댓글을 작성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = BandCommentCreateSerializer(data=request.data)
@@ -810,7 +813,7 @@ def band_comment_update(request, comment_id):
     """댓글 수정 API"""
     comment = get_object_or_404(BandComment, id=comment_id)
 
-    if comment.author != request.user:
+    if comment.author != request.user and not is_site_admin(request.user):
         return Response({'error': '작성자만 수정할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     content = request.data.get('content')
@@ -832,17 +835,18 @@ def band_comment_delete(request, comment_id):
     comment = get_object_or_404(BandComment, id=comment_id)
     post = comment.post
 
-    # FAQ(질문) 게시글 댓글은 모임장(owner)만 삭제 가능
+    # FAQ(질문) 게시글 댓글은 모임장(owner) 또는 사이트 관리자만 삭제 가능
+    site_admin = is_site_admin(request.user)
     if post.post_type == 'question':
         is_owner = BandMember.objects.filter(
             band=post.band, user=request.user,
             role='owner', status='active'
         ).exists()
-        if not is_owner:
+        if not is_owner and not site_admin:
             return Response({'error': 'FAQ 답변은 모임장만 삭제할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
     else:
-        # 일반 게시글: 작성자 또는 owner/admin만 삭제 가능
-        if comment.author != request.user:
+        # 일반 게시글: 작성자 또는 owner/admin, 또는 사이트 관리자만 삭제 가능
+        if comment.author != request.user and not site_admin:
             is_manager = BandMember.objects.filter(
                 band=post.band, user=request.user,
                 role__in=['owner', 'admin'], status='active'
@@ -868,11 +872,11 @@ def band_vote_create(request, band_id):
     """투표 게시글 생성 API"""
     band = get_object_or_404(Band, id=band_id)
 
-    # owner/admin 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인
     member = BandMember.objects.filter(
         band=band, user=request.user, role__in=['owner', 'admin'], status='active'
     ).first()
-    if not member:
+    if not member and not is_site_admin(request.user):
         return Response({'error': '방장 또는 관리자만 투표를 생성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     title = request.data.get('title', '')
@@ -978,11 +982,11 @@ def band_schedule_create(request, band_id):
     """일정 생성 API"""
     band = get_object_or_404(Band, id=band_id)
 
-    # owner/admin 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인
     member = BandMember.objects.filter(
         band=band, user=request.user, role__in=['owner', 'admin'], status='active'
     ).first()
-    if not member:
+    if not member and not is_site_admin(request.user):
         return Response({'error': '방장 또는 관리자만 일정을 생성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = BandScheduleCreateSerializer(data=request.data)
@@ -1088,12 +1092,12 @@ def band_schedule_toggle_close(request, band_id, schedule_id):
     """일정 마감 토글 API"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
 
-    # owner/admin 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인
     member = BandMember.objects.filter(
         band_id=band_id, user=request.user,
         role__in=['owner', 'admin'], status='active'
     ).first()
-    if not member:
+    if not member and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     schedule.is_closed = not schedule.is_closed
@@ -1113,12 +1117,12 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
     """일정 신청 승인 API"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
 
-    # owner/admin 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인
     manager = BandMember.objects.filter(
         band_id=band_id, user=request.user,
         role__in=['owner', 'admin'], status='active'
     ).first()
-    if not manager:
+    if not manager and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     application = get_object_or_404(
@@ -1148,12 +1152,12 @@ def band_schedule_application_reject(request, band_id, schedule_id, application_
     """일정 신청 거절 API"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
 
-    # owner/admin 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인
     manager = BandMember.objects.filter(
         band_id=band_id, user=request.user,
         role__in=['owner', 'admin'], status='active'
     ).first()
-    if not manager:
+    if not manager and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     application = get_object_or_404(
@@ -1202,13 +1206,13 @@ def band_schedule_update(request, band_id, schedule_id):
     """일정 수정 API"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
 
-    # 생성자 또는 owner/admin만 수정 가능
+    # 생성자 또는 owner/admin, 또는 사이트 관리자만 수정 가능
     is_creator = schedule.created_by == request.user
     is_manager = BandMember.objects.filter(
         band_id=band_id, user=request.user,
         role__in=['owner', 'admin'], status='active'
     ).exists()
-    if not is_creator and not is_manager:
+    if not is_creator and not is_manager and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = BandScheduleCreateSerializer(schedule, data=request.data, partial=True)
@@ -1228,13 +1232,13 @@ def band_schedule_delete(request, band_id, schedule_id):
     """일정 삭제 API"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
 
-    # 생성자 또는 owner/admin만 삭제 가능
+    # 생성자 또는 owner/admin, 또는 사이트 관리자만 삭제 가능
     is_creator = schedule.created_by == request.user
     is_manager = BandMember.objects.filter(
         band_id=band_id, user=request.user,
         role__in=['owner', 'admin'], status='active'
     ).exists()
-    if not is_creator and not is_manager:
+    if not is_creator and not is_manager and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     schedule.delete()

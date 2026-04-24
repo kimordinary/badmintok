@@ -72,7 +72,9 @@ class User(AbstractUser):
 
     @property
     def real_name(self):
-        """실명 반환 (웹민턴용)"""
+        """실명 반환 (웹민턴용). 최상위 관리자는 실명 대신 활동명 고정."""
+        if self.is_superuser:
+            return self.activity_name
         profile = getattr(self, "profile", None)
         if profile and profile.name:
             return profile.name

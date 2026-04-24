@@ -17,6 +17,7 @@ from .forms import (
     BandScheduleForm, BandScheduleApplicationForm
 )
 from badmintok.models import BadmintokBanner, Notice
+from accounts.permissions import is_site_admin
 
 
 def band_list(request):
@@ -701,9 +702,9 @@ def band_update(request, band_id):
     
     band = get_object_or_404(Band, id=band_id)
     
-    # 작성자 또는 모임장/관리자만 수정 가능
+    # 작성자 또는 모임장/관리자, 또는 사이트 관리자만 수정 가능
     member = band.members.filter(user=request.user, status="active").first()
-    if band.created_by != request.user and (not member or member.role not in ["owner", "admin"]):
+    if not is_site_admin(request.user) and band.created_by != request.user and (not member or member.role not in ["owner", "admin"]):
         messages.error(request, "수정 권한이 없습니다.")
         return redirect("band:detail", band_id=band.id)
     
@@ -1178,12 +1179,12 @@ def band_bookmark_toggle(request, band_id):
 
 @login_required
 def member_management(request, band_id):
-    """멤버 관리 페이지 (모임장만 접근 가능)"""
+    """멤버 관리 페이지 (모임장 또는 사이트 관리자만 접근 가능)"""
     band = get_object_or_404(Band, id=band_id)
     member = band.members.filter(user=request.user).first()
 
-    # 모임장만 접근 가능
-    if not member or member.role != "owner":
+    # 모임장 또는 사이트 관리자만 접근 가능
+    if not is_site_admin(request.user) and (not member or member.role != "owner"):
         messages.error(request, "모임장만 멤버 관리를 할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
 
@@ -1208,8 +1209,8 @@ def member_approve(request, band_id, member_id):
     band = get_object_or_404(Band, id=band_id)
     owner_member = band.members.filter(user=request.user).first()
 
-    # 모임장만 승인 가능
-    if not owner_member or owner_member.role != "owner":
+    # 모임장 또는 사이트 관리자만 승인 가능
+    if not is_site_admin(request.user) and (not owner_member or owner_member.role != "owner"):
         messages.error(request, "모임장만 가입 신청을 승인할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
 
@@ -1230,8 +1231,8 @@ def member_reject(request, band_id, member_id):
     band = get_object_or_404(Band, id=band_id)
     owner_member = band.members.filter(user=request.user).first()
 
-    # 모임장만 거부 가능
-    if not owner_member or owner_member.role != "owner":
+    # 모임장 또는 사이트 관리자만 거부 가능
+    if not is_site_admin(request.user) and (not owner_member or owner_member.role != "owner"):
         messages.error(request, "모임장만 가입 신청을 거부할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
 
@@ -1252,8 +1253,8 @@ def member_kick(request, band_id, member_id):
     band = get_object_or_404(Band, id=band_id)
     owner_member = band.members.filter(user=request.user).first()
 
-    # 모임장만 강제 탈퇴 가능
-    if not owner_member or owner_member.role != "owner":
+    # 모임장 또는 사이트 관리자만 강제 탈퇴 가능
+    if not is_site_admin(request.user) and (not owner_member or owner_member.role != "owner"):
         messages.error(request, "모임장만 멤버를 탈퇴시킬 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
 
@@ -1280,9 +1281,9 @@ def band_delete_request(request, band_id):
     
     band = get_object_or_404(Band, id=band_id)
     member = band.members.filter(user=request.user, status="active").first()
-    
-    # 관리자(owner/admin)만 삭제 신청 가능
-    if not member or member.role not in ["owner", "admin"]:
+
+    # 모임 관리자(owner/admin) 또는 사이트 관리자만 삭제 신청 가능
+    if not is_site_admin(request.user) and (not member or member.role not in ["owner", "admin"]):
         messages.error(request, "모임 삭제는 관리자만 신청할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
     
@@ -1325,9 +1326,9 @@ def post_image_upload(request, band_id):
     
     band = get_object_or_404(Band, id=band_id)
     
-    # 멤버 확인
+    # 멤버 또는 사이트 관리자 확인
     member = band.members.filter(user=request.user, status="active").first()
-    if not member:
+    if not member and not is_site_admin(request.user):
         return JsonResponse({"error": "밴드 멤버만 이미지를 업로드할 수 있습니다."}, status=403)
     
     if "image" not in request.FILES:
@@ -1362,21 +1363,22 @@ def post_create(request, band_id):
     
     band = get_object_or_404(Band, id=band_id)
     
-    # 멤버 확인
+    # 멤버 또는 사이트 관리자 확인
     member = band.members.filter(user=request.user, status="active").first()
-    if not member:
+    site_admin = is_site_admin(request.user)
+    if not member and not site_admin:
         messages.error(request, "밴드 멤버만 게시글을 작성할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
-    
+
     if request.method == "POST":
         form = BandPostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.band = band
             post.author = request.user
-            
-            # 관리자만 고정/공지 설정 가능
-            if member.role == "member":
+
+            # 모임 관리자(owner/admin) 또는 사이트 관리자만 고정/공지 설정 가능
+            if not site_admin and member and member.role == "member":
                 post.is_pinned = False
                 post.is_notice = False
             
@@ -1528,15 +1530,16 @@ def post_update(request, band_id, post_id):
     """게시글 수정"""
     band = get_object_or_404(Band, id=band_id)
     post = get_object_or_404(BandPost, id=post_id, band=band)
-    
-    # 작성자만 수정 가능
-    if post.author != request.user:
+
+    # 작성자 또는 사이트 관리자만 수정 가능
+    site_admin = is_site_admin(request.user)
+    if post.author != request.user and not site_admin:
         messages.error(request, "게시글 수정 권한이 없습니다.")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
-    
-    # 멤버 확인
+
+    # 멤버 또는 사이트 관리자 확인
     member = band.members.filter(user=request.user, status="active").first()
-    if not member:
+    if not member and not site_admin:
         messages.error(request, "밴드 멤버만 게시글을 수정할 수 있습니다.")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
     
@@ -1620,9 +1623,9 @@ def post_delete(request, band_id, post_id):
     """게시글 삭제"""
     band = get_object_or_404(Band, id=band_id)
     post = get_object_or_404(BandPost, id=post_id, band=band)
-    
-    # 작성자만 삭제 가능
-    if post.author != request.user:
+
+    # 작성자 또는 사이트 관리자만 삭제 가능
+    if post.author != request.user and not is_site_admin(request.user):
         messages.error(request, "게시글 삭제 권한이 없습니다.")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
     
@@ -1662,20 +1665,21 @@ def comment_create(request, band_id, post_id):
     """댓글 작성"""
     post = get_object_or_404(BandPost, id=post_id, band_id=band_id)
     
-    # 멤버 확인
+    # 멤버 또는 사이트 관리자 확인
     member = post.band.members.filter(user=request.user, status="active").first()
-    if not member:
+    site_admin = is_site_admin(request.user)
+    if not member and not site_admin:
         messages.error(request, "밴드 멤버만 댓글을 작성할 수 있습니다.")
         # 질문 타입이면 FAQ 탭으로 리다이렉트
         if post.post_type == "question":
             from django.urls import reverse
             return redirect(reverse("band:detail", args=[band_id]) + "?tab=question")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
-    
+
     if request.method == "POST":
-        # 질문 타입 게시글의 경우 모임장만 답변 작성 가능
+        # 질문 타입 게시글의 경우 모임장 또는 사이트 관리자만 답변 작성 가능
         if post.post_type == "question":
-            if not member or member.role != "owner":
+            if not site_admin and (not member or member.role != "owner"):
                 messages.error(request, "모임장만 답변을 작성할 수 있습니다.")
                 from django.urls import reverse
                 return redirect(reverse("band:detail", args=[band_id]) + "?tab=question")
@@ -1713,15 +1717,16 @@ def comment_update(request, band_id, post_id, comment_id):
     """댓글 수정"""
     post = get_object_or_404(BandPost, id=post_id, band_id=band_id)
     comment = get_object_or_404(BandComment, id=comment_id, post=post)
-    
-    # 작성자만 수정 가능
-    if comment.author != request.user:
+
+    # 작성자 또는 사이트 관리자만 수정 가능
+    site_admin = is_site_admin(request.user)
+    if comment.author != request.user and not site_admin:
         messages.error(request, "댓글 수정 권한이 없습니다.")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
-    
-    # 멤버 확인
+
+    # 멤버 또는 사이트 관리자 확인
     member = post.band.members.filter(user=request.user, status="active").first()
-    if not member:
+    if not member and not site_admin:
         messages.error(request, "밴드 멤버만 댓글을 수정할 수 있습니다.")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
     
@@ -1741,15 +1746,16 @@ def comment_delete(request, band_id, post_id, comment_id):
     """댓글 삭제"""
     post = get_object_or_404(BandPost, id=post_id, band_id=band_id)
     comment = get_object_or_404(BandComment, id=comment_id, post=post)
-    
-    # 작성자만 삭제 가능
-    if comment.author != request.user:
+
+    # 작성자 또는 사이트 관리자만 삭제 가능
+    site_admin = is_site_admin(request.user)
+    if comment.author != request.user and not site_admin:
         messages.error(request, "댓글 삭제 권한이 없습니다.")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
-    
-    # 멤버 확인
+
+    # 멤버 또는 사이트 관리자 확인
     member = post.band.members.filter(user=request.user, status="active").first()
-    if not member:
+    if not member and not site_admin:
         messages.error(request, "밴드 멤버만 댓글을 삭제할 수 있습니다.")
         return redirect("band:post_detail", band_id=band_id, post_id=post_id)
     
@@ -1768,10 +1774,10 @@ def comment_delete(request, band_id, post_id, comment_id):
 def vote_create(request, band_id):
     """투표 생성"""
     band = get_object_or_404(Band, id=band_id)
-    
-    # 멤버 확인
+
+    # 멤버 또는 사이트 관리자 확인
     member = band.members.filter(user=request.user, status="active").first()
-    if not member:
+    if not member and not is_site_admin(request.user):
         messages.error(request, "밴드 멤버만 투표를 생성할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
     
@@ -1867,7 +1873,7 @@ def schedule_create(request, band_id):
         messages.error(request, "로그인이 필요합니다.")
         return redirect("band:detail", band_id=band_id)
     
-    if band.created_by != request.user:
+    if band.created_by != request.user and not is_site_admin(request.user):
         messages.error(request, "번개는 모임/동호회 방장만 만들 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
     
@@ -1975,8 +1981,8 @@ def schedule_update(request, band_id, schedule_id):
     band = get_object_or_404(Band, id=band_id)
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band=band)
     
-    # 방장(생성자) 또는 번개 작성자만 번개를 수정할 수 있음
-    if band.created_by != request.user and schedule.created_by != request.user:
+    # 방장(생성자) 또는 번개 작성자, 또는 사이트 관리자만 번개를 수정할 수 있음
+    if band.created_by != request.user and schedule.created_by != request.user and not is_site_admin(request.user):
         messages.error(request, "번개는 모임/동호회 방장 또는 번개 작성자만 수정할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
     
@@ -2154,8 +2160,8 @@ def schedule_delete(request, band_id, schedule_id):
     band = get_object_or_404(Band, id=band_id)
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band=band)
     
-    # 방장(생성자) 또는 번개 작성자만 번개를 삭제할 수 있음
-    if band.created_by != request.user and schedule.created_by != request.user:
+    # 방장(생성자) 또는 번개 작성자, 또는 사이트 관리자만 번개를 삭제할 수 있음
+    if band.created_by != request.user and schedule.created_by != request.user and not is_site_admin(request.user):
         messages.error(request, "번개는 모임/동호회 방장 또는 번개 작성자만 삭제할 수 있습니다.")
         return redirect("band:detail", band_id=band_id)
     
@@ -2194,9 +2200,9 @@ def schedule_detail(request, band_id, schedule_id):
     # 승인된 참가자 목록 (프로필도 함께 가져오기)
     approved_participants = schedule.applications.filter(status="approved").select_related("user", "user__profile").order_by("applied_at")
 
-    # 대기 중인 신청자 목록 (방장/관리자만, 프로필도 함께 가져오기)
+    # 대기 중인 신청자 목록 (방장/관리자 또는 사이트 관리자만, 프로필도 함께 가져오기)
     pending_applications = None
-    can_manage = is_member and member.role in ["owner", "admin"]
+    can_manage = (is_member and member.role in ["owner", "admin"]) or is_site_admin(request.user)
     if can_manage:
         pending_applications = schedule.applications.filter(status="pending").select_related("user", "user__profile").order_by("-applied_at")
     
@@ -2283,7 +2289,7 @@ def schedule_application_approve(request, band_id, schedule_id, application_id):
     
     # 관리자 권한 확인
     member = schedule.band.members.filter(user=request.user, status="active").first()
-    if not member or member.role not in ["owner", "admin"]:
+    if not is_site_admin(request.user) and (not member or member.role not in ["owner", "admin"]):
         messages.error(request, "권한이 없습니다.")
         return redirect("band:detail", band_id=band_id)
     
@@ -2317,7 +2323,7 @@ def schedule_application_reject(request, band_id, schedule_id, application_id):
     
     # 관리자 권한 확인
     member = schedule.band.members.filter(user=request.user, status="active").first()
-    if not member or member.role not in ["owner", "admin"]:
+    if not is_site_admin(request.user) and (not member or member.role not in ["owner", "admin"]):
         messages.error(request, "권한이 없습니다.")
         return redirect("band:detail", band_id=band_id)
     
@@ -2382,9 +2388,9 @@ def schedule_toggle_close(request, band_id, schedule_id):
     """번개 모집 마감/해제 토글"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
 
-    # 방장 또는 관리자 권한 확인
+    # 방장 또는 관리자, 또는 사이트 관리자 권한 확인
     member = schedule.band.members.filter(user=request.user, status="active").first()
-    if not member or member.role not in ["owner", "admin"]:
+    if not is_site_admin(request.user) and (not member or member.role not in ["owner", "admin"]):
         messages.error(request, "권한이 없습니다.")
         return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
 

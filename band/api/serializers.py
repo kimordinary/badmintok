@@ -114,6 +114,8 @@ class BandDetailSerializer(serializers.ModelSerializer):
     member_role = serializers.SerializerMethodField()
     region_display = serializers.SerializerMethodField()
     flash_region_detail = serializers.SerializerMethodField()
+    is_site_admin = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
 
     class Meta:
         model = Band
@@ -123,7 +125,9 @@ class BandDetailSerializer(serializers.ModelSerializer):
             'is_public', 'join_approval_required', 'is_approved',
             'created_by', 'member_count', 'bookmark_count', 'post_count',
             'category_labels', 'cover_image_url', 'profile_image_url',
-            'is_bookmarked', 'is_member', 'member_role', 'created_at', 'updated_at'
+            'is_bookmarked', 'is_member', 'member_role',
+            'is_site_admin', 'can_manage',
+            'created_at', 'updated_at'
         ]
         read_only_fields = fields
 
@@ -172,6 +176,25 @@ class BandDetailSerializer(serializers.ModelSerializer):
 
     def get_flash_region_detail(self, obj):
         return obj.flash_region_detail or obj.get_region_display()
+
+    def get_is_site_admin(self, obj):
+        from accounts.permissions import is_site_admin
+        request = self.context.get('request')
+        if not request:
+            return False
+        return is_site_admin(request.user)
+
+    def get_can_manage(self, obj):
+        from accounts.permissions import is_site_admin
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        if is_site_admin(request.user):
+            return True
+        return BandMember.objects.filter(
+            band=obj, user=request.user,
+            role__in=['owner', 'admin'], status='active'
+        ).exists()
 
 
 class BandPostImageSerializer(serializers.ModelSerializer):
