@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.core.files.base import ContentFile
 from django.http import JsonResponse
+from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser, MultiPartParserError
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
@@ -1906,13 +1907,28 @@ class ProfileAPIView(View):
             profile = UserProfile.objects.create(user=user)
 
         # JSON 또는 multipart/form-data 처리
+        # Django 기본 View는 PUT 메서드의 multipart를 자동 파싱하지 않으므로 수동 파싱
         content_type = request.content_type or ""
+        files = request.FILES
         if "application/json" in content_type:
             try:
                 data = json.loads(request.body)
             except json.JSONDecodeError:
                 return JsonResponse(
                     {"success": False, "error": "잘못된 JSON 형식입니다"},
+                    status=400
+                )
+        elif "multipart/form-data" in content_type and request.method != "POST":
+            try:
+                parser = DjangoMultiPartParser(
+                    request.META, request, request.upload_handlers, request.encoding
+                )
+                parsed_data, parsed_files = parser.parse()
+                data = {k: parsed_data[k] for k in parsed_data}
+                files = parsed_files
+            except MultiPartParserError:
+                return JsonResponse(
+                    {"success": False, "error": "multipart/form-data 파싱 실패"},
                     status=400
                 )
         else:
@@ -1969,8 +1985,8 @@ class ProfileAPIView(View):
                 update_fields.append("birth_year")
 
         # 프로필 이미지 처리 (multipart/form-data인 경우)
-        if request.FILES.get("profile_image"):
-            profile.profile_image = request.FILES["profile_image"]
+        if files.get("profile_image"):
+            profile.profile_image = files["profile_image"]
             update_fields.append("profile_image")
 
         if update_fields:
