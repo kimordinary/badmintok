@@ -30,6 +30,16 @@ from .serializers import (
 from accounts.permissions import is_site_admin
 
 
+# 지역 그룹 매핑: 대분류 코드 → 포함되는 모든 region DB 값
+# Band 모델 주석 기준: busan='영남권 umbrella', gwangju='호남권 umbrella', daejeon='충청권 umbrella'
+REGION_GROUPS = {
+    'yeongnam': ['yeongnam', 'busan', 'daegu', 'ulsan', 'gyeongbuk', 'gyeongnam'],
+    'capital': ['capital', 'seoul', 'gyeonggi', 'incheon'],
+    'honam': ['honam', 'gwangju', 'jeonbuk', 'jeonnam'],
+    'chungcheong': ['chungcheong', 'daejeon', 'sejong', 'chungbuk', 'chungnam'],
+}
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def band_list(request):
@@ -52,10 +62,18 @@ def band_list(request):
     if category_type:
         bands = bands.filter(band_type=category_type)
 
-    # 지역 필터
+    # 지역 필터 (대분류 코드는 그룹 내 모든 세부 지역 포함)
     region = request.GET.get('region', '')
-    if region:
-        bands = bands.filter(region=region)
+    is_fallback = False
+    if region and region != 'all':
+        region_values = REGION_GROUPS.get(region, [region])
+        filtered_bands = bands.filter(region__in=region_values)
+
+        # fallback=true이면서 결과 0개일 때 지역 필터 해제
+        if not filtered_bands.exists() and request.GET.get('fallback', '').lower() == 'true':
+            is_fallback = True
+        else:
+            bands = filtered_bands
 
     # 검색
     search = request.GET.get('search', '')
@@ -103,6 +121,7 @@ def band_list(request):
         'results': serializer.data,
         'next': page_obj.next_page_number() if page_obj.has_next() else None,
         'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
+        'is_fallback': is_fallback,
     }, status=status.HTTP_200_OK)
 
 
