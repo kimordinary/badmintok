@@ -123,6 +123,15 @@ def contest_list(request):
             Q(schedule_end__isnull=True, schedule_start__lt=today)
         )
 
+    # 종료된 대회 기본 숨김 (include_ended=true 시 전체 반환)
+    # period=past로 과거 대회를 명시적으로 요청한 경우엔 이 필터 건너뜀
+    include_ended = request.GET.get('include_ended', '').lower() == 'true'
+    if not include_ended and period != 'past':
+        contests = contests.filter(
+            Q(schedule_end__gte=today) |
+            Q(schedule_end__isnull=True, schedule_start__gte=today)
+        )
+
     # 페이지네이션
     page_number = request.GET.get('page', 1)
     page_size = request.GET.get('page_size', 10)
