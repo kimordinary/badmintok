@@ -25,6 +25,7 @@ class Band(models.Model):
         # 'daejeon' 코드는 충청권(대전/세종/충북/충남) 전체를 의미
         DAEJEON = "daejeon", _("충청권")
         ULSAN = "ulsan", _("울산권")
+        GANGWON = "gangwon", _("강원권")
         JEJU = "jeju", _("제주권")
     
     # 분류 코드 → 라벨 매핑 (모델 레벨에서 공통 사용)

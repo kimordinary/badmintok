@@ -37,6 +37,7 @@ REGION_GROUPS = {
     'capital': ['capital', 'seoul', 'gyeonggi', 'incheon'],
     'honam': ['honam', 'gwangju', 'jeonbuk', 'jeonnam'],
     'chungcheong': ['chungcheong', 'daejeon', 'sejong', 'chungbuk', 'chungnam'],
+    'gangwon': ['gangwon'],
 }
 
 
