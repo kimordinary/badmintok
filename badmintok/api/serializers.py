@@ -6,9 +6,25 @@ from accounts.models import User
 
 class UserSerializer(serializers.ModelSerializer):
     """사용자 정보 Serializer"""
+    profile_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'activity_name', 'email']
+        fields = ['id', 'activity_name', 'email', 'profile_image_url']
+
+    def get_profile_image_url(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if not profile:
+            return None
+        image = profile.profile_image
+        if not image:
+            return None
+        if image.name == 'images/userprofile/user.png':
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(image.url)
+        return None
 
 
 class PostImageSerializer(serializers.ModelSerializer):
