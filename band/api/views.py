@@ -1165,6 +1165,31 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
     return Response({'message': '신청이 승인되었습니다.'}, status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def band_schedule_application_detail(request, band_id, schedule_id, application_id):
+    """일정 신청 상세 API (메모 포함)
+
+    권한: 모임 관리자(owner/admin) / 사이트 관리자 / 본인의 신청
+    """
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+    application = get_object_or_404(
+        BandScheduleApplication, id=application_id, schedule=schedule
+    )
+
+    is_owner_of_application = application.user_id == request.user.id
+    is_manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).exists()
+
+    if not is_owner_of_application and not is_manager and not is_site_admin(request.user):
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = BandScheduleApplicationSerializer(application, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

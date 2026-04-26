@@ -189,7 +189,19 @@
                 </div>
                 <div style="background: white;">
                     {% for app in approved_participants %}
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px;{% if not forloop.last %} border-bottom: 1px solid #f1f5f9;{% endif %}">
+                    <div
+                        {% if can_manage %}
+                        class="participant-row js-participant-row"
+                        role="button"
+                        tabindex="0"
+                        data-name="{{ app.user.real_name }}"
+                        data-applied-at="{{ app.applied_at|date:'Y.m.d H:i' }}"
+                        data-notes="{{ app.notes|default:'' }}"
+                        style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px;{% if not forloop.last %} border-bottom: 1px solid #f1f5f9;{% endif %} cursor: pointer;"
+                        {% else %}
+                        style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px;{% if not forloop.last %} border-bottom: 1px solid #f1f5f9;{% endif %}"
+                        {% endif %}
+                    >
                         <div style="display: flex; align-items: center; gap: 12px;">
                             {% if app.user.profile_image %}
                                 <img src="{{ app.user.profile_image.url }}" alt="{{ app.user.real_name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
@@ -197,6 +209,9 @@
                                 <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">{{ app.user.real_name|first }}</div>
                             {% endif %}
                             <span style="font-size: 15px; font-weight: 500; color: #1e293b;">{{ app.user.real_name }}</span>
+                            {% if can_manage and app.notes %}
+                                <span title="신청 메모 있음" style="font-size: 12px; color: var(--brand);">📝</span>
+                            {% endif %}
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
                             {% if app.user.profile %}
@@ -318,7 +333,29 @@
     </div>
 </section>
 
+{% if can_manage %}
+<div id="participantNoteModal" class="participant-note-modal" style="display: none;">
+    <div class="participant-note-modal__backdrop" data-close></div>
+    <div class="participant-note-modal__panel">
+        <div class="participant-note-modal__header">
+            <h3 id="participantNoteModalName" style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b;"></h3>
+            <button type="button" data-close aria-label="닫기" style="background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: #64748b;">×</button>
+        </div>
+        <div class="participant-note-modal__meta" style="font-size: 12px; color: #64748b;">
+            신청 일시: <span id="participantNoteModalAppliedAt"></span>
+        </div>
+        <div class="participant-note-modal__body" id="participantNoteModalBody" style="margin-top: 12px; padding: 14px; background: #f8fafc; border-radius: 8px; font-size: 14px; color: #1e293b; white-space: pre-wrap; min-height: 60px;"></div>
+    </div>
+</div>
+{% endif %}
+
 <style>
+    .participant-row:focus { outline: 2px solid var(--brand); outline-offset: -2px; }
+    .participant-row:hover { background: #f8fafc; }
+    .participant-note-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .participant-note-modal__backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45); }
+    .participant-note-modal__panel { position: relative; width: min(420px, 90vw); background: #fff; border-radius: 12px; padding: 20px 22px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25); }
+    .participant-note-modal__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
     .schedule-nav {
         position: absolute;
         top: 50%;
@@ -488,6 +525,44 @@
         
         slider.addEventListener('mouseleave', function() {
             autoSlideInterval = setInterval(nextSlide, 3000);
+        });
+    });
+
+    // 참가자 신청 메모 모달
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('participantNoteModal');
+        if (!modal) return;
+        const nameEl = document.getElementById('participantNoteModalName');
+        const appliedAtEl = document.getElementById('participantNoteModalAppliedAt');
+        const bodyEl = document.getElementById('participantNoteModalBody');
+
+        function openModal(row) {
+            nameEl.textContent = row.dataset.name || '';
+            appliedAtEl.textContent = row.dataset.appliedAt || '';
+            const notes = (row.dataset.notes || '').trim();
+            bodyEl.textContent = notes || '신청 메모가 없습니다.';
+            modal.style.display = 'flex';
+        }
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        document.querySelectorAll('.js-participant-row').forEach(function(row) {
+            row.addEventListener('click', function() { openModal(row); });
+            row.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openModal(row);
+                }
+            });
+        });
+
+        modal.querySelectorAll('[data-close]').forEach(function(el) {
+            el.addEventListener('click', closeModal);
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
         });
     });
 </script>

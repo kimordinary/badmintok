@@ -55,6 +55,7 @@ urlpatterns = [
     path('<int:band_id>/schedules/<int:schedule_id>/apply/', views.band_schedule_apply, name='band_schedule_apply'),
     path('<int:band_id>/schedules/<int:schedule_id>/cancel/', views.band_schedule_cancel, name='band_schedule_cancel'),
     path('<int:band_id>/schedules/<int:schedule_id>/toggle-close/', views.band_schedule_toggle_close, name='band_schedule_toggle_close'),
+    path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/', views.band_schedule_application_detail, name='band_schedule_application_detail'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/approve/', views.band_schedule_application_approve, name='band_schedule_application_approve'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/', views.band_schedule_application_reject, name='band_schedule_application_reject'),
 ]
