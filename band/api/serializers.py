@@ -400,6 +400,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     is_applied = serializers.SerializerMethodField()
     user_application = serializers.SerializerMethodField()
     can_manage = serializers.SerializerMethodField()
+    is_site_admin = serializers.SerializerMethodField()
     applications = serializers.SerializerMethodField()
     d_day = serializers.SerializerMethodField()
 
@@ -412,7 +413,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'requires_approval', 'application_deadline',
             'bank_account', 'is_closed', 'created_by',
             'images', 'is_full', 'is_applied', 'user_application',
-            'can_manage', 'applications', 'd_day',
+            'can_manage', 'is_site_admin', 'applications', 'd_day',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
@@ -441,18 +442,29 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
         return None
 
     def get_can_manage(self, obj):
+        from accounts.permissions import is_site_admin
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return BandMember.objects.filter(
-                band=obj.band, user=request.user,
-                role__in=['owner', 'admin'], status='active'
-            ).exists()
-        return False
+        if not request or not request.user.is_authenticated:
+            return False
+        if is_site_admin(request.user):
+            return True
+        return BandMember.objects.filter(
+            band=obj.band, user=request.user,
+            role__in=['owner', 'admin'], status='active'
+        ).exists()
+
+    def get_is_site_admin(self, obj):
+        from accounts.permissions import is_site_admin
+        request = self.context.get('request')
+        if not request:
+            return False
+        return is_site_admin(request.user)
 
     def get_applications(self, obj):
+        from accounts.permissions import is_site_admin
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            is_manager = BandMember.objects.filter(
+            is_manager = is_site_admin(request.user) or BandMember.objects.filter(
                 band=obj.band, user=request.user,
                 role__in=['owner', 'admin'], status='active'
             ).exists()
