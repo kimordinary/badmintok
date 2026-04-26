@@ -198,9 +198,14 @@
                             {% endif %}
                             <span style="font-size: 15px; font-weight: 500; color: #1e293b;">{{ app.user.real_name }}</span>
                         </div>
-                        {% if app.user.profile and app.user.profile.badminton_level %}
-                        <span style="font-size: 13px; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 12px;">{{ app.user.profile.get_badminton_level_display }}</span>
-                        {% endif %}
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            {% if app.user.profile %}
+                                {% include "band/_gender_chip.html" with gender=app.user.profile.gender %}
+                            {% endif %}
+                            {% if app.user.profile and app.user.profile.badminton_level %}
+                            <span style="font-size: 13px; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 12px;">{{ app.user.profile.get_badminton_level_display }}</span>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -284,8 +289,11 @@
                                         <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">{{ app.user.real_name|first }}</div>
                                     {% endif %}
                                     <div>
-                                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">
-                                            {{ app.user.real_name }}{% if app.user.profile and app.user.profile.badminton_level %} / {{ app.user.profile.get_badminton_level_display }}{% endif %}
+                                        <div style="display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: #1e293b;">
+                                            <span>{{ app.user.real_name }}{% if app.user.profile and app.user.profile.badminton_level %} / {{ app.user.profile.get_badminton_level_display }}{% endif %}</span>
+                                            {% if app.user.profile %}
+                                                {% include "band/_gender_chip.html" with gender=app.user.profile.gender %}
+                                            {% endif %}
                                         </div>
                                         <div style="font-size: 12px; color: #64748b;">{{ app.applied_at|date:"Y.m.d H:i" }}</div>
                                     </div>

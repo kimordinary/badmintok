@@ -13,10 +13,12 @@ class UserSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     profile_image_url = serializers.SerializerMethodField()
     grade = serializers.SerializerMethodField()
+    gender = serializers.SerializerMethodField()
+    gender_display = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'activity_name', 'profile_image_url', 'grade']
+        fields = ['id', 'name', 'activity_name', 'profile_image_url', 'grade', 'gender', 'gender_display']
         read_only_fields = fields
 
     def get_name(self, obj):
@@ -33,6 +35,18 @@ class UserSerializer(serializers.ModelSerializer):
         profile = getattr(obj, 'profile', None)
         if profile and profile.badminton_level:
             return profile.badminton_level.upper() if profile.badminton_level in ('a', 'b', 'c', 'd', 's') else profile.get_badminton_level_display()
+        return None
+
+    def get_gender(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile and profile.gender and profile.gender != 'unknown':
+            return profile.gender
+        return None
+
+    def get_gender_display(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile and profile.gender and profile.gender != 'unknown':
+            return profile.get_gender_display()
         return None
 
 

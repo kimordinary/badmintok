@@ -1,0 +1,3 @@
+{% load static %}{% comment %}
+사용법: {% include "band/_gender_chip.html" with gender=app.user.profile.gender gender_display=app.user.profile.get_gender_display %}
+{% endcomment %}{% if gender == "male" %}<span style="font-size: 13px; font-weight: 500; color: #1e40af; background: #dbeafe; padding: 4px 10px; border-radius: 12px;">남</span>{% elif gender == "female" %}<span style="font-size: 13px; font-weight: 500; color: #9d174d; background: #fce7f3; padding: 4px 10px; border-radius: 12px;">여</span>{% elif gender == "other" %}<span style="font-size: 13px; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 12px;">기타</span>{% endif %}

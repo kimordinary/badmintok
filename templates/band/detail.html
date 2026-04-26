@@ -1676,6 +1676,9 @@
                                 <span class="band-member-name" style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     {{ member.user.real_name }}{% if member.user.profile and member.user.profile.badminton_level %} / {{ member.user.profile.get_badminton_level_display }}{% endif %}
                                 </span>
+                                {% if member.user.profile %}
+                                    {% include "band/_gender_chip.html" with gender=member.user.profile.gender %}
+                                {% endif %}
                                 {% if member.role == "owner" %}
                                     <span class="band-member-role" style="font-size: 11px; color: var(--brand); flex-shrink: 0;">모임장</span>
                                 {% elif member.role == "admin" %}
