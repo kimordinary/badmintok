@@ -12,6 +12,7 @@ class Notification(models.Model):
         NOTICE = "notice", _("공지사항")
         BAND = "band", _("모임")
         SCHEDULE = "schedule", _("일정")
+        SCHEDULE_NOTICE = "schedule_notice", _("일정 알림")
         APPLICATION = "application", _("참가신청")
         MEMBERSHIP = "membership", _("가입")
         LIKE = "like", _("좋아요")

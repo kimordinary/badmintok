@@ -1165,6 +1165,94 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
     return Response({'message': '신청이 승인되었습니다.'}, status=status.HTTP_200_OK)
 
 
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_notice_send(request, band_id, schedule_id):
+    """일정 알림 발송 API (모임장 → 참가자).
+
+    body:
+      message: str (필수, 1~500자)
+      recipient_user_id: int | null  (null/생략 시 전체 승인 참가자에게)
+
+    권한: 모임 owner/admin 또는 사이트 관리자.
+    """
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+    band = schedule.band
+
+    # 권한 확인
+    is_manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).exists()
+    if not is_manager and not is_site_admin(request.user):
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    message = (request.data.get('message') or '').strip()
+    if not message:
+        return Response({'error': 'message가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    if len(message) > 500:
+        return Response({'error': 'message는 500자 이하여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    recipient_user_id = request.data.get('recipient_user_id')
+
+    if recipient_user_id is not None and recipient_user_id != '':
+        # 특정 1명에게 발송
+        try:
+            recipient_user_id = int(recipient_user_id)
+        except (ValueError, TypeError):
+            return Response({'error': 'recipient_user_id는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        is_participant = BandScheduleApplication.objects.filter(
+            schedule=schedule, user_id=recipient_user_id, status='approved'
+        ).exists()
+        if not is_participant:
+            return Response({'error': '해당 사용자는 일정 참가자가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        recipient_ids = [recipient_user_id]
+    else:
+        # 전체 승인 참가자 (발송자 본인 제외)
+        recipient_ids = list(
+            BandScheduleApplication.objects.filter(
+                schedule=schedule, status='approved'
+            ).exclude(user=request.user).values_list('user_id', flat=True)
+        )
+        if not recipient_ids:
+            return Response({'error': '발송 대상 참가자가 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Notification 일괄 생성 (bulk_create는 signal 발화 안 함 → FCM 직접 발송)
+    from notifications.models import Notification
+    title = f'[{band.name}] {schedule.title}'
+    Notification.objects.bulk_create([
+        Notification(
+            user_id=uid,
+            type=Notification.Type.SCHEDULE_NOTICE,
+            title=title,
+            message=message,
+            related_band_schedule=schedule,
+            related_band=band,
+            actor=request.user,
+        )
+        for uid in recipient_ids
+    ])
+
+    # FCM 푸시 일괄 발송 (자격증명 없으면 silent no-op)
+    from notifications.push import send_to_users
+    send_to_users(
+        recipient_ids,
+        title=title,
+        body=message,
+        data={
+            'type': Notification.Type.SCHEDULE_NOTICE,
+            'related_band_id': band.id,
+            'related_band_schedule_id': schedule.id,
+        },
+    )
+
+    return Response(
+        {'message': '알림이 발송되었습니다.', 'recipient_count': len(recipient_ids)},
+        status=status.HTTP_201_CREATED,
+    )
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def band_schedule_application_detail(request, band_id, schedule_id, application_id):
