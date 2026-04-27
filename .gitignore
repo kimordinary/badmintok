@@ -181,6 +181,8 @@ credentials/
 *.crt
 *.p12
 *.pfx
+firebase-credentials.json
+firebase-*.json
 
 # Backup files
 *.bak

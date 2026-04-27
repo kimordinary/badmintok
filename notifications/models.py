@@ -96,3 +96,36 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"[{self.get_type_display()}] {self.title} → {self.user}"
+
+
+class DeviceToken(models.Model):
+    """FCM 디바이스 토큰"""
+
+    class Platform(models.TextChoices):
+        ANDROID = "android", _("Android")
+        IOS = "ios", _("iOS")
+        WEB = "web", _("Web")
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="device_tokens",
+        verbose_name=_("사용자"),
+    )
+    token = models.CharField(_("FCM 토큰"), max_length=512, unique=True)
+    platform = models.CharField(
+        _("플랫폼"), max_length=10, choices=Platform.choices, default=Platform.ANDROID
+    )
+    is_active = models.BooleanField(_("활성"), default=True)
+    created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("최근 갱신일"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("디바이스 토큰")
+        verbose_name_plural = _("디바이스 토큰")
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} / {self.platform} / {self.token[:16]}..."

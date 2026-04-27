@@ -598,3 +598,10 @@ UNFOLD = {
         ],
     },
 }
+
+# Firebase / FCM 푸시 알림 설정
+# 서비스 계정 JSON 파일 경로 (gitignore 대상). 미설정 시 푸시 발송은 no-op.
+FIREBASE_CREDENTIALS_PATH = os.environ.get(
+    'FIREBASE_CREDENTIALS_PATH',
+    str(BASE_DIR / 'firebase-credentials.json'),
+)

@@ -3,8 +3,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.core.paginator import Paginator
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
-from notifications.models import Notification
+from notifications.models import Notification, DeviceToken
 from .serializers import NotificationSerializer
 
 
@@ -82,3 +84,51 @@ def notification_unread_count(request):
     ).count()
 
     return Response({"unread_count": count})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def device_token_register(request):
+    """FCM 디바이스 토큰 등록/갱신 API.
+
+    body: { "token": "...", "platform": "android|ios|web" }
+    동일 token이 이미 있으면 owner 사용자/플랫폼/활성 상태를 갱신한다.
+    """
+    token = (request.data.get("token") or "").strip()
+    platform = (request.data.get("platform") or "").strip().lower()
+
+    if not token:
+        return Response({"error": "token이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+    if platform not in DeviceToken.Platform.values:
+        return Response(
+            {"error": f"platform은 {list(DeviceToken.Platform.values)} 중 하나여야 합니다."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    obj, created = DeviceToken.objects.update_or_create(
+        token=token,
+        defaults={
+            "user": request.user,
+            "platform": platform,
+            "is_active": True,
+        },
+    )
+    return Response(
+        {"id": obj.id, "platform": obj.platform, "created": created},
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def device_token_unregister(request):
+    """FCM 디바이스 토큰 삭제 API (로그아웃 시 호출).
+
+    body: { "token": "..." }
+    """
+    token = (request.data.get("token") or "").strip()
+    if not token:
+        return Response({"error": "token이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    deleted, _ = DeviceToken.objects.filter(token=token, user=request.user).delete()
+    return Response({"deleted": deleted})

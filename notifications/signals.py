@@ -7,6 +7,35 @@ from badmintok.models import Notice
 from notifications.models import Notification
 
 
+# ─── FCM 푸시 자동 발송 ───
+@receiver(post_save, sender=Notification)
+def send_fcm_on_notification(sender, instance, created, **kwargs):
+    """Notification 생성 시점마다 FCM 푸시 자동 발송.
+
+    - 토큰이 없거나 Firebase 미설정이면 silent no-op
+    - 알림 데이터에 type/notification_id/related_* id를 함께 실어 앱 라우팅용으로 사용
+    """
+    if not created:
+        return
+    from notifications.push import send_to_user
+
+    data = {
+        "type": instance.type,
+        "notification_id": instance.id,
+        "related_band_id": instance.related_band_id,
+        "related_band_schedule_id": instance.related_band_schedule_id,
+        "related_band_post_id": instance.related_band_post_id,
+        "related_community_post_id": instance.related_community_post_id,
+        "related_notice_id": instance.related_notice_id,
+    }
+    send_to_user(
+        instance.user_id,
+        title=instance.title,
+        body=instance.message or "",
+        data=data,
+    )
+
+
 # ─── 밴드 댓글/답글 ───
 
 @receiver(post_save, sender=BandComment)

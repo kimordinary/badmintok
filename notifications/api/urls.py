@@ -8,4 +8,6 @@ urlpatterns = [
     path("<int:notification_id>/read/", views.notification_read, name="notification_read"),
     path("read-all/", views.notification_read_all, name="notification_read_all"),
     path("unread-count/", views.notification_unread_count, name="notification_unread_count"),
+    path("devices/register/", views.device_token_register, name="device_token_register"),
+    path("devices/unregister/", views.device_token_unregister, name="device_token_unregister"),
 ]
