@@ -194,6 +194,7 @@
                         class="participant-row js-participant-row"
                         role="button"
                         tabindex="0"
+                        data-user-id="{{ app.user.id }}"
                         data-name="{{ app.user.real_name }}"
                         data-applied-at="{{ app.applied_at|date:'Y.m.d H:i' }}"
                         data-notes="{{ app.notes|default:'' }}"
@@ -345,6 +346,27 @@
             신청 일시: <span id="participantNoteModalAppliedAt"></span>
         </div>
         <div class="participant-note-modal__body" id="participantNoteModalBody" style="margin-top: 12px; padding: 14px; background: #f8fafc; border-radius: 8px; font-size: 14px; color: #1e293b; white-space: pre-wrap; min-height: 60px;"></div>
+
+        <div class="participant-note-modal__reply" style="margin-top: 18px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            <label for="participantNoticeMessage" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px;">
+                이 참가자에게 알림 보내기
+            </label>
+            <textarea
+                id="participantNoticeMessage"
+                rows="3"
+                maxlength="500"
+                placeholder="예) 입금 부탁드립니다"
+                style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; resize: vertical; font-family: inherit;"
+            ></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                <span id="participantNoticeFeedback" style="font-size: 12px; color: #64748b;"></span>
+                <button
+                    type="button"
+                    id="participantNoticeSubmit"
+                    style="padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--brand); color: white; border: none; border-radius: 6px; cursor: pointer;"
+                >발송</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -535,12 +557,28 @@
         const nameEl = document.getElementById('participantNoteModalName');
         const appliedAtEl = document.getElementById('participantNoteModalAppliedAt');
         const bodyEl = document.getElementById('participantNoteModalBody');
+        const messageEl = document.getElementById('participantNoticeMessage');
+        const submitEl = document.getElementById('participantNoticeSubmit');
+        const feedbackEl = document.getElementById('participantNoticeFeedback');
+
+        const noticeApiUrl = "{% url 'api:band_api:band_schedule_notice_send' band.id schedule.id %}";
+        let currentUserId = null;
+
+        function setFeedback(text, color) {
+            if (!feedbackEl) return;
+            feedbackEl.textContent = text || '';
+            feedbackEl.style.color = color || '#64748b';
+        }
 
         function openModal(row) {
             nameEl.textContent = row.dataset.name || '';
             appliedAtEl.textContent = row.dataset.appliedAt || '';
             const notes = (row.dataset.notes || '').trim();
             bodyEl.textContent = notes || '신청 메모가 없습니다.';
+            currentUserId = row.dataset.userId || null;
+            if (messageEl) messageEl.value = '';
+            if (submitEl) submitEl.disabled = false;
+            setFeedback('', '');
             modal.style.display = 'flex';
         }
         function closeModal() {
@@ -560,6 +598,50 @@
         modal.querySelectorAll('[data-close]').forEach(function(el) {
             el.addEventListener('click', closeModal);
         });
+
+        if (submitEl && messageEl) {
+            submitEl.addEventListener('click', async function() {
+                const message = (messageEl.value || '').trim();
+                if (!message) {
+                    setFeedback('메시지를 입력하세요.', '#dc2626');
+                    return;
+                }
+                if (!currentUserId) {
+                    setFeedback('수신자 정보가 없습니다.', '#dc2626');
+                    return;
+                }
+                submitEl.disabled = true;
+                setFeedback('전송 중…', '#64748b');
+                try {
+                    const csrf = document.cookie.split('; ').find(r => r.startsWith('csrftoken='));
+                    const csrfToken = csrf ? csrf.split('=')[1] : '';
+                    const res = await fetch(noticeApiUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            recipient_user_id: parseInt(currentUserId, 10),
+                        }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) {
+                        setFeedback('✓ 알림이 발송되었습니다.', '#16a34a');
+                        messageEl.value = '';
+                        setTimeout(closeModal, 1200);
+                    } else {
+                        setFeedback(data.error || `발송 실패 (${res.status})`, '#dc2626');
+                        submitEl.disabled = false;
+                    }
+                } catch (err) {
+                    setFeedback('네트워크 오류로 발송 실패', '#dc2626');
+                    submitEl.disabled = false;
+                }
+            });
+        }
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
