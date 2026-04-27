@@ -71,13 +71,28 @@
                         </svg>
                     </div>
                 </a>
-                <a href="{% url 'accounts:mypage_my_posts_comments' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                <a href="{% url 'accounts:mypage_my_posts_comments' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; transition: background 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 20px;">📝</span>
                         <span style="font-size: 16px; font-weight: 500; color: #1e293b;">내 게시물/댓글</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 14px; color: var(--muted);">{{ total_posts_comments_count }}</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </a>
+                <a href="{% url 'accounts:mypage_schedule_notices' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px;">✉️</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">받은 쪽지</span>
+                        {% if unread_notices_count %}
+                            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 6px; background: var(--brand); color: white; font-size: 11px; font-weight: 700; border-radius: 9px;">{{ unread_notices_count }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 14px; color: var(--muted);">{{ received_notices_count }}</span>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
                             <path d="M9 18l6-6-6-6"/>
                         </svg>

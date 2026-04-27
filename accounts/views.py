@@ -81,12 +81,23 @@ def mypage(request):
     # 통합 게시물/댓글 카운트
     total_posts_comments_count = band_posts_count + band_comments_count + community_posts_count + comments_count
 
+    # 받은 쪽지(일정 알림) 카운트
+    from notifications.models import Notification
+    received_notices_count = Notification.objects.filter(
+        user=user, type=Notification.Type.SCHEDULE_NOTICE
+    ).count()
+    unread_notices_count = Notification.objects.filter(
+        user=user, type=Notification.Type.SCHEDULE_NOTICE, is_read=False
+    ).count()
+
     return render(request, "accounts/mypage.html", {
         "profile": profile,
         "my_bands_count": my_bands_count,
         "created_bands_count": created_bands_count,
         "bookmarked_bands_count": bookmarked_bands_count,
         "total_posts_comments_count": total_posts_comments_count,
+        "received_notices_count": received_notices_count,
+        "unread_notices_count": unread_notices_count,
     })
 
 
@@ -234,14 +245,42 @@ def mypage_schedule_applications(request):
     user = request.user
     per_page = 20
     page = request.GET.get('page', 1)
-    
+
     schedule_applications = BandScheduleApplication.objects.filter(user=user).order_by("-applied_at")
     paginator = Paginator(schedule_applications, per_page)
     applications_page = paginator.get_page(page)
-    
+
     return render(request, "accounts/mypage_schedule_applications.html", {
         "applications_page": applications_page,
         "title": "참여한 일정 신청",
+    })
+
+
+@login_required
+def mypage_schedule_notices(request):
+    """받은 쪽지(일정 알림) 목록"""
+    from notifications.models import Notification
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+
+    notices = Notification.objects.filter(
+        user=user, type=Notification.Type.SCHEDULE_NOTICE,
+    ).select_related(
+        "actor", "related_band", "related_band_schedule",
+    ).order_by("-created_at")
+
+    paginator = Paginator(notices, per_page)
+    notices_page = paginator.get_page(page)
+
+    # 페이지 노출 시점에 읽음 처리
+    Notification.objects.filter(
+        user=user, type=Notification.Type.SCHEDULE_NOTICE, is_read=False,
+    ).update(is_read=True)
+
+    return render(request, "accounts/mypage_schedule_notices.html", {
+        "notices_page": notices_page,
+        "title": "받은 쪽지",
     })
 
 

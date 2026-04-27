@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - 마이페이지{% endblock %}
+
+{% block content %}
+<section class="section" style="position: relative; margin-top: 20px;">
+    <div class="container" style="position: relative; min-height: 400px; margin-top: 0; max-width: 800px;">
+        <div style="margin-bottom: 24px;">
+            <h1 style="font-size: 28px; font-weight: 700; margin: 0; color: var(--brand-800);">{{ title }}</h1>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color: var(--muted);">모임장이 보낸 일정 안내·요청 메시지입니다.</p>
+        </div>
+
+        {% if notices_page %}
+            <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+                {% for notice in notices_page %}
+                    {% if notice.related_band_schedule %}
+                        <a href="{% url 'band:schedule_detail' notice.related_band.id notice.related_band_schedule.id %}" style="text-decoration: none; color: inherit;">
+                    {% else %}
+                        <div>
+                    {% endif %}
+                        <div style="padding: 16px 18px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; transition: all 0.2s ease;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                                    {% if notice.actor %}
+                                        <span style="font-size: 13px; font-weight: 600; color: #1e293b;">{{ notice.actor.activity_name }}</span>
+                                    {% endif %}
+                                    <span style="font-size: 12px; color: #94a3b8;">·</span>
+                                    <span style="font-size: 12px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ notice.title }}</span>
+                                </div>
+                                <span style="font-size: 11px; color: var(--muted); flex-shrink: 0;">{{ notice.created_at|date:"Y.m.d H:i" }}</span>
+                            </div>
+                            <p style="margin: 0; font-size: 14px; color: #1e293b; white-space: pre-wrap; line-height: 1.5;">{{ notice.message }}</p>
+                        </div>
+                    {% if notice.related_band_schedule %}
+                        </a>
+                    {% else %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% if notices_page.has_other_pages %}
+                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px;">
+                    {% if notices_page.has_previous %}
+                        <a href="?page={{ notices_page.previous_page_number }}" class="btn btn-ghost" style="padding: 8px 12px;">이전</a>
+                    {% endif %}
+                    <span style="color: var(--muted); font-weight: 600;">{{ notices_page.number }} / {{ notices_page.paginator.num_pages }}</span>
+                    {% if notices_page.has_next %}
+                        <a href="?page={{ notices_page.next_page_number }}" class="btn btn-ghost" style="padding: 8px 12px;">다음</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="padding: 48px; text-align: center; color: #64748b; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <p style="margin: 0;">받은 쪽지가 없습니다.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
