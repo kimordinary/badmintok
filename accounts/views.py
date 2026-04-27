@@ -1858,15 +1858,32 @@ def account_delete(request):
 
 
 def _authenticate_jwt(request):
-    """JWT Bearer 토큰으로 사용자 인증 (DRF 미사용 뷰용)"""
+    """JWT Bearer 토큰으로 사용자 인증 (DRF 미사용 뷰용).
+
+    토큰 만료/무효 시 발생하는 예외는 익명 사용자로 폴백하지만,
+    원인 추적을 위해 경고 로그를 남긴다.
+    """
     from rest_framework_simplejwt.authentication import JWTAuthentication
+    import logging
+
+    logger = logging.getLogger(__name__)
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    has_bearer = auth_header.startswith("Bearer ")
+
     jwt_auth = JWTAuthentication()
     try:
         result = jwt_auth.authenticate(request)
         if result is not None:
             request.user, request.auth = result
-    except Exception:
-        pass
+    except Exception as exc:
+        if has_bearer:
+            logger.warning(
+                "JWT 인증 실패 path=%s ip=%s err=%s: %s",
+                request.path,
+                request.META.get("REMOTE_ADDR", ""),
+                type(exc).__name__,
+                exc,
+            )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
