@@ -358,10 +358,70 @@ def band_schedule_list(request, band_id):
     }, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
+def _schedule_can_manage(request, schedule):
+    """schedule 작성자 / band owner·admin / 사이트 관리자 여부"""
+    user = request.user
+    if not user.is_authenticated:
+        return False
+    if is_site_admin(user):
+        return True
+    if schedule.created_by_id == user.id:
+        return True
+    return BandMember.objects.filter(
+        band_id=schedule.band_id, user=user,
+        role__in=['owner', 'admin'], status='active'
+    ).exists()
+
+
+def _perform_schedule_update(request, schedule):
+    """일정 수정 공통 로직: 필드 update + delete_image_ids 처리 + images 추가.
+
+    호출자가 권한 체크를 마쳤다고 가정한다.
+    반환: (status_code, response_body)
+    """
+    serializer = BandScheduleCreateSerializer(schedule, data=request.data, partial=True)
+    if not serializer.is_valid():
+        return status.HTTP_400_BAD_REQUEST, {'error': serializer.errors}
+
+    serializer.save()
+
+    # 삭제 요청된 이미지 처리 (해당 schedule 소속만)
+    delete_ids_raw = request.data.get('delete_image_ids') or ''
+    if delete_ids_raw:
+        try:
+            delete_ids = [int(x) for x in str(delete_ids_raw).split(',') if x.strip()]
+        except ValueError:
+            return status.HTTP_400_BAD_REQUEST, {'error': 'delete_image_ids는 정수의 콤마구분 목록이어야 합니다.'}
+        if delete_ids:
+            BandScheduleImage.objects.filter(
+                id__in=delete_ids, schedule=schedule
+            ).delete()
+
+    # 신규 이미지 추가 (남은 슬롯만큼, 총 5장 한도)
+    image_files = request.FILES.getlist('images')
+    if image_files:
+        existing_count = schedule.images.count()
+        remaining = max(0, 5 - existing_count)
+        for idx, image_file in enumerate(image_files[:remaining]):
+            BandScheduleImage.objects.create(
+                schedule=schedule,
+                image=image_file,
+                order=existing_count + idx,
+            )
+
+    detail = BandScheduleDetailSerializer(schedule, context={'request': request})
+    return status.HTTP_200_OK, detail.data
+
+
+@csrf_exempt
+@api_view(['GET', 'PATCH', 'PUT'])
 @permission_classes([AllowAny])
 def band_schedule_detail(request, band_id, schedule_id):
-    """밴드 일정 상세 API"""
+    """밴드 일정 상세 / 수정 API
+
+    - GET: 누구나 조회 가능 (기존 동작)
+    - PATCH/PUT: 인증 + can_manage 권한 필요
+    """
     schedule = get_object_or_404(
         BandSchedule.objects.filter(band_id=band_id).select_related('band', 'created_by', 'created_by__profile').prefetch_related(
             Prefetch('images', queryset=BandScheduleImage.objects.order_by('order')),
@@ -370,8 +430,18 @@ def band_schedule_detail(request, band_id, schedule_id):
         id=schedule_id
     )
 
-    serializer = BandScheduleDetailSerializer(schedule, context={'request': request})
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    if request.method == 'GET':
+        serializer = BandScheduleDetailSerializer(schedule, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # PATCH / PUT
+    if not request.user.is_authenticated:
+        return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+    if not _schedule_can_manage(request, schedule):
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    code, body = _perform_schedule_update(request, schedule)
+    return Response(body, status=code)
 
 
 @api_view(['GET'])
@@ -1345,38 +1415,12 @@ def band_comment_like(request, comment_id):
 @api_view(['PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def band_schedule_update(request, band_id, schedule_id):
-    """일정 수정 API"""
+    """일정 수정 API (legacy URL /update/ — detail URL의 PATCH/PUT 권장)"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
-
-    # 생성자 또는 owner/admin, 또는 사이트 관리자만 수정 가능
-    is_creator = schedule.created_by == request.user
-    is_manager = BandMember.objects.filter(
-        band_id=band_id, user=request.user,
-        role__in=['owner', 'admin'], status='active'
-    ).exists()
-    if not is_creator and not is_manager and not is_site_admin(request.user):
+    if not _schedule_can_manage(request, schedule):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
-
-    serializer = BandScheduleCreateSerializer(schedule, data=request.data, partial=True)
-    if not serializer.is_valid():
-        return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    serializer.save()
-
-    # multipart 'images' 추가 업로드 처리 (기존 이미지는 유지하고 뒤에 추가, 총 5장 한도)
-    image_files = request.FILES.getlist('images')
-    if image_files:
-        existing_count = schedule.images.count()
-        remaining = max(0, 5 - existing_count)
-        for idx, image_file in enumerate(image_files[:remaining]):
-            BandScheduleImage.objects.create(
-                schedule=schedule,
-                image=image_file,
-                order=existing_count + idx,
-            )
-
-    detail_serializer = BandScheduleDetailSerializer(schedule, context={'request': request})
-    return Response(detail_serializer.data, status=status.HTTP_200_OK)
+    code, body = _perform_schedule_update(request, schedule)
+    return Response(body, status=code)
 
 
 @csrf_exempt
