@@ -1015,6 +1015,15 @@ def band_schedule_create(request, band_id):
 
     schedule = serializer.save(band=band, created_by=request.user)
 
+    # multipart 'images' 다중 파일 처리 (최대 5장)
+    image_files = request.FILES.getlist('images')
+    for idx, image_file in enumerate(image_files[:5]):
+        BandScheduleImage.objects.create(
+            schedule=schedule,
+            image=image_file,
+            order=idx,
+        )
+
     detail_serializer = BandScheduleDetailSerializer(schedule, context={'request': request})
     return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -1353,6 +1362,18 @@ def band_schedule_update(request, band_id, schedule_id):
         return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     serializer.save()
+
+    # multipart 'images' 추가 업로드 처리 (기존 이미지는 유지하고 뒤에 추가, 총 5장 한도)
+    image_files = request.FILES.getlist('images')
+    if image_files:
+        existing_count = schedule.images.count()
+        remaining = max(0, 5 - existing_count)
+        for idx, image_file in enumerate(image_files[:remaining]):
+            BandScheduleImage.objects.create(
+                schedule=schedule,
+                image=image_file,
+                order=existing_count + idx,
+            )
 
     detail_serializer = BandScheduleDetailSerializer(schedule, context={'request': request})
     return Response(detail_serializer.data, status=status.HTTP_200_OK)
