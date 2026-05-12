@@ -352,6 +352,7 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
     images = BandScheduleImageSerializer(many=True, read_only=True)
     is_full = serializers.SerializerMethodField()
     is_applied = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
     d_day = serializers.SerializerMethodField()
 
     class Meta:
@@ -362,7 +363,7 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'bank_account', 'is_closed', 'created_by',
-            'images', 'is_full', 'is_applied', 'd_day',
+            'images', 'is_full', 'is_applied', 'can_manage', 'd_day',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
@@ -379,6 +380,18 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
                 schedule=obj, user=request.user
             ).exclude(status='cancelled').exists()
         return False
+
+    def get_can_manage(self, obj):
+        from accounts.permissions import is_site_admin
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        if is_site_admin(request.user):
+            return True
+        return BandMember.objects.filter(
+            band=obj.band, user=request.user,
+            role__in=['owner', 'admin'], status='active'
+        ).exists()
 
     def get_d_day(self, obj):
         from django.utils import timezone
