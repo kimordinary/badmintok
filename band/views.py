@@ -450,14 +450,14 @@ def band_create(request):
             )
             return redirect("band:list")
     
-    # 번개 생성 시: 모임/동호회를 가지고 있는 모임장만 생성 가능
+    # 번개 생성 시: 모임/동호회를 가지고 있는 모임장 또는 사이트 관리자만 생성 가능
     if request.method == "GET" and band_type == "flash":
         # 사용자가 모임(group) 또는 동호회(club) 타입의 밴드에서 모임장(owner)인지 확인
         owned_groups_or_clubs = Band.objects.filter(
             created_by=request.user,
             band_type__in=["group", "club"]
         ).exists()
-        
+
         # 또는 BandMember에서 owner 역할로 모임/동호회에 속해있는지 확인
         is_owner_of_group_or_club = BandMember.objects.filter(
             user=request.user,
@@ -465,8 +465,8 @@ def band_create(request):
             status="active",
             band__band_type__in=["group", "club"]
         ).exists()
-        
-        if not (owned_groups_or_clubs or is_owner_of_group_or_club):
+
+        if not (owned_groups_or_clubs or is_owner_of_group_or_club) and not is_site_admin(request.user):
             messages.error(
                 request,
                 "번개를 만들려면 먼저 모임 또는 동호회를 만들어야 합니다. "
