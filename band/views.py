@@ -1092,12 +1092,12 @@ def band_detail(request, band_id):
     if request.user.is_authenticated:
         is_bookmarked = BandBookmark.objects.filter(band=band, user=request.user).exists()
 
-    # 번개/일정 카드에서 '수정' 버튼 노출 여부
-    can_manage_schedules = (
-        is_site_admin(request.user)
-        or is_creator
-        or (is_member and member and member.role in ["owner", "admin"])
-    )
+    # 권한 통합 변수 (사이트 관리자 우회 포함)
+    site_admin = is_site_admin(request.user)
+    can_create_content = is_member or site_admin                                 # 글/번개/투표/댓글 작성
+    can_manage_band = site_admin or (is_member and member and member.role == "owner")  # 모임 수정·멤버 관리
+    can_delete_band = site_admin or (is_member and member and member.role in ["owner", "admin"])  # 모임 삭제
+    can_manage_schedules = site_admin or is_creator or (is_member and member and member.role in ["owner", "admin"])
 
     return render(request, "band/detail.html", {
         "band": band,
@@ -1109,6 +1109,10 @@ def band_detail(request, band_id):
         "members": members,
         "total_member_count": total_member_count,
         "is_member": is_member,
+        "site_admin": site_admin,
+        "can_create_content": can_create_content,
+        "can_manage_band": can_manage_band,
+        "can_delete_band": can_delete_band,
         "can_manage_schedules": can_manage_schedules,
         "is_creator": is_creator,
         "member": member,

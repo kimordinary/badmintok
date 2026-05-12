@@ -1691,8 +1691,8 @@
                 
                 <!-- 버튼 영역 (하단 정렬) -->
                 <div class="band-sidebar-actions">
-                    {% if is_member %}
-                        <!-- 멤버용 버튼 -->
+                    {% if can_create_content %}
+                        <!-- 멤버(또는 사이트 관리자)용 버튼 -->
                         <div class="band-action-buttons" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
                             <a href="{% url 'band:vote_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">투표 만들기</a>
                             <a href="{% url 'band:schedule_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">번개 만들기</a>
@@ -1708,27 +1708,25 @@
                             </a>
                         {% endif %}
 
-                        {% if is_member and member.role == "owner" %}
+                        {% if can_manage_band %}
                             <a href="{% url 'band:update' band.id %}" class="btn btn-primary band-action-btn">모임 수정</a>
                             <a href="{% url 'band:member_management' band.id %}" class="btn btn-primary band-action-btn">멤버 관리</a>
                         {% endif %}
-                        {% if is_member %}
-                            {% if member.role == "owner" or member.role == "admin" %}
-                                <!-- 관리자는 모임 삭제 -->
-                                {% if not band.deletion_requested %}
-                                    <a href="{% url 'band:delete_request' band.id %}" class="btn btn-ghost band-action-btn" style="color: #dc2626; border-color: #dc2626;">모임 삭제</a>
-                                {% else %}
-                                    <span class="btn btn-ghost band-action-btn" style="color: #64748b; border-color: #e2e8f0; cursor: not-allowed;">삭제 신청 대기 중</span>
-                                {% endif %}
+                        {% if can_delete_band %}
+                            {% if not band.deletion_requested %}
+                                <a href="{% url 'band:delete_request' band.id %}" class="btn btn-ghost band-action-btn" style="color: #dc2626; border-color: #dc2626;">모임 삭제</a>
                             {% else %}
-                                <!-- 일반 사용자는 탈퇴 -->
-                                <a href="{% url 'band:leave' band.id %}" class="btn btn-ghost band-action-btn" onclick="return confirm('정말 탈퇴하시겠습니까?')">탈퇴</a>
+                                <span class="btn btn-ghost band-action-btn" style="color: #64748b; border-color: #e2e8f0; cursor: not-allowed;">삭제 신청 대기 중</span>
                             {% endif %}
-                        {% elif member and member.status == "pending" %}
+                        {% endif %}
+                        {% if is_member and member.role not in "owner,admin"|make_list %}
+                            <!-- 일반 멤버는 탈퇴 -->
+                            <a href="{% url 'band:leave' band.id %}" class="btn btn-ghost band-action-btn" onclick="return confirm('정말 탈퇴하시겠습니까?')">탈퇴</a>
+                        {% elif not is_member and member and member.status == "pending" %}
                             <!-- 가입 승인 대기 중 -->
                             <span class="btn btn-ghost band-action-btn" style="color: #f59e0b; border-color: #fbbf24; cursor: not-allowed;">가입 승인 대기 중</span>
-                        {% else %}
-                            <!-- 비멤버 -->
+                        {% elif not is_member and not member %}
+                            <!-- 비멤버 (사이트 관리자도 가입은 따로 신청 가능) -->
                             <a href="{% url 'band:join' band.id %}" class="btn btn-primary band-action-btn">📝 멤버 가입 신청</a>
                         {% endif %}
                     </div>
@@ -1863,7 +1861,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </a>
         {% endif %}
 
-        {% if is_member %}
+        {% if can_create_content %}
             <a href="{% url 'band:vote_create' band.id %}" class="fab-menu-item">
                 <span class="fab-menu-item-icon">📊</span>
                 <span>투표 만들기</span>
@@ -1876,7 +1874,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="fab-menu-item-icon">✍️</span>
                 <span>게시판 글쓰기</span>
             </a>
-            {% if member.role == "owner" %}
+            {% if can_manage_band %}
                 <a href="{% url 'band:update' band.id %}" class="fab-menu-item">
                     <span class="fab-menu-item-icon">✏️</span>
                     <span>모임 수정</span>
@@ -1886,25 +1884,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span>멤버 관리</span>
                 </a>
             {% endif %}
-            {% if member.role == "owner" or member.role == "admin" %}
+            {% if can_delete_band %}
                 {% if not band.deletion_requested %}
                     <a href="{% url 'band:delete_request' band.id %}" class="fab-menu-item" style="color: #dc2626;">
                         <span class="fab-menu-item-icon">🗑️</span>
                         <span>모임 삭제</span>
                     </a>
                 {% endif %}
-            {% else %}
-                <a href="{% url 'band:leave' band.id %}" class="fab-menu-item" onclick="return confirm('정말 탈퇴하시겠습니까?')" style="color: #dc2626;">
-                    <span class="fab-menu-item-icon">👋</span>
-                    <span>탈퇴</span>
-                </a>
             {% endif %}
-        {% elif member and member.status == "pending" %}
+        {% endif %}
+
+        {% if is_member and member.role not in "owner,admin"|make_list %}
+            <a href="{% url 'band:leave' band.id %}" class="fab-menu-item" onclick="return confirm('정말 탈퇴하시겠습니까?')" style="color: #dc2626;">
+                <span class="fab-menu-item-icon">👋</span>
+                <span>탈퇴</span>
+            </a>
+        {% elif not is_member and member and member.status == "pending" %}
             <div class="fab-menu-item" style="color: #f59e0b; cursor: not-allowed;">
                 <span class="fab-menu-item-icon">⏳</span>
                 <span>가입 승인 대기 중</span>
             </div>
-        {% else %}
+        {% elif not is_member and not member and user.is_authenticated %}
             <a href="{% url 'band:join' band.id %}" class="fab-menu-item">
                 <span class="fab-menu-item-icon">📝</span>
                 <span>멤버 가입 신청</span>
