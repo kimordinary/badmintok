@@ -62,15 +62,15 @@ class BandAdmin(ModelAdmin):
             "fields": ("is_public", "join_approval_required")
         }),
         ("관리자 승인", {
-            "fields": ("is_approved", "rejection_reason", "approved_at", "approved_by"),
-            "description": "모임/동호회는 관리자 승인이 필요합니다."
+            "fields": ("created_at", "is_approved", "rejection_reason", "approved_at", "approved_by"),
+            "description": "모임/동호회는 관리자 승인이 필요합니다. (created_at = 신청 일시)"
         }),
         ("삭제 신청", {
             "fields": ("deletion_requested", "deletion_reason", "deletion_requested_at", "deletion_approved_at", "deletion_approved_by"),
             "description": "모임 삭제 신청 정보"
         }),
         ("시스템 정보", {
-            "fields": ("created_by", "created_at", "updated_at"),
+            "fields": ("created_by", "updated_at"),
             "classes": ("collapse",)
         }),
     )
