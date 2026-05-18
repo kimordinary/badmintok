@@ -1297,11 +1297,12 @@ def band_schedule_notice_send(request, band_id, schedule_id):
         if not recipient_ids:
             return Response({'error': '발송 대상 참가자가 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Notification 일괄 생성 (bulk_create는 signal 발화 안 함 → FCM 직접 발송)
+    # 다른 알림 타입(comment, like 등)과 동일하게 개별 create() 사용
+    # → Notification post_save 시그널이 발화되어 FCM 푸시가 자동 발송됨
     from notifications.models import Notification
     title = f'[{band.name}] {schedule.title}'
-    Notification.objects.bulk_create([
-        Notification(
+    for uid in recipient_ids:
+        Notification.objects.create(
             user_id=uid,
             type=Notification.Type.SCHEDULE_NOTICE,
             title=title,
@@ -1310,21 +1311,6 @@ def band_schedule_notice_send(request, band_id, schedule_id):
             related_band=band,
             actor=request.user,
         )
-        for uid in recipient_ids
-    ])
-
-    # FCM 푸시 일괄 발송 (자격증명 없으면 silent no-op)
-    from notifications.push import send_to_users
-    send_to_users(
-        recipient_ids,
-        title=title,
-        body=message,
-        data={
-            'type': Notification.Type.SCHEDULE_NOTICE,
-            'related_band_id': band.id,
-            'related_band_schedule_id': schedule.id,
-        },
-    )
 
     return Response(
         {'message': '알림이 발송되었습니다.', 'recipient_count': len(recipient_ids)},
