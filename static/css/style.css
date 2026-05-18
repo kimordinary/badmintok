@@ -2751,6 +2751,63 @@ body.disable-mobile-overlay {
     line-height: 1.2;
 }
 
+/* 데스크탑 하단 앱 다운로드 CTA (홈 제외 모든 페이지, ≥768px) */
+.desktop-app-cta {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .desktop-app-cta {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-700) 50%, var(--brand) 100%);
+        color: #ffffff;
+        text-decoration: none;
+        box-shadow: 0 -6px 20px rgba(31, 124, 71, 0.25);
+        transition: filter 0.15s ease;
+    }
+
+    .desktop-app-cta:hover {
+        filter: brightness(1.08);
+    }
+
+    .desktop-app-cta__text {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        color: #ffffff;
+    }
+
+    .desktop-app-cta__arrow {
+        display: inline-block;
+        margin-left: 6px;
+        font-weight: 600;
+    }
+
+    .desktop-app-cta__qr {
+        width: 64px;
+        height: 64px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        display: block;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+
+    /* 데스크탑 하단 CTA 가려지는 영역 보정 */
+    body {
+        padding-bottom: 96px;
+    }
+}
+
 /* 모바일 하단 앱 다운로드 CTA (홈 제외 모든 페이지) */
 .mobile-app-cta {
     display: none;
