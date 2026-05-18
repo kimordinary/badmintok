@@ -84,9 +84,10 @@ def notify_on_notice(sender, instance, created, **kwargs):
 
     from accounts.models import User
 
+    # 개별 create()로 post_save 시그널을 발화시켜 FCM 푸시 자동 발송
     users = User.objects.filter(is_active=True).exclude(id=instance.author_id)
-    notifications = [
-        Notification(
+    for user in users:
+        Notification.objects.create(
             user=user,
             type=Notification.Type.NOTICE,
             title=f"[공지] {instance.title}",
@@ -94,9 +95,6 @@ def notify_on_notice(sender, instance, created, **kwargs):
             related_notice=instance,
             actor=instance.author,
         )
-        for user in users
-    ]
-    Notification.objects.bulk_create(notifications)
 
 
 # ─── 번개/일정 등록 ───
@@ -120,8 +118,9 @@ def notify_on_schedule_created(sender, instance, created, **kwargs):
     if not recipient_ids:
         return
 
-    notifications = [
-        Notification(
+    # 개별 create()로 post_save 시그널을 발화시켜 FCM 푸시 자동 발송
+    for uid in recipient_ids:
+        Notification.objects.create(
             user_id=uid,
             type=Notification.Type.SCHEDULE,
             title=f"[{band.name}] 새 일정: {schedule.title}",
@@ -130,9 +129,6 @@ def notify_on_schedule_created(sender, instance, created, **kwargs):
             related_band=band,
             actor=creator,
         )
-        for uid in recipient_ids
-    ]
-    Notification.objects.bulk_create(notifications)
 
 
 # ─── 일정 참가 신청/승인/거절 ───
@@ -151,8 +147,9 @@ def notify_on_schedule_application(sender, instance, created, **kwargs):
             band=band, role__in=['owner', 'admin'], status='active'
         ).exclude(user=applicant).values_list('user_id', flat=True)
 
-        notifications = [
-            Notification(
+        # 개별 create()로 post_save 시그널을 발화시켜 FCM 푸시 자동 발송
+        for uid in managers:
+            Notification.objects.create(
                 user_id=uid,
                 type=Notification.Type.APPLICATION,
                 title=f"{applicant.activity_name}님이 [{schedule.title}]에 참가 신청했습니다.",
@@ -161,9 +158,6 @@ def notify_on_schedule_application(sender, instance, created, **kwargs):
                 related_band=band,
                 actor=applicant,
             )
-            for uid in managers
-        ]
-        Notification.objects.bulk_create(notifications)
     else:
         # 승인/거절 → 신청자에게 알림
         if app.status == 'approved':
@@ -203,8 +197,9 @@ def notify_on_membership(sender, instance, created, **kwargs):
             band=band, role__in=['owner', 'admin'], status='active'
         ).exclude(user=user).values_list('user_id', flat=True)
 
-        notifications = [
-            Notification(
+        # 개별 create()로 post_save 시그널을 발화시켜 FCM 푸시 자동 발송
+        for uid in managers:
+            Notification.objects.create(
                 user_id=uid,
                 type=Notification.Type.MEMBERSHIP,
                 title=f"{user.activity_name}님이 [{band.name}] 가입을 신청했습니다.",
@@ -212,9 +207,6 @@ def notify_on_membership(sender, instance, created, **kwargs):
                 related_band=band,
                 actor=user,
             )
-            for uid in managers
-        ]
-        Notification.objects.bulk_create(notifications)
 
     elif not created and member.status == 'active':
         # 승인 → 신청자에게 알림
