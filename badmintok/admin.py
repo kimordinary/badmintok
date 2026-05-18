@@ -13,7 +13,7 @@ import json
 import hashlib
 from unfold.admin import ModelAdmin
 
-from .models import BadmintokBanner, Banner, Notice, VisitorLog, OutboundClick, YoutubeVideo
+from .models import BadmintokBanner, Banner, Notice, VisitorLog, OutboundClick, YoutubeVideo, AppDownloadClick
 from .fields import (
     get_unconverted_images_stats,
     convert_existing_image_to_webp,
@@ -185,6 +185,20 @@ class VisitorLogAdmin(ModelAdmin):
 
     def has_add_permission(self, request):
         """추가 권한 제거 (자동으로만 생성)"""
+        return False
+
+
+@admin.register(AppDownloadClick)
+class AppDownloadClickAdmin(ModelAdmin):
+    """앱 다운로드 클릭 Admin"""
+    list_display = ("created_at", "os", "referrer_path", "user", "ip_address")
+    list_filter = ("os", "created_at")
+    search_fields = ("referrer_path", "ip_address", "user__email", "user__activity_name")
+    readonly_fields = ("created_at", "os", "referrer_path", "user", "user_agent", "ip_address")
+    date_hierarchy = "created_at"
+    list_per_page = 50
+
+    def has_add_permission(self, request):
         return False
 
 
@@ -430,6 +444,23 @@ def statistics_view(request):
         clicks=Count('id')
     ).order_by('-clicks')[:15])
 
+    # 앱 다운로드 클릭 통계 (운영자 제외)
+    app_download_qs = AppDownloadClick.objects.filter(
+        created_at__gte=period_start,
+        created_at__lt=period_end,
+    ).filter(Q(user__is_staff=False) | Q(user__isnull=True))
+    app_download_total = app_download_qs.count()
+    app_download_by_os = {
+        row['os']: row['count']
+        for row in app_download_qs.values('os').annotate(count=Count('id'))
+    }
+    app_download_stats = {
+        'total': app_download_total,
+        'ios': app_download_by_os.get('ios', 0),
+        'android': app_download_by_os.get('android', 0),
+        'other': app_download_by_os.get('other', 0),
+    }
+
     context = {
         'site_header': '배드민톡 통계',
         'site_title': 'Jetpack 스타일 통계',
@@ -448,6 +479,7 @@ def statistics_view(request):
         'top_referrers': top_referrers,
         'top_search_terms': top_search_terms,
         'top_outbound_clicks': top_outbound_clicks,
+        'app_download_stats': app_download_stats,
     }
 
     if not is_today:

@@ -720,3 +720,122 @@ def track_outbound_click(request):
             return JsonResponse({'error': str(e)}, status=500)
 
     return _track(request)
+
+
+from django.views.decorators.csrf import csrf_exempt as _csrf_exempt
+from django.views.decorators.http import require_POST as _require_POST
+
+
+APP_STORE_URL = "https://apps.apple.com/kr/app/id6761994579"
+PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.badmintok.app"
+
+
+def _detect_os(user_agent: str) -> str:
+    ua = user_agent or ""
+    if "iPhone" in ua or "iPad" in ua or "iPod" in ua:
+        return "ios"
+    if "Android" in ua:
+        return "android"
+    return "other"
+
+
+def app_redirect(request):
+    """앱 다운로드 단일 진입점.
+
+    User-Agent로 OS 판별 → AppDownloadClick 1건 INSERT → 스토어로 리다이렉트.
+    other(PC/봇 등)는 간단한 안내 페이지 렌더링.
+    """
+    from django.http import HttpResponseRedirect
+    from django.shortcuts import render
+    from .models import AppDownloadClick
+
+    user_agent = (request.META.get("HTTP_USER_AGENT") or "")
+    os_value = _detect_os(user_agent)
+
+    referrer = request.META.get("HTTP_REFERER") or ""
+    referrer_path = ""
+    if referrer:
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(referrer)
+            referrer_path = (parsed.path or "")[:200]
+            if parsed.query:
+                referrer_path = (parsed.path + "?" + parsed.query)[:200]
+        except Exception:
+            referrer_path = ""
+
+    ip_address = request.META.get("HTTP_X_FORWARDED_FOR")
+    if ip_address:
+        ip_address = ip_address.split(",")[0].strip()
+    else:
+        ip_address = request.META.get("REMOTE_ADDR")
+
+    try:
+        AppDownloadClick.objects.create(
+            os=os_value,
+            referrer_path=referrer_path,
+            user=request.user if request.user.is_authenticated else None,
+            user_agent=user_agent[:300],
+            ip_address=ip_address,
+        )
+    except Exception:
+        # 로깅 실패가 리다이렉트를 막아선 안 됨
+        pass
+
+    if os_value == "ios":
+        return HttpResponseRedirect(APP_STORE_URL)
+    if os_value == "android":
+        return HttpResponseRedirect(PLAY_STORE_URL)
+
+    return render(
+        request,
+        "badmintok/app_download.html",
+        {
+            "app_store_url": APP_STORE_URL,
+            "play_store_url": PLAY_STORE_URL,
+        },
+    )
+
+
+@_csrf_exempt
+@_require_POST
+def track_app_download_click(request):
+    """앱 다운로드 버튼 클릭 추적 API (OS별).
+
+    @csrf_exempt + @require_POST는 outer 함수에 적용해야 정상 동작.
+    (CSRF 미들웨어는 호출 시 view 객체의 csrf_exempt 속성을 확인하기 때문)
+    """
+    from django.http import HttpResponse, JsonResponse
+    from .models import AppDownloadClick
+    import json
+
+    try:
+        try:
+            data = json.loads(request.body or b"{}")
+        except json.JSONDecodeError:
+            data = {}
+
+        os_value = (data.get("os") or "").strip().lower()
+        if os_value not in AppDownloadClick.OS.values:
+            os_value = AppDownloadClick.OS.OTHER
+
+        referrer_path = (data.get("referrer_path") or "")[:200]
+
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR")
+        if ip_address:
+            ip_address = ip_address.split(",")[0].strip()
+        else:
+            ip_address = request.META.get("REMOTE_ADDR")
+        user_agent = (request.META.get("HTTP_USER_AGENT") or "")[:300]
+
+        AppDownloadClick.objects.create(
+            os=os_value,
+            referrer_path=referrer_path,
+            user=request.user if request.user.is_authenticated else None,
+            user_agent=user_agent,
+            ip_address=ip_address,
+        )
+
+        return HttpResponse(status=204)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

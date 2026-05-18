@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}앱 다운로드 - 배드민톡{% endblock %}
+
+{% block og_title_meta %}<meta property="og:title" content="배드민톡 앱 다운로드">{% endblock %}
+
+{% block extra_head %}
+<meta name="description" content="배드민톡 앱을 다운로드하고 전국 배드민턴 대회, 동호인 모임, 번개를 한곳에서 만나보세요.">
+<meta name="robots" content="noindex, nofollow">
+{% endblock %}
+
+{# 이 페이지 자체가 다운로드 안내이므로 하단 CTA 숨김 #}
+{% block mobile_app_cta %}{% endblock %}
+
+{% block content %}
+<section class="app-download-section">
+    <div class="container app-download-container">
+        <img class="app-download-logo" src="{% static 'images/landing/app-logo.png' %}" alt="배드민톡 앱 로고">
+        <h1 class="app-download-title">배드민턴 동호인 올인원 플랫폼</h1>
+        <p class="app-download-subtitle">전국 대회 일정 · 모임 · 번개 · 리뷰까지 한 번에</p>
+        <p class="app-download-hint">아래에서 운영체제에 맞는 스토어로 이동해주세요.</p>
+
+        <div class="app-download-buttons">
+            <a href="{{ play_store_url }}" class="app-btn app-btn--google" target="_blank" rel="noopener noreferrer" aria-label="Google Play에서 다운로드">
+                <svg class="app-btn__icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="adY" x1="20%" y1="0%" x2="80%" y2="100%">
+                            <stop offset="0%" stop-color="#FFD400"/>
+                            <stop offset="100%" stop-color="#FF8A00"/>
+                        </linearGradient>
+                        <linearGradient id="adR" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#FF3A44"/>
+                            <stop offset="100%" stop-color="#C31162"/>
+                        </linearGradient>
+                        <linearGradient id="adG" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00F076"/>
+                            <stop offset="100%" stop-color="#00C054"/>
+                        </linearGradient>
+                        <linearGradient id="adB" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00C2FF"/>
+                            <stop offset="100%" stop-color="#0050E6"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M61 24 L61 488 L297 256 Z" fill="url(#adB)"/>
+                    <path d="M61 24 L297 256 L380 175 Z" fill="url(#adG)"/>
+                    <path d="M380 175 L297 256 L380 337 L450 273 C470 261 470 251 450 239 Z" fill="url(#adY)"/>
+                    <path d="M61 488 L297 256 L380 337 Z" fill="url(#adR)"/>
+                </svg>
+                <span class="app-btn__text">
+                    <span class="app-btn__top">GET IT ON</span>
+                    <span class="app-btn__bottom">Google Play</span>
+                </span>
+            </a>
+            <a href="{{ app_store_url }}" class="app-btn app-btn--apple" target="_blank" rel="noopener noreferrer" aria-label="App Store에서 다운로드">
+                <svg class="app-btn__icon" viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path fill="#ffffff" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                </svg>
+                <span class="app-btn__text">
+                    <span class="app-btn__top">Download on the</span>
+                    <span class="app-btn__bottom">App Store</span>
+                </span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<style>
+    .app-download-section {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+    .app-download-container {
+        text-align: center;
+        max-width: 480px;
+    }
+    .app-download-logo {
+        width: 100px;
+        height: 100px;
+        border-radius: 22px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    }
+    .app-download-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 8px;
+        letter-spacing: -0.5px;
+    }
+    .app-download-subtitle {
+        font-size: 14px;
+        color: #64748b;
+        margin: 0 0 28px;
+    }
+    .app-download-hint {
+        font-size: 13px;
+        color: #94a3b8;
+        margin: 0 0 16px;
+    }
+    .app-download-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+    }
+    .app-download-buttons .app-btn {
+        width: 100%;
+        max-width: 280px;
+        justify-content: center;
+    }
+</style>
+{% endblock %}

@@ -292,3 +292,36 @@ class OutboundClick(models.Model):
 
     def __str__(self):
         return f"{self.destination_domain} - {self.clicked_at.strftime('%Y-%m-%d %H:%M')}"
+
+class AppDownloadClick(models.Model):
+    """앱 다운로드 버튼 클릭 추적 (웹 → 스토어 리다이렉트)"""
+
+    class OS(models.TextChoices):
+        IOS = "ios", _("iOS")
+        ANDROID = "android", _("Android")
+        OTHER = "other", _("기타")
+
+    os = models.CharField(_("운영체제"), max_length=10, choices=OS.choices, default=OS.OTHER)
+    referrer_path = models.CharField(_("유입 경로"), max_length=200, blank=True, help_text="버튼을 누른 페이지 경로")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="app_download_clicks",
+        verbose_name=_("사용자"),
+    )
+    user_agent = models.CharField(_("User Agent"), max_length=300, blank=True)
+    ip_address = models.GenericIPAddressField(_("IP 주소"), null=True, blank=True)
+    created_at = models.DateTimeField(_("클릭 시각"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = _("앱 다운로드 클릭")
+        verbose_name_plural = _("앱 다운로드 클릭")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["os", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_os_display()} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"

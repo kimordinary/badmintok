@@ -68,6 +68,10 @@ urlpatterns = [
     path("api/", include("badmintok.api.urls", namespace="api")),
     # 외부 링크 클릭 추적 API
     path("api/track-click/", views.track_outbound_click, name="track_outbound_click"),
+    # 앱 다운로드 클릭 추적 API
+    path("api/track/app-download/", views.track_app_download_click, name="track_app_download_click"),
+    # 앱 다운로드 단일 진입점 (OS 분기 + 로깅)
+    path("app", views.app_redirect, name="app_redirect"),
     # SEO 관련
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),

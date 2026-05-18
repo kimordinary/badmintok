@@ -457,6 +457,31 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- 앱 다운로드 클릭 -->
+        <div class="stat-section">
+            <h3>앱 다운로드 클릭</h3>
+            <div class="stat-table">
+                <div class="stat-row">
+                    <div class="stat-label">전체</div>
+                    <div class="stat-value">{{ app_download_stats.total }}</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">🍎 iOS</div>
+                    <div class="stat-value">{{ app_download_stats.ios }}</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">🤖 Android</div>
+                    <div class="stat-value">{{ app_download_stats.android }}</div>
+                </div>
+                {% if app_download_stats.other %}
+                <div class="stat-row">
+                    <div class="stat-label">기타</div>
+                    <div class="stat-value">{{ app_download_stats.other }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
