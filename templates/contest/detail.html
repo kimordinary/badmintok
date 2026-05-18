@@ -199,7 +199,7 @@
 
                 <div class="contest-action-buttons">
                     {% if contest.registration_link %}
-                        <a href="{{ contest.registration_link }}" target="_blank" rel="noopener" class="btn btn-primary">대회 신청하기</a>
+                        <a href="{{ contest.registration_link }}" target="_blank" rel="nofollow noopener noreferrer" class="btn btn-primary">대회 신청하기</a>
                     {% endif %}
 
                     {% if user.is_authenticated %}

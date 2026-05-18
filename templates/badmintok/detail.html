@@ -143,7 +143,7 @@
             <!-- 게시글 내용 -->
             <article style="margin-bottom: 48px; line-height: 1.9; color: #1e293b;">
                 <div class="post-content" id="post-content-body" style="word-wrap: break-word;">
-                    {{ post.content|safe }}
+                    {{ post.content|add_nofollow_external }}
                 </div>
                 <textarea id="post-content-raw" style="display:none">{{ post.content }}</textarea>
             </article>
