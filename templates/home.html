@@ -27,6 +27,14 @@
                     <p>배드민톡(badmintok)은, 전국 배드민턴 대회 일정과 생생한 리뷰, 최신 뉴스부터 소통과 모임까지 한눈에 확인하는 동호인 필수 올인원 플랫폼입니다.</p>
                 </div>
             </div>
+            <div class="banner-store-badges">
+                <a href="#" class="store-badge" aria-label="Google Play에서 다운로드">
+                    <img src="{% static 'images/landing/googleplay-download.png' %}" alt="Google Play에서 다운로드">
+                </a>
+                <a href="#" class="store-badge" aria-label="App Store에서 다운로드">
+                    <img src="{% static 'images/landing/appstore-download.png' %}" alt="App Store에서 다운로드">
+                </a>
+            </div>
         </div>
     </div>
 </section>
@@ -348,6 +356,32 @@
         margin: 0 0 8px 0;
     }
 
+    /* 앱 다운로드 배지 (배너 텍스트 하단) */
+    .banner-store-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+        padding: 0 16px;
+    }
+
+    .banner-store-badges .store-badge {
+        display: inline-block;
+        line-height: 0;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .banner-store-badges .store-badge:hover {
+        transform: translateY(-2px);
+        opacity: 0.9;
+    }
+
+    .banner-store-badges .store-badge img {
+        width: 150px;
+        height: auto;
+        display: block;
+    }
+
     /* 태블릿 및 PC */
     @media (min-width: 768px) {
         .main-banner-container {
@@ -378,6 +412,10 @@
         .banner-description {
             width: 100%;
             font-size: 14px;
+        }
+
+        .banner-store-badges .store-badge img {
+            width: 180px;
         }
     }
 

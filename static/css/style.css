@@ -1686,6 +1686,30 @@ main > section {
     color: rgba(255, 255, 255, 0.7);
 }
 
+.footer-store-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.footer-store-badges a {
+    display: inline-block;
+    line-height: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.footer-store-badges a:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+.footer-store-badges img {
+    width: 130px;
+    height: auto;
+    display: block;
+}
+
 .footer-bottom {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding: 12px 0;
