@@ -16,6 +16,7 @@ class Notification(models.Model):
         APPLICATION = "application", _("참가신청")
         MEMBERSHIP = "membership", _("가입")
         LIKE = "like", _("좋아요")
+        BADMINTOK_POST = "badmintok_post", _("배드민톡 새 글")
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

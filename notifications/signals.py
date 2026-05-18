@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from band.models import BandComment, BandSchedule, BandScheduleApplication, BandMember, BandPostLike, BandBookmark
-from community.models import Comment as CommunityComment
+from community.models import Comment as CommunityComment, Post as CommunityPost
 from badmintok.models import Notice
 from notifications.models import Notification
 
@@ -280,3 +280,33 @@ def notify_on_band_post_like(sender, instance, created, **kwargs):
         related_band_post=post,
         actor=liker,
     )
+
+
+# ─── 배드민톡 새 글 (사이트 관리자 칼럼) ───
+
+@receiver(post_save, sender=CommunityPost)
+def notify_on_badmintok_post(sender, instance, created, **kwargs):
+    """배드민톡 카테고리(source='badmintok') 게시물 등록 시 전체 활성 사용자에게 알림.
+
+    - 동호인톡 등 다른 source는 대상 외
+    - 임시저장 / 삭제된 게시물은 대상 외
+    - 작성자 본인은 수신자에서 제외
+    """
+    if not created:
+        return
+    if instance.source != CommunityPost.Source.BADMINTOK:
+        return
+    if instance.is_draft or instance.is_deleted:
+        return
+
+    from accounts.models import User
+    users = User.objects.filter(is_active=True).exclude(id=instance.author_id)
+    for user in users:
+        Notification.objects.create(
+            user=user,
+            type=Notification.Type.BADMINTOK_POST,
+            title="📢 배드민톡 새 글",
+            message=instance.title,
+            related_community_post=instance,
+            actor=instance.author,
+        )
