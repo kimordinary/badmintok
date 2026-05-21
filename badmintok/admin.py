@@ -378,6 +378,31 @@ def statistics_view(request):
     visitors_change = _calculate_change(period_visitors, prev_visitors)
     pageviews_change = _calculate_change(period_pageviews, prev_pageviews)
 
+    # === 신규 가입자 ===
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    period_signups = User.objects.filter(
+        is_active=True,
+        date_joined__gte=period_start,
+        date_joined__lt=period_end,
+    ).count()
+    prev_signups = User.objects.filter(
+        is_active=True,
+        date_joined__gte=prev_period_start,
+        date_joined__lt=prev_period_end,
+    ).count()
+    signups_change = _calculate_change(period_signups, prev_signups)
+
+    daily_signups = User.objects.filter(
+        is_active=True,
+        date_joined__gte=period_start,
+        date_joined__lt=period_end,
+    ).annotate(date=TruncDate('date_joined')).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    signups_dict = {item['date']: item['count'] for item in daily_signups}
+
     # === 출처 분리 카운트 (전체 필터일 때만 의미 있음) ===
     web_qs = VisitorLog.objects.filter(
         visited_at__gte=period_start, visited_at__lt=period_end,
@@ -481,6 +506,14 @@ def statistics_view(request):
     pageviews_dict = {item['date']: item['views'] for item in daily_pageviews}
     visitors_dict = {item['date']: item['visitors'] for item in daily_visitors}
 
+    daily_app_clicks_qs = AppDownloadClick.objects.filter(
+        created_at__gte=period_start,
+        created_at__lt=period_end,
+    ).filter(Q(user__is_staff=False) | Q(user__isnull=True)).annotate(
+        date=TruncDate('created_at')
+    ).values('date').annotate(count=Count('id')).order_by('date')
+    app_clicks_dict = {item['date']: item['count'] for item in daily_app_clicks_qs}
+
     chart_data = []
     for i in range(chart_days - 1, -1, -1):
         day = (selected_date - timedelta(days=i)).date()
@@ -490,10 +523,16 @@ def statistics_view(request):
         else:
             date_label = day.strftime('%m/%d')
 
+        day_views = pageviews_dict.get(day, 0)
+        day_clicks = app_clicks_dict.get(day, 0)
+        day_ctr = round(day_clicks / day_views * 100, 2) if day_views else 0
+
         chart_data.append({
             'label': date_label,
             'visitors': visitors_dict.get(day, 0),
-            'views': pageviews_dict.get(day, 0),
+            'views': day_views,
+            'signups': signups_dict.get(day, 0),
+            'ctr': day_ctr,
         })
 
     top_pages = list(base_queryset.values('url_path').annotate(
@@ -551,14 +590,23 @@ def statistics_view(request):
         row['os']: row['count']
         for row in app_download_qs.values('os').annotate(count=Count('id'))
     }
+    prev_app_download_total = AppDownloadClick.objects.filter(
+        created_at__gte=prev_period_start,
+        created_at__lt=prev_period_end,
+    ).filter(Q(user__is_staff=False) | Q(user__isnull=True)).count()
+    current_ctr = (round(app_download_total / period_pageviews * 100, 2)
+                   if period_pageviews else 0)
+    prev_ctr = (round(prev_app_download_total / prev_pageviews * 100, 2)
+                if prev_pageviews else 0)
     app_download_stats = {
         'total': app_download_total,
         'ios': app_download_by_os.get('ios', 0),
         'android': app_download_by_os.get('android', 0),
         'other': app_download_by_os.get('other', 0),
         # CTA 클릭률: 페이지뷰 대비 다운로드 클릭 비율
-        'click_rate_pct': round(app_download_total / period_pageviews * 100, 2)
-                          if period_pageviews else 0,
+        'click_rate_pct': current_ctr,
+        'click_rate_change': _calculate_change(current_ctr, prev_ctr),
+        'impressions': period_pageviews,
     }
 
     context = {
@@ -566,6 +614,7 @@ def statistics_view(request):
         'site_title': 'Jetpack 스타일 통계',
         'period': period,
         'period_days': period_days,
+        'chart_days': chart_days,
         'source_param': source_param,
         'source_stats': source_stats,
         'visitor_segment_stats': visitor_segment_stats,
@@ -575,10 +624,14 @@ def statistics_view(request):
         'date_display': date_display,
         'prev_date': prev_date,
         'next_date': next_date,
+        'today_date': now.strftime('%Y-%m-%d'),
+        'now': now,
         'period_visitors': period_visitors,
         'period_pageviews': period_pageviews,
+        'period_signups': period_signups,
         'visitors_change': visitors_change,
         'pageviews_change': pageviews_change,
+        'signups_change': signups_change,
         'chart_data_json': json.dumps(chart_data),
         'top_pages': top_pages,
         'top_referrers': top_referrers,

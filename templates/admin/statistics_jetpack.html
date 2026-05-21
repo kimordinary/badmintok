@@ -3,669 +3,559 @@
 
 {% block extrastyle %}
 <style>
-    :root {
-        --jetpack-green: #00a32a;
-        --jetpack-gray: #1e1e1e;
-        --jetpack-light-gray: #f6f7f7;
-        --jetpack-border: #e0e0e0;
-        --text-primary: #1e1e1e;
-        --text-secondary: #757575;
-    }
+  :root {
+    --brand: #31AA60;
+    --brand-soft: rgba(49, 170, 96, 0.12);
+    --brand-line: rgba(49, 170, 96, 0.4);
+    --bg: #fafaf9;
+    --card: #ffffff;
+    --border: #e5e5e5;
+    --text: #0a0a0a;
+    --text-muted: #737373;
+    --text-soft: #a3a3a3;
+    --danger: #ef4444;
+  }
+  body { background: var(--bg); }
+  .stats-wrap {
+    max-width: 1280px; margin: 0 auto; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+  }
 
-    body {
-        background: #fff;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+  /* 헤더 */
+  .stats-head { margin-bottom: 24px; }
+  .stats-breadcrumb { font-size: 12px; color: var(--text-soft); margin-bottom: 8px; }
+  .stats-title { font-size: 28px; font-weight: 700; margin: 0 0 6px 0; letter-spacing: -0.5px; }
+  .stats-subtitle { font-size: 13px; color: var(--text-muted); }
 
-    .stats-wrap {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-    }
+  /* 필터 행 */
+  .filter-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .seg-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+  .seg a { padding: 6px 14px; font-size: 13px; color: var(--text-muted); text-decoration: none; border-radius: 6px; transition: all 0.15s; }
+  .seg a.active { background: var(--brand); color: #fff; font-weight: 600; }
+  .seg a:hover:not(.active) { color: var(--text); }
+  .date-nav { display: flex; align-items: center; gap: 6px; }
+  .date-nav .nav-arrow {
+    width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--card);
+    color: var(--text-muted); text-decoration: none; font-size: 16px; line-height: 1;
+  }
+  .date-nav .nav-arrow:hover { color: var(--brand); border-color: var(--brand); }
+  .date-nav .date-text { padding: 6px 12px; font-size: 13px; font-weight: 600; min-width: 140px; text-align: center; }
+  .date-nav .today-btn {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card);
+    color: var(--text-muted); text-decoration: none; font-size: 13px;
+  }
+  .date-nav .today-btn:hover { color: var(--brand); border-color: var(--brand); }
 
-    /* 헤더 */
-    .stats-header {
-        margin-bottom: 30px;
-    }
+  /* KPI 카드 */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .kpi-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  .kpi-value { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1.1; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+  .kpi-change { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
+  .kpi-change.up { color: var(--brand); }
+  .kpi-change.down { color: var(--danger); }
+  .kpi-change.flat { color: var(--text-muted); }
+  .kpi-change .compare { color: var(--text-soft); font-weight: 400; margin-left: 4px; }
+  .kpi-spark { height: 32px; margin-top: 10px; }
 
-    .stats-header h1 {
-        font-size: 28px;
-        font-weight: 500;
-        color: var(--jetpack-gray);
-        margin: 0 0 8px 0;
-    }
+  /* 카드 공통 */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card h3 { font-size: 14px; font-weight: 600; margin: 0 0 14px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card-sub { font-size: 11px; color: var(--text-soft); font-weight: 400; margin-left: 6px; }
 
-    .stats-header p {
-        color: var(--text-secondary);
-        font-size: 14px;
-        margin: 0;
-    }
+  /* 메인 차트 행 */
+  .row-main { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .chart-toggle { display: flex; gap: 0; background: #f5f5f4; border-radius: 6px; padding: 2px; }
+  .chart-toggle button {
+    padding: 4px 10px; font-size: 11px; background: none; border: none;
+    color: var(--text-muted); cursor: pointer; border-radius: 4px; font-weight: 500;
+  }
+  .chart-toggle button.active { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .main-chart-wrap { height: 280px; position: relative; }
+  .legend-row { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
 
-    /* 기간 선택 탭 */
-    .period-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 20px;
-        border-bottom: 1px solid var(--jetpack-border);
-        padding-bottom: 0;
-    }
+  /* 사이드 작은 박스 */
+  .side-stack { display: flex; flex-direction: column; gap: 12px; }
+  .side-stack .card { padding: 14px; }
 
-    .period-tab {
-        padding: 10px 20px;
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        text-decoration: none;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -1px;
-        transition: all 0.2s;
-    }
+  /* 출처별 트래픽 */
+  .source-row { display: flex; gap: 4px; height: 8px; border-radius: 4px; overflow: hidden; background: #f5f5f4; margin-bottom: 12px; }
+  .source-row .src-web { background: var(--brand); }
+  .source-row .src-app { background: var(--brand-line); }
+  .source-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .src-col .lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+  .src-col .num { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .src-col .sub { font-size: 11px; color: var(--text-soft); margin-top: 2px; }
 
-    .period-tab:hover {
-        color: var(--jetpack-green);
-    }
+  /* 도넛 */
+  .donut-wrap { display: flex; align-items: center; gap: 14px; }
+  .donut-chart { width: 100px; height: 100px; position: relative; flex-shrink: 0; }
+  .donut-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .donut-center .pct { font-size: 18px; font-weight: 700; color: var(--brand); line-height: 1; }
+  .donut-center .pct-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .donut-legend .li { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; }
+  .donut-legend .li .name { color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .donut-legend .li .name .swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .donut-legend .li .val { color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
-    .period-tab.active {
-        color: var(--jetpack-green);
-        border-bottom-color: var(--jetpack-green);
-    }
+  /* 중단 3컬럼 */
+  .row-three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
 
-    /* 날짜 네비게이션 */
-    .date-navigation {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        margin-bottom: 24px;
-        padding: 12px;
-        background: var(--jetpack-light-gray);
-        border-radius: 4px;
-    }
+  /* 가로 바 */
+  .hbar-list { display: flex; flex-direction: column; gap: 10px; }
+  .hbar-row { display: flex; align-items: center; gap: 10px; }
+  .hbar-row .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); flex-shrink: 0; }
+  .hbar-row .name { font-size: 12px; color: var(--text); min-width: 70px; }
+  .hbar-row .track { flex: 1; height: 6px; background: #f5f5f4; border-radius: 3px; overflow: hidden; }
+  .hbar-row .fill { height: 100%; background: var(--brand); border-radius: 3px; }
+  .hbar-row .val { font-size: 12px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; }
+  .hbar-row .pct { font-size: 11px; color: var(--text-soft); min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
 
-    .date-nav-btn {
-        padding: 8px 16px;
-        background: #fff;
-        border: 1px solid var(--jetpack-border);
-        border-radius: 4px;
-        color: var(--text-primary);
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        text-decoration: none;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
+  /* 앱 다운로드 */
+  .app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .app-box { padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+  .app-box .ic { font-size: 16px; margin-bottom: 4px; opacity: 0.8; }
+  .app-box .lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+  .app-box .num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .app-metric { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; font-size: 12px; border-top: 1px solid #f0f0f0; }
+  .app-metric:first-of-type { border-top: none; }
+  .app-metric .m-lbl { color: var(--text-muted); }
+  .app-metric .m-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .app-metric .m-val.brand { color: var(--brand); }
 
-    .date-nav-btn:hover {
-        background: #f0f0f0;
-        border-color: var(--jetpack-green);
-        color: var(--jetpack-green);
-    }
+  /* 하단 TOP 리스트 */
+  .row-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .top-list { display: flex; flex-direction: column; }
+  .top-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #f0f0f0; font-size: 12px; }
+  .top-item:first-child { border-top: none; }
+  .top-item .rank { color: var(--text-soft); font-variant-numeric: tabular-nums; min-width: 22px; font-weight: 500; }
+  .top-item .label { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11.5px; }
+  .top-item .bar { width: 60px; height: 4px; background: #f5f5f4; border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+  .top-item .bar-fill { height: 100%; background: var(--brand); border-radius: 2px; }
+  .top-item .count { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; }
 
-    .date-display {
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--jetpack-gray);
-        min-width: 200px;
-        text-align: center;
-    }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 500; background: var(--brand-soft); color: var(--brand); }
+  .empty-state { text-align: center; padding: 24px 12px; color: var(--text-soft); font-size: 12px; }
 
-    /* 메인 지표 카드 */
-    .main-metrics {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-bottom: 30px;
-    }
-
-    .metric-card {
-        background: #fff;
-        border: 1px solid var(--jetpack-border);
-        border-radius: 4px;
-        padding: 20px;
-    }
-
-    .metric-label {
-        font-size: 14px;
-        color: var(--text-secondary);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .metric-value {
-        font-size: 32px;
-        font-weight: 600;
-        color: var(--jetpack-gray);
-    }
-
-    .metric-change {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 14px;
-        font-weight: 500;
-        margin-top: 8px;
-    }
-
-    .metric-change.positive {
-        color: #00a32a;
-    }
-
-    .metric-change.negative {
-        color: #d63638;
-    }
-
-    .metric-change.neutral {
-        color: var(--text-secondary);
-    }
-
-    /* 차트 섹션 */
-    .chart-section {
-        background: #fff;
-        border: 1px solid var(--jetpack-border);
-        border-radius: 4px;
-        padding: 24px;
-        margin-bottom: 30px;
-    }
-
-    .chart-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .chart-header h2 {
-        font-size: 18px;
-        font-weight: 500;
-        color: var(--jetpack-gray);
-        margin: 0;
-    }
-
-    .chart-toggle {
-        display: flex;
-        gap: 0;
-        background: var(--jetpack-light-gray);
-        border-radius: 4px;
-        padding: 2px;
-    }
-
-    .chart-toggle-btn {
-        padding: 6px 12px;
-        background: none;
-        border: none;
-        font-size: 13px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        border-radius: 3px;
-        transition: all 0.2s;
-    }
-
-    .chart-toggle-btn.active {
-        background: #fff;
-        color: var(--jetpack-green);
-        font-weight: 600;
-    }
-
-    .chart-container {
-        position: relative;
-        height: 300px;
-    }
-
-    /* 통계 테이블 섹션 */
-    .stats-sections {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .stat-section {
-        background: #fff;
-        border: 1px solid var(--jetpack-border);
-        border-radius: 4px;
-        padding: 20px;
-    }
-
-    .stat-section h3 {
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--jetpack-gray);
-        margin: 0 0 16px 0;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--jetpack-border);
-    }
-
-    .stat-table {
-        width: 100%;
-    }
-
-    .stat-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-    .stat-row:last-child {
-        border-bottom: none;
-    }
-
-    .stat-label {
-        font-size: 14px;
-        color: var(--text-primary);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        flex: 1;
-        max-width: 70%;
-    }
-
-    .stat-value {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--jetpack-green);
-        margin-left: 12px;
-    }
-
-    .stat-bar {
-        height: 6px;
-        background: var(--jetpack-light-gray);
-        border-radius: 3px;
-        margin-top: 4px;
-        overflow: hidden;
-    }
-
-    .stat-bar-fill {
-        height: 100%;
-        background: var(--jetpack-green);
-        border-radius: 3px;
-        transition: width 0.3s ease;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--text-secondary);
-        font-size: 14px;
-    }
-
-    @media (max-width: 768px) {
-        .main-metrics {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-sections {
-            grid-template-columns: 1fr;
-        }
-
-        .period-tabs {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .date-navigation {
-            gap: 8px;
-            padding: 8px;
-        }
-
-        .date-nav-btn {
-            padding: 6px 12px;
-            font-size: 13px;
-        }
-
-        .date-display {
-            font-size: 13px;
-            min-width: 150px;
-        }
-    }
+  @media (max-width: 1024px) {
+    .row-main { grid-template-columns: 1fr; }
+    .row-three { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 768px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .row-three { grid-template-columns: 1fr; }
+    .row-two { grid-template-columns: 1fr; }
+    .stats-wrap { padding: 16px; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="stats-wrap">
-    <!-- 헤더 -->
-    <div class="stats-header">
-        <h1>통계</h1>
-        <p>사이트 방문자 및 트래픽 분석</p>
+  <div class="stats-head">
+    <div class="stats-breadcrumb">홈 / 사이트 관리 / 통계</div>
+    <h1 class="stats-title">통계</h1>
+    <div class="stats-subtitle">사이트 방문자 및 트래픽 분석 · 마지막 업데이트 {{ now|date:"H:i" }} KST</div>
+  </div>
+
+  <div class="filter-row">
+    <div class="seg-group">
+      <div class="seg">
+        <a href="?period=day&date={{ selected_date }}&source={{ source_param }}" class="{% if period == 'day' %}active{% endif %}">일</a>
+        <a href="?period=week&date={{ selected_date }}&source={{ source_param }}" class="{% if period == 'week' %}active{% endif %}">주</a>
+        <a href="?period=month&date={{ selected_date }}&source={{ source_param }}" class="{% if period == 'month' %}active{% endif %}">월</a>
+        <a href="?period=year&date={{ selected_date }}&source={{ source_param }}" class="{% if period == 'year' %}active{% endif %}">년</a>
+      </div>
+      <div class="seg">
+        <a href="?period={{ period }}&date={{ selected_date }}&source=all" class="{% if source_param == 'all' %}active{% endif %}">전체</a>
+        <a href="?period={{ period }}&date={{ selected_date }}&source=web" class="{% if source_param == 'web' %}active{% endif %}">🖥 웹</a>
+        <a href="?period={{ period }}&date={{ selected_date }}&source=app" class="{% if source_param == 'app' %}active{% endif %}">📱 앱</a>
+      </div>
+    </div>
+    <div class="date-nav">
+      <a href="?period={{ period }}&date={{ prev_date }}&source={{ source_param }}" class="nav-arrow">‹</a>
+      <span class="date-text">{{ date_display }}</span>
+      <a href="?period={{ period }}&date={{ next_date }}&source={{ source_param }}" class="nav-arrow">›</a>
+      <a href="?period={{ period }}&date={{ today_date }}&source={{ source_param }}" class="today-btn">오늘</a>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">👤 방문자</div>
+      <div class="kpi-value">{{ period_visitors|default:0 }}</div>
+      <div class="kpi-change {% if visitors_change > 0 %}up{% elif visitors_change < 0 %}down{% else %}flat{% endif %}">
+        {% if visitors_change > 0 %}▲{% elif visitors_change < 0 %}▼{% else %}—{% endif %}
+        {{ visitors_change }}%
+        <span class="compare">이전 기간 대비</span>
+      </div>
+      <div class="kpi-spark"><canvas id="spark-visitors"></canvas></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">📄 페이지뷰</div>
+      <div class="kpi-value">{{ period_pageviews|default:0 }}</div>
+      <div class="kpi-change {% if pageviews_change > 0 %}up{% elif pageviews_change < 0 %}down{% else %}flat{% endif %}">
+        {% if pageviews_change > 0 %}▲{% elif pageviews_change < 0 %}▼{% else %}—{% endif %}
+        {{ pageviews_change }}%
+        <span class="compare">이전 기간 대비</span>
+      </div>
+      <div class="kpi-spark"><canvas id="spark-pageviews"></canvas></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🆕 신규 가입자</div>
+      <div class="kpi-value">{{ period_signups|default:0 }}</div>
+      <div class="kpi-change {% if signups_change > 0 %}up{% elif signups_change < 0 %}down{% else %}flat{% endif %}">
+        {% if signups_change > 0 %}▲{% elif signups_change < 0 %}▼{% else %}—{% endif %}
+        {{ signups_change }}%
+        <span class="compare">이전 기간 대비</span>
+      </div>
+      <div class="kpi-spark"><canvas id="spark-signups"></canvas></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">📲 앱 다운로드 CTR</div>
+      <div class="kpi-value">{{ app_download_stats.click_rate_pct }}%</div>
+      <div class="kpi-change {% if app_download_stats.click_rate_change > 0 %}up{% elif app_download_stats.click_rate_change < 0 %}down{% else %}flat{% endif %}">
+        {% if app_download_stats.click_rate_change > 0 %}▲{% elif app_download_stats.click_rate_change < 0 %}▼{% else %}—{% endif %}
+        {{ app_download_stats.click_rate_change }}%
+        <span class="compare">노출 {{ app_download_stats.impressions }} · 클릭 {{ app_download_stats.total }}</span>
+      </div>
+      <div class="kpi-spark"><canvas id="spark-ctr"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 메인 차트 + 사이드 -->
+  <div class="row-main">
+    <div class="card">
+      <h3>
+        <span>트렌드 <span class="card-sub">일별 방문자 &amp; 페이지뷰</span></span>
+        <span class="chart-toggle">
+          <button data-type="line" class="active">Line</button>
+          <button data-type="bar">Bar</button>
+          <button data-type="area">Area</button>
+        </span>
+      </h3>
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--brand)"></span>방문자</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--brand-line)"></span>페이지뷰</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-soft);">최근 {{ chart_days }}일</span>
+      </div>
+      <div class="main-chart-wrap"><canvas id="mainChart"></canvas></div>
     </div>
 
-    <!-- 기간 선택 탭 -->
-    <div class="period-tabs">
-        <a href="?period=day&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'day' %}active{% endif %}">일</a>
-        <a href="?period=week&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'week' %}active{% endif %}">주</a>
-        <a href="?period=month&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'month' %}active{% endif %}">월</a>
-        <a href="?period=year&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'year' %}active{% endif %}">년</a>
+    <div class="side-stack">
+      <div class="card">
+        <h3>출처별 트래픽 <span class="card-sub">웹 vs 앱</span></h3>
+        <div class="source-row">
+          {% if source_stats.web.visitors or source_stats.app.visitors %}
+            <div class="src-web" style="flex: {{ source_stats.web.visitors|default:0 }};"></div>
+            <div class="src-app" style="flex: {{ source_stats.app.visitors|default:0 }};"></div>
+          {% endif %}
+        </div>
+        <div class="source-cols">
+          <div class="src-col">
+            <div class="lbl"><span style="display:inline-block;width:6px;height:6px;background:var(--brand);border-radius:2px;"></span>웹</div>
+            <div class="num">{{ source_stats.web.visitors }}</div>
+            <div class="sub">방문자 · {{ source_stats.web.pageviews }} PV</div>
+          </div>
+          <div class="src-col">
+            <div class="lbl"><span style="display:inline-block;width:6px;height:6px;background:var(--brand-line);border-radius:2px;"></span>앱</div>
+            <div class="num">{{ source_stats.app.visitors }}</div>
+            <div class="sub">사용자 · {{ source_stats.app.pageviews }} 화면조회</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>신규 vs 재방문</h3>
+        <div class="donut-wrap">
+          <div class="donut-chart">
+            <canvas id="donutSegment"></canvas>
+            <div class="donut-center">
+              <div class="pct">{{ visitor_segment_stats.new_pct }}%</div>
+              <div class="pct-lbl">신규</div>
+            </div>
+          </div>
+          <div class="donut-legend">
+            <div class="li"><span class="name"><span class="swatch" style="background:var(--brand)"></span>신규 방문자</span><span class="val">{{ visitor_segment_stats.new }} · {{ visitor_segment_stats.new_pct }}%</span></div>
+            <div class="li"><span class="name"><span class="swatch" style="background:var(--brand-soft)"></span>재방문자</span><span class="val">{{ visitor_segment_stats.returning }} · {{ visitor_segment_stats.returning_pct }}%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 중단 3컬럼 -->
+  <div class="row-three">
+    <div class="card">
+      {% with top_device=device_stats|first %}
+      <h3>디바이스 분포 {% if top_device %}<span class="badge">{{ top_device.label }} 우세</span>{% endif %}</h3>
+      {% endwith %}
+      <div class="donut-wrap">
+        <div class="donut-chart">
+          <canvas id="donutDevice"></canvas>
+          <div class="donut-center">
+            <div class="pct" style="font-size:14px;color:var(--text);">{{ period_visitors }}</div>
+            <div class="pct-lbl">세션</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          {% for d in device_stats %}
+          <div class="li">
+            <span class="name">
+              <span class="swatch" style="background: {% cycle 'var(--brand)' 'var(--brand-line)' 'var(--brand-soft)' %};"></span>
+              {{ d.label }}
+            </span>
+            <span class="val">{{ d.visits }} · {{ d.pct }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
 
-    <!-- 출처 필터 (전체 / 웹 / 앱) -->
-    <div class="period-tabs" style="margin-top: 8px;">
-        <a href="?period={{ period }}&date={{ selected_date }}&source=all" class="period-tab {% if source_param == 'all' %}active{% endif %}">전체</a>
-        <a href="?period={{ period }}&date={{ selected_date }}&source=web" class="period-tab {% if source_param == 'web' %}active{% endif %}">🖥 웹</a>
-        <a href="?period={{ period }}&date={{ selected_date }}&source=app" class="period-tab {% if source_param == 'app' %}active{% endif %}">📱 앱</a>
+    <div class="card">
+      <h3>유입 채널</h3>
+      <div class="hbar-list">
+        {% for c in channel_stats %}
+        <div class="hbar-row">
+          <span class="dot"></span>
+          <span class="name">{{ c.label }}</span>
+          <span class="track"><span class="fill" style="width: {{ c.pct }}%;"></span></span>
+          <span class="val">{{ c.visits }}</span>
+          <span class="pct">{{ c.pct }}%</span>
+        </div>
+        {% endfor %}
+      </div>
     </div>
 
-    <!-- 날짜 네비게이션 -->
-    <div class="date-navigation">
-        <a href="?period={{ period }}&date={{ prev_date }}" class="date-nav-btn">
-            <span>←</span>
-            <span>이전</span>
-        </a>
-        <div class="date-display">{{ date_display }}</div>
-        <a href="?period={{ period }}&date={{ next_date }}" class="date-nav-btn">
-            <span>다음</span>
-            <span>→</span>
-        </a>
+    <div class="card">
+      <h3>앱 다운로드 클릭 <span class="badge">{{ app_download_stats.total }}건</span></h3>
+      <div class="app-grid">
+        <div class="app-box">
+          <div class="ic">🍎</div>
+          <div class="lbl">iOS</div>
+          <div class="num">{{ app_download_stats.ios }}</div>
+        </div>
+        <div class="app-box">
+          <div class="ic">🤖</div>
+          <div class="lbl">Android</div>
+          <div class="num">{{ app_download_stats.android }}</div>
+        </div>
+      </div>
+      <div class="app-metric">
+        <span class="m-lbl">CTA 노출</span>
+        <span class="m-val">{{ app_download_stats.impressions }}</span>
+      </div>
+      <div class="app-metric">
+        <span class="m-lbl">CTA 클릭</span>
+        <span class="m-val">{{ app_download_stats.total }}</span>
+      </div>
+      <div class="app-metric">
+        <span class="m-lbl">전환율</span>
+        <span class="m-val brand">{{ app_download_stats.click_rate_pct }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 TOP 리스트 -->
+  <div class="row-two">
+    <div class="card">
+      <h3>인기 페이지 <span class="card-sub">TOP 10</span></h3>
+      <div class="top-list">
+        {% if top_pages %}
+          {% with first_pages=top_pages|first %}
+            {% for page in top_pages|slice:":10" %}
+            <div class="top-item">
+              <span class="rank">{{ forloop.counter|stringformat:"02d" }}</span>
+              <span class="label" title="{{ page.url_path }}">{{ page.url_path }}</span>
+              <span class="bar"><span class="bar-fill" style="width: {% widthratio page.views first_pages.views 100 %}%;"></span></span>
+              <span class="count">{{ page.views }}</span>
+            </div>
+            {% endfor %}
+          {% endwith %}
+        {% else %}
+          <div class="empty-state">데이터가 없습니다</div>
+        {% endif %}
+      </div>
     </div>
 
-    <!-- 메인 지표 -->
-    <div class="main-metrics">
-        <div class="metric-card">
-            <div class="metric-label">방문자</div>
-            <div class="metric-value">{{ period_visitors|default:0 }}</div>
-            <div class="metric-change {% if visitors_change > 0 %}positive{% elif visitors_change < 0 %}negative{% else %}neutral{% endif %}">
-                {% if visitors_change > 0 %}↑{% elif visitors_change < 0 %}↓{% else %}→{% endif %}
-                {{ visitors_change }}% <span style="color: var(--text-secondary); font-weight: 400;">이전 기간 대비</span>
+    <div class="card">
+      <h3>유입 도메인 <span class="card-sub">TOP 10</span></h3>
+      <div class="top-list">
+        {% if top_referrers %}
+          {% with first_refs=top_referrers|first %}
+            {% for ref in top_referrers|slice:":10" %}
+            <div class="top-item">
+              <span class="rank">{{ forloop.counter|stringformat:"02d" }}</span>
+              <span class="label" title="{{ ref.referer_domain }}">{{ ref.referer_domain }}</span>
+              <span class="bar"><span class="bar-fill" style="width: {% widthratio ref.visits first_refs.visits 100 %}%;"></span></span>
+              <span class="count">{{ ref.visits }}</span>
             </div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">조회수</div>
-            <div class="metric-value">{{ period_pageviews|default:0 }}</div>
-            <div class="metric-change {% if pageviews_change > 0 %}positive{% elif pageviews_change < 0 %}negative{% else %}neutral{% endif %}">
-                {% if pageviews_change > 0 %}↑{% elif pageviews_change < 0 %}↓{% else %}→{% endif %}
-                {{ pageviews_change }}% <span style="color: var(--text-secondary); font-weight: 400;">이전 기간 대비</span>
-            </div>
-        </div>
+            {% endfor %}
+          {% endwith %}
+        {% else %}
+          <div class="empty-state">데이터가 없습니다</div>
+        {% endif %}
+      </div>
     </div>
-
-    <!-- 메인 차트 -->
-    <div class="chart-section">
-        <div class="chart-header">
-            <h2>트렌드</h2>
-        </div>
-        <div class="chart-container">
-            <canvas id="mainChart"></canvas>
-        </div>
-    </div>
-
-    <!-- 통계 섹션들 -->
-    <div class="stats-sections">
-        <!-- 상위 페이지 -->
-        <div class="stat-section">
-            <h3>상위 페이지</h3>
-            <div class="stat-table">
-                {% if top_pages %}
-                    {% for page in top_pages %}
-                    <div class="stat-row">
-                        <div class="stat-label" title="{{ page.url_path }}">{{ page.url_path }}</div>
-                        <div class="stat-value">{{ page.views }}</div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">데이터가 없습니다</div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- 유입 경로 -->
-        <div class="stat-section">
-            <h3>유입 경로</h3>
-            <div class="stat-table">
-                {% if top_referrers %}
-                    {% for ref in top_referrers %}
-                    <div class="stat-row">
-                        <div class="stat-label" title="{{ ref.referer_domain }}">{{ ref.referer_domain }}</div>
-                        <div class="stat-value">{{ ref.visits }}</div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">데이터가 없습니다</div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- 검색어 -->
-        <div class="stat-section">
-            <h3>검색어</h3>
-            <div class="stat-table">
-                {% if top_search_terms %}
-                    {% for term in top_search_terms %}
-                    <div class="stat-row">
-                        <div class="stat-label" title="{{ term.term }}">{{ term.term }}</div>
-                        <div class="stat-value">{{ term.count }}</div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">검색어 데이터가 없습니다</div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- 외부 링크 클릭 -->
-        <div class="stat-section">
-            <h3>클릭한 링크</h3>
-            <div class="stat-table">
-                {% if top_outbound_clicks %}
-                    {% for click in top_outbound_clicks %}
-                    <div class="stat-row">
-                        <div class="stat-label" title="{{ click.destination_domain }}">{{ click.destination_domain }}</div>
-                        <div class="stat-value">{{ click.clicks }}</div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">데이터가 없습니다</div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- 앱 다운로드 클릭 (+CTA 클릭률) -->
-        <div class="stat-section">
-            <h3>앱 다운로드 클릭</h3>
-            <div class="stat-table">
-                <div class="stat-row">
-                    <div class="stat-label">전체</div>
-                    <div class="stat-value">{{ app_download_stats.total }}</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">🍎 iOS</div>
-                    <div class="stat-value">{{ app_download_stats.ios }}</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">🤖 Android</div>
-                    <div class="stat-value">{{ app_download_stats.android }}</div>
-                </div>
-                {% if app_download_stats.other %}
-                <div class="stat-row">
-                    <div class="stat-label">기타</div>
-                    <div class="stat-value">{{ app_download_stats.other }}</div>
-                </div>
-                {% endif %}
-                <div class="stat-row">
-                    <div class="stat-label">CTA 클릭률 (페이지뷰 대비)</div>
-                    <div class="stat-value">{{ app_download_stats.click_rate_pct }}%</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 출처 (웹/앱) -->
-        <div class="stat-section">
-            <h3>출처별 트래픽 (전체 필터일 때 의미)</h3>
-            <div class="stat-table">
-                <div class="stat-row">
-                    <div class="stat-label">🖥 웹 방문자</div>
-                    <div class="stat-value">{{ source_stats.web.visitors }}</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">🖥 웹 페이지뷰</div>
-                    <div class="stat-value">{{ source_stats.web.pageviews }}</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">📱 앱 사용자</div>
-                    <div class="stat-value">{{ source_stats.app.visitors }}</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">📱 앱 화면 조회</div>
-                    <div class="stat-value">{{ source_stats.app.pageviews }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 신규 vs 재방문 -->
-        <div class="stat-section">
-            <h3>신규 vs 재방문</h3>
-            <div class="stat-table">
-                <div class="stat-row">
-                    <div class="stat-label">🆕 신규 방문자</div>
-                    <div class="stat-value">{{ visitor_segment_stats.new }} ({{ visitor_segment_stats.new_pct }}%)</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">🔁 재방문자</div>
-                    <div class="stat-value">{{ visitor_segment_stats.returning }} ({{ visitor_segment_stats.returning_pct }}%)</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 디바이스 분포 -->
-        <div class="stat-section">
-            <h3>디바이스 분포</h3>
-            <div class="stat-table">
-                {% for d in device_stats %}
-                <div class="stat-row">
-                    <div class="stat-label">{{ d.label }}</div>
-                    <div class="stat-value">{{ d.visits }} ({{ d.pct }}%)</div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- 유입 채널 -->
-        <div class="stat-section">
-            <h3>유입 채널</h3>
-            <div class="stat-table">
-                {% for c in channel_stats %}
-                <div class="stat-row">
-                    <div class="stat-label">{{ c.label }}</div>
-                    <div class="stat-value">{{ c.visits }} ({{ c.pct }}%)</div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-    // 차트 데이터
-    const chartData = {{ chart_data_json|safe }};
+(function() {
+  const chartData = {{ chart_data_json|safe }};
+  const labels = chartData.map(d => d.label);
+  const visitors = chartData.map(d => d.visitors);
+  const views = chartData.map(d => d.views);
+  const signups = chartData.map(d => d.signups);
+  const ctrs = chartData.map(d => d.ctr);
 
-    // 차트 설정 - 막대 그래프로 방문자수(진함)와 조회수(연함) 동시 표시
-    const ctx = document.getElementById('mainChart').getContext('2d');
+  const BRAND = '#31AA60';
+  const BRAND_LINE = 'rgba(49,170,96,0.45)';
+  const BRAND_SOFT = 'rgba(49,170,96,0.12)';
 
-    const chartConfig = {
-        type: 'bar',
-        data: {
-            labels: chartData.map(d => d.label),
-            datasets: [
-                {
-                    label: '방문자',
-                    data: chartData.map(d => d.visitors),
-                    backgroundColor: '#00a32a',
-                    borderColor: '#00a32a',
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8,
-                },
-                {
-                    label: '조회수',
-                    data: chartData.map(d => d.views),
-                    backgroundColor: 'rgba(0, 163, 42, 0.3)',
-                    borderColor: 'rgba(0, 163, 42, 0.3)',
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8,
-                }
-            ]
+  function makeSpark(canvasId, data) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+    new Chart(el.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: data.map((_, i) => i),
+        datasets: [{
+          data: data,
+          borderColor: BRAND,
+          backgroundColor: BRAND_SOFT,
+          borderWidth: 1.5,
+          tension: 0.35,
+          pointRadius: 0,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+        elements: { line: { borderJoinStyle: 'round' } },
+      }
+    });
+  }
+  makeSpark('spark-visitors', visitors);
+  makeSpark('spark-pageviews', views);
+  makeSpark('spark-signups', signups);
+  makeSpark('spark-ctr', ctrs);
+
+  // 메인 차트
+  const mainCtx = document.getElementById('mainChart').getContext('2d');
+  let mainChart = null;
+  function renderMain(type) {
+    if (mainChart) mainChart.destroy();
+    const isArea = type === 'area';
+    const useType = type === 'area' ? 'line' : type;
+    mainChart = new Chart(mainCtx, {
+      type: useType,
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: '방문자', data: visitors,
+            borderColor: BRAND,
+            backgroundColor: isArea ? BRAND_SOFT : BRAND,
+            tension: 0.35,
+            pointRadius: useType === 'line' ? 0 : undefined,
+            pointHoverRadius: 4, borderWidth: 2,
+            fill: isArea,
+            borderRadius: useType === 'bar' ? 4 : 0,
+          },
+          {
+            label: '페이지뷰', data: views,
+            borderColor: BRAND_LINE,
+            backgroundColor: isArea ? 'rgba(49,170,96,0.05)' : BRAND_LINE,
+            tension: 0.35,
+            pointRadius: useType === 'line' ? 0 : undefined,
+            pointHoverRadius: 4, borderWidth: 2,
+            fill: isArea,
+            borderRadius: useType === 'bar' ? 4 : 0,
+            borderDash: useType === 'line' ? [4, 4] : [],
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index', intersect: false,
+            backgroundColor: '#0a0a0a', titleColor: '#fff', bodyColor: '#fff',
+            padding: 10, borderColor: BRAND, borderWidth: 1, usePointStyle: true,
+          }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    align: 'end',
-                    labels: {
-                        boxWidth: 12,
-                        boxHeight: 12,
-                        padding: 15,
-                        color: '#757575',
-                        font: {
-                            size: 13,
-                            weight: '500'
-                        },
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    backgroundColor: '#1e1e1e',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: '#00a32a',
-                    borderWidth: 1,
-                    padding: 12,
-                    displayColors: true,
-                    boxWidth: 8,
-                    boxHeight: 8,
-                    bodySpacing: 6,
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#f0f0f0',
-                        drawBorder: false,
-                    },
-                    ticks: {
-                        color: '#757575',
-                        font: {
-                            size: 12
-                        },
-                        precision: 0
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false,
-                        drawBorder: false,
-                    },
-                    ticks: {
-                        color: '#757575',
-                        font: {
-                            size: 12
-                        }
-                    }
-                }
-            },
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            }
-        }
-    };
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f3f3f2', drawBorder: false }, ticks: { color: '#a3a3a3', font: { size: 11 }, precision: 0 } },
+          x: { grid: { display: false, drawBorder: false }, ticks: { color: '#a3a3a3', font: { size: 11 }, maxRotation: 0, autoSkipPadding: 12 } }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+  }
+  renderMain('line');
 
-    const mainChart = new Chart(ctx, chartConfig);
+  document.querySelectorAll('.chart-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.chart-toggle button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      renderMain(b.dataset.type);
+    });
+  });
+
+  // 신규 vs 재방문 도넛
+  const seg = document.getElementById('donutSegment');
+  if (seg) {
+    new Chart(seg.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['신규', '재방문'],
+        datasets: [{
+          data: [{{ visitor_segment_stats.new|default:0 }}, {{ visitor_segment_stats.returning|default:0 }}],
+          backgroundColor: [BRAND, BRAND_SOFT],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '72%',
+        plugins: { legend: { display: false }, tooltip: { enabled: true } }
+      }
+    });
+  }
+
+  // 디바이스 도넛
+  const dev = document.getElementById('donutDevice');
+  if (dev) {
+    new Chart(dev.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: [{% for d in device_stats %}'{{ d.label }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+          data: [{% for d in device_stats %}{{ d.visits }}{% if not forloop.last %},{% endif %}{% endfor %}],
+          backgroundColor: [BRAND, BRAND_LINE, BRAND_SOFT],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '72%',
+        plugins: { legend: { display: false }, tooltip: { enabled: true } }
+      }
+    });
+  }
+})();
 </script>
 {% endblock %}
