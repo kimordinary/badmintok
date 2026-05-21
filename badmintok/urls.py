@@ -52,6 +52,7 @@ urlpatterns = [
     # Keep the canonical namespaced route in band/urls.py as well.
     path("band/<int:band_id>/bookmark/", band_views.band_bookmark_toggle, name="bookmark_toggle"),
     path("band/", include(("band.urls", "band"), namespace="band")),
+    path("center/", include(("centers.urls", "center"), namespace="center")),
     # path(
     #     "shop/",
     #     TemplateView.as_view(template_name="shop/index.html"),

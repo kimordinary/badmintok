@@ -26,6 +26,7 @@ class Center(models.Model):
         db_index=True,
     )
     address = models.CharField(_("주소"), max_length=300, blank=True)
+    address_detail = models.CharField(_("상세 주소"), max_length=200, blank=True)
     phone = models.CharField(_("전화번호"), max_length=30, blank=True)
     description = models.TextField(_("센터 소개"), blank=True)
     operating_hours = models.CharField(
@@ -50,6 +51,13 @@ class Center(models.Model):
         help_text="해제하면 목록/상세 모두 비공개",
     )
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="created_centers",
+        verbose_name=_("등록자"),
+    )
     created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
     updated_at = models.DateTimeField(_("수정일"), auto_now=True)
 

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if mode == 'update' %}센터 수정{% else %}센터 등록{% endif %} - 배드민톡{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+  .form-wrap h1 { font-size: 22px; font-weight: 700; margin: 0 0 18px 0; }
+  .form-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 20px; }
+  .form-row { margin-bottom: 16px; }
+  .form-row label { display: block; font-size: 13px; font-weight: 600; color: #404040; margin-bottom: 6px; }
+  .form-row label .req { color: #ef4444; margin-left: 3px; }
+  .form-row input[type=text], .form-row input[type=tel], .form-row input[type=number], .form-row textarea, .form-row select {
+    width: 100%; padding: 9px 12px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 14px;
+    font-family: inherit; box-sizing: border-box;
+  }
+  .form-row textarea { resize: vertical; min-height: 100px; }
+  .form-row .hint { font-size: 11px; color: #a3a3a3; margin-top: 4px; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  .btn-primary { padding: 10px 20px; background: #31AA60; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-primary:hover { background: #279952; }
+  .btn-cancel { padding: 10px 20px; background: #fff; color: #525252; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 14px; text-decoration: none; }
+  .image-preview { margin-top: 8px; max-width: 200px; max-height: 150px; border-radius: 8px; }
+  @media (max-width: 640px) {
+    .form-grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrap">
+  <h1>{% if mode == 'update' %}센터 수정{% else %}센터 등록하기{% endif %}</h1>
+
+  <form method="post" enctype="multipart/form-data" class="form-card">
+    {% csrf_token %}
+
+    <div class="form-row">
+      <label>센터명<span class="req">*</span></label>
+      <input type="text" name="name" required maxlength="200" value="{{ center.name|default:'' }}">
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>지역<span class="req">*</span></label>
+        <select name="region" required>
+          {% for opt in region_options %}
+            <option value="{{ opt.value }}" {% if center and center.region == opt.value %}selected{% endif %}>{{ opt.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>전화번호</label>
+        <input type="tel" name="phone" maxlength="30" value="{{ center.phone|default:'' }}" placeholder="02-1234-5678">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>주소<span class="req">*</span></label>
+      <input type="text" name="address" required maxlength="300" value="{{ center.address|default:'' }}" placeholder="서울시 송파구 올림픽로 25">
+    </div>
+
+    <div class="form-row">
+      <label>상세 주소</label>
+      <input type="text" name="address_detail" maxlength="200" value="{{ center.address_detail|default:'' }}" placeholder="지하 1층, 3관 등">
+    </div>
+
+    <div class="form-row">
+      <label>센터 소개</label>
+      <textarea name="description" placeholder="센터에 대한 간단한 소개">{{ center.description|default:'' }}</textarea>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>운영 시간</label>
+        <input type="text" name="operating_hours" maxlength="200" value="{{ center.operating_hours|default:'' }}" placeholder="평일 06:00-23:00 / 주말 08:00-22:00">
+      </div>
+      <div class="form-row">
+        <label>코트 수</label>
+        <input type="number" name="court_count" min="0" value="{{ center.court_count|default:'' }}" placeholder="8">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>이용 요금</label>
+      <input type="text" name="pricing" maxlength="300" value="{{ center.pricing|default:'' }}" placeholder="1시간 ₩10,000">
+    </div>
+
+    <div class="form-row">
+      <label>편의 시설</label>
+      <input type="text" name="amenities" maxlength="300" value="{{ center.amenities|default:'' }}" placeholder="샤워실, 락커, 주차장 (쉼표로 구분)">
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>위도</label>
+        <input type="text" name="latitude" value="{{ center.latitude|default:'' }}" placeholder="37.5142">
+      </div>
+      <div class="form-row">
+        <label>경도</label>
+        <input type="text" name="longitude" value="{{ center.longitude|default:'' }}" placeholder="127.1027">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>커버 이미지</label>
+      <input type="file" name="cover_image" accept="image/*">
+      {% if center and center.cover_image %}
+        <div><img src="{{ center.cover_image.url }}" class="image-preview" alt=""></div>
+        <div class="hint">새 이미지를 선택하면 기존 이미지가 교체됩니다.</div>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      {% if mode == 'update' %}
+        <a href="{% url 'center:detail' center.id %}" class="btn-cancel">취소</a>
+      {% else %}
+        <a href="{% url 'center:list' %}" class="btn-cancel">취소</a>
+      {% endif %}
+      <button type="submit" class="btn-primary">{% if mode == 'update' %}수정 완료{% else %}센터 등록{% endif %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
