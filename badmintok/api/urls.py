@@ -28,6 +28,9 @@ urlpatterns = [
     # Bands API (외부 앱)
     path('bands/', include('band.api.urls', namespace='band_api')),
 
+    # Centers API (배드민턴 센터)
+    path('centers/', include('centers.api.urls', namespace='centers_api')),
+
     # Notifications API
     path('notifications/', include('notifications.api.urls', namespace='notifications_api')),
 
