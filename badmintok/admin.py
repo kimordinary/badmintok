@@ -300,10 +300,10 @@ def statistics_view(request):
     cache_key = _get_cache_key(period, selected_date.strftime('%Y-%m-%d'), source_param)
     is_today = selected_date.date() == now.date()
 
-    if not is_today:
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return render(request, 'admin/statistics_jetpack.html', cached_data)
+    # 캐시 조회 (오늘이든 과거든 일단 확인)
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return render(request, 'admin/statistics_jetpack.html', cached_data)
 
     if period == 'day':
         period_start = selected_date
@@ -418,17 +418,12 @@ def statistics_view(request):
         },
     }
 
-    # === 신규 vs 재방문 ===
-    period_session_keys = list(
-        base_queryset.values_list('session_key', flat=True).distinct()
-    )
-    if period_session_keys:
-        returning_count = VisitorLog.objects.filter(
-            session_key__in=period_session_keys,
-            visited_at__lt=period_start,
-        ).filter(real_user_filter).values('session_key').distinct().count()
-    else:
-        returning_count = 0
+    # === 신규 vs 재방문 (subquery로 IN 리스트 회피) ===
+    period_session_keys_subq = base_queryset.values('session_key').distinct()
+    returning_count = VisitorLog.objects.filter(
+        session_key__in=period_session_keys_subq,
+        visited_at__lt=period_start,
+    ).filter(real_user_filter).values('session_key').distinct().count()
     new_count = max(0, period_visitors - returning_count)
     visitor_segment_stats = {
         'new': new_count,
@@ -635,8 +630,8 @@ def statistics_view(request):
         'app_download_stats': app_download_stats,
     }
 
-    if not is_today:
-        cache.set(cache_key, context, 3600)
+    # 오늘은 5분, 과거는 24시간 캐시
+    cache.set(cache_key, context, 300 if is_today else 86400)
 
     return render(request, 'admin/statistics_jetpack.html', context)
 

@@ -62,6 +62,11 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    class Meta(AbstractUser.Meta):
+        indexes = [
+            models.Index(fields=["-date_joined"], name="user_date_joined_idx"),
+        ]
+
     def __str__(self):
         return self.activity_name or self.email
     
