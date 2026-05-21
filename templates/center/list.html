@@ -909,7 +909,9 @@
                                 <a href="{% url 'center:detail' c.id %}" style="text-decoration: none; color: inherit;">
                                     <div style="padding: 12px; background: #f8fafc; border-radius: 6px; transition: all 0.2s ease;">
                                         <div style="display: flex; align-items: center; gap: 12px;">
-                                            {% if c.cover_image %}
+                                            {% if c.profile_image %}
+                                                <img src="{{ c.profile_image.url }}" alt="{{ c.name }}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
+                                            {% elif c.cover_image %}
                                                 <img src="{{ c.cover_image.url }}" alt="{{ c.name }}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
                                             {% else %}
                                                 <div style="width: 40px; height: 40px; border-radius: 6px; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">
@@ -999,12 +1001,14 @@
                             {% for c in centers %}
                                 <a href="{% url 'center:detail' c.id %}" style="text-decoration: none; color: inherit; display: block;">
                                     <div class="band-card" style="display: flex; align-items: center; gap: clamp(8px, 3vw, 16px); padding: clamp(12px, 3vw, 16px); background: #fff; transition: all 0.2s ease; border-bottom: 1px solid #e2e8f0; width: 100%; box-sizing: border-box;">
-                                        <!-- 왼쪽: 커버 이미지 (프로필 사진 크기와 동일, 세로 중앙 정렬) -->
+                                        <!-- 왼쪽: 프로필/커버 이미지 (band와 동일 패턴: profile 우선, cover 차선) -->
                                         <div style="width: clamp(60px, 15vw, 80px); height: clamp(60px, 15vw, 80px); flex-shrink: 0; border-radius: 8px; overflow: hidden; min-width: 60px;">
-                                            {% if c.cover_image %}
+                                            {% if c.profile_image %}
+                                                <img src="{{ c.profile_image.url }}" alt="{{ c.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% elif c.cover_image %}
                                                 <img src="{{ c.cover_image.url }}" alt="{{ c.name }}" style="width: 100%; height: 100%; object-fit: cover;">
                                             {% else %}
-                                                <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #c44569 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: 700;">
+                                                <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #31AA60 0%, #279952 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: 700;">
                                                     {{ c.name|first }}
                                                 </div>
                                             {% endif %}

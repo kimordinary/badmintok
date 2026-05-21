@@ -240,6 +240,8 @@ def _save_center_form(request, instance=None):
 
     if request.FILES.get("cover_image"):
         center.cover_image = request.FILES["cover_image"]
+    if request.FILES.get("profile_image"):
+        center.profile_image = request.FILES["profile_image"]
 
     center.save()
     return center

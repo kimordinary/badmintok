@@ -43,6 +43,7 @@ class Center(models.Model):
         help_text="쉼표 구분: 샤워실, 락커, 주차장",
     )
     cover_image = WebPImageField(_("커버 이미지"), upload_to="centers/", blank=True, null=True)
+    profile_image = WebPImageField(_("프로필 이미지"), upload_to="centers/profile/", blank=True, null=True)
     latitude = models.FloatField(_("위도"), null=True, blank=True)
     longitude = models.FloatField(_("경도"), null=True, blank=True)
 

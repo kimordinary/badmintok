@@ -104,8 +104,19 @@
     </div>
 
     <div class="form-row">
+      <label>프로필 이미지 (로고)</label>
+      <input type="file" name="profile_image" accept="image/*">
+      <div class="hint">권장 200×200px · 1:1 정사각형 (없으면 센터명 첫 글자가 표시됩니다)</div>
+      {% if center and center.profile_image %}
+        <div><img src="{{ center.profile_image.url }}" class="image-preview" alt="" style="max-width: 100px; max-height: 100px; border-radius: 12px;"></div>
+        <div class="hint">새 이미지를 선택하면 기존 이미지가 교체됩니다.</div>
+      {% endif %}
+    </div>
+
+    <div class="form-row">
       <label>커버 이미지</label>
       <input type="file" name="cover_image" accept="image/*">
+      <div class="hint">권장 1200×450px · 8:3 가로 와이드 비율 (상세 페이지 상단 배경)</div>
       {% if center and center.cover_image %}
         <div><img src="{{ center.cover_image.url }}" class="image-preview" alt=""></div>
         <div class="hint">새 이미지를 선택하면 기존 이미지가 교체됩니다.</div>

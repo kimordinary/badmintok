@@ -2,135 +2,358 @@
 {% load static %}
 
 {% block title %}{{ center.name }} - 배드민턴 센터{% endblock %}
+{% block og_title_meta %}<meta property="og:title" content="{{ center.name }} - 배드민턴 센터">{% endblock %}
+{% block og_image %}{% if center.cover_image %}{{ request.scheme }}://{{ request.get_host }}{{ center.cover_image.url }}{% elif center.profile_image %}{{ request.scheme }}://{{ request.get_host }}{{ center.profile_image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}{% endif %}{% endblock %}
 
 {% block extra_head %}
+<meta name="description" content="{{ center.name }} - {{ center.get_region_display }}{% if center.address %} · {{ center.address }}{% endif %}{% if center.description %} · {{ center.description|truncatewords:20 }}{% endif %}">
+
 <style>
-  .center-detail-wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
-  .center-cover-large { width: 100%; aspect-ratio: 16/9; background: #f5f5f4 center/cover no-repeat; border-radius: 12px; margin-bottom: 18px; }
-  .center-cover-large.placeholder { display: flex; align-items: center; justify-content: center; color: #d4d4d4; font-size: 64px; }
-  .center-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
-  .center-title-row h1 { font-size: 26px; font-weight: 700; margin: 0; color: #0a0a0a; }
-  .center-meta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: #737373; font-size: 13px; margin-bottom: 16px; }
-  .center-meta-row .chip { padding: 3px 10px; background: rgba(49,170,96,0.1); color: #31AA60; border-radius: 12px; font-weight: 500; font-size: 12px; }
+  /* === band/detail.html과 동일한 헤더/그리드 패턴 === */
+  .band-cover-wrapper { position: relative; width: 100%; margin-bottom: 16px; }
+  .band-cover-image {
+    width: 100%; max-width: 1200px; border-radius: 12px; overflow: hidden;
+    position: relative; background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto;
+  }
+  .band-cover-image img {
+    width: 100%; max-width: 1200px; height: auto; aspect-ratio: 8/3;
+    object-fit: cover; object-position: center; display: block;
+  }
+  .band-cover-placeholder {
+    width: 100%; aspect-ratio: 8/3;
+    background: linear-gradient(135deg, #31AA60 0%, #279952 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 56px; font-weight: 800; letter-spacing: 2px;
+  }
 
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-  .info-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 14px; }
-  .info-card .label { font-size: 11px; color: #a3a3a3; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-  .info-card .value { font-size: 14px; color: #0a0a0a; line-height: 1.5; }
-  .info-card .value a { color: #31AA60; text-decoration: none; }
+  .band-content-grid {
+    display: grid; grid-template-columns: 1fr 280px; gap: 24px;
+    align-items: start; width: 100%; box-sizing: border-box; overflow-x: hidden;
+  }
+  .band-content-grid > * { min-width: 0; width: 100%; max-width: 100%; box-sizing: border-box; }
 
-  .section { margin-bottom: 20px; }
-  .section h2 { font-size: 16px; font-weight: 600; margin: 0 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid #e5e5e5; }
-  .description { font-size: 14px; line-height: 1.7; color: #404040; white-space: pre-wrap; }
+  .band-header-info {
+    display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+    width: 100%; max-width: 100%; box-sizing: border-box; margin-bottom: 20px;
+  }
+  .band-profile-image {
+    width: 80px; height: 80px; min-width: 80px;
+    border-radius: 12px; object-fit: cover; flex-shrink: 0;
+  }
+  .band-profile-placeholder {
+    width: 80px; height: 80px; min-width: 80px;
+    border-radius: 12px; background: var(--brand);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 32px; font-weight: 700; flex-shrink: 0;
+  }
+  .band-header-text { flex: 1 1 auto; min-width: 200px; overflow: hidden; }
+  .band-header-title { margin: 0; font-size: 24px; font-weight: 700; color: #1e293b; word-break: break-word; line-height: 1.3; }
+  .band-header-badges {
+    display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px;
+    align-items: center; flex-shrink: 0; flex-basis: 100%; width: 100%; margin-top: 8px;
+  }
+  .band-badge {
+    display: inline-flex; align-items: center; padding: 2px 6px;
+    border-radius: 4px; font-size: clamp(10px, 2.5vw, 12px); font-weight: 600;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .band-badge-region { background: #d1fae5; color: #065f46; }
+  .band-badge-category { background: #3b82f6; color: #fff; }
+  .band-badge-open { background: #dcfce7; color: #166534; }
 
-  .amenities { display: flex; flex-wrap: wrap; gap: 6px; }
-  .amenities .item { padding: 4px 10px; background: #f5f5f4; border-radius: 12px; font-size: 12px; color: #525252; }
+  /* === 네이버 플레이스 스타일: 핵심 액션 4개 === */
+  .place-actions {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-bottom: 24px;
+  }
+  .place-action-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 14px 8px; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 10px; text-decoration: none; color: #1e293b;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .place-action-btn:hover { border-color: var(--brand); background: #f0fdf4; color: var(--brand); }
+  .place-action-btn .icon { font-size: 20px; line-height: 1; }
+  .place-action-btn.on { background: #f0fdf4; border-color: var(--brand); color: var(--brand); }
+  .place-action-btn.danger:hover { border-color: #ef4444; background: #fef2f2; color: #ef4444; }
 
-  .action-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; border: 1px solid transparent; }
-  .btn-bookmark { background: #fff; color: #31AA60; border-color: #31AA60; }
-  .btn-bookmark.on { background: #31AA60; color: #fff; }
-  .btn-edit { background: #fff; color: #525252; border-color: #e5e5e5; }
-  .btn-delete { background: #fff; color: #ef4444; border-color: #fecaca; }
-  .btn-share { background: #fff; color: #525252; border-color: #e5e5e5; }
+  /* === 네이버 플레이스 스타일: 정보 카드 그리드 === */
+  .place-info-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    margin-bottom: 24px;
+  }
+  .place-info-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 16px; min-height: 84px;
+  }
+  .place-info-card .label {
+    font-size: 11px; color: #94a3b8; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .place-info-card .value {
+    font-size: 14px; color: #1e293b; line-height: 1.5; word-break: break-all;
+  }
+  .place-info-card .value a { color: #31AA60; text-decoration: none; }
+  .place-info-card .value .strong { font-weight: 700; font-size: 16px; }
 
-  .author-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #737373; margin-top: 18px; padding-top: 12px; border-top: 1px solid #f5f5f4; }
-  .author-row img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+  /* === 소개 / 편의시설 섹션 === */
+  .band-description-box {
+    width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 20px; margin-bottom: 20px; box-sizing: border-box;
+  }
+  .band-description-box h3 {
+    font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 12px 0;
+    padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;
+  }
+  .band-description-content {
+    font-size: 15px; color: #404040; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+  }
+  .amenity-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .amenity-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; background: #f1f5f9; color: #475569;
+    border-radius: 16px; font-size: 13px; font-weight: 500;
+  }
 
+  /* === 사이드 카드 (등록자/관리) === */
+  .side-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 16px; margin-bottom: 12px;
+  }
+  .side-card h4 {
+    font-size: 13px; font-weight: 600; color: #64748b;
+    margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .side-author { display: flex; align-items: center; gap: 10px; }
+  .side-author img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+  .side-author-avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--brand);
+    display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;
+  }
+  .side-author-meta { font-size: 13px; color: #1e293b; }
+  .side-author-meta .sub { font-size: 11px; color: #94a3b8; }
+
+  /* === 반응형 === */
+  @media (max-width: 1024px) {
+    .band-content-grid { grid-template-columns: 1fr; }
+    .place-info-grid { grid-template-columns: repeat(2, 1fr); }
+  }
   @media (max-width: 640px) {
-    .info-grid { grid-template-columns: 1fr; }
+    .band-cover-image img, .band-cover-placeholder { aspect-ratio: 16/9; }
+    .place-info-grid { grid-template-columns: 1fr 1fr; }
+    .place-actions { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .place-action-btn { padding: 12px 4px; font-size: 12px; }
+    .place-action-btn .icon { font-size: 18px; }
+    .band-profile-image, .band-profile-placeholder { width: 64px; height: 64px; min-width: 64px; font-size: 26px; }
+    .band-header-title { font-size: 20px; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="center-detail-wrap">
-  {% if center.cover_image %}
-    <div class="center-cover-large" style="background-image: url('{{ center.cover_image.url }}');"></div>
-  {% else %}
-    <div class="center-cover-large placeholder">🏸</div>
-  {% endif %}
+<section class="section" style="position: relative;">
+  <div class="container" style="padding: 24px 16px;">
 
-  <div class="center-title-row">
-    <h1>{{ center.name }}</h1>
-  </div>
-
-  <div class="center-meta-row">
-    <span class="chip">{{ center.get_region_display }}</span>
-    {% if center.court_count %}<span>코트 {{ center.court_count }}면</span>{% endif %}
-    <span>★ {{ center.bookmark_count_annotated|default:0 }}</span>
-  </div>
-
-  <div class="action-bar">
-    {% if user.is_authenticated %}
-      <form method="post" action="{% url 'center:bookmark_toggle' center.id %}" style="display:inline;">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
-        <button type="submit" class="btn btn-bookmark {% if is_bookmarked %}on{% endif %}">
-          {% if is_bookmarked %}★ 북마크됨{% else %}☆ 북마크{% endif %}
-        </button>
-      </form>
-    {% endif %}
-    <button type="button" class="btn btn-share" onclick="navigator.share && navigator.share({title:'{{ center.name|escapejs }}', url: window.location.href}) || (navigator.clipboard.writeText(window.location.href), alert('링크가 복사되었습니다'));">🔗 이 센터 공유</button>
-    {% if can_manage %}
-      <a href="{% url 'center:update' center.id %}" class="btn btn-edit">✎ 센터 수정</a>
-      <form method="post" action="{% url 'center:delete' center.id %}" style="display:inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-delete">🗑 센터 삭제</button>
-      </form>
-    {% endif %}
-  </div>
-
-  <div class="info-grid">
-    {% if center.address %}
-    <div class="info-card">
-      <div class="label">위치</div>
-      <div class="value">📍 {{ center.address }}{% if center.address_detail %} {{ center.address_detail }}{% endif %}</div>
+    <!-- 커버 이미지 -->
+    <div style="margin-bottom: 24px;">
+      <div class="band-cover-wrapper">
+        <div class="band-cover-image">
+          {% if center.cover_image %}
+            <img src="{{ center.cover_image.url }}" alt="{{ center.name }}" loading="lazy" decoding="async">
+          {% else %}
+            <div class="band-cover-placeholder">{{ center.name|first }}</div>
+          {% endif %}
+        </div>
+      </div>
     </div>
-    {% endif %}
-    {% if center.phone %}
-    <div class="info-card">
-      <div class="label">전화</div>
-      <div class="value"><a href="tel:{{ center.phone }}">📞 {{ center.phone }}</a></div>
-    </div>
-    {% endif %}
-    {% if center.operating_hours %}
-    <div class="info-card">
-      <div class="label">운영 시간</div>
-      <div class="value">🕒 {{ center.operating_hours }}</div>
-    </div>
-    {% endif %}
-    {% if center.pricing %}
-    <div class="info-card">
-      <div class="label">이용 요금</div>
-      <div class="value">💰 {{ center.pricing }}</div>
-    </div>
-    {% endif %}
-  </div>
 
-  {% if center.description %}
-  <div class="section">
-    <h2>센터 소개</h2>
-    <div class="description">{{ center.description }}</div>
-  </div>
-  {% endif %}
+    <div class="band-content-grid">
+      <!-- 좌측 메인 -->
+      <div>
+        <!-- 헤더 (프로필 + 타이틀 + 뱃지) -->
+        <div class="band-header-info">
+          {% if center.profile_image %}
+            <img src="{{ center.profile_image.url }}" alt="{{ center.name }}" class="band-profile-image">
+          {% else %}
+            <div class="band-profile-placeholder">{{ center.name|first }}</div>
+          {% endif %}
+          <div class="band-header-text">
+            <h1 class="band-header-title">{{ center.name }}</h1>
+            {% if center.description %}
+              <p style="margin: 8px 0 0 0; color: #64748b; line-height: 1.5; font-size: 14px; word-break: break-word;">{{ center.description|truncatewords:30 }}</p>
+            {% endif %}
+          </div>
+          <div class="band-header-badges">
+            <span class="band-badge band-badge-category">센터</span>
+            {% if center.region and center.region != 'all' %}
+              <span class="band-badge band-badge-region">{{ center.get_region_display }}</span>
+            {% endif %}
+            {% if center.operating_hours %}
+              <span class="band-badge band-badge-open">🕒 {{ center.operating_hours|truncatechars:30 }}</span>
+            {% endif %}
+          </div>
+        </div>
 
-  {% if amenities_list %}
-  <div class="section">
-    <h2>편의 시설</h2>
-    <div class="amenities">
-      {% for item in amenities_list %}<span class="item">{{ item }}</span>{% endfor %}
+        <!-- 핵심 액션 4개 (네이버 플레이스 패턴) -->
+        <div class="place-actions">
+          {% if center.phone %}
+            <a href="tel:{{ center.phone }}" class="place-action-btn">
+              <span class="icon">📞</span>
+              <span>전화</span>
+            </a>
+          {% else %}
+            <button type="button" class="place-action-btn" disabled style="opacity: 0.4;">
+              <span class="icon">📞</span>
+              <span>전화 없음</span>
+            </button>
+          {% endif %}
+
+          <button type="button" class="place-action-btn" onclick="
+            (navigator.share && navigator.share({title:'{{ center.name|escapejs }}', url: window.location.href})) ||
+            (navigator.clipboard.writeText(window.location.href), alert('링크가 복사되었습니다'));
+          ">
+            <span class="icon">🔗</span>
+            <span>공유</span>
+          </button>
+
+          {% if user.is_authenticated %}
+            <form method="post" action="{% url 'center:bookmark_toggle' center.id %}" style="margin: 0;">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button type="submit" class="place-action-btn {% if is_bookmarked %}on{% endif %}" style="width: 100%; border: 1px solid {% if is_bookmarked %}var(--brand){% else %}#e2e8f0{% endif %};">
+                <span class="icon">{% if is_bookmarked %}★{% else %}☆{% endif %}</span>
+                <span>{% if is_bookmarked %}저장됨{% else %}저장{% endif %}</span>
+              </button>
+            </form>
+          {% else %}
+            <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="place-action-btn">
+              <span class="icon">☆</span>
+              <span>저장</span>
+            </a>
+          {% endif %}
+
+          {% if center.address %}
+            <a href="https://map.kakao.com/?q={{ center.address|urlencode }}" target="_blank" rel="noopener noreferrer nofollow" class="place-action-btn">
+              <span class="icon">🗺</span>
+              <span>길찾기</span>
+            </a>
+          {% else %}
+            <button type="button" class="place-action-btn" disabled style="opacity: 0.4;">
+              <span class="icon">🗺</span>
+              <span>주소 없음</span>
+            </button>
+          {% endif %}
+        </div>
+
+        <!-- 정보 카드 그리드 (네이버 플레이스 패턴) -->
+        <div class="place-info-grid">
+          <div class="place-info-card">
+            <div class="label">📍 위치</div>
+            <div class="value">
+              {% if center.address %}
+                {{ center.address }}{% if center.address_detail %}<br>{{ center.address_detail }}{% endif %}
+              {% else %}
+                <span style="color: #94a3b8;">미등록</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="place-info-card">
+            <div class="label">🕒 운영 시간</div>
+            <div class="value">
+              {% if center.operating_hours %}{{ center.operating_hours }}{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="place-info-card">
+            <div class="label">📞 전화</div>
+            <div class="value">
+              {% if center.phone %}<a href="tel:{{ center.phone }}">{{ center.phone }}</a>{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="place-info-card">
+            <div class="label">💰 이용 요금</div>
+            <div class="value">
+              {% if center.pricing %}<span class="strong">{{ center.pricing }}</span>{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="place-info-card">
+            <div class="label">🏸 코트</div>
+            <div class="value"><span class="strong">{{ center.court_count|default:0 }}면</span></div>
+          </div>
+
+          <div class="place-info-card">
+            <div class="label">⭐ 북마크</div>
+            <div class="value"><span class="strong">{{ center.bookmark_count_annotated|default:0 }}명</span></div>
+          </div>
+        </div>
+
+        <!-- 센터 소개 -->
+        {% if center.description %}
+        <div class="band-description-box">
+          <h3>센터 소개</h3>
+          <div class="band-description-content">{{ center.description|linebreaks }}</div>
+        </div>
+        {% endif %}
+
+        <!-- 편의 시설 -->
+        {% if amenities_list %}
+        <div class="band-description-box">
+          <h3>편의 시설</h3>
+          <div class="amenity-chips">
+            {% for item in amenities_list %}
+              <span class="amenity-chip">✓ {{ item }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 우측 사이드 -->
+      <aside>
+        <!-- 관리 액션 (작성자/관리자만) -->
+        {% if can_manage %}
+        <div class="side-card">
+          <h4>관리</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <a href="{% url 'center:update' center.id %}" class="btn btn-ghost" style="text-align: center;">✎ 센터 수정</a>
+            <form method="post" action="{% url 'center:delete' center.id %}" onsubmit="return confirm('정말 삭제하시겠습니까?');" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost" style="width: 100%; color: #ef4444; border-color: #fecaca;">🗑 센터 삭제</button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 등록자 정보 -->
+        {% if center.created_by %}
+        <div class="side-card">
+          <h4>등록자</h4>
+          <div class="side-author">
+            {% if center.created_by.profile_image_url %}
+              <img src="{{ center.created_by.profile_image_url }}" alt="">
+            {% else %}
+              <div class="side-author-avatar">{{ center.created_by.activity_name|first|upper }}</div>
+            {% endif %}
+            <div class="side-author-meta">
+              <div>{{ center.created_by.activity_name }}</div>
+              <div class="sub">{{ center.created_at|date:"Y-m-d" }} 등록</div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 목록으로 -->
+        <div class="side-card" style="text-align: center;">
+          <a href="{% url 'center:list' %}" style="color: #64748b; text-decoration: none; font-size: 13px;">← 센터 목록으로</a>
+        </div>
+      </aside>
     </div>
   </div>
-  {% endif %}
-
-  {% if center.created_by %}
-  <div class="author-row">
-    {% if center.created_by.profile_image_url %}
-      <img src="{{ center.created_by.profile_image_url }}" alt="">
-    {% endif %}
-    <span>등록자: {{ center.created_by.activity_name }} · {{ center.created_at|date:"Y-m-d" }}</span>
-  </div>
-  {% endif %}
-</div>
+</section>
 {% endblock %}
