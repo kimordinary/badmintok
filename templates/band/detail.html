@@ -1747,87 +1747,134 @@
             
             <!-- 사이드바 -->
             <div class="band-sidebar">
-                <div class="band-member-section" style="padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; width: 100%; box-sizing: border-box;">
-                    <div class="band-member-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                        <h3 class="band-member-title" style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">멤버</h3>
-                        <div style="display: flex; gap: 12px; align-items: center;">
-                            <span class="band-member-count" style="display: flex; align-items: center; gap: 4px; font-size: 14px; color: #1e293b; font-weight: 500;">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" fill="#64748b"/>
-                                    <path d="M3 14C3 11.2386 5.23858 9 8 9C10.7614 9 13 11.2386 13 14V14.5C13 14.7761 12.7761 15 12.5 15H3.5C3.22386 15 3 14.7761 3 14.5V14Z" fill="#64748b"/>
-                                </svg>
-                                {{ total_member_count }}명
-                            </span>
-                            <span class="band-bookmark-count" style="display: flex; align-items: center; gap: 4px; font-size: 14px; color: #1e293b; font-weight: 500;">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M8 0.5L10.3511 5.26604L15.6085 6.02786L11.8042 9.73396L12.7023 14.9721L8 12.5L3.29772 14.9721L4.19577 9.73396L0.391548 6.02786L5.64886 5.26604L8 0.5Z" fill="#64748b"/>
-                                </svg>
-                                {{ band.bookmark_count }}명
-                            </span>
-                        </div>
-                    </div>
-                    <div class="band-member-list" style="display: flex; flex-direction: column; gap: 8px;">
-                        {% for member in members %}
-                            <div class="band-member-item" style="display: flex; align-items: center; gap: 8px;">
-                                <img class="band-member-avatar" src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
-                                <span class="band-member-name" style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    {{ member.user.real_name }}{% if member.user.profile and member.user.profile.badminton_level %} / {{ member.user.profile.get_badminton_level_display }}{% endif %}
-                                </span>
-                                {% if member.user.profile %}
-                                    {% include "band/_gender_chip.html" with gender=member.user.profile.gender %}
-                                {% endif %}
-                                {% if member.role == "owner" %}
-                                    <span class="band-member-role" style="font-size: 11px; color: var(--brand); flex-shrink: 0;">모임장</span>
-                                {% elif member.role == "admin" %}
-                                    <span class="band-member-role" style="font-size: 11px; color: #64748b; flex-shrink: 0;">관리자</span>
-                                {% endif %}
+                {% if band.band_type == 'center' %}
+                    {# === 센터 사이드바 === #}
+                    <!-- 등록자 카드 -->
+                    {% if band.created_by %}
+                    <div style="padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 12px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">등록자</h3>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            {% if band.created_by.profile_image_url %}
+                                <img src="{{ band.created_by.profile_image_url }}" alt="{{ band.created_by.activity_name }}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+                            {% else %}
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;">{{ band.created_by.activity_name|first|upper }}</div>
+                            {% endif %}
+                            <div style="font-size: 13px; color: #1e293b;">
+                                <div style="font-weight: 600;">{{ band.created_by.activity_name }}</div>
+                                <div style="font-size: 11px; color: #94a3b8;">{{ band.created_at|date:"Y-m-d" }} 등록</div>
                             </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <!-- 버튼 영역 (하단 정렬) -->
-                <div class="band-sidebar-actions">
-                    {% if can_create_content %}
-                        <!-- 멤버(또는 사이트 관리자)용 버튼 -->
-                        <div class="band-action-buttons" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-                            <a href="{% url 'band:vote_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">투표 만들기</a>
-                            <a href="{% url 'band:schedule_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">번개 만들기</a>
-                            <a href="{% url 'band:post_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">게시판 글쓰기</a>
                         </div>
+                    </div>
                     {% endif %}
 
-                    <div class="band-header-actions">
-                        {% if user.is_authenticated %}
-                            <!-- 북마크 버튼 (로그인 사용자만) -->
-                            <a href="{% url 'band:bookmark_toggle' band.id %}" class="btn {% if is_bookmarked %}btn-primary{% else %}btn-ghost{% endif %} band-action-btn" style="{% if is_bookmarked %}background: #fbbf24; border-color: #fbbf24;{% endif %}">
-                                {% if is_bookmarked %}⭐ 관심 모임 등록됨{% else %}☆ 관심 모임 등록{% endif %}
-                            </a>
+                    <!-- 버튼 영역 -->
+                    <div class="band-sidebar-actions">
+                        {% if can_create_content %}
+                            <div class="band-action-buttons" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                                <a href="{% url 'band:vote_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">투표 만들기</a>
+                                <a href="{% url 'band:schedule_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">번개 만들기</a>
+                                <a href="{% url 'band:post_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">게시판 글쓰기</a>
+                            </div>
                         {% endif %}
 
-                        {% if can_manage_band %}
-                            <a href="{% url 'band:update' band.id %}" class="btn btn-primary band-action-btn">모임 수정</a>
-                            <a href="{% url 'band:member_management' band.id %}" class="btn btn-primary band-action-btn">멤버 관리</a>
-                        {% endif %}
-                        {% if can_delete_band %}
-                            {% if not band.deletion_requested %}
-                                <a href="{% url 'band:delete_request' band.id %}" class="btn btn-ghost band-action-btn" style="color: #dc2626; border-color: #dc2626;">모임 삭제</a>
-                            {% else %}
-                                <span class="btn btn-ghost band-action-btn" style="color: #64748b; border-color: #e2e8f0; cursor: not-allowed;">삭제 신청 대기 중</span>
+                        <div class="band-header-actions">
+                            {% if can_manage_band %}
+                                <a href="{% url 'band:update' band.id %}" class="btn btn-primary band-action-btn">센터 수정</a>
                             {% endif %}
-                        {% endif %}
-                        {% if is_member and member.role not in "owner,admin"|make_list %}
-                            <!-- 일반 멤버는 탈퇴 -->
-                            <a href="{% url 'band:leave' band.id %}" class="btn btn-ghost band-action-btn" onclick="return confirm('정말 탈퇴하시겠습니까?')">탈퇴</a>
-                        {% elif not is_member and member and member.status == "pending" %}
-                            <!-- 가입 승인 대기 중 -->
-                            <span class="btn btn-ghost band-action-btn" style="color: #f59e0b; border-color: #fbbf24; cursor: not-allowed;">가입 승인 대기 중</span>
-                        {% elif not is_member and not member %}
-                            <!-- 비멤버 (사이트 관리자도 가입은 따로 신청 가능) -->
-                            <a href="{% url 'band:join' band.id %}" class="btn btn-primary band-action-btn">📝 멤버 가입 신청</a>
-                        {% endif %}
+                            {% if can_delete_band %}
+                                {% if not band.deletion_requested %}
+                                    <a href="{% url 'band:delete_request' band.id %}" class="btn btn-ghost band-action-btn" style="color: #dc2626; border-color: #dc2626;">센터 삭제</a>
+                                {% else %}
+                                    <span class="btn btn-ghost band-action-btn" style="color: #64748b; border-color: #e2e8f0; cursor: not-allowed;">삭제 신청 대기 중</span>
+                                {% endif %}
+                            {% endif %}
+                            {# 센터는 멤버 가입/탈퇴/관심 등록 사이드바 버튼 없음 — 상단 액션의 '♥ 관심 센터 등록'으로 대체 #}
+                        </div>
                     </div>
-                </div>
+                {% else %}
+                    {# === 기존 모임/동호회/번개 사이드바 (그대로) === #}
+                    <div class="band-member-section" style="padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; width: 100%; box-sizing: border-box;">
+                        <div class="band-member-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <h3 class="band-member-title" style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">멤버</h3>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <span class="band-member-count" style="display: flex; align-items: center; gap: 4px; font-size: 14px; color: #1e293b; font-weight: 500;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" fill="#64748b"/>
+                                        <path d="M3 14C3 11.2386 5.23858 9 8 9C10.7614 9 13 11.2386 13 14V14.5C13 14.7761 12.7761 15 12.5 15H3.5C3.22386 15 3 14.7761 3 14.5V14Z" fill="#64748b"/>
+                                    </svg>
+                                    {{ total_member_count }}명
+                                </span>
+                                <span class="band-bookmark-count" style="display: flex; align-items: center; gap: 4px; font-size: 14px; color: #1e293b; font-weight: 500;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8 0.5L10.3511 5.26604L15.6085 6.02786L11.8042 9.73396L12.7023 14.9721L8 12.5L3.29772 14.9721L4.19577 9.73396L0.391548 6.02786L5.64886 5.26604L8 0.5Z" fill="#64748b"/>
+                                    </svg>
+                                    {{ band.bookmark_count }}명
+                                </span>
+                            </div>
+                        </div>
+                        <div class="band-member-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            {% for member in members %}
+                                <div class="band-member-item" style="display: flex; align-items: center; gap: 8px;">
+                                    <img class="band-member-avatar" src="{{ member.user.profile_image_url }}" alt="{{ member.user.real_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                                    <span class="band-member-name" style="font-size: 14px; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        {{ member.user.real_name }}{% if member.user.profile and member.user.profile.badminton_level %} / {{ member.user.profile.get_badminton_level_display }}{% endif %}
+                                    </span>
+                                    {% if member.user.profile %}
+                                        {% include "band/_gender_chip.html" with gender=member.user.profile.gender %}
+                                    {% endif %}
+                                    {% if member.role == "owner" %}
+                                        <span class="band-member-role" style="font-size: 11px; color: var(--brand); flex-shrink: 0;">모임장</span>
+                                    {% elif member.role == "admin" %}
+                                        <span class="band-member-role" style="font-size: 11px; color: #64748b; flex-shrink: 0;">관리자</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 버튼 영역 (하단 정렬) -->
+                    <div class="band-sidebar-actions">
+                        {% if can_create_content %}
+                            <!-- 멤버(또는 사이트 관리자)용 버튼 -->
+                            <div class="band-action-buttons" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                                <a href="{% url 'band:vote_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">투표 만들기</a>
+                                <a href="{% url 'band:schedule_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">번개 만들기</a>
+                                <a href="{% url 'band:post_create' band.id %}" class="btn btn-primary" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; display: block;">게시판 글쓰기</a>
+                            </div>
+                        {% endif %}
+
+                        <div class="band-header-actions">
+                            {% if user.is_authenticated %}
+                                <!-- 북마크 버튼 (로그인 사용자만) -->
+                                <a href="{% url 'band:bookmark_toggle' band.id %}" class="btn {% if is_bookmarked %}btn-primary{% else %}btn-ghost{% endif %} band-action-btn" style="{% if is_bookmarked %}background: #fbbf24; border-color: #fbbf24;{% endif %}">
+                                    {% if is_bookmarked %}⭐ 관심 모임 등록됨{% else %}☆ 관심 모임 등록{% endif %}
+                                </a>
+                            {% endif %}
+
+                            {% if can_manage_band %}
+                                <a href="{% url 'band:update' band.id %}" class="btn btn-primary band-action-btn">모임 수정</a>
+                                <a href="{% url 'band:member_management' band.id %}" class="btn btn-primary band-action-btn">멤버 관리</a>
+                            {% endif %}
+                            {% if can_delete_band %}
+                                {% if not band.deletion_requested %}
+                                    <a href="{% url 'band:delete_request' band.id %}" class="btn btn-ghost band-action-btn" style="color: #dc2626; border-color: #dc2626;">모임 삭제</a>
+                                {% else %}
+                                    <span class="btn btn-ghost band-action-btn" style="color: #64748b; border-color: #e2e8f0; cursor: not-allowed;">삭제 신청 대기 중</span>
+                                {% endif %}
+                            {% endif %}
+                            {% if is_member and member.role not in "owner,admin"|make_list %}
+                                <!-- 일반 멤버는 탈퇴 -->
+                                <a href="{% url 'band:leave' band.id %}" class="btn btn-ghost band-action-btn" onclick="return confirm('정말 탈퇴하시겠습니까?')">탈퇴</a>
+                            {% elif not is_member and member and member.status == "pending" %}
+                                <!-- 가입 승인 대기 중 -->
+                                <span class="btn btn-ghost band-action-btn" style="color: #f59e0b; border-color: #fbbf24; cursor: not-allowed;">가입 승인 대기 중</span>
+                            {% elif not is_member and not member %}
+                                <!-- 비멤버 (사이트 관리자도 가입은 따로 신청 가능) -->
+                                <a href="{% url 'band:join' band.id %}" class="btn btn-primary band-action-btn">📝 멤버 가입 신청</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -1953,8 +2000,8 @@ document.addEventListener('DOMContentLoaded', function() {
         {% if user.is_authenticated %}
             <!-- 북마크 버튼 (모든 로그인 사용자) -->
             <a href="{% url 'band:bookmark_toggle' band.id %}" class="fab-menu-item" style="{% if is_bookmarked %}color: #fbbf24;{% endif %}">
-                <span class="fab-menu-item-icon">{% if is_bookmarked %}⭐{% else %}☆{% endif %}</span>
-                <span>{% if is_bookmarked %}관심 모임 등록됨{% else %}관심 모임 등록{% endif %}</span>
+                <span class="fab-menu-item-icon">{% if is_bookmarked %}♥{% else %}♡{% endif %}</span>
+                <span>{% if band.band_type == 'center' %}{% if is_bookmarked %}관심 센터 등록됨{% else %}관심 센터 등록{% endif %}{% else %}{% if is_bookmarked %}관심 모임 등록됨{% else %}관심 모임 등록{% endif %}{% endif %}</span>
             </a>
         {% endif %}
 
@@ -1974,38 +2021,43 @@ document.addEventListener('DOMContentLoaded', function() {
             {% if can_manage_band %}
                 <a href="{% url 'band:update' band.id %}" class="fab-menu-item">
                     <span class="fab-menu-item-icon">✏️</span>
-                    <span>모임 수정</span>
+                    <span>{% if band.band_type == 'center' %}센터 수정{% else %}모임 수정{% endif %}</span>
                 </a>
+                {% if band.band_type != 'center' %}
                 <a href="{% url 'band:member_management' band.id %}" class="fab-menu-item">
                     <span class="fab-menu-item-icon">👥</span>
                     <span>멤버 관리</span>
                 </a>
+                {% endif %}
             {% endif %}
             {% if can_delete_band %}
                 {% if not band.deletion_requested %}
                     <a href="{% url 'band:delete_request' band.id %}" class="fab-menu-item" style="color: #dc2626;">
                         <span class="fab-menu-item-icon">🗑️</span>
-                        <span>모임 삭제</span>
+                        <span>{% if band.band_type == 'center' %}센터 삭제{% else %}모임 삭제{% endif %}</span>
                     </a>
                 {% endif %}
             {% endif %}
         {% endif %}
 
-        {% if is_member and member.role not in "owner,admin"|make_list %}
-            <a href="{% url 'band:leave' band.id %}" class="fab-menu-item" onclick="return confirm('정말 탈퇴하시겠습니까?')" style="color: #dc2626;">
-                <span class="fab-menu-item-icon">👋</span>
-                <span>탈퇴</span>
-            </a>
-        {% elif not is_member and member and member.status == "pending" %}
-            <div class="fab-menu-item" style="color: #f59e0b; cursor: not-allowed;">
-                <span class="fab-menu-item-icon">⏳</span>
-                <span>가입 승인 대기 중</span>
-            </div>
-        {% elif not is_member and not member and user.is_authenticated %}
-            <a href="{% url 'band:join' band.id %}" class="fab-menu-item">
-                <span class="fab-menu-item-icon">📝</span>
-                <span>멤버 가입 신청</span>
-            </a>
+        {# 센터는 멤버 가입/탈퇴 개념 없음 #}
+        {% if band.band_type != 'center' %}
+            {% if is_member and member.role not in "owner,admin"|make_list %}
+                <a href="{% url 'band:leave' band.id %}" class="fab-menu-item" onclick="return confirm('정말 탈퇴하시겠습니까?')" style="color: #dc2626;">
+                    <span class="fab-menu-item-icon">👋</span>
+                    <span>탈퇴</span>
+                </a>
+            {% elif not is_member and member and member.status == "pending" %}
+                <div class="fab-menu-item" style="color: #f59e0b; cursor: not-allowed;">
+                    <span class="fab-menu-item-icon">⏳</span>
+                    <span>가입 승인 대기 중</span>
+                </div>
+            {% elif not is_member and not member and user.is_authenticated %}
+                <a href="{% url 'band:join' band.id %}" class="fab-menu-item">
+                    <span class="fab-menu-item-icon">📝</span>
+                    <span>멤버 가입 신청</span>
+                </a>
+            {% endif %}
         {% endif %}
     </div>
 
