@@ -54,10 +54,15 @@
                style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                 모임
             </a>
-            <a href="{% url 'band:list' %}?type=club{% if current_region != 'all' %}&region={{ current_region }}{% endif %}" 
-               class="community-tab {% if current_type == 'club' %}active{% endif %}" 
+            <a href="{% url 'band:list' %}?type=club{% if current_region != 'all' %}&region={{ current_region }}{% endif %}"
+               class="community-tab {% if current_type == 'club' %}active{% endif %}"
                style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                 동호회
+            </a>
+            <a href="{% url 'center:list' %}{% if current_region != 'all' %}?region={{ current_region }}{% endif %}"
+               class="community-tab"
+               style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+                센터
             </a>
         </div>
         

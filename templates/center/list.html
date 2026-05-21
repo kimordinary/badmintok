@@ -44,6 +44,33 @@
 
 {% block content %}
 <div class="center-wrap">
+  <!-- 웹민턴 공통 탭 (band/list.html과 동일 구조) -->
+  <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
+    <a href="{% url 'band:list' %}?type=flash{% if current_region != 'all' %}&region={{ current_region }}{% endif %}"
+       class="community-tab"
+       style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+      번개
+    </a>
+    <a href="{% url 'band:list' %}?type=group{% if current_region != 'all' %}&region={{ current_region }}{% endif %}"
+       class="community-tab"
+       style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+      모임
+    </a>
+    <a href="{% url 'band:list' %}?type=club{% if current_region != 'all' %}&region={{ current_region }}{% endif %}"
+       class="community-tab"
+       style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+      동호회
+    </a>
+    <a href="{% url 'center:list' %}{% if current_region != 'all' %}?region={{ current_region }}{% endif %}"
+       class="community-tab active"
+       style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
+      센터
+    </a>
+  </div>
+  <style>
+    .community-tab.active { color: #31AA60 !important; border-bottom: 2px solid #31AA60 !important; }
+  </style>
+
   <div class="center-head">
     <h1>배드민턴 센터</h1>
     <div class="actions">
