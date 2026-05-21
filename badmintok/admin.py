@@ -248,9 +248,9 @@ def _extract_search_terms(referer):
     return None
 
 
-def _get_cache_key(period, date_str):
+def _get_cache_key(period, date_str, source='all'):
     """캐시 키 생성"""
-    key = f"stats_{period}_{date_str}"
+    key = f"stats_{period}_{date_str}_{source}"
     return hashlib.md5(key.encode()).hexdigest()
 
 
@@ -265,7 +265,7 @@ def statistics_view(request):
     """Jetpack 스타일 통계 대시보드 (최적화 버전)"""
     from datetime import datetime
 
-    period = request.GET.get('period', 'week')
+    period = request.GET.get('period', 'day')
 
     period_days_map = {
         'day': 1,
@@ -292,7 +292,12 @@ def statistics_view(request):
     else:
         selected_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    cache_key = _get_cache_key(period, selected_date.strftime('%Y-%m-%d'))
+    # 출처(웹/앱) 필터 — ?source=all|web|app (기본 all)
+    source_param = request.GET.get('source', 'all')
+    if source_param not in ('all', 'web', 'app'):
+        source_param = 'all'
+
+    cache_key = _get_cache_key(period, selected_date.strftime('%Y-%m-%d'), source_param)
     is_today = selected_date.date() == now.date()
 
     if not is_today:
@@ -347,11 +352,6 @@ def statistics_view(request):
         (Q(user__is_staff=False) | Q(user__isnull=True))
     )
 
-    # 출처(웹/앱) 필터 — ?source=all|web|app (기본 all)
-    source_param = request.GET.get('source', 'all')
-    if source_param not in ('all', 'web', 'app'):
-        source_param = 'all'
-
     base_queryset = VisitorLog.objects.filter(
         visited_at__gte=period_start,
         visited_at__lt=period_end
@@ -378,30 +378,25 @@ def statistics_view(request):
     visitors_change = _calculate_change(period_visitors, prev_visitors)
     pageviews_change = _calculate_change(period_pageviews, prev_pageviews)
 
-    # === 신규 가입자 ===
+    # === 신규 가입자 (단일 쿼리로 현재+이전 기간 일괄 처리) ===
     from django.contrib.auth import get_user_model
     User = get_user_model()
 
-    period_signups = User.objects.filter(
-        is_active=True,
-        date_joined__gte=period_start,
-        date_joined__lt=period_end,
-    ).count()
-    prev_signups = User.objects.filter(
+    all_signups = list(User.objects.filter(
         is_active=True,
         date_joined__gte=prev_period_start,
-        date_joined__lt=prev_period_end,
-    ).count()
+        date_joined__lt=period_end,
+    ).values_list('date_joined', flat=True))
+
+    period_signups = sum(1 for d in all_signups if d >= period_start)
+    prev_signups = sum(1 for d in all_signups if d < period_start)
     signups_change = _calculate_change(period_signups, prev_signups)
 
-    daily_signups = User.objects.filter(
-        is_active=True,
-        date_joined__gte=period_start,
-        date_joined__lt=period_end,
-    ).annotate(date=TruncDate('date_joined')).values('date').annotate(
-        count=Count('id')
-    ).order_by('date')
-    signups_dict = {item['date']: item['count'] for item in daily_signups}
+    signups_dict = {}
+    for d in all_signups:
+        if d >= period_start:
+            day = timezone.localtime(d).date()
+            signups_dict[day] = signups_dict.get(day, 0) + 1
 
     # === 출처 분리 카운트 (전체 필터일 때만 의미 있음) ===
     web_qs = VisitorLog.objects.filter(
