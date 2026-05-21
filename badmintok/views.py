@@ -799,6 +799,77 @@ def app_redirect(request):
 
 @_csrf_exempt
 @_require_POST
+def track_app_pageview(request):
+    """모바일 앱 화면 진입 추적 API.
+
+    body 예시:
+        {
+            "screen": "home" | "/community/123" | "band_detail",
+            "os": "ios" | "android",       # optional
+            "app_version": "1.0.3"           # optional
+        }
+    """
+    from django.http import HttpResponse, JsonResponse
+    from .models import VisitorLog
+    import json, hashlib
+
+    try:
+        try:
+            data = json.loads(request.body or b"{}")
+        except json.JSONDecodeError:
+            data = {}
+
+        screen = (data.get("screen") or "").strip()
+        if not screen:
+            return JsonResponse({"error": "screen is required"}, status=400)
+
+        # screen이 '/' 로 시작 안 하면 'app:' 네임스페이스 부여 (웹 경로와 충돌 방지)
+        if not screen.startswith("/"):
+            url_path = f"app://{screen}"[:500]
+        else:
+            url_path = screen[:500]
+
+        os_value = (data.get("os") or "").strip().lower()
+        if os_value == "ios":
+            device_type = "mobile"
+        elif os_value == "android":
+            device_type = "mobile"
+        else:
+            device_type = "mobile"  # 앱은 기본 mobile
+
+        app_version = (data.get("app_version") or "").strip()[:30]
+
+        # IP / UA
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR")
+        if ip_address:
+            ip_address = ip_address.split(",")[0].strip()
+        else:
+            ip_address = request.META.get("REMOTE_ADDR")
+        user_agent = (request.META.get("HTTP_USER_AGENT") or "")[:500]
+
+        # 세션 키: 앱은 보통 세션 X → IP+UA+OS 합성
+        fingerprint = f"{ip_address or 'unknown'}|{user_agent[:200]}|{os_value}"
+        session_key = "app_" + hashlib.md5(fingerprint.encode("utf-8")).hexdigest()[:32]
+
+        VisitorLog.objects.create(
+            source=VisitorLog.SOURCE_APP,
+            user=request.user if request.user.is_authenticated else None,
+            session_key=session_key,
+            ip_address=ip_address,
+            url_path=url_path,
+            referer="",
+            referer_domain="",
+            user_agent=user_agent,
+            device_type=device_type,
+            app_version=app_version,
+        )
+        return HttpResponse(status=204)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@_csrf_exempt
+@_require_POST
 def track_app_download_click(request):
     """앱 다운로드 버튼 클릭 추적 API (OS별).
 

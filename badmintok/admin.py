@@ -347,10 +347,17 @@ def statistics_view(request):
         (Q(user__is_staff=False) | Q(user__isnull=True))
     )
 
+    # 출처(웹/앱) 필터 — ?source=all|web|app (기본 all)
+    source_param = request.GET.get('source', 'all')
+    if source_param not in ('all', 'web', 'app'):
+        source_param = 'all'
+
     base_queryset = VisitorLog.objects.filter(
         visited_at__gte=period_start,
         visited_at__lt=period_end
     ).filter(real_user_filter)
+    if source_param != 'all':
+        base_queryset = base_queryset.filter(source=source_param)
 
     period_visitors = base_queryset.values('session_key').distinct().count()
     period_pageviews = base_queryset.count()
@@ -362,12 +369,102 @@ def statistics_view(request):
         visited_at__gte=prev_period_start,
         visited_at__lt=prev_period_end
     ).filter(real_user_filter)
+    if source_param != 'all':
+        prev_base_queryset = prev_base_queryset.filter(source=source_param)
 
     prev_visitors = prev_base_queryset.values('session_key').distinct().count()
     prev_pageviews = prev_base_queryset.count()
 
     visitors_change = _calculate_change(period_visitors, prev_visitors)
     pageviews_change = _calculate_change(period_pageviews, prev_pageviews)
+
+    # === 출처 분리 카운트 (전체 필터일 때만 의미 있음) ===
+    web_qs = VisitorLog.objects.filter(
+        visited_at__gte=period_start, visited_at__lt=period_end,
+        source=VisitorLog.SOURCE_WEB,
+    ).filter(real_user_filter)
+    app_qs = VisitorLog.objects.filter(
+        visited_at__gte=period_start, visited_at__lt=period_end,
+        source=VisitorLog.SOURCE_APP,
+    ).filter(real_user_filter)
+    source_stats = {
+        'web': {
+            'visitors': web_qs.values('session_key').distinct().count(),
+            'pageviews': web_qs.count(),
+        },
+        'app': {
+            'visitors': app_qs.values('session_key').distinct().count(),
+            'pageviews': app_qs.count(),
+        },
+    }
+
+    # === 신규 vs 재방문 ===
+    period_session_keys = list(
+        base_queryset.values_list('session_key', flat=True).distinct()
+    )
+    if period_session_keys:
+        returning_count = VisitorLog.objects.filter(
+            session_key__in=period_session_keys,
+            visited_at__lt=period_start,
+        ).filter(real_user_filter).values('session_key').distinct().count()
+    else:
+        returning_count = 0
+    new_count = max(0, period_visitors - returning_count)
+    visitor_segment_stats = {
+        'new': new_count,
+        'returning': returning_count,
+        'new_pct': round(new_count / period_visitors * 100, 1) if period_visitors else 0,
+        'returning_pct': round(returning_count / period_visitors * 100, 1) if period_visitors else 0,
+    }
+
+    # === 디바이스 분포 ===
+    device_rows = base_queryset.values('device_type').annotate(visits=Count('id'))
+    device_total = sum(row['visits'] for row in device_rows) or 1
+    _device_labels = {'desktop': '데스크탑', 'mobile': '모바일', 'tablet': '태블릿'}
+    device_stats = []
+    for key in ('mobile', 'desktop', 'tablet'):
+        v = next((r['visits'] for r in device_rows if r['device_type'] == key), 0)
+        device_stats.append({
+            'key': key,
+            'label': _device_labels[key],
+            'visits': v,
+            'pct': round(v / device_total * 100, 1),
+        })
+
+    # === 유입 채널 분류 ===
+    SEARCH_DOMAINS = ('google', 'naver', 'daum', 'bing', 'yahoo')
+    SOCIAL_DOMAINS = ('facebook', 'instagram', 'youtube', 'twitter', 't.co',
+                      'kakao', 'cafe.naver', 'tistory', 'threads')
+
+    def _categorize_channel(domain):
+        if not domain:
+            return 'direct'
+        d = domain.lower()
+        if any(s in d for s in SEARCH_DOMAINS):
+            return 'search'
+        if any(s in d for s in SOCIAL_DOMAINS):
+            return 'social'
+        return 'referral'
+
+    channel_counts = {'direct': 0, 'search': 0, 'social': 0, 'referral': 0}
+    for row in base_queryset.values('referer_domain').annotate(visits=Count('id')):
+        channel_counts[_categorize_channel(row['referer_domain'])] += row['visits']
+    channel_total = sum(channel_counts.values()) or 1
+    _channel_labels = {
+        'direct': '직접 방문',
+        'search': '검색 엔진',
+        'social': '소셜',
+        'referral': '레퍼럴',
+    }
+    channel_stats = [
+        {
+            'key': k,
+            'label': _channel_labels[k],
+            'visits': channel_counts[k],
+            'pct': round(channel_counts[k] / channel_total * 100, 1),
+        }
+        for k in ('direct', 'search', 'social', 'referral')
+    ]
 
     daily_pageviews = base_queryset.annotate(
         date=TruncDate('visited_at')
@@ -459,6 +556,9 @@ def statistics_view(request):
         'ios': app_download_by_os.get('ios', 0),
         'android': app_download_by_os.get('android', 0),
         'other': app_download_by_os.get('other', 0),
+        # CTA 클릭률: 페이지뷰 대비 다운로드 클릭 비율
+        'click_rate_pct': round(app_download_total / period_pageviews * 100, 2)
+                          if period_pageviews else 0,
     }
 
     context = {
@@ -466,6 +566,11 @@ def statistics_view(request):
         'site_title': 'Jetpack 스타일 통계',
         'period': period,
         'period_days': period_days,
+        'source_param': source_param,
+        'source_stats': source_stats,
+        'visitor_segment_stats': visitor_segment_stats,
+        'device_stats': device_stats,
+        'channel_stats': channel_stats,
         'selected_date': selected_date.strftime('%Y-%m-%d'),
         'date_display': date_display,
         'prev_date': prev_date,

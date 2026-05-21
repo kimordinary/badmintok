@@ -70,6 +70,8 @@ urlpatterns = [
     path("api/track-click/", views.track_outbound_click, name="track_outbound_click"),
     # 앱 다운로드 클릭 추적 API
     path("api/track/app-download/", views.track_app_download_click, name="track_app_download_click"),
+    # 모바일 앱 화면 진입 추적 API (앱 통계 통합)
+    path("api/analytics/pageview/", views.track_app_pageview, name="track_app_pageview"),
     # 앱 다운로드 단일 진입점 (OS 분기 + 로깅)
     path("app", views.app_redirect, name="app_redirect"),
     # SEO 관련

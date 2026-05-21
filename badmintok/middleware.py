@@ -79,7 +79,31 @@ class VisitorTrackingMiddleware:
         if self._detect_device_type(user_agent) == 'bot':
             return False
 
+        # F5 연타 dedup: 같은 session+path가 5초 이내 재요청이면 중복으로 보고 무시
+        if self._is_duplicate_within(request, ip_address, user_agent, seconds=5):
+            return False
+
         return True
+
+    def _is_duplicate_within(self, request, ip_address, user_agent, *, seconds=5):
+        """동일 세션이 같은 url을 짧은 시간 안에 다시 요청한 경우 True 반환.
+
+        - 세션이 있으면 session_key 기반
+        - 없으면 IP+UA 해시 기반 (미들웨어 _log_visit 합성 키와 동일 로직)
+        - 캐시 백엔드(LocMem/Redis) 사용 — DB 추가 쿼리 없이 가벼움
+        """
+        from django.core.cache import cache
+
+        session_key = request.session.session_key
+        if not session_key:
+            fingerprint = f"{ip_address or 'unknown'}|{(user_agent or '')[:200]}"
+            session_key = 'anon_' + hashlib.md5(fingerprint.encode('utf-8')).hexdigest()[:30]
+
+        cache_key = f"vlog_dedupe:{session_key}:{request.path}"
+        if cache.get(cache_key):
+            return True
+        cache.set(cache_key, 1, timeout=seconds)
+        return False
 
     def _log_visit(self, request):
         """방문 로그 기록"""

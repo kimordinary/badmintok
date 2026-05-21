@@ -339,10 +339,17 @@
 
     <!-- 기간 선택 탭 -->
     <div class="period-tabs">
-        <a href="?period=day&date={{ selected_date }}" class="period-tab {% if period == 'day' %}active{% endif %}">일</a>
-        <a href="?period=week&date={{ selected_date }}" class="period-tab {% if period == 'week' %}active{% endif %}">주</a>
-        <a href="?period=month&date={{ selected_date }}" class="period-tab {% if period == 'month' %}active{% endif %}">월</a>
-        <a href="?period=year&date={{ selected_date }}" class="period-tab {% if period == 'year' %}active{% endif %}">년</a>
+        <a href="?period=day&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'day' %}active{% endif %}">일</a>
+        <a href="?period=week&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'week' %}active{% endif %}">주</a>
+        <a href="?period=month&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'month' %}active{% endif %}">월</a>
+        <a href="?period=year&date={{ selected_date }}&source={{ source_param }}" class="period-tab {% if period == 'year' %}active{% endif %}">년</a>
+    </div>
+
+    <!-- 출처 필터 (전체 / 웹 / 앱) -->
+    <div class="period-tabs" style="margin-top: 8px;">
+        <a href="?period={{ period }}&date={{ selected_date }}&source=all" class="period-tab {% if source_param == 'all' %}active{% endif %}">전체</a>
+        <a href="?period={{ period }}&date={{ selected_date }}&source=web" class="period-tab {% if source_param == 'web' %}active{% endif %}">🖥 웹</a>
+        <a href="?period={{ period }}&date={{ selected_date }}&source=app" class="period-tab {% if source_param == 'app' %}active{% endif %}">📱 앱</a>
     </div>
 
     <!-- 날짜 네비게이션 -->
@@ -458,7 +465,7 @@
             </div>
         </div>
 
-        <!-- 앱 다운로드 클릭 -->
+        <!-- 앱 다운로드 클릭 (+CTA 클릭률) -->
         <div class="stat-section">
             <h3>앱 다운로드 클릭</h3>
             <div class="stat-table">
@@ -480,6 +487,74 @@
                     <div class="stat-value">{{ app_download_stats.other }}</div>
                 </div>
                 {% endif %}
+                <div class="stat-row">
+                    <div class="stat-label">CTA 클릭률 (페이지뷰 대비)</div>
+                    <div class="stat-value">{{ app_download_stats.click_rate_pct }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 출처 (웹/앱) -->
+        <div class="stat-section">
+            <h3>출처별 트래픽 (전체 필터일 때 의미)</h3>
+            <div class="stat-table">
+                <div class="stat-row">
+                    <div class="stat-label">🖥 웹 방문자</div>
+                    <div class="stat-value">{{ source_stats.web.visitors }}</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">🖥 웹 페이지뷰</div>
+                    <div class="stat-value">{{ source_stats.web.pageviews }}</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">📱 앱 사용자</div>
+                    <div class="stat-value">{{ source_stats.app.visitors }}</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">📱 앱 화면 조회</div>
+                    <div class="stat-value">{{ source_stats.app.pageviews }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 신규 vs 재방문 -->
+        <div class="stat-section">
+            <h3>신규 vs 재방문</h3>
+            <div class="stat-table">
+                <div class="stat-row">
+                    <div class="stat-label">🆕 신규 방문자</div>
+                    <div class="stat-value">{{ visitor_segment_stats.new }} ({{ visitor_segment_stats.new_pct }}%)</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">🔁 재방문자</div>
+                    <div class="stat-value">{{ visitor_segment_stats.returning }} ({{ visitor_segment_stats.returning_pct }}%)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 디바이스 분포 -->
+        <div class="stat-section">
+            <h3>디바이스 분포</h3>
+            <div class="stat-table">
+                {% for d in device_stats %}
+                <div class="stat-row">
+                    <div class="stat-label">{{ d.label }}</div>
+                    <div class="stat-value">{{ d.visits }} ({{ d.pct }}%)</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 유입 채널 -->
+        <div class="stat-section">
+            <h3>유입 채널</h3>
+            <div class="stat-table">
+                {% for c in channel_stats %}
+                <div class="stat-row">
+                    <div class="stat-label">{{ c.label }}</div>
+                    <div class="stat-value">{{ c.visits }} ({{ c.pct }}%)</div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>

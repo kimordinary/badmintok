@@ -185,6 +185,20 @@ class VisitorLog(models.Model):
     session_key = models.CharField(_("세션 키"), max_length=40, db_index=True)
     ip_address = models.GenericIPAddressField(_("IP 주소"), null=True, blank=True)
 
+    # 출처 (웹 페이지뷰 / 앱 화면 진입)
+    SOURCE_WEB = "web"
+    SOURCE_APP = "app"
+    source = models.CharField(
+        _("출처"),
+        max_length=10,
+        choices=[(SOURCE_WEB, "웹"), (SOURCE_APP, "앱")],
+        default=SOURCE_WEB,
+        db_index=True,
+    )
+
+    # 앱 추가 메타 (앱 출처일 때만 사용)
+    app_version = models.CharField(_("앱 버전"), max_length=30, blank=True)
+
     # 페이지 정보
     url_path = models.CharField(_("URL 경로"), max_length=500, db_index=True)
     page_title = models.CharField(_("페이지 제목"), max_length=200, blank=True)
