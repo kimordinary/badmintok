@@ -43,6 +43,23 @@ if [[ ! "$response" =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
+echo "=== Pulling latest code (origin/main) ==="
+# git 디렉토리 안에서만 pull 수행 (이중 안전장치)
+if [ -d .git ]; then
+    git fetch origin main
+    LOCAL=$(git rev-parse HEAD)
+    REMOTE=$(git rev-parse origin/main)
+    if [ "$LOCAL" != "$REMOTE" ]; then
+        echo -e "${YELLOW}Updating $LOCAL → $REMOTE${NC}"
+        git pull --ff-only origin main
+    else
+        echo -e "${GREEN}✓ Already up to date ($LOCAL)${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠ Not a git repository — skipping pull (deploy may use stale code).${NC}"
+fi
+
+echo ""
 echo "=== Building Docker images ==="
 docker-compose -f docker-compose.prod.yml build
 
