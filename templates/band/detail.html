@@ -942,7 +942,8 @@
                     {% endif %}
                     <div class="band-header-text">
                         <h1 class="band-header-title">{{ band.name }}</h1>
-                        {% if band.description %}
+                        {# 센터는 한줄 소개를 헤더에 표시 안 함 — 아래 '센터 소개' 박스와 중복 방지 #}
+                        {% if band.description and band.band_type != 'center' %}
                             <p class="band-header-description" data-original-description="{{ band.description|escapejs }}">{{ band.description }}</p>
                         {% endif %}
                     </div>
@@ -1005,15 +1006,19 @@
                   {% if user.is_authenticated %}
                     <form method="post" action="{% url 'bookmark_toggle' band.id %}" style="margin: 0;">
                       {% csrf_token %}
-                      <button type="submit" class="place-action-btn" style="width: 100%;"><span class="icon">☆</span><span>저장</span></button>
+                      <button type="submit" class="place-action-btn" style="width: 100%;"><span class="icon">♥</span><span>관심 센터 등록</span></button>
                     </form>
                   {% else %}
-                    <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="place-action-btn"><span class="icon">☆</span><span>저장</span></a>
+                    <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="place-action-btn"><span class="icon">♥</span><span>관심 센터 등록</span></a>
                   {% endif %}
                   {% if band.facility_address %}
-                    <a href="https://map.kakao.com/?q={{ band.facility_address|urlencode }}" target="_blank" rel="noopener noreferrer nofollow" class="place-action-btn"><span class="icon">🗺</span><span>길찾기</span></a>
+                    <button type="button"
+                            class="place-action-btn"
+                            onclick="navigator.clipboard.writeText('{{ band.facility_address|escapejs }}{% if band.facility_address_detail %} {{ band.facility_address_detail|escapejs }}{% endif %}').then(function() { alert('주소가 복사되었습니다'); });">
+                      <span class="icon">📋</span><span>주소 복사</span>
+                    </button>
                   {% else %}
-                    <button type="button" class="place-action-btn" disabled style="opacity: 0.4;"><span class="icon">🗺</span><span>주소 없음</span></button>
+                    <button type="button" class="place-action-btn" disabled style="opacity: 0.4;"><span class="icon">📋</span><span>주소 없음</span></button>
                   {% endif %}
                 </div>
 
@@ -1027,10 +1032,6 @@
                     <div class="value">{% if band.facility_operating_hours %}{{ band.facility_operating_hours }}{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}</div>
                   </div>
                   <div class="place-info-card">
-                    <div class="label">📞 전화</div>
-                    <div class="value">{% if band.facility_phone %}<a href="tel:{{ band.facility_phone }}">{{ band.facility_phone }}</a>{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}</div>
-                  </div>
-                  <div class="place-info-card">
                     <div class="label">💰 이용 요금</div>
                     <div class="value">{% if band.facility_pricing %}<span class="strong">{{ band.facility_pricing }}</span>{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}</div>
                   </div>
@@ -1039,7 +1040,7 @@
                     <div class="value"><span class="strong">{{ band.facility_court_count|default:0 }}면</span></div>
                   </div>
                   <div class="place-info-card">
-                    <div class="label">⭐ 북마크</div>
+                    <div class="label">♥ 관심 등록</div>
                     <div class="value"><span class="strong">{{ band.bookmark_count }}명</span></div>
                   </div>
                 </div>
