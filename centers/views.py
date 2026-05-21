@@ -8,19 +8,22 @@ from django.views.decorators.http import require_POST
 
 from accounts.permissions import is_site_admin
 from band.api.views import REGION_GROUPS
+from badmintok.models import BadmintokBanner, Notice
 from centers.models import Center, CenterBookmark
 
 REGION_CHOICES = Center.Region.choices
 
-
-def _build_region_options():
-    """band의 지역 그룹 매핑을 그대로 사용해 옵션 리스트 생성."""
-    options = [{"value": "all", "label": "전체"}]
-    options += [
-        {"value": v, "label": l}
-        for v, l in REGION_CHOICES if v != "all"
-    ]
-    return options
+# band 페이지와 동일한 권역 옵션 (사이드/모바일 가로 스크롤용)
+REGION_OPTIONS_FULL = [
+    ("all", "전체"),
+    ("capital", "수도권"),
+    ("busan", "영남권"),
+    ("daegu", "대구권"),
+    ("gwangju", "호남권"),
+    ("daejeon", "충청권"),
+    ("ulsan", "울산권"),
+    ("jeju", "제주권"),
+]
 
 
 def _user_can_manage(user, center):
@@ -31,8 +34,22 @@ def _user_can_manage(user, center):
     return center.created_by_id == user.id
 
 
+def _load_banner_images():
+    """band 페이지와 동일한 배너 데이터 형식."""
+    banner_images = []
+    for banner in BadmintokBanner.objects.filter(is_active=True):
+        if not banner.image:
+            continue
+        banner_images.append({
+            "url": banner.image.url,
+            "alt": banner.alt_text or banner.title or "",
+            "link_url": banner.link_url,
+        })
+    return banner_images
+
+
 def center_list(request):
-    """센터 목록 페이지."""
+    """센터 목록 페이지 (band 페이지와 동일 구조)."""
     qs = Center.objects.filter(is_published=True).select_related("created_by").annotate(
         bookmark_count_annotated=Count("bookmarks", distinct=True),
     )
@@ -51,6 +68,15 @@ def center_list(request):
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get("page", 1))
 
+    # 내가 등록한 센터 (band의 my_bands 대응)
+    my_centers = []
+    if request.user.is_authenticated:
+        my_centers = list(
+            Center.objects.filter(created_by=request.user, is_published=True)
+            .order_by("-created_at")[:5]
+        )
+
+    # 사용자별 북마크 여부 (카드 표시는 안 하지만 호환용)
     bookmarked_ids = set()
     if request.user.is_authenticated:
         bookmarked_ids = set(
@@ -60,24 +86,16 @@ def center_list(request):
             ).values_list("center_id", flat=True)
         )
 
-    centers_with_meta = [
-        {
-            "obj": c,
-            "can_manage": _user_can_manage(request.user, c),
-            "is_bookmarked": c.id in bookmarked_ids,
-        }
-        for c in page_obj
-    ]
-
     return render(request, "center/list.html", {
-        "page_obj": page_obj,
         "centers": page_obj,
-        "centers_with_meta": centers_with_meta,
+        "my_centers": my_centers,
         "search": search,
-        "current_region": region or "all",
         "current_type": "center",
-        "regions": Center.Region.choices,
-        "region_options": _build_region_options(),
+        "current_region": region or "all",
+        "regions": REGION_OPTIONS_FULL,
+        "banner_images": _load_banner_images(),
+        "pinned_notice": Notice.objects.filter(is_pinned=True).order_by("-created_at").first(),
+        "bookmarked_ids": bookmarked_ids,
     })
 
 
