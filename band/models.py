@@ -13,6 +13,7 @@ class Band(models.Model):
         FLASH = "flash", _("번개")
         GROUP = "group", _("모임")
         CLUB = "club", _("동호회")
+        CENTER = "center", _("센터")
     
     class Region(models.TextChoices):
         ALL = "all", _("전체")
@@ -33,6 +34,7 @@ class Band(models.Model):
         "flash": _("번개"),
         "group": _("모임"),
         "club": _("동호회"),
+        "center": _("센터"),
     }
 
     name = models.CharField(_("모임 이름"), max_length=200)
@@ -78,6 +80,17 @@ class Band(models.Model):
         null=True,
         verbose_name=_("삭제 승인자")
     )
+    # === 센터(시설) 전용 필드 (band_type='center'일 때만 사용, 다른 타입은 비워둠) ===
+    facility_address = models.CharField(_("주소"), max_length=300, blank=True)
+    facility_address_detail = models.CharField(_("상세 주소"), max_length=200, blank=True)
+    facility_phone = models.CharField(_("전화번호"), max_length=30, blank=True)
+    facility_operating_hours = models.CharField(_("운영 시간"), max_length=200, blank=True)
+    facility_pricing = models.CharField(_("이용 요금"), max_length=300, blank=True)
+    facility_court_count = models.PositiveIntegerField(_("코트 수"), default=0)
+    facility_amenities = models.CharField(_("편의 시설"), max_length=300, blank=True, help_text="쉼표 구분")
+    facility_latitude = models.FloatField(_("위도"), null=True, blank=True)
+    facility_longitude = models.FloatField(_("경도"), null=True, blank=True)
+
     created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
     updated_at = models.DateTimeField(_("수정일"), auto_now=True)
 

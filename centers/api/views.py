@@ -1,3 +1,8 @@
+"""센터 API 뷰.
+
+내부적으로 Band 모델(band_type='center')을 사용하지만, 외부 API는
+기존 Center API와 호환되도록 유지된다.
+"""
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
@@ -8,35 +13,36 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.permissions import is_site_admin
-from centers.models import Center, CenterBookmark
+from band.models import Band, BandBookmark
 from .serializers import CenterSerializer, CenterWriteSerializer
 
 # band 앱과 동일한 지역 그룹 매핑 재사용
 from band.api.views import REGION_GROUPS
 
 
-def _serialize_center(center, request):
-    """detail 응답에서 bookmark_count_annotated 주입 후 직렬화."""
-    center = Center.objects.annotate(
+def _center_queryset():
+    """band_type='center' 인 Band만 조회하는 베이스 쿼리셋."""
+    return Band.objects.filter(band_type="center", is_public=True)
+
+
+def _serialize_with_annotation(band_id, request):
+    band = _center_queryset().annotate(
         bookmark_count_annotated=Count("bookmarks", distinct=True)
-    ).get(pk=center.pk)
-    return CenterSerializer(center, context={"request": request}).data
+    ).get(pk=band_id)
+    return CenterSerializer(band, context={"request": request}).data
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def center_list(request):
-    """배드민턴 센터 목록 API.
-
-    쿼리: search, region, fallback, page, page_size
-    """
-    qs = Center.objects.filter(is_published=True).select_related("created_by").annotate(
+    """배드민턴 센터 목록 API (band_type='center' 데이터)."""
+    qs = _center_queryset().select_related("created_by").annotate(
         bookmark_count_annotated=Count("bookmarks", distinct=True)
     )
 
     search = request.GET.get("search", "").strip()
     if search:
-        qs = qs.filter(Q(name__icontains=search) | Q(address__icontains=search))
+        qs = qs.filter(Q(name__icontains=search) | Q(facility_address__icontains=search))
 
     region = request.GET.get("region", "").strip()
     is_fallback = False
@@ -81,41 +87,36 @@ def center_list(request):
 @permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def center_detail(request, center_id):
-    """배드민턴 센터 상세 / 수정 / 삭제 API.
-
-    GET: 누구나
-    PATCH/DELETE: 작성자(created_by) 또는 사이트 관리자
-    """
+    """배드민턴 센터 상세 / 수정 / 삭제 API."""
     if request.method == "GET":
-        center = get_object_or_404(
-            Center.objects.select_related("created_by").annotate(
+        band = get_object_or_404(
+            _center_queryset().select_related("created_by").annotate(
                 bookmark_count_annotated=Count("bookmarks", distinct=True)
             ),
             id=center_id,
-            is_published=True,
         )
-        serializer = CenterSerializer(center, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            CenterSerializer(band, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
-    # PATCH / DELETE: 로그인 필요
     if not request.user.is_authenticated:
         return Response({"detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
-    center = get_object_or_404(Center, id=center_id)
+    band = get_object_or_404(Band, id=center_id, band_type="center")
 
-    if not (is_site_admin(request.user) or center.created_by_id == request.user.id):
+    if not (is_site_admin(request.user) or band.created_by_id == request.user.id):
         return Response({"detail": "수정/삭제 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "DELETE":
-        center.delete()
+        band.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # PATCH
-    serializer = CenterWriteSerializer(center, data=request.data, partial=True)
+    serializer = CenterWriteSerializer(band, data=request.data, partial=True)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     serializer.save()
-    return Response(_serialize_center(center, request), status=status.HTTP_200_OK)
+    return Response(_serialize_with_annotation(band.id, request), status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
@@ -126,23 +127,29 @@ def center_create(request):
     serializer = CenterWriteSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    center = serializer.save(created_by=request.user)
-    return Response(_serialize_center(center, request), status=status.HTTP_201_CREATED)
+    band = serializer.save(
+        created_by=request.user,
+        band_type="center",
+        categories="center",
+        is_public=True,
+        is_approved=True,
+    )
+    return Response(_serialize_with_annotation(band.id, request), status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def center_bookmark_toggle(request, center_id):
     """센터 북마크 토글 (로그인 필요)."""
-    center = get_object_or_404(Center, id=center_id, is_published=True)
-    bookmark = CenterBookmark.objects.filter(center=center, user=request.user).first()
+    band = get_object_or_404(Band, id=center_id, band_type="center", is_public=True)
+    bookmark = BandBookmark.objects.filter(band=band, user=request.user).first()
     if bookmark:
         bookmark.delete()
         is_bookmarked = False
     else:
-        CenterBookmark.objects.create(center=center, user=request.user)
+        BandBookmark.objects.create(band=band, user=request.user)
         is_bookmarked = True
     return Response({
         "is_bookmarked": is_bookmarked,
-        "bookmark_count": center.bookmarks.count(),
+        "bookmark_count": band.bookmarks.count(),
     }, status=status.HTTP_200_OK)

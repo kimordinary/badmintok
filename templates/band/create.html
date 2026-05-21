@@ -404,10 +404,60 @@
                     {{ form.band_type }}
                     <input type="hidden" name="region" value="all">
                 {% endif %}
-                
+
+                <!-- ===== 센터(시설) 전용 필드 (band_type='center'일 때만 표시) ===== -->
+                {% if band_type == 'center' %}
+                <div style="margin: 24px 0 16px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                  <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 4px 0;">🏸 시설 정보</h3>
+                  <p style="font-size: 13px; color: #64748b; margin: 0 0 16px 0;">센터(체육관) 운영 정보를 입력하세요. 비워둬도 등록은 가능합니다.</p>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">주소</label>
+                  {{ form.facility_address }}
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">상세 주소</label>
+                  {{ form.facility_address_detail }}
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                  <div>
+                    <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">전화번호</label>
+                    {{ form.facility_phone }}
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">코트 수</label>
+                    {{ form.facility_court_count }}
+                  </div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">운영 시간</label>
+                  {{ form.facility_operating_hours }}
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">이용 요금</label>
+                  {{ form.facility_pricing }}
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">편의 시설</label>
+                  {{ form.facility_amenities }}
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #94a3b8;">쉼표로 구분 (예: 샤워실, 락커, 주차장)</p>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                  <div>
+                    <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">위도</label>
+                    {{ form.facility_latitude }}
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">경도</label>
+                    {{ form.facility_longitude }}
+                  </div>
+                </div>
+                {% endif %}
+
                 <!-- 생성 버튼 -->
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; margin-bottom: {% if is_update and band_type == 'flash' %}8px{% else %}12px{% endif %};">
-                    {% if is_update %}{% if band_type == 'flash' %}번개 수정하기{% else %}모임 수정하기{% endif %}{% else %}{% if band_type == 'flash' %}번개 만들기{% else %}모임 만들기{% endif %}{% endif %}
+                    {% if is_update %}{% if band_type == 'flash' %}번개 수정하기{% elif band_type == 'center' %}센터 수정하기{% else %}모임 수정하기{% endif %}{% else %}{% if band_type == 'flash' %}번개 만들기{% elif band_type == 'center' %}센터 등록하기{% else %}모임 만들기{% endif %}{% endif %}
                 </button>
             </form>
             

@@ -960,16 +960,112 @@
                     </div>
                 </div>
                 
-                <!-- 모임 설명란 -->
+                <!-- === 센터 전용: 네이버 플레이스 핵심 액션 + 시설 정보 카드 === -->
+                {% if band.band_type == 'center' %}
+                <style>
+                  .place-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+                  .place-action-btn {
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    gap: 6px; padding: 14px 8px; background: #fff; border: 1px solid #e2e8f0;
+                    border-radius: 10px; text-decoration: none; color: #1e293b;
+                    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+                  }
+                  .place-action-btn:hover { border-color: var(--brand); background: #f0fdf4; color: var(--brand); }
+                  .place-action-btn .icon { font-size: 20px; line-height: 1; }
+                  .place-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+                  .place-info-card {
+                    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+                    padding: 16px; min-height: 84px;
+                  }
+                  .place-info-card .label {
+                    font-size: 11px; color: #94a3b8; font-weight: 600;
+                    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+                  }
+                  .place-info-card .value { font-size: 14px; color: #1e293b; line-height: 1.5; word-break: break-all; }
+                  .place-info-card .value a { color: #31AA60; text-decoration: none; }
+                  .place-info-card .value .strong { font-weight: 700; font-size: 16px; }
+                  .amenity-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+                  .amenity-chip {
+                    display: inline-flex; align-items: center; gap: 4px;
+                    padding: 6px 12px; background: #f1f5f9; color: #475569;
+                    border-radius: 16px; font-size: 13px; font-weight: 500;
+                  }
+                  @media (max-width: 768px) {
+                    .place-info-grid { grid-template-columns: 1fr 1fr; }
+                  }
+                </style>
+
+                <div class="place-actions">
+                  {% if band.facility_phone %}
+                    <a href="tel:{{ band.facility_phone }}" class="place-action-btn"><span class="icon">📞</span><span>전화</span></a>
+                  {% else %}
+                    <button type="button" class="place-action-btn" disabled style="opacity: 0.4;"><span class="icon">📞</span><span>전화 없음</span></button>
+                  {% endif %}
+                  <button type="button" class="place-action-btn" onclick="(navigator.share && navigator.share({title:'{{ band.name|escapejs }}', url: window.location.href})) || (navigator.clipboard.writeText(window.location.href), alert('링크가 복사되었습니다'));"><span class="icon">🔗</span><span>공유</span></button>
+                  {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'bookmark_toggle' band.id %}" style="margin: 0;">
+                      {% csrf_token %}
+                      <button type="submit" class="place-action-btn" style="width: 100%;"><span class="icon">☆</span><span>저장</span></button>
+                    </form>
+                  {% else %}
+                    <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="place-action-btn"><span class="icon">☆</span><span>저장</span></a>
+                  {% endif %}
+                  {% if band.facility_address %}
+                    <a href="https://map.kakao.com/?q={{ band.facility_address|urlencode }}" target="_blank" rel="noopener noreferrer nofollow" class="place-action-btn"><span class="icon">🗺</span><span>길찾기</span></a>
+                  {% else %}
+                    <button type="button" class="place-action-btn" disabled style="opacity: 0.4;"><span class="icon">🗺</span><span>주소 없음</span></button>
+                  {% endif %}
+                </div>
+
+                <div class="place-info-grid">
+                  <div class="place-info-card">
+                    <div class="label">📍 위치</div>
+                    <div class="value">{% if band.facility_address %}{{ band.facility_address }}{% if band.facility_address_detail %}<br>{{ band.facility_address_detail }}{% endif %}{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}</div>
+                  </div>
+                  <div class="place-info-card">
+                    <div class="label">🕒 운영 시간</div>
+                    <div class="value">{% if band.facility_operating_hours %}{{ band.facility_operating_hours }}{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}</div>
+                  </div>
+                  <div class="place-info-card">
+                    <div class="label">📞 전화</div>
+                    <div class="value">{% if band.facility_phone %}<a href="tel:{{ band.facility_phone }}">{{ band.facility_phone }}</a>{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}</div>
+                  </div>
+                  <div class="place-info-card">
+                    <div class="label">💰 이용 요금</div>
+                    <div class="value">{% if band.facility_pricing %}<span class="strong">{{ band.facility_pricing }}</span>{% else %}<span style="color: #94a3b8;">미등록</span>{% endif %}</div>
+                  </div>
+                  <div class="place-info-card">
+                    <div class="label">🏸 코트</div>
+                    <div class="value"><span class="strong">{{ band.facility_court_count|default:0 }}면</span></div>
+                  </div>
+                  <div class="place-info-card">
+                    <div class="label">⭐ 북마크</div>
+                    <div class="value"><span class="strong">{{ band.bookmark_count }}명</span></div>
+                  </div>
+                </div>
+
+                {% if facility_amenities_list %}
+                <div class="band-description-box">
+                  <h3>편의 시설</h3>
+                  <div class="amenity-chips">
+                    {% for amenity in facility_amenities_list %}
+                      <span class="amenity-chip">✓ {{ amenity }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <!-- 모임/센터 설명란 -->
                 {% if band.detailed_description %}
                 <div class="band-description-box" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">
-                    <h3>모임 설명</h3>
+                    <h3>{% if band.band_type == 'center' %}센터 소개{% else %}모임 설명{% endif %}</h3>
                     <div class="band-description-content" style="width: 100%; box-sizing: border-box;">
                         {{ band.detailed_description|linebreaks }}
                     </div>
                     </div>
                 {% endif %}
-                
+
                 <!-- 탭 메뉴 -->
                 <div class="band-tabs">
                     <a href="?tab=home" class="band-tab {% if active_tab == 'home' or not active_tab %}active{% endif %}">홈</a>

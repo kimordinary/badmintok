@@ -22,6 +22,7 @@ class BandForm(forms.ModelForm):
         ("flash", "번개"),
         ("group", "모임"),
         ("club", "동호회"),
+        ("center", "센터"),
     ]
 
     # 실제 모델 필드(categories, 쉼표 문자열)를 위한 UI - 다중 선택
@@ -35,7 +36,14 @@ class BandForm(forms.ModelForm):
 
     class Meta:
         model = Band
-        fields = ["name", "description", "detailed_description", "band_type", "region", "cover_image", "profile_image", "is_public", "join_approval_required"]
+        fields = [
+            "name", "description", "detailed_description", "band_type", "region",
+            "cover_image", "profile_image", "is_public", "join_approval_required",
+            # 센터(시설) 전용 필드 — band_type='center'일 때만 의미 있음
+            "facility_address", "facility_address_detail", "facility_phone",
+            "facility_operating_hours", "facility_pricing", "facility_court_count",
+            "facility_amenities", "facility_latitude", "facility_longitude",
+        ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-input", "placeholder": "모임 이름을 입력하세요"}),
             "description": forms.TextInput(attrs={"class": "form-input", "placeholder": "모임 한줄 소개를 입력하세요", "maxlength": "500"}),
@@ -47,6 +55,15 @@ class BandForm(forms.ModelForm):
             "profile_image": forms.FileInput(attrs={"class": "form-input", "accept": "image/*"}),
             "is_public": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
             "join_approval_required": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
+            "facility_address": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 서울시 송파구 올림픽로 25"}),
+            "facility_address_detail": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 지하 1층"}),
+            "facility_phone": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 02-1234-5678"}),
+            "facility_operating_hours": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 평일 06:00-23:00 / 주말 08:00-22:00"}),
+            "facility_pricing": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 1시간 ₩10,000"}),
+            "facility_court_count": forms.NumberInput(attrs={"class": "form-input", "min": "0"}),
+            "facility_amenities": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 샤워실, 락커, 주차장 (쉼표 구분)"}),
+            "facility_latitude": forms.NumberInput(attrs={"class": "form-input", "step": "any", "placeholder": "37.5142"}),
+            "facility_longitude": forms.NumberInput(attrs={"class": "form-input", "step": "any", "placeholder": "127.1027"}),
         }
 
     def __init__(self, *args, **kwargs):

@@ -1,20 +1,28 @@
+"""센터 API 시리얼라이저.
+
+내부적으로 Band 모델(band_type='center')을 사용한다.
+응답 형식은 기존 Center API와 호환되도록 유지 (앱 영향 없음).
+"""
 from rest_framework import serializers
 
 from accounts.permissions import is_site_admin
 from band.api.serializers import UserSerializer
-from centers.models import Center, CenterBookmark
+from band.models import Band, BandBookmark
 
 
 CENTER_WRITE_FIELDS = [
-    "name", "region", "address", "address_detail",
-    "phone", "description",
-    "operating_hours", "pricing", "court_count", "amenities",
-    "latitude", "longitude", "cover_image",
+    "name", "region", "facility_address", "facility_address_detail",
+    "facility_phone", "description",
+    "facility_operating_hours", "facility_pricing", "facility_court_count", "facility_amenities",
+    "facility_latitude", "facility_longitude", "cover_image",
 ]
 
 
 class CenterSerializer(serializers.ModelSerializer):
-    """배드민턴 센터 시리얼라이저 (목록/상세 공용)."""
+    """배드민턴 센터 응답 (Band 모델 기반).
+
+    필드명은 기존 Center API와 호환되도록 alias 처리.
+    """
     region_display = serializers.CharField(source="get_region_display", read_only=True)
     cover_image_url = serializers.SerializerMethodField()
     bookmark_count = serializers.SerializerMethodField()
@@ -23,8 +31,19 @@ class CenterSerializer(serializers.ModelSerializer):
     can_manage = serializers.SerializerMethodField()
     is_site_admin = serializers.SerializerMethodField()
 
+    # Band 모델 필드 → Center API 필드명 alias
+    address = serializers.CharField(source="facility_address", read_only=True)
+    address_detail = serializers.CharField(source="facility_address_detail", read_only=True)
+    phone = serializers.CharField(source="facility_phone", read_only=True)
+    operating_hours = serializers.CharField(source="facility_operating_hours", read_only=True)
+    pricing = serializers.CharField(source="facility_pricing", read_only=True)
+    court_count = serializers.IntegerField(source="facility_court_count", read_only=True)
+    amenities = serializers.CharField(source="facility_amenities", read_only=True)
+    latitude = serializers.FloatField(source="facility_latitude", read_only=True)
+    longitude = serializers.FloatField(source="facility_longitude", read_only=True)
+
     class Meta:
-        model = Center
+        model = Band
         fields = [
             "id", "name", "region", "region_display",
             "address", "address_detail", "phone", "description",
@@ -52,7 +71,7 @@ class CenterSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-        return CenterBookmark.objects.filter(center=obj, user=request.user).exists()
+        return BandBookmark.objects.filter(band=obj, user=request.user).exists()
 
     def get_can_manage(self, obj):
         request = self.context.get("request")
@@ -70,13 +89,31 @@ class CenterSerializer(serializers.ModelSerializer):
 
 
 class CenterWriteSerializer(serializers.ModelSerializer):
-    """센터 등록/수정 시리얼라이저 (POST / PATCH 공용)."""
+    """센터 등록/수정 입력 (외부 API 입력 필드는 Center 시절 그대로).
+
+    내부적으로는 Band 모델에 저장.
+    """
+    # 입력 필드명은 외부 호환을 위해 Center 시절 그대로 (address, phone, court_count 등)
+    address = serializers.CharField(source="facility_address", required=True, allow_blank=False)
+    address_detail = serializers.CharField(source="facility_address_detail", required=False, allow_blank=True)
+    phone = serializers.CharField(source="facility_phone", required=False, allow_blank=True)
+    operating_hours = serializers.CharField(source="facility_operating_hours", required=False, allow_blank=True)
+    pricing = serializers.CharField(source="facility_pricing", required=False, allow_blank=True)
+    court_count = serializers.IntegerField(source="facility_court_count", required=False)
+    amenities = serializers.CharField(source="facility_amenities", required=False, allow_blank=True)
+    latitude = serializers.FloatField(source="facility_latitude", required=False)
+    longitude = serializers.FloatField(source="facility_longitude", required=False)
 
     class Meta:
-        model = Center
-        fields = CENTER_WRITE_FIELDS
+        model = Band
+        fields = [
+            "name", "description", "region",
+            "address", "address_detail", "phone",
+            "operating_hours", "pricing", "court_count", "amenities",
+            "latitude", "longitude", "cover_image",
+        ]
         extra_kwargs = {
             "name": {"required": True, "allow_blank": False},
             "region": {"required": True},
-            "address": {"required": True, "allow_blank": False},
+            "description": {"required": False, "allow_blank": True},
         }

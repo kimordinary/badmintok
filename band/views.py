@@ -296,22 +296,20 @@ def band_list(request):
             "pinned_notice": pinned_notice,
         })
     
-    # 모임/동호회 탭일 때는 밴드 리스트 표시 (일정 정보도 함께 가져오기)
-    # 승인된 모임/동호회 또는 본인이 만든 모임 표시
+    # 모임/동호회/센터 탭일 때는 밴드 리스트 표시 (일정 정보도 함께 가져오기)
+    # 승인된 모임/동호회/센터 또는 본인이 만든 모임 표시
     if request.user.is_authenticated:
-        # 승인된 모임/동호회 또는 본인이 만든 모임
         bands = Band.objects.filter(
-            Q(is_public=True, is_approved=True) |  # 승인된 모임
-            Q(created_by=request.user, band_type__in=["group", "club"])  # 본인이 만든 모임 (승인 전이라도)
+            Q(is_public=True, is_approved=True) |  # 승인된 모임/동호회/센터
+            Q(created_by=request.user, band_type__in=["group", "club", "center"])  # 본인이 만든 것
         ).filter(
-            band_type__in=["group", "club"]  # 모임/동호회만
+            band_type__in=["group", "club", "center"]
         )
     else:
-        # 비로그인 사용자는 승인된 모임만 표시
         bands = Band.objects.filter(
             is_public=True,
-            is_approved=True,  # 관리자 승인된 것만
-            band_type__in=["group", "club"]  # 모임/동호회만
+            is_approved=True,
+            band_type__in=["group", "club", "center"]
         )
     
     bands = bands.annotate(
@@ -631,10 +629,15 @@ def band_create(request):
             else:
                 # 모임/동호회 타입일 때 지역 정보 처리 및 관리자 승인 대기 상태로 설정
                 group_region = request.POST.get("group_region", "")
-                
-                # 모임/동호회는 관리자 승인 대기 상태로 생성
-                band.is_approved = False
-                band.is_public = False  # 승인 전에는 비공개
+
+                if band_type == "center":
+                    # 센터(시설)는 사용자 등록 즉시 공개 (운영자 승인 X — 사용자 의도)
+                    band.is_approved = True
+                    band.is_public = True
+                else:
+                    # 모임/동호회는 관리자 승인 대기 상태로 생성
+                    band.is_approved = False
+                    band.is_public = False  # 승인 전에는 비공개
                 
                 if group_region:
                     # 구체 지역을 권역으로 매핑 (번개와 동일한 매핑 사용)
@@ -679,6 +682,8 @@ def band_create(request):
                     request,
                     "모임/동호회 생성 요청이 완료되었습니다. 관리자 승인 후 생성 가능합니다!"
                 )
+            elif band_type == "center":
+                messages.success(request, "센터가 등록되었습니다.")
             else:
                 messages.success(request, "밴드가 생성되었습니다.")
             return redirect("band:detail", band_id=band.id)
@@ -1099,6 +1104,11 @@ def band_detail(request, band_id):
     can_delete_band = site_admin or (is_member and member and member.role in ["owner", "admin"])  # 모임 삭제
     can_manage_schedules = site_admin or is_creator or (is_member and member and member.role in ["owner", "admin"])
 
+    # 센터 전용: 편의시설 리스트 분리
+    facility_amenities_list = []
+    if band.band_type == "center" and band.facility_amenities:
+        facility_amenities_list = [s.strip() for s in band.facility_amenities.split(",") if s.strip()]
+
     return render(request, "band/detail.html", {
         "band": band,
         "posts": posts_page,
@@ -1106,6 +1116,7 @@ def band_detail(request, band_id):
         "home_schedules": home_schedules,
         "schedules_page": schedules_page,
         "question_posts": question_posts,
+        "facility_amenities_list": facility_amenities_list,
         "members": members,
         "total_member_count": total_member_count,
         "is_member": is_member,
