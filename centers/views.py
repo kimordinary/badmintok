@@ -71,9 +71,12 @@ def center_list(request):
 
     return render(request, "center/list.html", {
         "page_obj": page_obj,
+        "centers": page_obj,
         "centers_with_meta": centers_with_meta,
         "search": search,
         "current_region": region or "all",
+        "current_type": "center",
+        "regions": Center.Region.choices,
         "region_options": _build_region_options(),
     })
 
