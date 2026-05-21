@@ -114,7 +114,7 @@ class DeviceToken(models.Model):
         related_name="device_tokens",
         verbose_name=_("사용자"),
     )
-    token = models.CharField(_("FCM 토큰"), max_length=512, unique=True)
+    token = models.CharField(_("FCM 토큰"), max_length=255, unique=True)
     platform = models.CharField(
         _("플랫폼"), max_length=10, choices=Platform.choices, default=Platform.ANDROID
     )

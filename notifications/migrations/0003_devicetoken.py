@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             name='DeviceToken',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('token', models.CharField(max_length=512, unique=True, verbose_name='FCM 토큰')),
+                ('token', models.CharField(max_length=255, unique=True, verbose_name='FCM 토큰')),
                 ('platform', models.CharField(choices=[('android', 'Android'), ('ios', 'iOS'), ('web', 'Web')], default='android', max_length=10, verbose_name='플랫폼')),
                 ('is_active', models.BooleanField(default=True, verbose_name='활성')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='생성일')),
