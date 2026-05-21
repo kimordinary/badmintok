@@ -1,7 +1,9 @@
 """방문자 추적 미들웨어"""
-from django.utils import timezone
-from urllib.parse import urlparse
+import hashlib
 import re
+from urllib.parse import urlparse
+
+from django.utils import timezone
 
 
 class VisitorTrackingMiddleware:
@@ -11,19 +13,29 @@ class VisitorTrackingMiddleware:
         self.get_response = get_response
 
         # 봇 패턴 (User-Agent에서 봇 감지)
+        # 자동화 도구·헤드리스 브라우저·HTTP 클라이언트 라이브러리까지 포괄
         self.bot_patterns = re.compile(
-            r'bot|crawler|spider|scraper|slurp|^$',
+            r'bot|crawler|spider|scraper|slurp|'
+            r'headless|phantom|selenium|playwright|puppeteer|'
+            r'curl|wget|python-requests|axios|node-fetch|httpclient|okhttp|'
+            r'uptimerobot|pingdom|datadog|newrelic|^$',
             re.IGNORECASE
         )
 
-        # 제외할 URL 패턴 (static, media, admin 등)
+        # 제외할 URL 패턴 (사용자 콘텐츠 페이지뷰가 아닌 것)
+        # 주의: /app은 사용자 의도 액션이라 포함 (별도 AppDownloadClick에도 기록되지만 OK)
         self.exclude_paths = [
             '/admin/',
             '/static/',
             '/media/',
+            '/api/',                # API 호출은 페이지뷰 아님
             '/favicon.ico',
             '/robots.txt',
             '/sitemap.xml',
+            '/sw.js',
+            '/manifest.json',
+            '/ads.txt',
+            '/.well-known/',        # 인증서 검증 등 자동 호출
         ]
 
     def __call__(self, request):
@@ -62,19 +74,30 @@ class VisitorTrackingMiddleware:
         if referer and ('localhost' in referer or '127.0.0.1' in referer):
             return False
 
+        # 봇이면 기록 안 함 (DB 용량 절감)
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        if self._detect_device_type(user_agent) == 'bot':
+            return False
+
         return True
 
     def _log_visit(self, request):
         """방문 로그 기록"""
         from .models import VisitorLog
 
-        # 세션 키 가져오기 (없으면 생성)
-        if not request.session.session_key:
-            request.session.create()
-        session_key = request.session.session_key
-
         # IP 주소 추출
         ip_address = self._get_client_ip(request)
+
+        # User-Agent
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        # 세션 키: 이미 있으면 사용, 없으면 IP+UA 기반 합성 키 사용
+        # (세션을 강제 생성하면 익명 사용자가 매 요청마다 새 unique visitor로 잡혀
+        #  인플레이션이 크고 django_session 테이블도 무의미하게 부풀어 오름)
+        session_key = request.session.session_key
+        if not session_key:
+            fingerprint = f"{ip_address or 'unknown'}|{user_agent[:200]}"
+            session_key = 'anon_' + hashlib.md5(fingerprint.encode('utf-8')).hexdigest()[:30]
 
         # URL 경로
         url_path = request.path
@@ -85,9 +108,6 @@ class VisitorTrackingMiddleware:
         if referer:
             parsed = urlparse(referer)
             referer_domain = parsed.netloc
-
-        # User-Agent
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
 
         # 디바이스 타입 판별
         device_type = self._detect_device_type(user_agent)
