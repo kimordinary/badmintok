@@ -78,11 +78,12 @@ class BandAdmin(ModelAdmin):
     actions = ["approve_selected", "reject_selected", "approve_deletion_selected", "delete_selected"]
 
     def display_approved_at(self, obj):
-        """승인 일시 표시"""
+        """승인 일시 표시 (KST 변환)"""
         if obj.approved_at:
+            from django.utils import timezone as dj_tz
             return format_html(
                 '<span style="color: #10b981;">{}</span>',
-                obj.approved_at.strftime("%Y.%m.%d %H:%M")
+                dj_tz.localtime(obj.approved_at).strftime("%Y.%m.%d %H:%M")
             )
         elif obj.band_type == "flash":
             return format_html('<span style="color: #9ca3af;">-</span>')
