@@ -14,7 +14,7 @@ CENTER_WRITE_FIELDS = [
     "name", "region", "facility_address", "facility_address_detail",
     "facility_phone", "description",
     "facility_operating_hours", "facility_pricing", "facility_court_count", "facility_amenities",
-    "facility_latitude", "facility_longitude", "cover_image",
+    "facility_latitude", "facility_longitude", "cover_image", "profile_image",
 ]
 
 
@@ -25,6 +25,7 @@ class CenterSerializer(serializers.ModelSerializer):
     """
     region_display = serializers.CharField(source="get_region_display", read_only=True)
     cover_image_url = serializers.SerializerMethodField()
+    profile_image_url = serializers.SerializerMethodField()
     bookmark_count = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
     created_by = UserSerializer(read_only=True)
@@ -48,7 +49,7 @@ class CenterSerializer(serializers.ModelSerializer):
             "id", "name", "region", "region_display",
             "address", "address_detail", "phone", "description",
             "operating_hours", "pricing", "court_count", "amenities",
-            "cover_image_url", "latitude", "longitude",
+            "cover_image_url", "profile_image_url", "latitude", "longitude",
             "bookmark_count", "is_bookmarked",
             "created_by", "can_manage", "is_site_admin",
             "created_at",
@@ -59,6 +60,13 @@ class CenterSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if obj.cover_image and hasattr(obj.cover_image, "url"):
             url = obj.cover_image.url
+            return request.build_absolute_uri(url) if request else url
+        return None
+
+    def get_profile_image_url(self, obj):
+        request = self.context.get("request")
+        if obj.profile_image and hasattr(obj.profile_image, "url"):
+            url = obj.profile_image.url
             return request.build_absolute_uri(url) if request else url
         return None
 
@@ -110,7 +118,7 @@ class CenterWriteSerializer(serializers.ModelSerializer):
             "name", "description", "region",
             "address", "address_detail", "phone",
             "operating_hours", "pricing", "court_count", "amenities",
-            "latitude", "longitude", "cover_image",
+            "latitude", "longitude", "cover_image", "profile_image",
         ]
         extra_kwargs = {
             "name": {"required": True, "allow_blank": False},

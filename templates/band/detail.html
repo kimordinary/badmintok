@@ -942,8 +942,7 @@
                     {% endif %}
                     <div class="band-header-text">
                         <h1 class="band-header-title">{{ band.name }}</h1>
-                        {# 센터는 한줄 소개를 헤더에 표시 안 함 — 아래 '센터 소개' 박스와 중복 방지 #}
-                        {% if band.description and band.band_type != 'center' %}
+                        {% if band.description %}
                             <p class="band-header-description" data-original-description="{{ band.description|escapejs }}">{{ band.description }}</p>
                         {% endif %}
                     </div>
@@ -1057,10 +1056,10 @@
                 {% endif %}
                 {% endif %}
 
-                <!-- 모임/센터 설명란 -->
-                {% if band.detailed_description %}
+                <!-- 모임 설명란 (센터는 한줄 소개만 사용하므로 표시 안 함) -->
+                {% if band.detailed_description and band.band_type != 'center' %}
                 <div class="band-description-box" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">
-                    <h3>{% if band.band_type == 'center' %}센터 소개{% else %}모임 설명{% endif %}</h3>
+                    <h3>모임 설명</h3>
                     <div class="band-description-content" style="width: 100%; box-sizing: border-box;">
                         {{ band.detailed_description|linebreaks }}
                     </div>
