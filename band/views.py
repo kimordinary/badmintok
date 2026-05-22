@@ -52,21 +52,21 @@ def band_list(request):
                 band_type="flash"
             ).prefetch_related("schedules")
         
-        # 2. 모임/동호회 타입 밴드 중 미래 스케줄이 있는 것 조회
-        # 본인이 만든 모임의 스케줄도 승인 전이라도 표시되도록 수정
+        # 2. 모임/동호회/센터 타입 밴드 중 미래 스케줄이 있는 것 조회
+        # 본인이 만든 모임/센터의 스케줄도 승인 전이라도 표시되도록 수정
         if request.user.is_authenticated:
             schedule_bands = Band.objects.filter(
-                Q(is_public=True, is_approved=True) |  # 승인된 모임/동호회
-                Q(created_by=request.user, band_type__in=["group", "club"])  # 본인이 만든 모임/동호회 (승인 전이라도)
+                Q(is_public=True, is_approved=True) |  # 승인된 모임/동호회/센터
+                Q(created_by=request.user, band_type__in=["group", "club", "center"])  # 본인이 만든 것 (승인 전이라도)
             ).filter(
-                band_type__in=["group", "club"],
+                band_type__in=["group", "club", "center"],
                 schedules__start_datetime__gte=timezone.now()
             ).prefetch_related("schedules").distinct()
         else:
             schedule_bands = Band.objects.filter(
                 is_public=True,
                 is_approved=True,
-                band_type__in=["group", "club"],
+                band_type__in=["group", "club", "center"],
                 schedules__start_datetime__gte=timezone.now()
             ).prefetch_related("schedules").distinct()
         
