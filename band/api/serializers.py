@@ -362,7 +362,7 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
             'start_datetime', 'end_datetime', 'location',
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
-            'bank_account', 'is_closed', 'created_by',
+            'cost', 'bank_account', 'is_closed', 'created_by',
             'images', 'is_full', 'is_applied', 'can_manage', 'd_day',
             'created_at', 'updated_at'
         ]
@@ -424,7 +424,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'start_datetime', 'end_datetime', 'location',
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
-            'bank_account', 'is_closed', 'created_by',
+            'cost', 'bank_account', 'is_closed', 'created_by',
             'images', 'is_full', 'is_applied', 'user_application',
             'can_manage', 'is_site_admin', 'applications', 'd_day',
             'created_at', 'updated_at'
@@ -603,7 +603,7 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
         fields = [
             'title', 'description', 'start_datetime', 'end_datetime',
             'location', 'max_participants', 'requires_approval',
-            'application_deadline', 'bank_account'
+            'application_deadline', 'cost', 'bank_account'
         ]
 
 
