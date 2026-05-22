@@ -611,7 +611,10 @@ def band_create(request):
                             schedule_description += f"\n참가비: {meeting_cost}원"
                         if flash_description:
                             schedule_description += f"\n\n{flash_description}"
-                        
+
+                        from band.cost_utils import resolve_cost
+                        cost_value = resolve_cost(meeting_cost, schedule_description)
+
                         schedule = BandSchedule.objects.create(
                             band=band,
                             title=band.name,
@@ -621,6 +624,7 @@ def band_create(request):
                             location=meeting_location,
                             max_participants=int(meeting_capacity) if meeting_capacity else 20,
                             requires_approval=False,
+                            cost=cost_value,
                             created_by=request.user
                         )
                     except Exception as e:
@@ -806,7 +810,10 @@ def band_update(request, band_id):
                             schedule_description += f"\n참가비: {meeting_cost}원"
                         if flash_description:
                             schedule_description += f"\n\n{flash_description}"
-                        
+
+                        from band.cost_utils import resolve_cost
+                        cost_value = resolve_cost(meeting_cost, schedule_description)
+
                         # 기존 일정 찾기 (첫 번째 일정 사용)
                         schedule = band.schedules.first()
                         if schedule:
@@ -816,6 +823,7 @@ def band_update(request, band_id):
                             schedule.end_datetime = end_datetime
                             schedule.location = meeting_location
                             schedule.max_participants = int(meeting_capacity) if meeting_capacity else 20
+                            schedule.cost = cost_value
                             schedule.save()
                         else:
                             # 일정이 없으면 생성
@@ -828,6 +836,7 @@ def band_update(request, band_id):
                                 location=meeting_location,
                                 max_participants=int(meeting_capacity) if meeting_capacity else 20,
                                 requires_approval=False,
+                                cost=cost_value,
                                 created_by=request.user
                             )
                     except Exception as e:
@@ -1956,6 +1965,10 @@ def schedule_create(request, band_id):
         if meeting_cost:
             description += f"\n참가비: {meeting_cost}원"
 
+        # cost 필드는 진실 소스 — meeting_cost 우선, 없으면 description에서 파싱
+        from band.cost_utils import resolve_cost
+        cost_value = resolve_cost(meeting_cost, description)
+
         # 번개는 모임/동호회의 스케줄로만 관리 (별도의 flash 타입 Band 생성하지 않음)
         # 원본 모임/동호회에 스케줄 생성
         schedule = BandSchedule.objects.create(
@@ -1968,6 +1981,7 @@ def schedule_create(request, band_id):
             max_participants=int(meeting_capacity) if meeting_capacity else None,
             current_participants=0,
             requires_approval=False,
+            cost=cost_value,
             bank_account=bank_account,
             created_by=request.user
         )
@@ -2071,6 +2085,10 @@ def schedule_update(request, band_id, schedule_id):
         if meeting_cost:
             description += f"\n참가비: {meeting_cost}원"
 
+        # cost 필드는 진실 소스 — meeting_cost 우선, 없으면 description에서 파싱
+        from band.cost_utils import resolve_cost
+        cost_value = resolve_cost(meeting_cost, description)
+
         # 스케줄 업데이트
         schedule.title = schedule_title
         schedule.description = description
@@ -2078,6 +2096,7 @@ def schedule_update(request, band_id, schedule_id):
         schedule.end_datetime = end_datetime
         schedule.location = meeting_location
         schedule.max_participants = int(meeting_capacity) if meeting_capacity else None
+        schedule.cost = cost_value
         schedule.bank_account = bank_account
         schedule.save()
         

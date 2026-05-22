@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load community_filters %}
+{% load humanize %}
 
 {% block title %}{{ band.name }} - 배드민톡{% endblock %}
 
@@ -1101,10 +1102,10 @@
                                                         <span style="margin-left: 8px;">{{ schedule.location }}</span>
                                                     </div>
                                                 {% endif %}
-                                                {% if schedule.description %}
-                                                    <div class="schedule-cost" data-description="{{ schedule.description|escapejs }}" style="display: none;">
-                                                        <span style="color: #64748b;">비용:</span>
-                                                        <span class="cost-value" style="margin-left: 8px;"></span>
+                                                {% if schedule.cost %}
+                                                    <div>
+                                                        <span style="color: #64748b;">참가비:</span>
+                                                        <span style="margin-left: 8px;">₩{{ schedule.cost|intcomma }}</span>
                                                     </div>
                                                 {% endif %}
                                                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
@@ -1398,10 +1399,10 @@
                                                         <span style="margin-left: 8px;">{{ schedule.location }}</span>
                                                     </div>
                                                 {% endif %}
-                                                {% if schedule.description %}
-                                                    <div class="schedule-cost" data-description="{{ schedule.description|escapejs }}" style="display: none;">
-                                                        <span style="color: #64748b;">비용:</span>
-                                                        <span class="cost-value" style="margin-left: 8px;"></span>
+                                                {% if schedule.cost %}
+                                                    <div>
+                                                        <span style="color: #64748b;">참가비:</span>
+                                                        <span style="margin-left: 8px;">₩{{ schedule.cost|intcomma }}</span>
                                                     </div>
                                                 {% endif %}
                                                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
@@ -1889,24 +1890,6 @@ document.addEventListener('DOMContentLoaded', function() {
         text = text.split('\n').filter(line => !line.trim().startsWith('위치:')).join('\n').trim();
         descriptionElement.textContent = text;
     }
-    
-    // 번개 카드에서 비용 정보 추출 및 표시
-    const costElements = document.querySelectorAll('.schedule-cost');
-    costElements.forEach(function(element) {
-        const description = element.getAttribute('data-description');
-        if (description) {
-            // "참가비:" 또는 "비용:" 패턴 찾기
-            const costMatch = description.match(/(?:참가비|비용):\s*([0-9,]+)\s*원/);
-            if (costMatch) {
-                const costValue = costMatch[1];
-                const costValueSpan = element.querySelector('.cost-value');
-                if (costValueSpan) {
-                    costValueSpan.textContent = '입장료 ' + costValue + '원';
-                    element.style.display = 'block';
-                }
-            }
-        }
-    });
     
     // 번개 이름에서 날짜 부분 숨기기 (예: "모임 탭 변경 테스트 - 2025-12-06"에서 " - 2025-12-06" 숨김)
     const scheduleTitles = document.querySelectorAll('.schedule-title');

@@ -606,6 +606,15 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
             'application_deadline', 'cost', 'bank_account'
         ]
 
+    def validate(self, attrs):
+        """cost가 비어있거나 0이면 description에서 자동 추출."""
+        from band.cost_utils import resolve_cost
+        description = attrs.get('description')
+        if description is None and self.instance is not None:
+            description = self.instance.description
+        attrs['cost'] = resolve_cost(attrs.get('cost'), description or '')
+        return attrs
+
 
 class BandScheduleApplicationSerializer(serializers.ModelSerializer):
     """일정 신청 시리얼라이저"""

@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'django.contrib.syndication',
+    'django.contrib.humanize',
     # Third-party apps
     'corsheaders',
     'rest_framework',
