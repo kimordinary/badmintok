@@ -21,7 +21,9 @@ def dashboard_callback(request, context):
     from band.models import Band
     from badmintok.models import VisitorLog
 
-    now = timezone.now()
+    # KST 기준 '오늘 0시'를 사용해야 정확한 일별 통계가 됨
+    # timezone.now()는 UTC aware → localtime으로 KST aware로 변환
+    now = timezone.localtime()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = today_start - timedelta(days=7)
     month_ago = today_start - timedelta(days=30)

@@ -281,7 +281,8 @@ def statistics_view(request):
 
     date_param = request.GET.get('date', '')
 
-    now = timezone.now()
+    # KST 기준으로 '오늘 0시'를 계산해야 일별 통계가 한국 날짜와 일치
+    now = timezone.localtime()
 
     if date_param:
         try:
