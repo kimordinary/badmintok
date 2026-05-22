@@ -92,7 +92,7 @@ class BandAdmin(ModelAdmin):
 
     def approval_actions(self, obj):
         """승인/거부 버튼"""
-        if obj.band_type in ["group", "club"] and not obj.is_approved:
+        if obj.band_type in ["group", "club", "center"] and not obj.is_approved:
             approve_url = reverse("admin:band_band_approve", args=[obj.pk])
             reject_url = reverse("admin:band_band_reject", args=[obj.pk])
             return format_html(
