@@ -26,7 +26,8 @@ def _center_queryset():
 
 
 def _serialize_with_annotation(band_id, request):
-    band = _center_queryset().annotate(
+    """is_public 필터 없이 단건 조회 — 등록/수정 직후 미승인 상태도 응답에 포함."""
+    band = Band.objects.filter(band_type="center").annotate(
         bookmark_count_annotated=Count("bookmarks", distinct=True)
     ).get(pk=band_id)
     return CenterSerializer(band, context={"request": request}).data
@@ -131,9 +132,12 @@ def center_create(request):
         created_by=request.user,
         band_type="center",
         categories="center",
-        is_public=True,
-        is_approved=True,
+        is_public=False,    # 운영진 승인 전까지 비공개
+        is_approved=False,  # 운영진 승인 필요
     )
+    # 작성자를 owner 멤버로 등록 (band_create 웹 흐름과 동일 — 본인 미승인 페이지 접근 허용)
+    from band.models import BandMember
+    BandMember.objects.get_or_create(band=band, user=request.user, defaults={"role": "owner", "status": "active"})
     return Response(_serialize_with_annotation(band.id, request), status=status.HTTP_201_CREATED)
 
 

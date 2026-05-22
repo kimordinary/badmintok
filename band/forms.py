@@ -43,6 +43,7 @@ class BandForm(forms.ModelForm):
             "facility_address", "facility_address_detail", "facility_phone",
             "facility_operating_hours", "facility_pricing", "facility_court_count",
             "facility_amenities", "facility_latitude", "facility_longitude",
+            "applicant_contact_phone",
         ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-input", "placeholder": "모임 이름을 입력하세요"}),
@@ -64,6 +65,7 @@ class BandForm(forms.ModelForm):
             "facility_amenities": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 샤워실, 락커, 주차장 (쉼표 구분)"}),
             "facility_latitude": forms.NumberInput(attrs={"class": "form-input", "step": "any", "placeholder": "37.5142"}),
             "facility_longitude": forms.NumberInput(attrs={"class": "form-input", "step": "any", "placeholder": "127.1027"}),
+            "applicant_contact_phone": forms.TextInput(attrs={"class": "form-input", "placeholder": "예: 010-1234-5678"}),
         }
 
     def __init__(self, *args, **kwargs):

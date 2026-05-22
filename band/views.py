@@ -630,14 +630,9 @@ def band_create(request):
                 # 모임/동호회 타입일 때 지역 정보 처리 및 관리자 승인 대기 상태로 설정
                 group_region = request.POST.get("group_region", "")
 
-                if band_type == "center":
-                    # 센터(시설)는 사용자 등록 즉시 공개 (운영자 승인 X — 사용자 의도)
-                    band.is_approved = True
-                    band.is_public = True
-                else:
-                    # 모임/동호회는 관리자 승인 대기 상태로 생성
-                    band.is_approved = False
-                    band.is_public = False  # 승인 전에는 비공개
+                # 센터·모임·동호회 모두 관리자 승인 대기 상태로 생성
+                band.is_approved = False
+                band.is_public = False  # 승인 전에는 비공개
                 
                 if group_region:
                     # 구체 지역을 권역으로 매핑 (번개와 동일한 매핑 사용)
@@ -683,7 +678,11 @@ def band_create(request):
                     "모임/동호회 생성 요청이 완료되었습니다. 관리자 승인 후 생성 가능합니다!"
                 )
             elif band_type == "center":
-                messages.success(request, "센터가 등록되었습니다.")
+                messages.success(
+                    request,
+                    "센터 등록 요청이 완료되었습니다. 관리자 승인 후 노출됩니다. "
+                    "남겨주신 담당자 연락처로 연락드릴 수 있습니다."
+                )
             else:
                 messages.success(request, "밴드가 생성되었습니다.")
             return redirect("band:detail", band_id=band.id)
@@ -990,19 +989,19 @@ def band_detail(request, band_id):
         is_member = member and member.status == "active"
         is_creator = band.created_by == request.user
     
-    # 모임/동호회는 승인된 것만 접근 가능 (생성자는 예외)
-    if band.band_type in ["group", "club"]:
+    # 모임/동호회/센터는 승인된 것만 접근 가능 (생성자는 예외)
+    if band.band_type in ["group", "club", "center"]:
         if not band.is_approved and not is_creator:
+            type_label = "센터" if band.band_type == "center" else "모임/동호회"
             if band.rejection_reason:
                 messages.error(
                     request,
-                    f"이 모임/동호회는 승인 거부되었습니다. "
-                    f"거부 사유: {band.rejection_reason}"
+                    f"이 {type_label}는 승인 거부되었습니다. 거부 사유: {band.rejection_reason}"
                 )
             else:
                 messages.error(
                     request,
-                    "이 모임/동호회는 아직 관리자 승인 대기 중입니다."
+                    f"이 {type_label}는 아직 관리자 승인 대기 중입니다."
                 )
             return redirect("band:list")
     

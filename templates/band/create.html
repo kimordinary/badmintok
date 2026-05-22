@@ -460,6 +460,26 @@
                   {{ form.facility_amenities }}
                   <p style="margin: 4px 0 0; font-size: 12px; color: #94a3b8;">쉼표로 구분 (예: 샤워실, 락커, 주차장)</p>
                 </div>
+
+                <!-- 담당자 연락처 메모 -->
+                <div style="margin: 24px 0 16px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                  <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 4px 0;">📞 운영진 확인용 메모</h3>
+                  <p style="font-size: 13px; color: #64748b; margin: 0 0 16px 0;">센터 담당자님 전화번호를 남겨주시면 운영진이 연락드리겠습니다.</p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">담당자 연락처</label>
+                  {{ form.applicant_contact_phone }}
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #94a3b8;">이 번호는 운영진만 확인합니다. 일반 사용자에게는 공개되지 않습니다.</p>
+                </div>
+
+                <!-- 승인 안내 -->
+                <div style="margin: 20px 0 16px; padding: 14px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;">
+                  <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.6;">
+                    <strong>⚠ 등록 후 운영진 승인 필요</strong><br>
+                    센터는 등록 즉시 노출되지 않습니다. 운영진이 정보를 확인하고 승인한 후에 다른 사용자에게 노출됩니다.
+                    필요 시 남겨주신 담당자 연락처로 연락드릴 수 있습니다.
+                  </p>
+                </div>
                 {% endif %}
 
                 <!-- 생성 버튼 -->

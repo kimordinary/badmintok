@@ -90,6 +90,8 @@ class Band(models.Model):
     facility_amenities = models.CharField(_("편의 시설"), max_length=300, blank=True, help_text="쉼표 구분")
     facility_latitude = models.FloatField(_("위도"), null=True, blank=True)
     facility_longitude = models.FloatField(_("경도"), null=True, blank=True)
+    # 센터 등록 신청자(담당자)가 운영자에게 남기는 연락처. 운영자만 admin에서 확인.
+    applicant_contact_phone = models.CharField(_("등록 신청자 연락처"), max_length=30, blank=True)
 
     created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
     updated_at = models.DateTimeField(_("수정일"), auto_now=True)

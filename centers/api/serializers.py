@@ -112,6 +112,9 @@ class CenterWriteSerializer(serializers.ModelSerializer):
     latitude = serializers.FloatField(source="facility_latitude", required=False)
     longitude = serializers.FloatField(source="facility_longitude", required=False)
 
+    # 등록자(담당자)가 운영진에게 남기는 연락처 — 운영진 admin에서만 확인
+    applicant_contact_phone = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = Band
         fields = [
@@ -119,6 +122,7 @@ class CenterWriteSerializer(serializers.ModelSerializer):
             "address", "address_detail", "phone",
             "operating_hours", "pricing", "court_count", "amenities",
             "latitude", "longitude", "cover_image", "profile_image",
+            "applicant_contact_phone",
         ]
         extra_kwargs = {
             "name": {"required": True, "allow_blank": False},
