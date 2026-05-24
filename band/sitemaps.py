@@ -48,15 +48,19 @@ class BandPostSitemap(Sitemap):
 
 
 class BandListSitemap(Sitemap):
-    """밴드 목록 페이지 사이트맵"""
+    """밴드 목록 페이지 사이트맵 (/band/) — 카테고리 허브"""
     changefreq = "daily"
-    priority = 0.6
-    
+    priority = 0.9
+
     def items(self):
-        """목록 페이지는 하나만"""
         return [True]
-    
+
     def location(self, obj):
-        """밴드 목록 URL"""
         return reverse('band:list')
+
+    def lastmod(self, obj):
+        b = Band.objects.filter(
+            is_public=True, is_approved=True, deletion_requested=False,
+        ).order_by('-updated_at').first()
+        return b.updated_at if b else None
 

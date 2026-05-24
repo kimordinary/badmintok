@@ -639,21 +639,52 @@ def robots_txt(request):
     """robots.txt 파일 서빙"""
     from django.conf import settings
 
-    # 실제 도메인을 가져오기 (프로덕션에서는 환경 변수나 settings에서 가져옴)
     domain = request.get_host()
     if not domain.startswith('http'):
         protocol = 'https' if not settings.DEBUG else 'http'
         domain = f"{protocol}://{domain}"
 
-    robots_content = f"""User-agent: *
-Allow: /
+    robots_content = f"""# 배드민톡 robots.txt
 
-# 사이트맵 위치
+# 사이트맵
 Sitemap: {domain}/sitemap.xml
 
-# 관리자 페이지 제외 (선택사항)
+# Google
+User-agent: Googlebot
+Allow: /
 Disallow: /admin/
 Disallow: /accounts/
+Disallow: /api/
+
+# Naver (Yeti)
+User-agent: Yeti
+Allow: /
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /api/
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /api/
+Crawl-delay: 2
+
+# Daum
+User-agent: DaumBot
+Allow: /
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /api/
+Crawl-delay: 2
+
+# 기타 모든 봇
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /api/
 """
     response = HttpResponse(robots_content, content_type='text/plain; charset=utf-8')
     return response
