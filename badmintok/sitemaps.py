@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.utils import timezone
@@ -7,8 +9,6 @@ from community.sitemaps import (
     CommunityPostSitemap,
     BadmintokPostSitemap,
     MemberReviewPostSitemap,
-    BadmintokCategorySitemap,
-    CommunityCategorySitemap,
 )
 from band.sitemaps import (
     BandSitemap,
@@ -19,19 +19,26 @@ from contests.sitemaps import (
 )
 
 
-# 페이지별 메타 (priority, changefreq) — 페이지 특성에 맞게 분기
+# 정적 페이지별 메타 (priority, changefreq, lastmod)
+# lastmod는 페이지별 실제 의미가 있는 날짜를 고정값으로 박음
+# (오늘 날짜로 매번 갱신하면 구글이 거짓 신선도로 판단해 신뢰도 하락)
+# 약관/개인정보 마지막 개정일 (KST aware datetime, 자정 기준)
+_PRIVACY_TERMS_LASTMOD = timezone.make_aware(datetime(2026, 1, 10, 0, 0, 0))
+
 _STATIC_META = {
-    'home':        {'priority': 1.0, 'changefreq': 'daily'},
-    'privacy':     {'priority': 0.3, 'changefreq': 'yearly'},
-    'terms':       {'priority': 0.3, 'changefreq': 'yearly'},
-    'notice_list': {'priority': 0.5, 'changefreq': 'weekly'},
+    'home':        {'priority': 1.0, 'changefreq': 'daily',   'lastmod': None},   # 동적 — 아래에서 계산
+    'privacy':     {'priority': 0.3, 'changefreq': 'yearly',  'lastmod': _PRIVACY_TERMS_LASTMOD},
+    'terms':       {'priority': 0.3, 'changefreq': 'yearly',  'lastmod': _PRIVACY_TERMS_LASTMOD},
+    'notice_list': {'priority': 0.5, 'changefreq': 'weekly',  'lastmod': None},   # 동적 — 아래
 }
 
 
 class StaticViewSitemap(Sitemap):
     """정적 페이지 사이트맵.
 
-    페이지별 priority/changefreq를 다르게 적용하고 lastmod도 매 빌드 시점으로 채움.
+    페이지별 priority/changefreq/lastmod를 다르게 적용.
+    - 약관/개인정보: 실제 개정일 고정값
+    - 홈/공지 목록: 해당 영역 최신 콘텐츠의 updated_at
     """
     def items(self):
         return list(_STATIC_META.keys())
@@ -46,9 +53,21 @@ class StaticViewSitemap(Sitemap):
         return _STATIC_META[item]['changefreq']
 
     def lastmod(self, item):
-        # 정적 페이지(약관/개인정보)는 거의 안 바뀌지만 lastmod 자체가 없으면
-        # 구글이 신선도 판단을 못 함 — 매 빌드 시점 KST 자정으로 채움
-        return timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+        meta = _STATIC_META[item]
+        if meta['lastmod'] is not None:
+            return meta['lastmod']
+        # 동적 페이지: 해당 영역 최신 콘텐츠 updated_at
+        if item == 'home':
+            from community.models import Post
+            now = timezone.now()
+            p = Post.objects.filter(
+                is_deleted=False, is_draft=False, published_at__lte=now,
+            ).order_by('-updated_at').first()
+            return p.updated_at if p else None
+        if item == 'notice_list':
+            n = Notice.objects.order_by('-updated_at').first()
+            return n.updated_at if n else None
+        return None
 
 
 class NoticeSitemap(Sitemap):
@@ -123,12 +142,10 @@ sitemaps = {
     'hubs':      HubSitemap,                  # /community/, /badmintok/, /band/, /badminton-tournament/
     'notices':   NoticeSitemap,
 
-    # 콘텐츠
+    # 콘텐츠 (?tab=·?category= 같은 쿼리스트링 URL은 의도적으로 제외)
     'community_posts':      CommunityPostSitemap,
     'badmintok_posts':      BadmintokPostSitemap,
     'member_reviews':       MemberReviewPostSitemap,
-    'badmintok_categories': BadmintokCategorySitemap,
-    'community_categories': CommunityCategorySitemap,
     'bands':                BandSitemap,
     'band_posts':           BandPostSitemap,
     'contests':             ContestSitemap,
