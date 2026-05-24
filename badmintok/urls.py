@@ -17,7 +17,7 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.contrib.sitemaps.views import sitemap
+from django.contrib.sitemaps.views import sitemap, index as sitemap_index
 from django.contrib.syndication.views import Feed
 from django.urls import include, path
 from django.shortcuts import redirect
@@ -77,7 +77,9 @@ urlpatterns = [
     path("app", views.app_redirect, name="app_redirect"),
     # SEO 관련
     path("robots.txt", views.robots_txt, name="robots_txt"),
-    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
+    # sitemap index 구조: sitemap.xml 은 인덱스, 섹션별로 sitemap-<section>.xml 로 노출
+    path("sitemap.xml", sitemap_index, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.index"),
+    path("sitemap-<section>.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
     # RSS 피드
     path("rss", AllPostsFeed(), name="rss_all"),  # 통합 RSS 피드
     path("rss/community/", CommunityPostFeed(), name="rss_community"),
