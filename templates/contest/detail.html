@@ -1,61 +1,23 @@
 {% extends "base.html" %}
 {% load contest_filters static %}
 
-{% block title %}{{ contest.title }} - 배드민톡{% endblock %}
+{% block title %}{{ seo_title }}{% endblock %}
 
-{% block og_title_meta %}<meta property="og:title" content="{{ contest.title }}">{% endblock %}
+{% block og_title_meta %}<meta property="og:title" content="{{ seo_title }}">{% endblock %}
 
-{% block og_image %}{% if contest_images %}{{ request.scheme }}://{{ request.get_host }}{{ contest_images.0.image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}{% endif %}{% endblock %}
+{% block canonical_url %}{{ canonical_url }}{% endblock %}
+
+{% block og_image %}{{ og_image_url }}{% endblock %}
 
 {% block og_tags %}
-<meta name="description" content="{{ contest.title }} | 일정: {{ contest.get_period_display }} | 장소: {{ contest.get_location_display }} | 접수마감: {{ contest.registration_end|date:'Y.m.d' }} | 배드민톡에서 전국 배드민턴 대회 일정을 확인하세요.">
-<meta property="og:description" content="일정: {{ contest.get_period_display }} | 장소: {{ contest.get_location_display }} | 접수마감: {{ contest.registration_end|date:'Y.m.d' }}">
+<meta name="description" content="{{ seo_description }}">
+<meta property="og:description" content="{{ seo_description }}">
+<meta name="twitter:title" content="{{ seo_title }}">
+<meta name="twitter:description" content="{{ seo_description }}">
+<meta name="twitter:image" content="{{ og_image_url }}">
 
-<!-- SportsEvent JSON-LD Schema for Google Search Console -->
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "SportsEvent",
-    "name": "{{ contest.title|escapejs }}",
-    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
-    "startDate": "{{ contest.schedule_start|date:'Y-m-d' }}",
-    {% if contest.schedule_end %}"endDate": "{{ contest.schedule_end|date:'Y-m-d' }}",{% endif %}
-    "description": "{{ contest.title|escapejs }} - 일정: {{ contest.get_period_display|escapejs }}, 장소: {{ contest.get_location_display|escapejs }}, 접수마감: {{ contest.registration_end|date:'Y.m.d' }}{% if contest.description %}, {{ contest.description|truncatewords:30|escapejs }}{% endif %}",
-    "image": {% if contest_images %}"{{ request.scheme }}://{{ request.get_host }}{{ contest_images.0.image.url }}"{% else %}"{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}"{% endif %},
-    "location": {
-        "@type": "Place",
-        "name": "{{ contest.venue|default:contest.region|escapejs }}",
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "{{ contest.region|escapejs }}",
-            "addressRegion": "{{ contest.region|escapejs }}",
-            "addressCountry": "KR"{% if contest.region_detail %},
-            "streetAddress": "{{ contest.region_detail|escapejs }}"{% endif %}
-        }
-    },
-    "organizer": {
-        "@type": "Organization",
-        "name": "{% if contest.sponsor %}{{ contest.sponsor.name|escapejs }}{% else %}{{ contest.title|escapejs }} 주최측{% endif %}"{% if contest.registration_link %},
-        "url": "{{ contest.registration_link }}"{% endif %}
-    },
-    "performer": {
-        "@type": "SportsTeam",
-        "name": "배드민턴 참가자",
-        "sport": "Badminton"
-    },
-    "sport": "Badminton",
-    "eventStatus": "https://schema.org/EventScheduled",
-    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"{% if contest.entry_fee %},
-    "offers": {
-        "@type": "Offer",
-        "price": "{{ contest.entry_fee|escapejs }}",
-        "priceCurrency": "KRW",
-        "url": "{% if contest.registration_link %}{{ contest.registration_link }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}{% endif %}",
-        "availability": "https://schema.org/InStock",
-        "validFrom": "{{ contest.registration_start|date:'Y-m-d' }}"
-    }{% endif %}
-}
-</script>
+<!-- SportsEvent JSON-LD (view에서 dict 직렬화 — 빈 필드는 통째 생략) -->
+<script type="application/ld+json">{{ contest_jsonld|safe }}</script>
 {% endblock %}
 
 {% block content %}
@@ -329,10 +291,10 @@
             </div>
         </div>
 
-        {% if contest.description %}
+        {% if contest.description or seo_body_text %}
             <article class="contest-detail__description">
                 <div class="contest-detail__description-header">
-                    <h2>🤖 대회 요강 AI 요약</h2>
+                    <h2>{% if contest.description %}🤖 대회 요강 AI 요약{% else %}대회 안내{% endif %}</h2>
                     {% if contest.pdf_file %}
                         <a href="{{ contest.pdf_file.url }}" target="_blank" rel="noopener noreferrer" class="pdf-download-btn">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -346,10 +308,16 @@
                         </a>
                     {% endif %}
                 </div>
-                <p class="contest-detail__description-subtitle">보기 힘든 대회 요강을 배드민톡이 필요한 정보만 골라 정리했어요!</p>
+                {% if contest.description %}
+                    <p class="contest-detail__description-subtitle">보기 힘든 대회 요강을 배드민톡이 필요한 정보만 골라 정리했어요!</p>
+                {% endif %}
                 <div class="ai-summary-container">
                     <div class="ai-summary-content" id="aiSummaryContent">
-                        <p>{{ contest.description|linebreaksbr }}</p>
+                        {% if contest.description %}
+                            <p>{{ contest.description|linebreaksbr }}</p>
+                        {% else %}
+                            <p>{{ seo_body_text }}</p>
+                        {% endif %}
                     </div>
                     <div class="ai-summary-fade" id="aiSummaryFade"></div>
                     <button type="button" class="ai-summary-toggle-btn" id="aiSummaryToggle" onclick="toggleAiSummary()">

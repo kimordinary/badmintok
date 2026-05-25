@@ -26,6 +26,10 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:type" content="image/png">
+    <!-- Canonical URL: 기본은 쿼리스트링 제외한 현재 경로. 페이지에서 block 오버라이드로 정확한 URL 지정 가능. -->
+    <link rel="canonical" href="{% block canonical_url %}{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% endblock %}">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
     {% block og_tags %}{% endblock %}
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-74RFKMWB0C"></script>

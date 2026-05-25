@@ -140,7 +140,12 @@ class ContestListView(ListView):
         return queryset.select_related('category', 'sponsor').prefetch_related('images')
 
     def get_context_data(self, **kwargs):
+        from django.urls import reverse as _reverse
         context = super().get_context_data(**kwargs)
+
+        # canonical: 쿼리스트링(?region=, ?category=, ?search=, ?page=) 변형이
+        # 모두 같은 콘텐츠를 가리키므로 베이스 URL 하나로 고정
+        context["canonical_url"] = self.request.build_absolute_uri(_reverse("contests:list"))
 
         # 캘린더용 전체 대회 데이터 (필터링 없이)
         # sponsor_id는 마이그레이션 이슈로 인해 제외 (나중에 안전하게 접근)
@@ -442,6 +447,32 @@ class ContestDetailView(DetailView):
 
         # 대회 이미지들 가져오기 (순서대로)
         context["contest_images"] = contest.images.all().order_by('order', 'id')
+
+        # === SEO: title / description / body / canonical / OG image / JSON-LD ===
+        import json as _json
+        from django.urls import reverse as _reverse
+        from django.templatetags.static import static as _static
+
+        context["seo_title"] = contest.get_seo_title()
+        context["seo_description"] = contest.get_seo_description()
+        context["seo_body_text"] = contest.get_seo_body_text()
+        context["canonical_url"] = self.request.build_absolute_uri(
+            _reverse("contests:detail", args=[contest.slug])
+        )
+
+        # og:image — 첫 이미지가 있으면 사용 (사이즈 판단은 1단계 결과 따라 향후 추가)
+        first_img = contest.images.order_by("order", "id").first()
+        if first_img and first_img.image:
+            context["og_image_url"] = self.request.build_absolute_uri(first_img.image.url)
+        else:
+            context["og_image_url"] = self.request.build_absolute_uri(
+                _static("images/og-image/OG image (1).png")
+            )
+
+        context["contest_jsonld"] = _json.dumps(
+            contest.get_jsonld(request=self.request),
+            ensure_ascii=False,
+        )
 
         # 기본값 설정
         context["same_week_contests"] = []

@@ -192,6 +192,234 @@ class Contest(models.Model):
         """좋아요 개수를 반환합니다."""
         return self.likes.count()
 
+    # === SEO 메타·JSON-LD 헬퍼 ===
+
+    def get_entry_fee_int(self):
+        """접수비를 정수(원)로 반환. 파싱 불가/애매하면 None.
+
+        OK   : "10000", "10,000원", "10,000 원" → 10000
+        None : "무료", "미정", "1팀 5만원", "추후공지", "10000원 (현금)" 등
+        """
+        import re
+        if not self.entry_fee:
+            return None
+        text = self.entry_fee.strip()
+        # 단위/모호 키워드가 들어 있으면 None (offers 통째 생략)
+        ambiguous = ['무료', '미정', '추후', '문의', '팀당', '조당', '쌍당',
+                     '인당', '인 당', '만원', '천원', '별도']
+        for kw in ambiguous:
+            if kw in text:
+                return None
+        # 전체 문자열이 "숫자[+콤마] 원?" 형태일 때만 매칭 (그 외는 None)
+        m = re.fullmatch(r'\s*(\d{1,3}(?:,\d{3})*|\d+)\s*원?\s*', text)
+        if not m:
+            return None
+        try:
+            return int(m.group(1).replace(',', ''))
+        except ValueError:
+            return None
+
+    def get_seo_title(self):
+        """SEO용 <title>. 대회명에 이미 지역·연도가 포함되므로 중복 제거.
+
+        패턴:
+        - 참가비 정수 파싱 가능: "{대회명} 일정·참가비·요강 | 배드민톡"
+        - 파싱 불가(무료/미정 등):  "{대회명} 일정·요강 | 배드민톡"
+        """
+        if self.get_entry_fee_int() is not None:
+            suffix = "일정·참가비·요강"
+        else:
+            suffix = "일정·요강"
+        return f"{self.title} {suffix} | 배드민톡"
+
+    def get_seo_description(self):
+        """SEO용 meta description. 빈 필드는 문구 자체를 생략.
+
+        형태: "{대회명} {일자}, {지역 [상세장소]}, 참가비 {N}원, 주최 {스폰서}. 접수 {기간}. 종목 {종목}."
+        """
+        bits = [self.title]
+        # 일자
+        if self.schedule_start:
+            bits.append(self.get_period_display())
+        # 장소 (region_detail 있으면 우선)
+        region_name = self.get_region_display() or ''
+        if region_name:
+            if self.region_detail:
+                bits.append(f"{region_name} {self.region_detail}")
+            else:
+                bits.append(region_name)
+        # 참가비 (정수 파싱 성공 시만)
+        fee = self.get_entry_fee_int()
+        if fee:
+            bits.append(f"참가비 {fee:,}원")
+        # 주최
+        if self.sponsor:
+            bits.append(f"주최 {self.sponsor.name}")
+        head = ", ".join(bits)
+
+        # 마지막 문장 (접수/종목)
+        tail_bits = []
+        if self.registration_start or self.registration_end:
+            tail_bits.append(f"접수 {self.get_registration_period_display()}")
+        if self.participant_events:
+            tail_bits.append(f"종목 {self.participant_events}")
+        tail = ". " + ", ".join(tail_bits) + "." if tail_bits else "."
+
+        return (head + tail).strip()
+
+    @staticmethod
+    def _josa(word, with_jongsung, without_jongsung):
+        """한국어 조사 자동 처리 (받침 유무 판정).
+
+        예: _josa("대회", "은", "는") → "는", _josa("대회장", "은", "는") → "은"
+        """
+        if not word:
+            return without_jongsung
+        last = word[-1]
+        if not ('가' <= last <= '힣'):
+            return without_jongsung
+        code = ord(last) - 0xAC00
+        return with_jongsung if code % 28 != 0 else without_jongsung
+
+    def get_seo_body_text(self):
+        """본문에 노출할 자동 생성 문장.
+
+        검색의도("OO대회 일정·참가비·장소")에 본문이 직접 답하게.
+        빈 필드는 문장 단위로 통째 생략하여 자연스러운 한국어 문단을 만든다.
+        모든 핵심 필드가 비어 있으면 빈 문자열 반환 (호출 측에서 표시 안 함).
+        """
+        sentences = []
+
+        # 1문장: 어디서 언제 열리는지
+        region_name = self.get_region_display() or ''
+        place = self.region_detail or region_name
+        when = self.get_period_display() if self.schedule_start else ''
+        if place and when:
+            sentences.append(f"{self.title}{self._josa(self.title, '은', '는')} {when} {place}에서 열리는 배드민턴 대회입니다.")
+        elif when:
+            sentences.append(f"{self.title}{self._josa(self.title, '은', '는')} {when}에 열리는 배드민턴 대회입니다.")
+        elif place:
+            sentences.append(f"{self.title}{self._josa(self.title, '은', '는')} {place}에서 열리는 배드민턴 대회입니다.")
+
+        # 2문장: 종목 / 연령 / 급수
+        target_bits = []
+        if self.participant_events:
+            target_bits.append(f"종목은 {self.participant_events}")
+        if self.participant_ages:
+            target_bits.append(f"참가 연령은 {self.participant_ages}")
+        if self.participant_grades:
+            target_bits.append(f"급수는 {self.participant_grades}")
+        if target_bits:
+            sentences.append(", ".join(target_bits) + "입니다.")
+
+        # 3문장: 참가비 + 주최
+        fee_int = self.get_entry_fee_int()
+        fee_part = f"참가비는 {fee_int:,}원" if fee_int is not None else ""
+        sponsor_part = f"주최는 {self.sponsor.name}" if self.sponsor else ""
+        if fee_part and sponsor_part:
+            sentences.append(f"{fee_part}, {sponsor_part}입니다.")
+        elif fee_part:
+            sentences.append(f"{fee_part}입니다.")
+        elif sponsor_part:
+            sentences.append(f"{sponsor_part}입니다.")
+
+        # 4문장: 접수기간 + 접수처
+        if self.registration_start or self.registration_end:
+            reg_period = self.get_registration_period_display()
+            if self.registration_name:
+                sentences.append(f"접수는 {reg_period} 사이에 {self.registration_name}에서 받습니다.")
+            else:
+                sentences.append(f"접수는 {reg_period} 사이에 진행됩니다.")
+
+        return " ".join(sentences)
+
+    def get_jsonld(self, request=None):
+        """schema.org SportsEvent JSON-LD dict.
+
+        빈 값은 해당 키 자체를 생략 (가짜 데이터 금지).
+        request가 주어지면 url/image는 절대 URL로 빌드.
+        """
+        from django.urls import reverse
+
+        def abs_url(path):
+            if not path:
+                return None
+            if request:
+                return request.build_absolute_uri(path)
+            return path
+
+        data = {
+            "@context": "https://schema.org",
+            "@type": "SportsEvent",
+            "name": self.title,
+            "url": abs_url(reverse('contests:detail', args=[self.slug])),
+            "sport": "Badminton",
+            "eventStatus": "https://schema.org/EventScheduled",
+            "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        }
+
+        # 일자
+        if self.schedule_start:
+            data["startDate"] = self.schedule_start.isoformat()
+        if self.schedule_end:
+            data["endDate"] = self.schedule_end.isoformat()
+
+        # 설명
+        desc = self.get_seo_description()
+        if desc:
+            data["description"] = desc
+
+        # 이미지 (있을 때만)
+        first_img = (
+            self.images.order_by('order', 'id').first()
+            if self.pk else None
+        )
+        if first_img and first_img.image:
+            img_url = abs_url(first_img.image.url)
+            if img_url:
+                data["image"] = img_url
+
+        # 장소 (region은 항상 있음)
+        region_name = self.get_region_display() or ''
+        if region_name:
+            place_name = self.region_detail if self.region_detail else region_name
+            address = {
+                "@type": "PostalAddress",
+                "addressLocality": region_name,
+                "addressCountry": "KR",
+            }
+            if self.region_detail:
+                address["streetAddress"] = self.region_detail
+            data["location"] = {
+                "@type": "Place",
+                "name": place_name,
+                "address": address,
+            }
+
+        # 주최 (sponsor 있을 때만)
+        if self.sponsor:
+            data["organizer"] = {
+                "@type": "Organization",
+                "name": self.sponsor.name,
+            }
+
+        # 참가비 (숫자 파싱 성공 시만)
+        fee = self.get_entry_fee_int()
+        if fee is not None:
+            offers = {
+                "@type": "Offer",
+                "price": str(fee),
+                "priceCurrency": "KRW",
+                "availability": "https://schema.org/InStock",
+            }
+            if self.registration_link:
+                offers["url"] = self.registration_link
+            if self.registration_start:
+                offers["validFrom"] = self.registration_start.isoformat()
+            data["offers"] = offers
+
+        return data
+
     def increase_view_count(self):
         """조회수 증가"""
         self.view_count += 1
