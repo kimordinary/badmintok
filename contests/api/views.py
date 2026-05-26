@@ -211,6 +211,19 @@ def category_list(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def sponsor_list(request):
+    """스폰서 목록 API.
+
+    웹 리스트 페이지의 스폰서 필터 시트가 lazy 로드용으로 호출.
+    HTML 본문에 100+ 스폰서명을 직접 박는 대신 이 API로 가져온다.
+    """
+    from contests.models import Sponsor
+    sponsors = list(Sponsor.objects.order_by('name').values('id', 'name'))
+    return Response({'results': sponsors}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def hot_contests(request):
     """인기 대회 TOP 10 API"""
     today = date.today()

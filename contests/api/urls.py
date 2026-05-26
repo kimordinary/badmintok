@@ -13,6 +13,9 @@ urlpatterns = [
     # 카테고리
     path('categories/', views.category_list, name='category_list'),
 
+    # 스폰서 (웹 리스트 필터 시트 lazy 로드용)
+    path('sponsors/', views.sponsor_list, name='sponsor_list'),
+
     # 인기 대회
     path('hot/', views.hot_contests, name='hot_contests'),
 
