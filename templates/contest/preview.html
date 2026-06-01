@@ -1,0 +1,840 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}전국 배드민턴 대회 일정 - 배드민톡{% endblock %}
+{% block og_title_meta %}<meta property="og:title" content="전국 배드민턴 대회 일정 - 배드민톡">{% endblock %}
+{% block canonical_url %}{{ canonical_url }}{% endblock %}
+{% block og_tags %}
+<meta name="description" content="전국 배드민턴 대회 일정과 접수 마감, 대회장 위치, 승급·지역 구분을 캘린더와 리스트로 한눈에 확인하세요.">
+<meta property="og:description" content="전국 배드민턴 대회 일정과 접수 마감, 대회장 위치를 캘린더로 한눈에. 승급대회부터 지역대회까지 모든 정보를 제공합니다.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="전국 배드민턴 대회 일정 - 배드민톡">
+<meta name="twitter:description" content="전국 배드민턴 대회 일정과 접수 마감을 캘린더로 한눈에 확인하세요.">
+{% endblock %}
+{% block extra_head %}
+{# JS 사용 가능 시 SSR 폴백 리스트(#bmkSSR)를 CSS로 숨김 — 봇/무JS는 보고, 사용자는 인터랙티브 UI를 봄(점진적 향상) #}
+<script>document.documentElement.className += ' has-js';</script>
+
+{% if contests %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "전국 배드민턴 대회 목록",
+  "description": "전국 배드민턴 대회 일정, 접수 정보, 대회장 위치를 확인하세요",
+  "numberOfItems": {{ contests|length }},
+  "itemListElement": [
+    {% for contest in contests %}
+    {
+      "@type": "ListItem",
+      "position": {{ forloop.counter }},
+      "item": {
+        "@type": "SportsEvent",
+        "@id": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
+        "name": "{{ contest.title|escapejs }}",
+        "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
+        {% if contest.schedule_start %}"startDate": "{{ contest.schedule_start|date:'Y-m-d' }}",{% endif %}
+        {% if contest.schedule_end %}"endDate": "{{ contest.schedule_end|date:'Y-m-d' }}",{% endif %}
+        {% if contest.get_location_display %}"location": {
+          "@type": "Place",
+          "name": "{{ contest.get_location_display|escapejs }}"
+        },{% endif %}
+        "sport": "배드민턴",
+        {% if contest.schedule_start and contest.schedule_end %}"eventStatus": "https://schema.org/{% if contest.schedule_end >= today %}EventScheduled{% else %}EventCancelled{% endif %}",{% endif %}
+        "organizer": {
+          "@type": "Organization",
+          "name": "배드민톡"
+        }
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "홈", "item": "{{ request.scheme }}://{{ request.get_host }}/"},
+    {"@type": "ListItem", "position": 2, "name": "전국 배드민턴 대회", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:list' %}"}
+  ]
+}
+</script>
+{% endif %}
+<style>
+/* ── 디자인 토큰 (shared.jsx :root 이식) ───────────────────────── */
+.bmk-root{
+  --green:        oklch(0.62 0.118 158);
+  --green-strong: oklch(0.50 0.105 158);
+  --green-deep:   oklch(0.40 0.085 158);
+  --green-tint:   oklch(0.965 0.022 158);
+  --green-tint-2: oklch(0.93 0.045 158);
+  --green-line:   oklch(0.88 0.05 158);
+  --ink:    oklch(0.24 0.008 160);
+  --ink-2:  oklch(0.44 0.010 160);
+  --ink-3:  oklch(0.60 0.012 162);
+  --ink-4:  oklch(0.72 0.010 162);
+  --line:   oklch(0.922 0.005 160);
+  --line-2: oklch(0.955 0.004 160);
+  --bg:     oklch(0.985 0.004 150);
+  --surface:#ffffff;
+  --surface-2: oklch(0.975 0.006 158);
+  --brand-green: #31AA60;
+  --blue:        #2b79c7;
+  --blue-tint:   oklch(0.955 0.03 250);
+  --urgent:      oklch(0.64 0.155 47);
+  --urgent-bar:  oklch(0.60 0.16 40);
+  --urgent-tint: oklch(0.955 0.04 60);
+  --radius: 16px;
+  --shadow-sm: 0 1px 2px rgba(20,30,24,.05), 0 1px 3px rgba(20,30,24,.04);
+  --shadow-md: 0 2px 8px rgba(20,30,24,.06), 0 8px 24px rgba(20,30,24,.05);
+  --bmk-font: "Pretendard Variable","Pretendard",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+.bmk-root{font-family:var(--bmk-font);color:var(--ink);-webkit-font-smoothing:antialiased;
+  box-sizing:border-box;background:var(--bg);}
+.bmk-root *,.bmk-root *::before,.bmk-root *::after{box-sizing:border-box;}
+.bmk-root button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;white-space:nowrap;padding:0;}
+.bmk-root .tnum{font-variant-numeric:tabular-nums;}
+.bmk-scroll{overflow-y:auto;scrollbar-width:none;}
+.bmk-scroll::-webkit-scrollbar{display:none;}
+/* SSR 크롤 가능 폴백 리스트 (JS 켜지면 .has-js로 숨김) */
+.bmk-ssr{max-width:920px;margin:0 auto;padding:24px 18px 40px;}
+.bmk-ssr h1{font-size:22px;font-weight:800;color:var(--ink);margin:0 0 6px;letter-spacing:-0.01em;}
+.bmk-ssr .bmk-ssr-desc{color:var(--ink-3);font-size:14px;margin:0 0 18px;}
+.bmk-ssr ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+.bmk-ssr a{display:block;padding:14px 16px;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:var(--surface);}
+.bmk-ssr strong{display:block;font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:-0.01em;}
+.bmk-ssr .bmk-ssr-meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--ink-3);}
+.has-js .bmk-ssr{display:none;}
+.bmk-root a{text-decoration:none;color:inherit;}
+
+.bmk-wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px;}
+
+/* 타이틀 행 */
+.bmk-titlerow{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+.bmk-eyebrow{font-size:13px;font-weight:600;color:var(--green-strong);margin-bottom:6px;}
+.bmk-h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;}
+.bmk-navbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);
+  display:grid;place-items:center;color:var(--ink-2);}
+.bmk-navbtn:hover{background:var(--surface-2);}
+
+/* 세그먼트 토글 */
+.bmk-seg{display:inline-flex;background:var(--surface-2);border-radius:11px;padding:3px;gap:2px;border:1px solid var(--line);}
+.bmk-seg button{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:8px;
+  font-size:13.5px;font-weight:600;letter-spacing:-0.01em;transition:all .16s;color:var(--ink-3);}
+.bmk-seg button.on{color:var(--ink);background:var(--surface);box-shadow:var(--shadow-sm);}
+
+/* 필터 바 */
+.bmk-filters{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.bmk-fgroup{display:flex;align-items:center;gap:8px;}
+.bmk-flabel{font-size:12.5px;font-weight:600;color:var(--ink-4);flex-shrink:0;}
+.bmk-fseg{display:inline-flex;background:var(--surface-2);border-radius:11px;padding:3px;gap:2px;border:1px solid var(--line);}
+.bmk-fseg button{padding:7px 14px;border-radius:8px;font-size:13.5px;font-weight:600;letter-spacing:-0.01em;
+  transition:all .16s;color:var(--ink-3);}
+.bmk-fseg button.on{color:var(--ink);background:var(--surface);box-shadow:var(--shadow-sm);}
+.bmk-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:13.5px;
+  font-weight:600;letter-spacing:-0.01em;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);transition:all .16s;}
+.bmk-chip.on{color:var(--green-deep);background:var(--green-tint);border-color:var(--green-line);}
+
+/* 카드/패널 */
+.bmk-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow-sm);}
+
+/* 본문 그리드 */
+.bmk-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:24px;align-items:start;}
+.bmk-calcard{padding:20px;display:flex;flex-direction:column;min-height:560px;}
+.bmk-listcard{display:flex;flex-direction:column;min-height:560px;max-height:760px;}
+.bmk-listhead{padding:15px 18px 13px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;justify-content:space-between;}
+.bmk-listbody{flex:1;min-height:0;padding:4px 18px 12px;}
+
+/* 배지/태그 */
+.bmk-scope{padding:2px 7px;font-size:11px;font-weight:700;border-radius:7px;line-height:1;white-space:nowrap;}
+.bmk-scope.nat{color:var(--green-deep);background:var(--green-tint-2);border:1px solid var(--green-line);}
+.bmk-scope.loc{color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);}
+.bmk-grade{font-size:11px;font-weight:600;white-space:nowrap;}
+.bmk-grade.up{color:var(--green-strong);}
+.bmk-grade.no{color:var(--ink-3);}
+.bmk-dday{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;padding:3px 8px;font-size:12px;
+  font-weight:700;border-radius:8px;line-height:1;}
+.bmk-dday.urgent{color:var(--urgent);background:var(--urgent-tint);border:1px solid color-mix(in oklab, var(--urgent) 30%, transparent);}
+.bmk-dday.upcoming{color:var(--blue);background:var(--blue-tint);border:1px solid color-mix(in oklab, var(--blue) 25%, transparent);}
+.bmk-dday.calm{color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);}
+
+/* 리스트 카드 행 (CardA) */
+.bmk-rowcard{display:flex;gap:14px;padding:16px 4px;border-bottom:1px solid var(--line-2);cursor:pointer;}
+.bmk-rowcard:hover{background:var(--bg);}
+.bmk-datecol{flex:0 0 52px;text-align:center;padding-top:2px;}
+.bmk-datenum{font-size:22px;font-weight:800;color:var(--ink);line-height:1;}
+.bmk-datenum .end{font-size:13px;font-weight:700;color:var(--ink-3);}
+.bmk-dateday{font-size:11.5px;font-weight:600;margin-top:3px;color:var(--ink-3);}
+.bmk-dateday.sun{color:var(--urgent);}
+.bmk-rowbody{flex:1;min-width:0;}
+.bmk-badges{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.bmk-name{font-size:15px;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:6px;letter-spacing:-0.01em;}
+.bmk-meta{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-3);}
+.bmk-ico{width:14px;height:14px;flex:none;vertical-align:-2px;stroke:currentColor;stroke-width:1.6;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;opacity:.85;}
+.bmk-empty{padding:48px 0;text-align:center;color:var(--ink-4);font-size:13.5px;}
+
+/* 곧 마감 미니 */
+.bmk-soonwrap{margin-top:auto;padding-top:18px;}
+.bmk-soonhead{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.bmk-soonrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line-2);cursor:pointer;}
+.bmk-soonname{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bmk-legend{display:flex;align-items:center;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2);font-size:12.5px;color:var(--ink-3);}
+
+/* 캘린더 */
+.bmk-cal-dows{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px;}
+.bmk-cal-dow{text-align:center;font-size:11.5px;font-weight:600;padding:4px 0;color:var(--ink-4);}
+.bmk-cal-dow.sat{color:var(--green-strong);}
+.bmk-cal-dow.sun{color:var(--urgent);}
+.bmk-week{position:relative;border-top:1px solid var(--line-2);}
+.bmk-daynums{display:grid;grid-template-columns:repeat(7,1fr);position:absolute;inset:0;}
+.bmk-daycell{display:flex;justify-content:center;padding-top:4px;}
+.bmk-daybtn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;transition:all .14s;font-weight:500;color:var(--ink-4);}
+.bmk-daybtn.has{color:var(--ink);font-weight:700;cursor:pointer;}
+.bmk-daybtn.sel{background:var(--green);color:#fff;}
+.bmk-daybtn .tnum{font-size:13.5px;}
+.bmk-root a.bmk-bar{position:absolute;display:flex;align-items:center;padding:0 7px;overflow:hidden;cursor:pointer;
+  color:#fff;font-size:11px;font-weight:600;white-space:nowrap;text-shadow:0 1px 1.5px rgba(0,0,0,.22);}
+.bmk-bar span{overflow:hidden;text-overflow:ellipsis;}
+.bmk-more{position:absolute;font-size:9.5px;font-weight:700;color:var(--ink-4);}
+
+/* 모바일 캘린더 (dot) */
+.bmk-mcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;width:100%;}
+.bmk-cal-dows{min-width:0;}
+.bmk-mcell{min-width:0;height:40px;border-radius:11px;position:relative;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;transition:all .14s;color:var(--ink-4);font-weight:500;}
+.bmk-mcell.has{background:var(--green-tint);color:var(--green-deep);font-weight:700;cursor:pointer;}
+.bmk-mcell.sel{background:var(--green);color:#fff;}
+.bmk-mcell .tnum{font-size:13px;}
+.bmk-dots{display:flex;gap:2px;}
+.bmk-dot{width:4px;height:4px;border-radius:50%;background:var(--green);}
+.bmk-dot.soon{background:var(--urgent);}
+
+/* 모바일 타임라인 */
+.bmk-tl-group-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:13px 24px 9px;
+  background:var(--bg);border-bottom:1px solid var(--line-2);}
+.bmk-tl-daynum{font-size:24px;font-weight:800;letter-spacing:-0.03em;line-height:1;}
+.bmk-tl-card{display:block;padding:14px 16px;border-bottom:1px solid var(--line-2);cursor:pointer;}
+.bmk-tl-card:hover{background:var(--surface-2);}
+
+/* 모바일 필터 트리거/시트 */
+.bmk-ftrigger{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;font-size:14px;
+  font-weight:600;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);flex-shrink:0;}
+.bmk-ftrigger.on{color:var(--green-deep);background:var(--green-tint);border-color:var(--green-line);}
+.bmk-fbadge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--green);color:#fff;font-size:11.5px;
+  font-weight:800;display:inline-flex;align-items:center;justify-content:center;}
+.bmk-sheet-overlay{position:fixed;inset:0;z-index:9998;background:rgba(20,28,24,.4);opacity:0;
+  pointer-events:none;transition:opacity .25s;}
+.bmk-sheet-overlay.open{opacity:1;pointer-events:auto;}
+.bmk-sheet{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--surface);
+  border-top-left-radius:22px;border-top-right-radius:22px;box-shadow:0 -8px 32px rgba(20,28,24,.18);
+  transform:translateY(101%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+  display:flex;flex-direction:column;max-height:82%;}
+.bmk-sheet.open{transform:translateY(0);}
+.bmk-sheet-handle{width:38px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 4px;}
+.bmk-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 14px;border-bottom:1px solid var(--line-2);}
+.bmk-sheet-body{padding:4px 20px 8px;overflow-y:auto;}
+.bmk-sheet-foot{padding:14px 20px;padding-bottom:max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--line-2);}
+.bmk-sheet-cta{width:100%;padding:14px;border-radius:13px;background:var(--green);color:#fff;font-size:15.5px;font-weight:700;}
+.bmk-sheet-field{padding:16px 0;border-bottom:1px solid var(--line-2);}
+.bmk-sheet-field > .lbl{font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:11px;}
+.bmk-fseg.fluid{display:flex;width:100%;}
+.bmk-fseg.fluid button{flex:1;}
+.bmk-region-chips{display:flex;flex-wrap:wrap;gap:8px;}
+
+/* 반응형 */
+.bmk-desktop{display:block;}
+.bmk-mobile{display:none;}
+@media (max-width: 860px){
+  .bmk-desktop{display:none;}
+  .bmk-mobile{display:block;width:100%;max-width:100%;overflow-x:hidden;}
+  .bmk-root{overflow-x:hidden;}
+  .bmk-wrap{padding:0 0 80px;}
+  .bmk-tl-card,.bmk-tl-group-head{max-width:100%;}
+  .bmk-name{overflow-wrap:anywhere;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bmk-root">
+  <!-- SSR 크롤 가능 리스트 (검색봇·무JS용. JS 사용자는 .has-js로 숨겨지고 아래 인터랙티브 UI를 봄) -->
+  <section id="bmkSSR" class="bmk-ssr" aria-label="전국 배드민턴 대회 일정 목록">
+    <h1>전국 배드민턴 대회 일정</h1>
+    <p class="bmk-ssr-desc">전국 배드민턴 대회의 일정, 접수 마감, 대회장 위치, 승급·지역 구분을 한눈에 확인하세요.</p>
+    <ul>
+    {% for c in contests %}
+      <li>
+        <a href="{% url 'contests:detail' c.slug %}">
+          <strong>{{ c.title }}</strong>
+          <span class="bmk-ssr-meta">
+            <time datetime="{{ c.schedule_start|date:'Y-m-d' }}">{{ c.get_period_display }}</time>
+            <span>{{ c.get_location_display }}</span>
+            {% if c.category %}<span>{{ c.category.name }}</span>{% endif %}
+            <span>{% if c.is_qualifying %}승급{% else %}비승급{% endif %}</span>
+            {% if c.registration_end %}<span>접수마감 <time datetime="{{ c.registration_end|date:'Y-m-d' }}">{{ c.registration_end|date:'n월 j일' }}</time></span>{% endif %}
+          </span>
+        </a>
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 데스크톱 -->
+  <div class="bmk-desktop">
+    <div class="bmk-wrap">
+      <div class="bmk-titlerow">
+        <div>
+          <div class="bmk-eyebrow">전국 배드민턴 대회</div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="bmk-h1" id="bmkMonthTitle">—</div>
+            <div style="display:flex;gap:4px;">
+              <button class="bmk-navbtn" id="bmkPrev" aria-label="이전 달">‹</button>
+              <button class="bmk-navbtn" id="bmkNext" aria-label="다음 달">›</button>
+            </div>
+          </div>
+        </div>
+        <div class="bmk-seg" id="bmkViewSeg">
+          <button data-view="calendar" class="on">캘린더</button>
+          <button data-view="list">리스트</button>
+        </div>
+      </div>
+
+      <div class="bmk-filters" id="bmkFilters">
+        <div class="bmk-fgroup">
+          <span class="bmk-flabel">구분</span>
+          <div class="bmk-fseg" data-filter="scope">
+            <button data-val="전체" class="on">전체</button>
+            <button data-val="전국">전국</button>
+            <button data-val="지역">지역</button>
+          </div>
+        </div>
+        <div class="bmk-fgroup">
+          <span class="bmk-flabel">승급</span>
+          <div class="bmk-fseg" data-filter="grade">
+            <button data-val="전체" class="on">전체</button>
+            <button data-val="승급">승급</button>
+            <button data-val="비승급">비승급</button>
+          </div>
+        </div>
+        <button class="bmk-chip" id="bmkRegionChip">지역 ▾</button>
+      </div>
+
+      <div id="bmkBody"></div>
+    </div>
+  </div>
+
+  <!-- 모바일 -->
+  <div class="bmk-mobile">
+    <div style="padding:14px 18px 12px;background:var(--surface);border-bottom:1px solid var(--line);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="bmk-h1" id="bmkMMonthTitle" style="font-size:21px;">—</div>
+          <button id="bmkMPrev" class="bmk-navbtn" style="width:28px;height:28px;">‹</button>
+          <button id="bmkMNext" class="bmk-navbtn" style="width:28px;height:28px;">›</button>
+        </div>
+        <button class="bmk-ftrigger" id="bmkMFilterTrigger">필터<span class="bmk-fbadge" id="bmkMFilterBadge" style="display:none;">0</span></button>
+      </div>
+    </div>
+    <div class="bmk-scroll">
+      <div style="padding:12px 14px 14px;background:var(--surface);border-bottom:8px solid var(--bg);">
+        <div id="bmkMCal"></div>
+      </div>
+      <div id="bmkMList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 모바일 필터 시트 -->
+<div class="bmk-sheet-overlay" id="bmkSheetOverlay"></div>
+<div class="bmk-sheet" id="bmkSheet">
+  <div class="bmk-sheet-handle"></div>
+  <div class="bmk-sheet-head">
+    <span style="font-size:17px;font-weight:800;">필터</span>
+    <button id="bmkSheetReset" style="font-size:13.5px;font-weight:600;color:var(--ink-3);">초기화</button>
+  </div>
+  <div class="bmk-sheet-body" id="bmkSheetBody"></div>
+  <div class="bmk-sheet-foot">
+    <button class="bmk-sheet-cta" id="bmkSheetApply">적용하기</button>
+  </div>
+</div>
+
+<script id="bmkData" type="application/json">{{ preview_data|safe }}</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+  "use strict";
+  var RAW = JSON.parse(document.getElementById('bmkData').textContent || '[]');
+  var REGIONS = {{ regions|safe }};
+  var TODAY = "{{ today_iso }}";
+  var DOW = ['일','월','화','수','목','금','토'];
+
+  // ── SVG 아이콘 (이모지 대체) ───────────────────────────
+  var ICON_PIN = '<svg class="bmk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5c4-4 6.5-7.3 6.5-10.5a6.5 6.5 0 1 0-13 0c0 3.2 2.5 6.5 6.5 10.5z"/><circle cx="12" cy="11" r="2.4"/></svg>';
+  var ICON_CAL = '<svg class="bmk-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>';
+
+  // ── 상태 ───────────────────────────────────────────────
+  var state = {
+    view: 'calendar',
+    day: null,          // 'YYYY-MM-DD' 선택 날짜 | null
+    year: null, month: null,  // 표시 중인 달 (1-indexed month)
+    scope: '전체', grade: '전체', region: null,
+  };
+
+  // 기본 표시 달: 오늘이 속한 달. 데이터가 미래만 있으면 가장 가까운 대회 달로.
+  (function initMonth(){
+    var t = TODAY.split('-');
+    var y = +t[0], m = +t[1];
+    // 해당 달에 대회가 없고 미래 대회가 있으면 가장 이른 미래 대회 달
+    var hasThis = RAW.some(function(c){ return inMonth(c, y, m); });
+    if(!hasThis){
+      var future = RAW.filter(function(c){ return c.date >= TODAY; })
+                      .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+      if(future.length){ var d = future[0].date.split('-'); y = +d[0]; m = +d[1]; }
+    }
+    state.year = y; state.month = m;
+  })();
+
+  function inMonth(c, y, m){
+    // 대회 기간이 해당 달에 걸치는지
+    var s = c.date, e = c.endDate || c.date;
+    var sy=+s.slice(0,4), sm=+s.slice(5,7), ey=+e.slice(0,4), em=+e.slice(5,7);
+    var key = y*12+m, sk = sy*12+sm, ek = ey*12+em;
+    return sk <= key && key <= ek;
+  }
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  // ── 필터 ───────────────────────────────────────────────
+  function applyFilter(list){
+    return list.filter(function(c){
+      return (state.scope==='전체' || c.scope===state.scope)
+          && (state.grade==='전체' || c.grade===state.grade)
+          && (!state.region || c.region===state.region);
+    });
+  }
+  function activeCount(){
+    return (state.scope!=='전체'?1:0)+(state.grade!=='전체'?1:0)+(state.region?1:0);
+  }
+
+  // 특정 달의 날짜별 매핑 (멀티데이는 진행하는 모든 날짜에 포함)
+  function byDay(y, m){
+    var map = {};
+    applyFilter(RAW).forEach(function(c){
+      if(!inMonth(c,y,m)) return;
+      var s = c.date, e = c.endDate || c.date;
+      var daysIn = new Date(y, m, 0).getDate();
+      var startD = (+s.slice(0,4)===y && +s.slice(5,7)===m) ? +s.slice(8,10) : 1;
+      var endD   = (+e.slice(0,4)===y && +e.slice(5,7)===m) ? +e.slice(8,10) : daysIn;
+      for(var d=startD; d<=endD; d++){ (map[d]=map[d]||[]).push(c); }
+    });
+    return map;
+  }
+
+  function fmtDate(iso){ var p=iso.split('-'); return (+p[1])+'.'+(+p[2]); }
+  function fmtRange(c){
+    var base = c.month+'.'+c.day+'('+c.dow+')';
+    if(!c.multiDay) return base;
+    var end = c.endMonth===c.month ? (c.endDay+'('+c.endDow+')') : (c.endMonth+'.'+c.endDay+'('+c.endDow+')');
+    return base+'~'+end;
+  }
+
+  // ── 컴포넌트 HTML ──────────────────────────────────────
+  function scopeBadge(c){
+    var nat = c.scope==='전국';
+    return '<span class="bmk-scope '+(nat?'nat':'loc')+'">'+esc(c.scope)+'</span>';
+  }
+  function gradeTag(c){
+    var up = c.grade==='승급';
+    return '<span class="bmk-grade '+(up?'up':'no')+'">'+(up?'승급':'비승급')+'</span>';
+  }
+  function ddayChip(c){
+    if(c.dday==null || c.dday<0) return '';
+    var label = c.dday===0 ? '오늘 마감' : 'D-'+c.dday;
+    var cls = c.dday<=3 ? 'urgent' : 'upcoming';
+    return '<span class="bmk-dday '+cls+' tnum">'+label+'</span>';
+  }
+  function rowCard(c){
+    var sun = c.weekday===6; // 일요일 (weekday 0=월 ... 6=일)
+    var dayBlock = '<div class="bmk-datenum tnum">'+c.day+(c.multiDay?'<span class="end">~'+c.endDay+'</span>':'')+'</div>'
+      + '<div class="bmk-dateday '+(sun?'sun':'')+'">'+(c.multiDay?(c.dow+'~'+c.endDow):(c.dow+'요일'))+'</div>';
+    return '<a class="bmk-rowcard" href="'+esc(c.url)+'">'
+      + '<div class="bmk-datecol">'+dayBlock+'</div>'
+      + '<div class="bmk-rowbody">'
+      +   '<div class="bmk-badges">'+ddayChip(c)+scopeBadge(c)+gradeTag(c)+'</div>'
+      +   '<div class="bmk-name">'+esc(c.name)+'</div>'
+      +   '<div class="bmk-meta">'+ICON_PIN+' '+esc(c.region)+(c.venue?(' · '+esc(c.venue)):'')+'</div>'
+      + '</div></a>';
+  }
+  function timelineCard(c){
+    return '<a class="bmk-tl-card" href="'+esc(c.url)+'">'
+      + '<div class="bmk-badges">'+ddayChip(c)+scopeBadge(c)+gradeTag(c)+'</div>'
+      + '<div class="bmk-name">'+esc(c.name)+'</div>'
+      + '<div class="bmk-meta" style="flex-wrap:wrap;gap:12px;">'
+      +   (c.multiDay?('<span style="display:inline-flex;align-items:center;gap:4px;color:var(--green-strong);font-weight:700;">'+ICON_CAL+fmtRange(c)+'</span>'):'')
+      +   '<span style="display:inline-flex;align-items:center;gap:4px;">'+ICON_PIN+esc(c.region)+(c.venue?(' · '+esc(c.venue)):'')+'</span>'
+      +   (c.deadline?('<span style="color:var(--ink-4);">접수 ~'+fmtDate(c.deadline)+'</span>'):'')
+      + '</div></a>';
+  }
+
+  // ── 데스크톱 캘린더 (range bar) ────────────────────────
+  function renderCalendar(y, m){
+    var map = byDay(y,m);
+    var evs = applyFilter(RAW).filter(function(c){ return inMonth(c,y,m); });
+    var first = new Date(y, m-1, 1);
+    var startDow = (first.getDay()+6)%7;  // 월요일 시작
+    var daysIn = new Date(y, m, 0).getDate();
+    var weekCount = Math.ceil((startDow+daysIn)/7);
+    var dows = ['월','화','수','목','금','일'.replace('일','토'),'일'];
+    dows = ['월','화','수','목','금','토','일'];
+    var colOf = function(day){ return (startDow+day-1)%7; };
+    var dayRowH=28, laneH=19, barH=16, maxLanes=3;
+    var weekH = dayRowH + maxLanes*laneH + 6;
+
+    // 이벤트의 해당 달 내 시작/끝 일
+    function eRange(c){
+      var s = (+c.date.slice(0,4)===y && +c.date.slice(5,7)===m) ? +c.date.slice(8,10) : 1;
+      var ee = c.endDate || c.date;
+      var e = (+ee.slice(0,4)===y && +ee.slice(5,7)===m) ? +ee.slice(8,10) : daysIn;
+      return {s:s, e:e};
+    }
+
+    var html = '<div class="bmk-cal-dows">';
+    dows.forEach(function(d,i){
+      var cls = i===5?'sat':(i===6?'sun':'');
+      html += '<div class="bmk-cal-dow '+cls+'">'+d+'</div>';
+    });
+    html += '</div>';
+
+    for(var w=0; w<weekCount; w++){
+      var weekFirst = Math.max(1, w*7 - startDow + 1);
+      var weekLast = Math.min(daysIn, w*7 + 6 - startDow + 1);
+      var days = [];
+      for(var c2=0;c2<7;c2++){ var dd = w*7+c2-startDow+1; days.push(dd>=1&&dd<=daysIn?dd:null); }
+
+      var segs = evs.map(function(c){
+        var r = eRange(c);
+        var segS = Math.max(r.s, weekFirst), segE = Math.min(r.e, weekLast);
+        if(segS>segE || weekFirst>weekLast) return null;
+        return {c:c, colStart:colOf(segS), colEnd:colOf(segE), isStart:segS===r.s, isEnd:segE===r.e, soon:c.status==='soon'};
+      }).filter(Boolean).sort(function(a,b){ return a.colStart-b.colStart || (b.colEnd-b.colStart)-(a.colEnd-a.colStart); });
+
+      var lanes = [];
+      segs.forEach(function(seg){
+        var lane=0;
+        while(lanes[lane] && lanes[lane].some(function(o){ return !(seg.colStart>o.colEnd || seg.colEnd<o.colStart); })) lane++;
+        (lanes[lane]=lanes[lane]||[]).push(seg); seg.lane=lane;
+      });
+
+      html += '<div class="bmk-week" style="height:'+weekH+'px;">';
+      // 날짜 숫자
+      html += '<div class="bmk-daynums">';
+      days.forEach(function(d){
+        if(!d){ html+='<div></div>'; return; }
+        var has = !!(map[d]||[]).length;
+        var iso = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+        var sel = state.day===iso;
+        html += '<div class="bmk-daycell"><button class="bmk-daybtn '+(has?'has':'')+(sel?' sel':'')+'" '
+             + (has?('data-pick="'+iso+'"'):'disabled')+'><span class="tnum">'+d+'</span></button></div>';
+      });
+      html += '</div>';
+      // range 막대
+      segs.filter(function(s){ return s.lane<maxLanes; }).forEach(function(seg){
+        var left = 'calc('+((seg.colStart/7)*100)+'% + 3px)';
+        var width = 'calc('+(((seg.colEnd-seg.colStart+1)/7)*100)+'% - 6px)';
+        var top = dayRowH + seg.lane*laneH;
+        var bg = seg.soon?'var(--urgent-bar)':'var(--brand-green)';
+        var style = 'left:'+left+';width:'+width+';top:'+top+'px;height:'+barH+'px;background:'+bg
+          +';border-top-left-radius:'+(seg.isStart?3:0)+'px;border-bottom-left-radius:'+(seg.isStart?3:0)+'px'
+          +';border-top-right-radius:'+(seg.isEnd?3:0)+'px;border-bottom-right-radius:'+(seg.isEnd?3:0)+'px;';
+        html += '<a class="bmk-bar" style="'+style+'" href="'+esc(seg.c.url)+'" title="'+esc(seg.c.name)+'">'
+             + (seg.isStart?('<span>'+esc(seg.c.name)+'</span>'):'')+'</a>';
+      });
+      // +N more
+      days.forEach(function(d){
+        if(!d) return;
+        var extra = segs.filter(function(s){ return s.lane>=maxLanes && s.colStart===colOf(d) && s.isStart; }).length;
+        if(!extra) return;
+        var left = 'calc('+((colOf(d)/7)*100)+'% + 3px)';
+        html += '<div class="bmk-more tnum" style="left:'+left+';top:'+(dayRowH+maxLanes*laneH)+'px;">+'+extra+'</div>';
+      });
+      html += '</div>';
+    }
+    return html;
+  }
+
+  // ── 모바일 캘린더 (dot) ────────────────────────────────
+  function renderMobileCal(y, m){
+    var map = byDay(y,m);
+    var first = new Date(y, m-1, 1);
+    var startDow = (first.getDay()+6)%7;
+    var daysIn = new Date(y, m, 0).getDate();
+    var dows = ['월','화','수','목','금','토','일'];
+    var cells = [];
+    for(var i=0;i<startDow;i++) cells.push(null);
+    for(var d=1; d<=daysIn; d++) cells.push(d);
+    while(cells.length%7!==0) cells.push(null);
+
+    var html = '<div class="bmk-cal-dows">';
+    dows.forEach(function(dn,i){
+      var cls=i===5?'sat':(i===6?'sun':'');
+      html+='<div class="bmk-cal-dow '+cls+'">'+dn+'</div>';
+    });
+    html += '</div><div class="bmk-mcal-grid">';
+    cells.forEach(function(d){
+      if(!d){ html+='<div style="height:40px;"></div>'; return; }
+      var evs = map[d]||[];
+      var has = evs.length>0;
+      var iso = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      var sel = state.day===iso;
+      html += '<button class="bmk-mcell '+(has?'has':'')+(sel?' sel':'')+'" '+(has?('data-pick="'+iso+'"'):'disabled')+'>'
+           + '<span class="tnum">'+d+'</span>';
+      if(has && !sel){
+        html += '<span class="bmk-dots">';
+        evs.slice(0,3).forEach(function(e){ html+='<span class="bmk-dot '+(e.status==='soon'?'soon':'')+'"></span>'; });
+        html += '</span>';
+      } else if(has && sel){
+        html += '<span class="tnum" style="font-size:10px;font-weight:700;">'+evs.length+'</span>';
+      }
+      html += '</button>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ── 본문 렌더 ──────────────────────────────────────────
+  function monthTitle(){ return state.year+'년 '+state.month+'월'; }
+
+  function closingSoon(){
+    return applyFilter(RAW).filter(function(c){ return c.dday!=null && c.dday>=0 && c.dday<=8; })
+      .sort(function(a,b){ return a.dday-b.dday; }).slice(0,4);
+  }
+
+  function renderDesktopBody(){
+    var body = document.getElementById('bmkBody');
+    document.getElementById('bmkMonthTitle').textContent = monthTitle();
+
+    if(state.view==='list'){
+      var all = applyFilter(RAW);
+      var html = '<div class="bmk-card" style="display:flex;flex-direction:column;">'
+        + '<div class="bmk-listhead"><div style="font-size:14px;color:var(--ink-3);">총 <b class="tnum" style="color:var(--ink);">'+all.length+'</b>개 대회</div></div>'
+        + '<div class="bmk-scroll" style="padding:0 22px;column-count:2;column-gap:32px;max-height:760px;">';
+      all.forEach(function(c){ html += rowCard(c); });
+      html += '</div></div>';
+      body.innerHTML = html;
+      bindPicks(body);
+      return;
+    }
+
+    // 캘린더 뷰
+    var map = byDay(state.year, state.month);
+    var list = state.day ? (map[+state.day.slice(8,10)]||[]) : applyFilter(RAW).filter(function(c){ return inMonth(c,state.year,state.month); });
+    var soon = closingSoon();
+
+    var calHtml = '<div class="bmk-card bmk-calcard">'
+      + renderCalendar(state.year, state.month)
+      + '<div class="bmk-legend">'
+      +   '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:14px;height:8px;border-radius:3px;background:var(--brand-green);"></span>접수중</span>'
+      +   '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:14px;height:8px;border-radius:3px;background:var(--urgent-bar);"></span>마감 임박</span>'
+      + '</div>';
+    if(soon.length){
+      calHtml += '<div class="bmk-soonwrap"><div class="bmk-soonhead"><span style="width:6px;height:6px;border-radius:3px;background:var(--urgent);"></span><span style="font-size:13px;font-weight:700;">곧 접수가 마감돼요</span></div>';
+      soon.forEach(function(c){
+        var label = c.dday===0?'오늘 마감':'D-'+c.dday;
+        calHtml += '<a class="bmk-soonrow" href="'+esc(c.url)+'"><span class="bmk-dday '+(c.dday<=5?'urgent':'calm')+' tnum">'+label+'</span><span class="bmk-soonname">'+esc(c.name)+'</span><span style="color:var(--ink-4);">›</span></a>';
+      });
+      calHtml += '</div>';
+    }
+    calHtml += '</div>';
+
+    var headLabel = state.day ? (state.month+'월 '+(+state.day.slice(8,10))+'일') : (state.month+'월 전체 대회');
+    var listHtml = '<div class="bmk-card bmk-listcard">'
+      + '<div class="bmk-listhead"><div>'
+      +   '<div style="font-size:15px;font-weight:700;">'+headLabel+'</div>'
+      +   '<div style="font-size:12.5px;color:var(--ink-3);margin-top:2px;">'+list.length+'개 대회</div>'
+      + '</div>'
+      + (state.day?'<button id="bmkClearDay" style="font-size:13px;font-weight:600;color:var(--green-strong);padding:6px 10px;border-radius:8px;background:var(--green-tint);">전체 보기</button>':'')
+      + '</div>'
+      + '<div class="bmk-scroll bmk-listbody">';
+    if(list.length){ list.forEach(function(c){ listHtml += rowCard(c); }); }
+    else listHtml += '<div class="bmk-empty">선택한 날짜에 대회가 없어요</div>';
+    listHtml += '</div></div>';
+
+    body.innerHTML = '<div class="bmk-grid">'+calHtml+listHtml+'</div>';
+    bindPicks(body);
+    var clr = document.getElementById('bmkClearDay');
+    if(clr) clr.onclick = function(){ state.day=null; render(); };
+  }
+
+  function renderMobileBody(){
+    document.getElementById('bmkMMonthTitle').textContent = monthTitle();
+    document.getElementById('bmkMCal').innerHTML = renderMobileCal(state.year, state.month);
+    bindPicks(document.getElementById('bmkMCal'));
+
+    var mlist = document.getElementById('bmkMList');
+    var map = byDay(state.year, state.month);
+    if(state.day){
+      var dayEvs = map[+state.day.slice(8,10)]||[];
+      var html = '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px 8px;">'
+        + '<div style="font-size:15px;font-weight:800;">'+state.month+'월 '+(+state.day.slice(8,10))+'일 <span style="color:var(--ink-3);font-weight:500;font-size:13px;">'+dayEvs.length+'개</span></div>'
+        + '<button id="bmkMClearDay" style="font-size:13px;font-weight:600;color:var(--green-strong);padding:5px 10px;border-radius:8px;background:var(--green-tint);">전체 보기</button></div>'
+        + '<div style="padding:0 8px 24px;">';
+      if(dayEvs.length) dayEvs.forEach(function(c){ html+=timelineCard(c); });
+      else html += '<div class="bmk-empty" style="padding:36px 0;">이 날은 대회가 없어요</div>';
+      html += '</div>';
+      mlist.innerHTML = html;
+      var mc = document.getElementById('bmkMClearDay');
+      if(mc) mc.onclick = function(){ state.day=null; render(); };
+    } else {
+      // 이 달의 대회를 날짜별 그룹
+      var monthList = applyFilter(RAW).filter(function(c){ return inMonth(c,state.year,state.month); });
+      var groups = {};
+      monthList.forEach(function(c){ (groups[c.date]=groups[c.date]||[]).push(c); });
+      var keys = Object.keys(groups).sort();
+      var html = '';
+      keys.forEach(function(date){
+        var items = groups[date]; var s = items[0];
+        var sun = s.weekday===6;
+        html += '<div><div class="bmk-tl-group-head">'
+          + '<span class="bmk-tl-daynum tnum">'+s.day+'</span>'
+          + '<div><div style="font-size:13px;font-weight:700;color:'+(sun?'var(--urgent)':'var(--ink-2)')+';">'+s.dow+'요일</div>'
+          + '<div class="tnum" style="font-size:11.5px;color:var(--ink-4);font-weight:600;">'+items.length+'개 대회</div></div>'
+          + '<span style="flex:1;height:1px;background:var(--line);"></span></div>'
+          + '<div style="padding:2px 8px 6px;">';
+        items.forEach(function(c){ html+=timelineCard(c); });
+        html += '</div></div>';
+      });
+      if(!keys.length) html = '<div class="bmk-empty">이 달에 조건에 맞는 대회가 없어요</div>';
+      mlist.innerHTML = html + '<div style="height:20px;"></div>';
+    }
+  }
+
+  function bindPicks(root){
+    root.querySelectorAll('[data-pick]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        // 막대(a 태그)는 링크 이동, 날짜 버튼만 선택
+        if(btn.tagName==='A') return;
+        e.preventDefault();
+        var iso = btn.getAttribute('data-pick');
+        state.day = (state.day===iso) ? null : iso;
+        render();
+      });
+    });
+  }
+
+  // ── 지역 칩 드롭다운 (간단 prompt 대체: 인라인 토글 목록) ─────
+  function buildRegionChips(target, onPick){
+    var html = '<div class="bmk-region-chips">';
+    html += '<button class="bmk-chip '+(!state.region?'on':'')+'" data-region="">전체</button>';
+    REGIONS.forEach(function(r){
+      html += '<button class="bmk-chip '+(state.region===r?'on':'')+'" data-region="'+esc(r)+'">'+esc(r)+'</button>';
+    });
+    html += '</div>';
+    target.innerHTML = html;
+    target.querySelectorAll('[data-region]').forEach(function(b){
+      b.onclick = function(){ var v=b.getAttribute('data-region'); state.region = v||null; onPick(); };
+    });
+  }
+
+  // 데스크톱 지역 칩: 클릭 시 시트형 팝오버
+  var regionPop = null;
+  function toggleRegionPop(){
+    if(regionPop){ regionPop.remove(); regionPop=null; return; }
+    var chip = document.getElementById('bmkRegionChip');
+    regionPop = document.createElement('div');
+    regionPop.style.cssText = 'position:absolute;z-index:100;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-md);padding:14px;max-width:360px;';
+    var rect = chip.getBoundingClientRect();
+    regionPop.style.left = (rect.left+window.scrollX)+'px';
+    regionPop.style.top = (rect.bottom+window.scrollY)+'px';
+    buildRegionChips(regionPop, function(){ if(regionPop){regionPop.remove();regionPop=null;} render(); });
+    document.body.appendChild(regionPop);
+  }
+  document.addEventListener('click', function(e){
+    if(regionPop && !regionPop.contains(e.target) && e.target.id!=='bmkRegionChip'){ regionPop.remove(); regionPop=null; }
+  });
+
+  // ── 메인 렌더 ──────────────────────────────────────────
+  function render(){
+    // 데스크톱
+    renderDesktopBody();
+    // 모바일
+    renderMobileBody();
+    // 필터 칩 active 상태 동기화
+    document.querySelectorAll('#bmkFilters .bmk-fseg').forEach(function(seg){
+      var key = seg.getAttribute('data-filter');
+      seg.querySelectorAll('button').forEach(function(b){
+        b.classList.toggle('on', b.getAttribute('data-val')===state[key]);
+      });
+    });
+    var rc = document.getElementById('bmkRegionChip');
+    rc.textContent = (state.region||'지역')+' ▾';
+    rc.classList.toggle('on', !!state.region);
+    // 뷰 세그
+    document.querySelectorAll('#bmkViewSeg button').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-view')===state.view);
+    });
+    // 모바일 필터 배지
+    var ac = activeCount();
+    var badge = document.getElementById('bmkMFilterBadge');
+    var trig = document.getElementById('bmkMFilterTrigger');
+    badge.style.display = ac>0?'inline-flex':'none';
+    badge.textContent = ac;
+    trig.classList.toggle('on', ac>0);
+  }
+
+  // ── 이벤트 바인딩 ──────────────────────────────────────
+  document.querySelectorAll('#bmkViewSeg button').forEach(function(b){
+    b.onclick = function(){ state.view = b.getAttribute('data-view'); render(); };
+  });
+  document.querySelectorAll('#bmkFilters .bmk-fseg button').forEach(function(b){
+    b.onclick = function(){
+      var key = b.parentElement.getAttribute('data-filter');
+      state[key] = b.getAttribute('data-val'); render();
+    };
+  });
+  document.getElementById('bmkRegionChip').onclick = function(e){ e.stopPropagation(); toggleRegionPop(); };
+
+  function shiftMonth(delta){
+    var m = state.month + delta, y = state.year;
+    if(m<1){ m=12; y--; } else if(m>12){ m=1; y++; }
+    state.year=y; state.month=m; state.day=null; render();
+  }
+  document.getElementById('bmkPrev').onclick = function(){ shiftMonth(-1); };
+  document.getElementById('bmkNext').onclick = function(){ shiftMonth(1); };
+  document.getElementById('bmkMPrev').onclick = function(){ shiftMonth(-1); };
+  document.getElementById('bmkMNext').onclick = function(){ shiftMonth(1); };
+
+  // 모바일 필터 시트
+  var overlay = document.getElementById('bmkSheetOverlay');
+  var sheet = document.getElementById('bmkSheet');
+  function openSheet(){ renderSheet(); overlay.classList.add('open'); sheet.classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeSheet(){ overlay.classList.remove('open'); sheet.classList.remove('open'); document.body.style.overflow=''; }
+  function renderSheet(){
+    var body = document.getElementById('bmkSheetBody');
+    function field(label, key, opts){
+      var h = '<div class="bmk-sheet-field"><div class="lbl">'+label+'</div><div class="bmk-fseg fluid" data-skey="'+key+'">';
+      opts.forEach(function(o){ h += '<button data-val="'+o+'" class="'+(state[key]===o?'on':'')+'">'+o+'</button>'; });
+      return h+'</div></div>';
+    }
+    var html = field('구분','scope',['전체','전국','지역']) + field('승급 여부','grade',['전체','승급','비승급']);
+    html += '<div class="bmk-sheet-field"><div class="lbl">지역</div><div id="bmkSheetRegion"></div></div>';
+    body.innerHTML = html;
+    body.querySelectorAll('.bmk-fseg button').forEach(function(b){
+      b.onclick = function(){ var key=b.parentElement.getAttribute('data-skey'); state[key]=b.getAttribute('data-val'); renderSheet(); render(); };
+    });
+    buildRegionChips(document.getElementById('bmkSheetRegion'), function(){ renderSheet(); render(); });
+    document.getElementById('bmkSheetApply').textContent = '대회 '+applyFilter(RAW).length+'개 보기';
+  }
+  document.getElementById('bmkMFilterTrigger').onclick = openSheet;
+  overlay.onclick = closeSheet;
+  document.getElementById('bmkSheetApply').onclick = closeSheet;
+  document.getElementById('bmkSheetReset').onclick = function(){ state.scope='전체'; state.grade='전체'; state.region=null; renderSheet(); render(); };
+
+  render();
+})();
+</script>
+{% endblock %}
