@@ -18,11 +18,29 @@
 
 <!-- SportsEvent JSON-LD (view에서 dict 직렬화 — 빈 필드는 통째 생략) -->
 <script type="application/ld+json">{{ contest_jsonld|safe }}</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "홈", "item": "{{ request.scheme }}://{{ request.get_host }}/"},
+    {"@type": "ListItem", "position": 2, "name": "전국 배드민턴 대회", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:list' %}"},
+    {"@type": "ListItem", "position": 3, "name": "{{ contest.title|escapejs }}"}
+  ]
+}
+</script>
 {% endblock %}
 
 {% block content %}
 <section class="section" aria-labelledby="contest-title" style="position: relative;">
     <div class="container contest-detail">
+        <nav class="bmk-breadcrumb" aria-label="breadcrumb">
+            <a href="/">홈</a>
+            <span class="bmk-bc-sep">›</span>
+            <a href="{% url 'contests:list' %}">전국 배드민턴 대회</a>
+            <span class="bmk-bc-sep">›</span>
+            <span class="bmk-bc-current">{{ contest.title }}</span>
+        </nav>
         <!-- 메인 콘텐츠 -->
         <div>
 
@@ -34,7 +52,7 @@
                         <div class="slider-container">
                             {% for image in contest_images %}
                                 <div class="slider-item {% if forloop.first %}active{% endif %}">
-                                    <img src="{{ image.image.url }}" alt="{{ contest.title }} - 이미지 {{ forloop.counter }}" />
+                                    <img src="{{ image.image.url }}" alt="{{ contest.title }} - 이미지 {{ forloop.counter }}"{% if not forloop.first %} loading="lazy"{% else %} fetchpriority="high"{% endif %} />
                                 </div>
                             {% endfor %}
                         </div>
@@ -340,7 +358,7 @@
                                 <div class="contest-post-image">
                                     {% with first_image=other_contest.images.first %}
                                         {% if first_image %}
-                                            <img src="{{ first_image.image.url }}" alt="{{ other_contest.title }}" class="contest-post-thumbnail">
+                                            <img src="{{ first_image.image.url }}" alt="{{ other_contest.title }}" class="contest-post-thumbnail" loading="lazy">
                                         {% else %}
                                             <div class="contest-post-no-image">이미지 없음</div>
                                         {% endif %}
@@ -372,6 +390,10 @@
                 {% endif %}
             </article>
         {% endif %}
+
+        <div class="bmk-tolist">
+            <a href="{% url 'contests:list' %}" class="bmk-tolist-btn">← 전국 배드민턴 대회 목록</a>
+        </div>
 
         </div>
         <!-- 메인 콘텐츠 끝 -->
@@ -1179,5 +1201,17 @@
             height: 14px;
         }
     }
+
+    /* 빵부스러기 + 목록으로 돌아가기 (내부링크) */
+    .bmk-breadcrumb{font-size:13px;color:var(--muted);margin:0 0 16px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;line-height:1.4;}
+    .bmk-breadcrumb a{color:#475569;text-decoration:none;}
+    .bmk-breadcrumb a:hover{color:#31AA60;text-decoration:underline;}
+    .bmk-bc-sep{color:#cbd5e1;}
+    .bmk-bc-current{color:var(--muted);}
+    .bmk-tolist{display:flex;justify-content:center;margin:40px 0 8px;}
+    .bmk-tolist-btn{display:inline-flex;align-items:center;gap:8px;padding:16px 38px;border:1px solid #31AA60;
+        border-radius:999px;font-size:16px;font-weight:700;color:#fff;background:#31AA60;text-decoration:none;
+        transition:all .15s;box-shadow:0 2px 8px rgba(49,170,96,.25);}
+    .bmk-tolist-btn:hover{background:#279254;border-color:#279254;box-shadow:0 4px 14px rgba(49,170,96,.32);}
 </style>
 {% endblock %}
