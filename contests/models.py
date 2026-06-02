@@ -411,6 +411,8 @@ class Contest(models.Model):
                 offers["url"] = self.registration_link
             if self.registration_start:
                 offers["validFrom"] = self.registration_start.isoformat()
+            if self.registration_end:
+                offers["validThrough"] = self.registration_end.isoformat()
             data["offers"] = offers
 
         return data
