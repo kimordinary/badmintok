@@ -220,17 +220,12 @@ class Contest(models.Model):
             return None
 
     def get_seo_title(self):
-        """SEO용 <title>. 대회명에 이미 지역·연도가 포함되므로 중복 제거.
+        """SEO용 <title>. 대회명이 곧 검색어이므로 키워드 접미사 없이 브랜드만 부착.
 
-        패턴:
-        - 참가비 정수 파싱 가능: "{대회명} 일정·참가비·요강 | 배드민톡"
-        - 파싱 불가(무료/미정 등):  "{대회명} 일정·요강 | 배드민톡"
+        패턴: "{대회명} | 배드민톡"
+        (일정·참가비·요강 등 키워드는 title 잘림·스팸 리스크가 있어 meta description에서 다룬다.)
         """
-        if self.get_entry_fee_int() is not None:
-            suffix = "일정·참가비·요강"
-        else:
-            suffix = "일정·요강"
-        return f"{self.title} {suffix} | 배드민톡"
+        return f"{self.title} | 배드민톡"
 
     def get_seo_description(self):
         """SEO용 meta description. 빈 필드는 문구 자체를 생략.
