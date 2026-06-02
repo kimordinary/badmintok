@@ -212,7 +212,9 @@
 .bmk-root a.bmk-bar{position:absolute;display:flex;align-items:center;padding:0 7px;overflow:hidden;cursor:pointer;
   color:#fff;font-size:11px;font-weight:600;white-space:nowrap;text-shadow:0 1px 1.5px rgba(0,0,0,.22);}
 .bmk-bar span{overflow:hidden;text-overflow:ellipsis;}
-.bmk-more{position:absolute;font-size:9.5px;font-weight:700;color:var(--ink-4);}
+.bmk-more{position:absolute;font-size:10px;font-weight:700;color:var(--green-strong);cursor:pointer;
+  text-align:left;padding:1px 5px;border-radius:5px;background:none;}
+.bmk-more:hover{background:var(--green-tint);}
 
 /* 모바일 캘린더 (dot) */
 .bmk-mcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;width:100%;}
@@ -529,7 +531,6 @@
     dows = ['월','화','수','목','금','토','일'];
     var colOf = function(day){ return (startDow+day-1)%7; };
     var dayRowH=28, laneH=19, barH=16, maxLanes=3;
-    var weekH = dayRowH + maxLanes*laneH + 6;
 
     // 이벤트의 해당 달 내 시작/끝 일
     function eRange(c){
@@ -566,6 +567,8 @@
         (lanes[lane]=lanes[lane]||[]).push(seg); seg.lane=lane;
       });
 
+      // "+N개" 줄이 들어가는 주는 아래 여백을 더 줘서 다음 주 날짜와 겹치지 않게
+      var weekH = dayRowH + maxLanes*laneH + (lanes.length > maxLanes ? 20 : 8);
       html += '<div class="bmk-week" style="height:'+weekH+'px;">';
       // 날짜 숫자
       html += '<div class="bmk-daynums">';
@@ -595,8 +598,10 @@
         if(!d) return;
         var extra = segs.filter(function(s){ return s.lane>=maxLanes && s.colStart===colOf(d) && s.isStart; }).length;
         if(!extra) return;
+        var iso = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
         var left = 'calc('+((colOf(d)/7)*100)+'% + 3px)';
-        html += '<div class="bmk-more tnum" style="left:'+left+';top:'+(dayRowH+maxLanes*laneH)+'px;">+'+extra+'</div>';
+        var width = 'calc('+((1/7)*100)+'% - 6px)';
+        html += '<button class="bmk-more tnum" data-pick="'+iso+'" style="left:'+left+';width:'+width+';top:'+(dayRowH+maxLanes*laneH)+'px;">+'+extra+'개</button>';
       });
       html += '</div>';
     }

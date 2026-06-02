@@ -330,14 +330,19 @@ class ContestPreviewView(ListView):
     context_object_name = "contests"
 
     def get_queryset(self):
-        # 종료된 대회는 기본 목록에서 제외 (기존 ContestListView 무필터 동작과 동일).
-        # 캘린더+리스트가 클라이언트에서 전체 데이터를 다루므로 페이지네이션 없이 반환.
+        # 캘린더가 과거 월도 탐색하므로 schedule_start 기준 윈도우로 로드한다
+        # (2개월 전 1일 ~ 미래 전체). 종료일 기준 제외는 null-end 누수/과거월 누락
+        # 문제가 있어 사용하지 않는다. 더 오래된 종료 대회는 /archive 담당.
         from django.utils import timezone
-        from django.db.models import Q
 
         today = timezone.now().date()
+        y, m = today.year, today.month - 2
+        while m < 1:
+            m += 12
+            y -= 1
+        window_start = date(y, m, 1)
         return (
-            Contest.objects.filter(Q(schedule_end__isnull=True) | Q(schedule_end__gte=today))
+            Contest.objects.filter(schedule_start__gte=window_start)
             .select_related("category", "sponsor")
             .order_by("schedule_start")
         )
