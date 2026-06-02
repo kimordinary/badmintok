@@ -113,6 +113,7 @@
 
 /* 타이틀 행 */
 .bmk-titlerow{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+.bmk-toolbar{display:flex;align-items:center;gap:12px;}
 .bmk-eyebrow{font-size:13px;font-weight:600;color:var(--green-strong);margin-bottom:6px;}
 .bmk-h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;}
 .bmk-navbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);
@@ -124,9 +125,18 @@
 .bmk-seg button{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:8px;
   font-size:13.5px;font-weight:600;letter-spacing:-0.01em;transition:all .16s;color:var(--ink-3);}
 .bmk-seg button.on{color:var(--ink);background:var(--surface);box-shadow:var(--shadow-sm);}
+.bmk-segico{width:16px;height:16px;flex:none;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;}
 
 /* 필터 바 */
 .bmk-filters{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.bmk-search{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border:1px solid var(--line);
+  border-radius:11px;background:var(--surface-2);transition:border-color .15s,background .15s;}
+.bmk-search:focus-within{border-color:var(--green-line);background:var(--surface);}
+.bmk-search svg{width:16px;height:16px;flex:none;stroke:var(--ink-4);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.bmk-search input{border:none;background:none;outline:none;font:inherit;font-size:14px;color:var(--ink);width:100%;min-width:0;padding:0;}
+.bmk-search input::placeholder{color:var(--ink-4);}
+.bmk-search.dt{width:240px;}
+.bmk-search.mo{display:flex;width:100%;margin-top:10px;}
 .bmk-fgroup{display:flex;align-items:center;gap:8px;}
 .bmk-flabel{font-size:12.5px;font-weight:600;color:var(--ink-4);flex-shrink:0;}
 .bmk-fseg{display:inline-flex;background:var(--surface-2);border-radius:11px;padding:3px;gap:2px;border:1px solid var(--line);}
@@ -136,6 +146,10 @@
 .bmk-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:13.5px;
   font-weight:600;letter-spacing:-0.01em;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);transition:all .16s;}
 .bmk-chip.on{color:var(--green-deep);background:var(--green-tint);border-color:var(--green-line);}
+#bmkRegionChip{padding:8px 12px;}
+#bmkRegionChip svg{flex:none;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.bmk-chipico{width:15px;height:15px;stroke-width:1.7;}
+.bmk-chipchev{width:13px;height:13px;stroke-width:2;opacity:.55;}
 
 /* 카드/패널 */
 .bmk-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow-sm);}
@@ -296,9 +310,15 @@
             </div>
           </div>
         </div>
-        <div class="bmk-seg" id="bmkViewSeg">
-          <button data-view="calendar" class="on">캘린더</button>
-          <button data-view="list">리스트</button>
+        <div class="bmk-toolbar">
+          <div class="bmk-search dt">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="bmkSearch" type="text" placeholder="대회명 검색" autocomplete="off" aria-label="대회명 검색">
+          </div>
+          <div class="bmk-seg" id="bmkViewSeg">
+            <button data-view="calendar" class="on"><svg class="bmk-segico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>캘린더</button>
+            <button data-view="list"><svg class="bmk-segico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>리스트</button>
+          </div>
         </div>
       </div>
 
@@ -319,7 +339,11 @@
             <button data-val="비승급">비승급</button>
           </div>
         </div>
-        <button class="bmk-chip" id="bmkRegionChip">지역 ▾</button>
+        <button class="bmk-chip" id="bmkRegionChip">
+          <svg class="bmk-chipico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5c4-4 6.5-7.3 6.5-10.5a6.5 6.5 0 1 0-13 0c0 3.2 2.5 6.5 6.5 10.5z"/><circle cx="12" cy="11" r="2.4"/></svg>
+          <span id="bmkRegionLabel">지역</span>
+          <svg class="bmk-chipchev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
       </div>
 
       <div id="bmkBody"></div>
@@ -336,6 +360,10 @@
           <button id="bmkMNext" class="bmk-navbtn" style="width:28px;height:28px;">›</button>
         </div>
         <button class="bmk-ftrigger" id="bmkMFilterTrigger">필터<span class="bmk-fbadge" id="bmkMFilterBadge" style="display:none;">0</span></button>
+      </div>
+      <div class="bmk-search mo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="bmkMSearch" type="text" placeholder="대회명·지역 검색" autocomplete="off" aria-label="대회명 검색">
       </div>
     </div>
     <div class="bmk-scroll">
@@ -382,7 +410,7 @@
     view: 'calendar',
     day: null,          // 'YYYY-MM-DD' 선택 날짜 | null
     year: null, month: null,  // 표시 중인 달 (1-indexed month)
-    scope: '전체', grade: '전체', region: null,
+    scope: '전체', grade: '전체', region: null, q: '',
   };
 
   // 기본 표시 달: 오늘이 속한 달. 데이터가 미래만 있으면 가장 가까운 대회 달로.
@@ -410,11 +438,19 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
   // ── 필터 ───────────────────────────────────────────────
+  function matchQ(c){
+    var q = (state.q||'').trim().toLowerCase();
+    if(!q) return true;
+    return (c.name||'').toLowerCase().indexOf(q) >= 0
+        || (c.region||'').toLowerCase().indexOf(q) >= 0
+        || (c.venue||'').toLowerCase().indexOf(q) >= 0;
+  }
   function applyFilter(list){
     return list.filter(function(c){
       return (state.scope==='전체' || c.scope===state.scope)
           && (state.grade==='전체' || c.grade===state.grade)
-          && (!state.region || c.region===state.region);
+          && (!state.region || c.region===state.region)
+          && matchQ(c);
     });
   }
   function activeCount(){
@@ -771,7 +807,8 @@
       });
     });
     var rc = document.getElementById('bmkRegionChip');
-    rc.textContent = (state.region||'지역')+' ▾';
+    var rl = document.getElementById('bmkRegionLabel');
+    if(rl) rl.textContent = state.region || '지역';
     rc.classList.toggle('on', !!state.region);
     // 뷰 세그
     document.querySelectorAll('#bmkViewSeg button').forEach(function(b){
@@ -797,6 +834,19 @@
     };
   });
   document.getElementById('bmkRegionChip').onclick = function(e){ e.stopPropagation(); toggleRegionPop(); };
+
+  // 검색 (데스크톱·모바일 인풋 동기화, 클라이언트 즉시 필터)
+  function syncSearchInputs(except){
+    ['bmkSearch','bmkMSearch'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el && el !== except && el.value !== state.q) el.value = state.q;
+    });
+  }
+  function onSearchInput(e){ state.q = e.target.value; syncSearchInputs(e.target); render(); }
+  ['bmkSearch','bmkMSearch'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener('input', onSearchInput);
+  });
 
   function shiftMonth(delta){
     var m = state.month + delta, y = state.year;
@@ -832,7 +882,7 @@
   document.getElementById('bmkMFilterTrigger').onclick = openSheet;
   overlay.onclick = closeSheet;
   document.getElementById('bmkSheetApply').onclick = closeSheet;
-  document.getElementById('bmkSheetReset').onclick = function(){ state.scope='전체'; state.grade='전체'; state.region=null; renderSheet(); render(); };
+  document.getElementById('bmkSheetReset').onclick = function(){ state.scope='전체'; state.grade='전체'; state.region=null; state.q=''; syncSearchInputs(null); renderSheet(); render(); };
 
   render();
 })();
