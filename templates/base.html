@@ -40,8 +40,8 @@
       gtag('config', 'G-74RFKMWB0C');
     </script>
     {% block extra_head %}{% endblock %}
-    <!-- 모바일 오버레이 클릭 차단 방지 유틸리티 (가장 먼저 로드) -->
-    <script src="{% static 'js/mobile-overlay-fix.js' %}"></script>
+    <!-- 모바일 오버레이 클릭 차단 방지 유틸리티 (defer: 렌더 비차단. 내부 20ms 폴링으로 자가-치유) -->
+    <script src="{% static 'js/mobile-overlay-fix.js' %}" defer></script>
 </head>
 <body>
     <header class="site-header">
