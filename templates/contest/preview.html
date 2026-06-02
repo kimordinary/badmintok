@@ -101,6 +101,7 @@
 /* SSR 크롤 가능 폴백 리스트 (JS 켜지면 .has-js로 숨김) */
 .bmk-ssr{max-width:920px;margin:0 auto;padding:24px 18px 40px;}
 .bmk-ssr h1{font-size:22px;font-weight:800;color:var(--ink);margin:0 0 6px;letter-spacing:-0.01em;}
+.bmk-ssr .bmk-ssr-month{font-size:17px;font-weight:700;color:var(--ink);margin:24px 0 10px;}
 .bmk-ssr .bmk-ssr-desc{color:var(--ink-3);font-size:14px;margin:0 0 18px;}
 .bmk-ssr ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
 .bmk-ssr a{display:block;padding:14px 16px;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:var(--surface);}
@@ -280,8 +281,11 @@
   <section id="bmkSSR" class="bmk-ssr" aria-label="전국 배드민턴 대회 일정 목록">
     <h1>전국 배드민턴 대회 일정</h1>
     <p class="bmk-ssr-desc">전국 배드민턴 대회의 일정, 접수 마감, 대회장 위치, 승급·지역 구분을 한눈에 확인하세요.</p>
+    {% regroup contests by schedule_start|date:"Y년 n월" as month_groups %}
+    {% for month in month_groups %}
+    <h2 class="bmk-ssr-month">{{ month.grouper }} 배드민턴 대회</h2>
     <ul>
-    {% for c in contests %}
+      {% for c in month.list %}
       <li>
         <a href="{% url 'contests:detail' c.slug %}">
           <strong>{{ c.title }}</strong>
@@ -294,8 +298,9 @@
           </span>
         </a>
       </li>
-    {% endfor %}
+      {% endfor %}
     </ul>
+    {% endfor %}
   </section>
 
   <!-- 데스크톱 -->
