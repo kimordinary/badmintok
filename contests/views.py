@@ -317,6 +317,185 @@ class ContestListView(ListView):
         return context
 
 
+class ContestPreviewView(ListView):
+    """대회 목록 정식 페이지 (캘린더+리스트 리디자인).
+
+    /badminton-tournament/ 의 정식 목록 뷰. 대회 데이터를 파생필드와 함께 JSON으로
+    내려주고, 필터/캘린더/리스트는 프론트(바닐라 JS)에서 처리한다. SEO를 위해
+    템플릿에서 동일 데이터를 SSR 링크 목록 + JSON-LD로도 렌더한다.
+    (구 ContestListView 는 롤백 대비로 코드만 보존, 라우트 없음.)
+    """
+    model = Contest
+    template_name = "contest/preview.html"
+    context_object_name = "contests"
+
+    def get_queryset(self):
+        # 종료된 대회는 기본 목록에서 제외 (기존 ContestListView 무필터 동작과 동일).
+        # 캘린더+리스트가 클라이언트에서 전체 데이터를 다루므로 페이지네이션 없이 반환.
+        from django.utils import timezone
+        from django.db.models import Q
+
+        today = timezone.now().date()
+        return (
+            Contest.objects.filter(Q(schedule_end__isnull=True) | Q(schedule_end__gte=today))
+            .select_related("category", "sponsor")
+            .order_by("schedule_start")
+        )
+
+    # 핸드오프 샘플 데이터 (?demo=1 일 때 사용. DB 미변경).
+    # [name, date, region, venue, deadline|None, scope, grade, sponsor|None, views, endDate|None]
+    DEMO_RAW = [
+        ['제6회 저소득층 학생선수 한마음 배드민턴 축제', '2026-06-06', '서울', '잠실학생체육관', '2026-06-03', '전국', '비승급', None, 142, None],
+        ['제19회 산청군 산림조합장기 배드민턴대회', '2026-06-06', '경남', '산청국민체육센터', '2026-06-04', '지역', '비승급', None, 88, None],
+        ['제1회 대전광역시 여성 배드민턴대회', '2026-06-07', '대전', '한밭종합운동장 보조경기장', '2026-06-04', '지역', '승급', None, 211, None],
+        ['제2회 목포시 체육회장기 배드민턴대회', '2026-06-09', '전남', '목포실내체육관', '2026-06-04', '지역', '승급', None, 55, None],
+        ['제6회 윤봉길배 전국배드민턴대회', '2026-06-13', '충남', '예산스포츠센터', '2026-06-05', '전국', '승급', '요넥스 코리아', 173, '2026-06-14'],
+        ['스포츠클럽 디비전리그 시니어 남자부 3차전', '2026-06-13', '경기', '수원 실내체육관', '2026-06-05', '전국', '비승급', None, 162, '2026-06-14'],
+        ['제19회 화성특례시 시장기 배드민턴대회', '2026-06-14', '경기', '화성종합경기타운', '2026-06-08', '지역', '승급', None, 304, None],
+        ['제13회 부산 남구 청년부 배드민턴대회', '2026-06-14', '부산', '남구 국민체육센터 제2체육관', '2026-06-07', '지역', '승급', '인투스', 195, None],
+        ['제8회 박원욱병원장배 부산 여성연맹대회', '2026-06-20', '부산', '강서실내체육관', '2026-06-10', '지역', '승급', '버디 엑시언트', 179, '2026-06-21'],
+        ['2026 인천 디비전리그 시니어부 남자 A 3차전', '2026-06-20', '인천', '인천 도원체육관', '2026-06-12', '지역', '승급', None, 138, '2026-06-21'],
+        ['경동도시가스배 울산 MBC 초청 전국 OPEN', '2026-06-21', '울산', '동천체육관', '2026-06-12', '전국', '비승급', None, 103, None],
+        ['2026 안동시장배 배드민턴 리그전 2차', '2026-06-27', '경북', '용상다목적체육관', '2026-06-18', '지역', '승급', None, 96, '2026-06-28'],
+        ['제13회 강서구배드민턴협회 여성부 대회', '2026-06-28', '부산', '강서체육공원 보조경기장', '2026-06-15', '지역', '승급', '스트로커스', 211, None],
+        ['제4회 렉스배 SSP 전국 배드민턴대회', '2026-07-05', '서울', '강서구 마곡배드민턴장', '2026-06-25', '전국', '비승급', 'OPTIMO', 94, None],
+    ]
+
+    def _demo_items(self, today):
+        from datetime import date as _date
+        dow_names = ["일", "월", "화", "수", "목", "금", "토"]
+        items = []
+        for i, r in enumerate(self.DEMO_RAW):
+            name, ds, region, venue, deadline, scope, grade, sponsor, views, ende = r
+            start = _date.fromisoformat(ds)
+            end = _date.fromisoformat(ende) if ende else start
+            multi_day = bool(ende and ende != ds)
+            dl = _date.fromisoformat(deadline) if deadline else None
+            dday = (dl - today).days if dl else None
+            if dday is None:
+                status = "open"
+            elif dday < 0:
+                status = "closed"
+            elif dday <= 5:
+                status = "soon"
+            else:
+                status = "open"
+            items.append({
+                "id": "demo" + str(i),
+                "name": name,
+                "slug": "#",
+                "url": "#",
+                "date": start.isoformat(),
+                "endDate": end.isoformat() if multi_day else None,
+                "region": region,
+                "venue": venue,
+                "deadline": dl.isoformat() if dl else None,
+                "scope": scope,
+                "grade": grade,
+                "sponsor": sponsor,
+                "views": views,
+                "day": start.day, "month": start.month, "year": start.year,
+                "weekday": start.weekday(),
+                "dow": dow_names[(start.weekday() + 1) % 7],
+                "endDay": end.day, "endMonth": end.month,
+                "endDow": dow_names[(end.weekday() + 1) % 7],
+                "multiDay": multi_day, "dday": dday, "status": status,
+            })
+        return items
+
+    def get_context_data(self, **kwargs):
+        from django.utils import timezone
+
+        context = super().get_context_data(**kwargs)
+        today = timezone.now().date()
+        day_names = ["월", "화", "수", "목", "금", "토", "일"]
+        dow_names = ["일", "월", "화", "수", "목", "금", "토"]
+
+        if self.request.GET.get("demo"):
+            context["preview_data"] = json.dumps(self._demo_items(today), cls=DjangoJSONEncoder)
+            context["regions"] = [r[0] for r in Contest.Region.choices]
+            context["today_iso"] = today.isoformat()
+            context["today"] = today
+            context["canonical_url"] = self.request.build_absolute_uri(self.request.path)
+            context["is_demo"] = True
+            return context
+
+        items = []
+        for c in self.object_list:
+            if not c.schedule_start:
+                continue
+            start = c.schedule_start
+            end = c.schedule_end or start
+            multi_day = bool(c.schedule_end and c.schedule_end != start)
+
+            # scope: category명이 '전국'/'지역' 두 값. 없으면 '지역'으로 간주.
+            scope = "지역"
+            try:
+                if c.category_id and c.category and c.category.name in ("전국", "지역"):
+                    scope = c.category.name
+            except Exception as e:
+                logger.warning(f"preview scope error contest {c.id}: {e}")
+
+            # dday: 접수 마감 기준 남은 일수 (디자인의 deadline 기준)
+            dday = None
+            if c.registration_end:
+                dday = (c.registration_end - today).days
+
+            if dday is None:
+                status = "open"
+            elif dday < 0:
+                status = "closed"
+            elif dday <= 5:
+                status = "soon"
+            else:
+                status = "open"
+
+            sponsor_name = None
+            try:
+                if c.sponsor_id:
+                    int(c.sponsor_id)
+                    if c.sponsor:
+                        sponsor_name = c.sponsor.name
+            except (ValueError, TypeError):
+                sponsor_name = None
+            except Exception as e:
+                logger.warning(f"preview sponsor error contest {c.id}: {e}")
+
+            items.append({
+                "id": c.id,
+                "name": c.title,
+                "slug": c.slug,
+                "url": f"/badminton-tournament/{c.slug}/",
+                "date": start.isoformat(),
+                "endDate": end.isoformat() if multi_day else None,
+                "region": c.get_region_display(),
+                "venue": c.region_detail or "",
+                "deadline": c.registration_end.isoformat() if c.registration_end else None,
+                "scope": scope,
+                "grade": "승급" if c.is_qualifying else "비승급",
+                "sponsor": sponsor_name,
+                "views": c.view_count or 0,
+                "day": start.day,
+                "month": start.month,
+                "year": start.year,
+                "weekday": start.weekday(),          # 0=월
+                "dow": dow_names[(start.weekday() + 1) % 7],  # 한글 요일(일=0 기준 표기)
+                "endDay": end.day,
+                "endMonth": end.month,
+                "endDow": dow_names[(end.weekday() + 1) % 7],
+                "multiDay": multi_day,
+                "dday": dday,
+                "status": status,
+            })
+
+        context["preview_data"] = json.dumps(items, cls=DjangoJSONEncoder)
+        context["regions"] = [r[0] for r in Contest.Region.choices]
+        context["today_iso"] = today.isoformat()
+        context["today"] = today
+        context["canonical_url"] = self.request.build_absolute_uri(self.request.path)
+        return context
+
+
 class ContestArchiveView(ListView):
     """종료된 대회 아카이브 페이지"""
     model = Contest
