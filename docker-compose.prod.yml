@@ -87,7 +87,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      # 첫 배포에서 밀린 대형 마이그레이션(예: User 인덱스)이 foreground로 끝날 때까지 기다려줌.
+      # 이 기간 동안 실패한 헬스체크는 unhealthy로 치지 않음(컨테이너는 "starting" 유지).
+      start_period: 600s
     logging:
       driver: "json-file"
       options:

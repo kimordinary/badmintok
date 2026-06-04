@@ -42,16 +42,15 @@ echo "Creating media directory..."
 mkdir -p /app/media
 chmod 755 /app/media
 
-# 마이그레이션 + 정적수집을 "백그라운드"로 실행한다.
-# 핵심: 이걸 foreground로 두면 대용량 테이블 ALTER가 느릴 때 gunicorn이 안 떠
-#       헬스체크(/admin/login/) 통과를 못 해 컨테이너가 unhealthy → 배포 실패 → 사이트 다운.
-# 백그라운드로 돌리면 gunicorn이 즉시 떠서 사이트가 바로 살아나고, 마이그레이션은 뒤에서 진행된다.
-# (정적파일은 Dockerfile 빌드 단계 + 배포 스크립트에서도 수집됨)
-echo "Running migrations & collectstatic in background (non-blocking)..."
-(
-  timeout 600 python manage.py migrate --noinput && echo "Background: migrations done" || echo "Background WARNING: migrate timeout/failed"
-  timeout 180 python manage.py collectstatic --noinput || echo "Background WARNING: collectstatic failed"
-) &
+# 마이그레이션: gunicorn 기동 "전"에 foreground로 실행한다.
+# 이 시점엔 앱이 아직 요청을 받지 않으므로 ALTER가 라이브 요청과 락 경합을 일으키지 않는다
+# (백그라운드로 돌리면 ALTER 락에 요청들이 걸려 504가 난다 — 그래서 foreground가 맞다).
+# 첫 배포에서 밀린 대형 마이그레이션이 오래 걸려도, 헬스체크 start_period를 길게 줘서 기다려준다.
+echo "Running database migrations..."
+python manage.py migrate --noinput || echo "WARNING: some migrations failed — continuing to boot"
+
+echo "Collecting static files..."
+python manage.py collectstatic --noinput || echo "WARNING: collectstatic failed"
 
 # Superuser 생성 (선택사항 - 환경 변수가 있을 경우에만)
 # 커스텀 User 모델은 email을 USERNAME_FIELD로 사용하므로, email, activity_name, password 순서
