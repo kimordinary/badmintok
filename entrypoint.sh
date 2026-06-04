@@ -38,17 +38,19 @@ done
 echo "Database is ready!"
 
 # 데이터베이스 마이그레이션
+# 비차단: 마이그레이션이 멈추거나 실패해도(예: 대용량 테이블 ALTER 락) 서비스 기동을 막지 않음.
+# 정상 시엔 그대로 적용되고, 120초 초과/실패 시에만 건너뛰고 부팅한다(밀린 마이그레이션은 별도 처리).
 echo "Running database migrations..."
-python manage.py migrate --noinput
+timeout 120 python manage.py migrate --noinput || echo "WARNING: migrations skipped (timeout/error) — starting app anyway"
 
 # 미디어 디렉토리 생성 및 권한 설정
 echo "Creating media directory..."
 mkdir -p /app/media
 chmod 755 /app/media
 
-# 정적 파일 수집
+# 정적 파일 수집 (Dockerfile에서 이미 수집됨 → 런타임은 비차단·--clear 제거로 안전하게)
 echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
+timeout 120 python manage.py collectstatic --noinput || echo "WARNING: collectstatic skipped (timeout/error)"
 
 # Superuser 생성 (선택사항 - 환경 변수가 있을 경우에만)
 # 커스텀 User 모델은 email을 USERNAME_FIELD로 사용하므로, email, activity_name, password 순서
