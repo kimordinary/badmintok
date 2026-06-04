@@ -900,7 +900,6 @@ def track_app_pageview(request):
             user_agent=user_agent,
             device_type=device_type,
             app_version=app_version,
-            status_code=200,
         )
         return HttpResponse(status=204)
     except Exception as e:

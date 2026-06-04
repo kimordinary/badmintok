@@ -65,7 +65,6 @@ class Command(BaseCommand):
                 self.stdout.write(f"  {r['c']:>7,} ({pct:4.1f}%)  {val}")
 
         section("device_type", "device_type")
-        section("status_code", "status_code")
         section("top IP", "ip_address")
         section("top User-Agent", "user_agent")
         section("top 랜딩 페이지", "url_path")

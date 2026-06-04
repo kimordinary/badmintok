@@ -150,7 +150,6 @@ class VisitorTrackingMiddleware:
                 referer_domain=referer_domain[:200],
                 user_agent=user_agent[:500],
                 device_type=device_type,
-                status_code=getattr(response, 'status_code', None),
             )
         except Exception as e:
             # 로그 기록 실패 시 무시 (애플리케이션 동작에 영향 없도록)

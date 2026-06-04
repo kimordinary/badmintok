@@ -356,7 +356,7 @@ def statistics_view(request):
     base_queryset = VisitorLog.objects.filter(
         visited_at__gte=period_start,
         visited_at__lt=period_end
-    ).filter(real_user_filter).exclude(status_code__in=[301, 302])  # 리다이렉트는 페이지뷰 아님(구버전 NULL은 유지)
+    ).filter(real_user_filter)
     if source_param != 'all':
         base_queryset = base_queryset.filter(source=source_param)
 
@@ -369,7 +369,7 @@ def statistics_view(request):
     prev_base_queryset = VisitorLog.objects.filter(
         visited_at__gte=prev_period_start,
         visited_at__lt=prev_period_end
-    ).filter(real_user_filter).exclude(status_code__in=[301, 302])
+    ).filter(real_user_filter)
     if source_param != 'all':
         prev_base_queryset = prev_base_queryset.filter(source=source_param)
 
