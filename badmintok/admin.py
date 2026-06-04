@@ -356,7 +356,7 @@ def statistics_view(request):
     base_queryset = VisitorLog.objects.filter(
         visited_at__gte=period_start,
         visited_at__lt=period_end
-    ).filter(real_user_filter)
+    ).filter(real_user_filter).exclude(status_code__in=[301, 302])  # 리다이렉트는 페이지뷰 아님(구버전 NULL은 유지)
     if source_param != 'all':
         base_queryset = base_queryset.filter(source=source_param)
 
@@ -369,7 +369,7 @@ def statistics_view(request):
     prev_base_queryset = VisitorLog.objects.filter(
         visited_at__gte=prev_period_start,
         visited_at__lt=prev_period_end
-    ).filter(real_user_filter)
+    ).filter(real_user_filter).exclude(status_code__in=[301, 302])
     if source_param != 'all':
         prev_base_queryset = prev_base_queryset.filter(source=source_param)
 
@@ -530,10 +530,41 @@ def statistics_view(request):
         views=Count('id')
     ).order_by('-views')[:15])
 
+    # 인기 페이지 url_path → 사람이 읽는 제목 매핑 (표시용; 집계는 url_path 그대로)
+    import re as _re
+    from urllib.parse import unquote as _unquote
+    _static_titles = {
+        '/': '홈',
+        '/badminton-tournament/': '전국 배드민턴 대회 목록',
+        '/badminton-tournament/archive/': '대회 아카이브',
+    }
+    _detail_re = _re.compile(r'^/badminton-tournament/([^/]+)/$')
+    _slugs = set()
+    for _p in top_pages:
+        _m = _detail_re.match(_p['url_path'])
+        if _m and _p['url_path'] not in _static_titles:
+            _slugs.add(_m.group(1)); _slugs.add(_unquote(_m.group(1)))
+    _titles = {}
+    if _slugs:
+        from contests.models import Contest
+        for _slug, _title in Contest.objects.filter(slug__in=list(_slugs)).values_list('slug', 'title'):
+            _titles[_slug] = _title
+    for _p in top_pages:
+        _up = _p['url_path']
+        if _up in _static_titles:
+            _p['title'] = _static_titles[_up]
+        elif _up.startswith('app://'):
+            _p['title'] = '[앱] ' + _up[len('app://'):]
+        else:
+            _m = _detail_re.match(_up)
+            _p['title'] = (_titles.get(_m.group(1)) or _titles.get(_unquote(_m.group(1))) or _up) if _m else _up
+
     top_referrers = list(base_queryset.filter(
         referer_domain__isnull=False
     ).exclude(
         referer_domain=''
+    ).exclude(
+        referer_domain__icontains='badmintok'  # self-referral(내부 이동) 제외 — 외부 유입원만
     ).values('referer_domain').annotate(
         visits=Count('id')
     ).order_by('-visits')[:15])

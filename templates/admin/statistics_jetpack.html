@@ -376,7 +376,7 @@
             {% for page in top_pages|slice:":10" %}
             <div class="top-item">
               <span class="rank">{{ forloop.counter|stringformat:"02d" }}</span>
-              <span class="label" title="{{ page.url_path }}">{{ page.url_path }}</span>
+              <span class="label" title="{{ page.url_path }}">{{ page.title|default:page.url_path }}</span>
               <span class="bar"><span class="bar-fill" style="width: {% widthratio page.views first_pages.views 100 %}%;"></span></span>
               <span class="count">{{ page.views }}</span>
             </div>
