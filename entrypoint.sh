@@ -42,15 +42,15 @@ echo "Creating media directory..."
 mkdir -p /app/media
 chmod 755 /app/media
 
-# 마이그레이션: gunicorn 기동 "전"에 foreground로 실행한다.
-# 이 시점엔 앱이 아직 요청을 받지 않으므로 ALTER가 라이브 요청과 락 경합을 일으키지 않는다
-# (백그라운드로 돌리면 ALTER 락에 요청들이 걸려 504가 난다 — 그래서 foreground가 맞다).
-# 첫 배포에서 밀린 대형 마이그레이션이 오래 걸려도, 헬스체크 start_period를 길게 줘서 기다려준다.
-echo "Running database migrations..."
-python manage.py migrate --noinput || echo "WARNING: some migrations failed — continuing to boot"
+# 마이그레이션은 entrypoint에서 실행하지 않는다.
+# 이유: 대용량 테이블 ALTER(예: VisitorLog status_code)가 gunicorn 기동/헬스체크를 막아
+#       컨테이너 unhealthy → 배포 실패 → 사이트 다운을 반복 유발했다.
+# 현재 코드는 밀린 마이그레이션 없이도 정상 동작하므로, 마이그레이션은 사이트가 뜬 뒤
+# 배포 스크립트(또는 운영자)가 별도로 적용한다. → 사이트는 항상 즉시 기동.
+echo "Skipping migrations at startup (applied separately after boot)."
 
-echo "Collecting static files..."
-python manage.py collectstatic --noinput || echo "WARNING: collectstatic failed"
+# 정적파일은 Dockerfile 빌드에서 이미 수집됨. 런타임은 비차단(백그라운드)으로만.
+( python manage.py collectstatic --noinput >/dev/null 2>&1 || true ) &
 
 # Superuser 생성 (선택사항 - 환경 변수가 있을 경우에만)
 # 커스텀 User 모델은 email을 USERNAME_FIELD로 사용하므로, email, activity_name, password 순서

@@ -247,11 +247,11 @@ jobs:
             echo "Checking service health..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod ps
             
-            echo "Running database migrations..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py migrate --noinput || true
-            
-            echo "Collecting static files..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py collectstatic --noinput --clear || true
+            echo "Running database migrations (non-blocking, capped)..."
+            timeout 120 docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py migrate --noinput || echo "migrate skipped/timed out — site already up"
+
+            echo "Collecting static files (non-blocking, capped)..."
+            timeout 120 docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py collectstatic --noinput || echo "collectstatic skipped/timed out"
             
             echo "Restarting Nginx..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx || true
