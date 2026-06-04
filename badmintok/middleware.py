@@ -44,7 +44,7 @@ class VisitorTrackingMiddleware:
 
         # 요청 처리 후 - 방문 로그 기록
         if self._should_track(request, response):
-            self._log_visit(request)
+            self._log_visit(request, response)
 
         return response
 
@@ -105,7 +105,7 @@ class VisitorTrackingMiddleware:
         cache.set(cache_key, 1, timeout=seconds)
         return False
 
-    def _log_visit(self, request):
+    def _log_visit(self, request, response=None):
         """방문 로그 기록"""
         from .models import VisitorLog
 
@@ -150,6 +150,7 @@ class VisitorTrackingMiddleware:
                 referer_domain=referer_domain[:200],
                 user_agent=user_agent[:500],
                 device_type=device_type,
+                status_code=getattr(response, 'status_code', None),
             )
         except Exception as e:
             # 로그 기록 실패 시 무시 (애플리케이션 동작에 영향 없도록)
