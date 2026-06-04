@@ -882,6 +882,13 @@ def track_app_pageview(request):
         fingerprint = f"{ip_address or 'unknown'}|{user_agent[:200]}|{os_value}"
         session_key = "app_" + hashlib.md5(fingerprint.encode("utf-8")).hexdigest()[:32]
 
+        # 중복 전송 dedup: 같은 세션+화면을 5초 내 재전송하면 무시 (앱 onResume/리렌더/재시도 거품 방지)
+        from django.core.cache import cache
+        dedupe_key = f"applog_dedupe:{session_key}:{url_path}"
+        if cache.get(dedupe_key):
+            return HttpResponse(status=204)
+        cache.set(dedupe_key, 1, timeout=5)
+
         VisitorLog.objects.create(
             source=VisitorLog.SOURCE_APP,
             user=request.user if request.user.is_authenticated else None,
@@ -893,6 +900,7 @@ def track_app_pageview(request):
             user_agent=user_agent,
             device_type=device_type,
             app_version=app_version,
+            status_code=200,
         )
         return HttpResponse(status=204)
     except Exception as e:
