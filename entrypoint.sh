@@ -89,3 +89,5 @@ exec gunicorn badmintok.wsgi:application \
     --max-requests ${GUNICORN_MAX_REQUESTS:-1000} \
     --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-50}
 
+
+# redeploy marker: force fresh build from latest main (0013 제거 반영)
