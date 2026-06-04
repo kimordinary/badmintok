@@ -222,7 +222,8 @@ class VisitorLog(models.Model):
     )
 
     # HTTP 응답 코드 (200=실제 페이지, 301/302=리다이렉트). 페이지뷰 정확 집계·측정용.
-    status_code = models.PositiveSmallIntegerField(_("응답 코드"), null=True, blank=True, db_index=True)
+    # db_index 미사용: 값이 4종뿐(저카디널리티)이라 인덱스 효과 없음 + 대용량 테이블 ALTER 락 회피.
+    status_code = models.PositiveSmallIntegerField(_("응답 코드"), null=True, blank=True)
 
     # 시간 정보
     visited_at = models.DateTimeField(_("방문 시각"), auto_now_add=True, db_index=True)

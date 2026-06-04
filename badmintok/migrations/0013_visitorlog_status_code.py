@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='visitorlog',
             name='status_code',
-            field=models.PositiveSmallIntegerField(blank=True, db_index=True, null=True, verbose_name='응답 코드'),
+            field=models.PositiveSmallIntegerField(blank=True, null=True, verbose_name='응답 코드'),
         ),
     ]
