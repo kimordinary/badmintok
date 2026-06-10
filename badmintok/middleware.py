@@ -54,8 +54,8 @@ class VisitorTrackingMiddleware:
         if request.method != 'GET':
             return False
 
-        # 200, 301, 302 응답만 기록
-        if response.status_code not in [200, 301, 302]:
+        # 실제 콘텐츠 응답(200)만 기록. 301/302 리다이렉트는 "안내"라 페이지뷰로 안 셈(거품 방지).
+        if response.status_code != 200:
             return False
 
         # 제외할 경로 체크
