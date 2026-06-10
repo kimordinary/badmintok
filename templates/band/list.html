@@ -44,22 +44,22 @@
         
         <!-- 탭 -->
         <div class="community-tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0;">
-            <a href="{% url 'band:list' %}?type=flash{% if current_region != 'all' %}&region={{ current_region }}{% endif %}" 
+            <a href="{% url 'band:list' %}?type=flash{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}" 
                class="community-tab {% if current_type == 'flash' %}active{% endif %}" 
                style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                 번개
             </a>
-            <a href="{% url 'band:list' %}?type=group{% if current_region != 'all' %}&region={{ current_region }}{% endif %}" 
+            <a href="{% url 'band:list' %}?type=group{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}" 
                class="community-tab {% if current_type == 'group' %}active{% endif %}" 
                style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                 모임
             </a>
-            <a href="{% url 'band:list' %}?type=club{% if current_region != 'all' %}&region={{ current_region }}{% endif %}"
+            <a href="{% url 'band:list' %}?type=club{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}"
                class="community-tab {% if current_type == 'club' %}active{% endif %}"
                style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                 동호회
             </a>
-            <a href="{% url 'band:list' %}?type=center{% if current_region != 'all' %}&region={{ current_region }}{% endif %}"
+            <a href="{% url 'band:list' %}?type=center{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}"
                class="community-tab {% if current_type == 'center' %}active{% endif %}"
                style="display: inline-block; padding: 12px 20px; text-decoration: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -1px;">
                 센터
@@ -877,14 +877,14 @@
             <!-- 모바일: 지역 선택 배너 (가로 스크롤) -->
             <div class="region-banner-mobile" style="display: none; margin-bottom: 16px;">
                 <div class="region-banner-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch;">
-                    <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region=all{% if search %}&search={{ search }}{% endif %}" 
+                    <a href="?{% if current_type %}type={{ current_type }}&amp;{% endif %}region=all{% if search %}&amp;search={{ search }}{% endif %}" 
                        class="region-banner-item {% if current_region == 'all' %}active{% endif %}"
                        style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; text-decoration: none; color: {% if current_region == 'all' %}#fff{% else %}#64748b{% endif %}; background: {% if current_region == 'all' %}var(--brand){% else %}#f1f5f9{% endif %}; border-radius: 20px; font-size: 14px; font-weight: {% if current_region == 'all' %}600{% else %}500{% endif %}; white-space: nowrap; flex-shrink: 0; transition: all 0.2s ease;">
                         전체
                     </a>
                     {% for region_value, region_name in regions %}
                         {% if region_value != 'all' %}
-                            <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region={{ region_value }}{% if search %}&search={{ search }}{% endif %}" 
+                            <a href="?{% if current_type %}type={{ current_type }}&amp;{% endif %}region={{ region_value }}{% if search %}&amp;search={{ search }}{% endif %}" 
                                class="region-banner-item {% if current_region == region_value %}active{% endif %}"
                                style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; text-decoration: none; color: {% if current_region == region_value %}#fff{% else %}#64748b{% endif %}; background: {% if current_region == region_value %}var(--brand){% else %}#f1f5f9{% endif %}; border-radius: 20px; font-size: 14px; font-weight: {% if current_region == region_value %}600{% else %}500{% endif %}; white-space: nowrap; flex-shrink: 0; transition: all 0.2s ease;">
                                 {{ region_name }}
@@ -957,14 +957,14 @@
                     <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
                         <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 16px 0; color: #1e293b;">지역 선택</h3>
                         <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region=all{% if search %}&search={{ search }}{% endif %}" 
+                            <a href="?{% if current_type %}type={{ current_type }}&amp;{% endif %}region=all{% if search %}&amp;search={{ search }}{% endif %}" 
                                class="region-link"
                                style="display: block; padding: 10px 12px; text-decoration: none; color: {% if current_region == 'all' %}var(--brand){% else %}#64748b{% endif %}; background: {% if current_region == 'all' %}#f0f9ff{% else %}transparent{% endif %}; border-radius: 6px; font-size: 14px; transition: all 0.2s ease; {% if current_region == 'all' %}font-weight: 600;{% endif %}">
                                 전체
                             </a>
                             {% for region_value, region_name in regions %}
                                 {% if region_value != 'all' %}
-                                    <a href="?{% if current_type %}type={{ current_type }}&{% endif %}region={{ region_value }}{% if search %}&search={{ search }}{% endif %}" 
+                                    <a href="?{% if current_type %}type={{ current_type }}&amp;{% endif %}region={{ region_value }}{% if search %}&amp;search={{ search }}{% endif %}" 
                                        class="region-link"
                                        style="display: block; padding: 10px 12px; text-decoration: none; color: {% if current_region == region_value %}var(--brand){% else %}#64748b{% endif %}; background: {% if current_region == region_value %}#f0f9ff{% else %}transparent{% endif %}; border-radius: 6px; font-size: 14px; transition: all 0.2s ease; {% if current_region == region_value %}font-weight: 600;{% endif %}">
                                         {{ region_name }}
@@ -1042,15 +1042,15 @@
                             {% if bands.has_other_pages %}
                                 <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
                                     {% if bands.has_previous %}
-                                        <a href="?page=1{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">처음</a>
-                                        <a href="?page={{ bands.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">이전</a>
+                                        <a href="?page=1{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">처음</a>
+                                        <a href="?page={{ bands.previous_page_number }}{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">이전</a>
                                     {% endif %}
                                     <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
                                         {{ bands.number }} / {{ bands.paginator.num_pages }}
                                     </span>
                                     {% if bands.has_next %}
-                                        <a href="?page={{ bands.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">다음</a>
-                                        <a href="?page={{ bands.paginator.num_pages }}{% if current_type %}&type={{ current_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">마지막</a>
+                                        <a href="?page={{ bands.next_page_number }}{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">다음</a>
+                                        <a href="?page={{ bands.paginator.num_pages }}{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">마지막</a>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -1167,15 +1167,15 @@
                         {% if bands.has_other_pages %}
                             <div style="margin-top: 32px; display: flex; justify-content: center; gap: 8px;">
                                 {% if bands.has_previous %}
-                                    <a href="?page=1{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">처음</a>
-                                    <a href="?page={{ bands.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">이전</a>
+                                    <a href="?page=1{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">처음</a>
+                                    <a href="?page={{ bands.previous_page_number }}{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">이전</a>
                                 {% endif %}
                                 <span style="display: flex; align-items: center; padding: 8px 16px; color: #64748b;">
                                     {{ bands.number }} / {{ bands.paginator.num_pages }}
                                 </span>
                                 {% if bands.has_next %}
-                                    <a href="?page={{ bands.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">다음</a>
-                                    <a href="?page={{ bands.paginator.num_pages }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_region != 'all' %}&region={{ current_region }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn btn-ghost">마지막</a>
+                                    <a href="?page={{ bands.next_page_number }}{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">다음</a>
+                                    <a href="?page={{ bands.paginator.num_pages }}{% if current_type %}&amp;type={{ current_type }}{% endif %}{% if current_region != 'all' %}&amp;region={{ current_region }}{% endif %}{% if search %}&amp;search={{ search }}{% endif %}" class="btn btn-ghost">마지막</a>
                                 {% endif %}
                             </div>
                         {% endif %}

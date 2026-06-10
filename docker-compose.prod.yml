@@ -79,6 +79,8 @@ services:
       # 정적 파일 및 업로드 파일 (Nginx와 공유)
       - static_data:/app/staticfiles
       - media_data:/app/media
+      # FCM 서비스 계정 키 (git/배포 패키지에 미포함, 서버 호스트에 직접 배치)
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
       # Production에서는 코드를 마운트하지 않음 (이미지에 포함)
     networks:
       - badmintok-net
