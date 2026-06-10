@@ -87,6 +87,28 @@
                 </p>
             </div>
 
+            <!-- 성별 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.gender.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">
+                    성별 <span style="color: #dc2626;">*</span>
+                </label>
+                {{ form.gender }}
+                {% for error in form.gender.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <!-- 전화번호 필드 -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="{{ form.phone_number.id_for_label }}" style="font-size: 14px; font-weight: 500; color: #1e293b;">
+                    전화번호 <span style="color: #dc2626;">*</span>
+                </label>
+                {{ form.phone_number }}
+                {% for error in form.phone_number.errors %}
+                    <small style="color: #dc2626; font-size: 12px;">{{ error }}</small>
+                {% endfor %}
+            </div>
+
             <!-- 이용약관 동의 -->
             <div style="padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">

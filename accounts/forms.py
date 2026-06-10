@@ -239,7 +239,24 @@ class RealNameForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-input"}),
         help_text="필수 선택사항입니다. 나중에 마이페이지에서 수정할 수 있습니다."
     )
-    
+
+    gender = forms.ChoiceField(
+        label="성별",
+        choices=UserProfile.Gender.choices,
+        required=True,
+        widget=forms.Select(attrs={"class": "form-input"}),
+    )
+
+    phone_number = forms.CharField(
+        label="전화번호",
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(attrs={
+            "class": "form-input",
+            "placeholder": "전화번호를 입력하세요"
+        }),
+    )
+
     terms_agreed = forms.BooleanField(
         label="이용약관 동의",
         required=True,
@@ -264,11 +281,19 @@ class RealNameForm(forms.Form):
         
         # 배드민턴 급수는 필수이므로 미입력 옵션 제거
         level_choices = [
-            (choice[0], choice[1]) 
-            for choice in UserProfile.BadmintonLevel.choices 
+            (choice[0], choice[1])
+            for choice in UserProfile.BadmintonLevel.choices
             if choice[0] != ""  # 미입력 옵션 제외
         ]
         self.fields["badminton_level"].choices = level_choices
+
+        # 성별: "선택 안 함"(unknown) 제외 + 빈 옵션을 앞에 둬 강제 선택 유도
+        gender_choices = [
+            (value, label)
+            for value, label in UserProfile.Gender.choices
+            if value != UserProfile.Gender.UNKNOWN
+        ]
+        self.fields["gender"].choices = [("", "성별 선택")] + gender_choices
 
 
 class InquiryForm(forms.ModelForm):

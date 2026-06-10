@@ -1821,9 +1821,11 @@ def enter_real_name(request):
     if request.method == "POST":
         form = RealNameForm(request.POST, user=user)
         if form.is_valid():
-            # 실명과 급수 저장
+            # 실명·급수·성별·전화번호 저장
             profile.name = form.cleaned_data["name"]
             profile.badminton_level = form.cleaned_data["badminton_level"]
+            profile.gender = form.cleaned_data["gender"]
+            profile.phone_number = form.cleaned_data["phone_number"]
             profile.save()
             
             # 활동명 저장
