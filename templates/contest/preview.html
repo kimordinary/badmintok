@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}전국 배드민턴 대회 일정 - 배드민톡{% endblock %}
-{% block og_title_meta %}<meta property="og:title" content="전국 배드민턴 대회 일정 - 배드민톡">{% endblock %}
+{% block title %}전국 배드민턴 대회 - 배드민톡{% endblock %}
+{% block og_title_meta %}<meta property="og:title" content="전국 배드민턴 대회 - 배드민톡">{% endblock %}
 {% block canonical_url %}{{ canonical_url }}{% endblock %}
 {% block og_tags %}
 <meta name="description" content="전국 배드민턴 대회 일정과 접수 마감, 대회장 위치, 승급·지역 구분을 캘린더와 리스트로 한눈에 확인하세요.">
 <meta property="og:description" content="전국 배드민턴 대회 일정과 접수 마감, 대회장 위치를 캘린더로 한눈에. 승급대회부터 지역대회까지 모든 정보를 제공합니다.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="전국 배드민턴 대회 일정 - 배드민톡">
+<meta name="twitter:title" content="전국 배드민턴 대회 - 배드민톡">
 <meta name="twitter:description" content="전국 배드민턴 대회 일정과 접수 마감을 캘린더로 한눈에 확인하세요.">
 {% endblock %}
 {% block extra_head %}
@@ -28,24 +28,8 @@
     {
       "@type": "ListItem",
       "position": {{ forloop.counter }},
-      "item": {
-        "@type": "SportsEvent",
-        "@id": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
-        "name": "{{ contest.title|escapejs }}",
-        "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
-        {% if contest.schedule_start %}"startDate": "{{ contest.schedule_start|date:'Y-m-d' }}",{% endif %}
-        {% if contest.schedule_end %}"endDate": "{{ contest.schedule_end|date:'Y-m-d' }}",{% endif %}
-        {% if contest.get_location_display %}"location": {
-          "@type": "Place",
-          "name": "{{ contest.get_location_display|escapejs }}"
-        },{% endif %}
-        "sport": "배드민턴",
-        {% if contest.schedule_start and contest.schedule_end %}"eventStatus": "https://schema.org/{% if contest.schedule_end >= today %}EventScheduled{% else %}EventCancelled{% endif %}",{% endif %}
-        "organizer": {
-          "@type": "Organization",
-          "name": "배드민톡"
-        }
-      }
+      "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'contests:detail' contest.slug %}",
+      "name": "{{ contest.title|escapejs }}"
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
   ]

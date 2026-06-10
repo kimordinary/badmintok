@@ -1,7 +1,7 @@
 from django.urls import path, register_converter
 from django.views.generic.base import RedirectView
 
-from .views import ContestDetailView, ContestListView, ContestArchiveView, ContestPreviewView, contest_like
+from .views import ContestDetailView, ContestArchiveView, ContestPreviewView, contest_like
 
 
 class UnicodeSlugConverter:
@@ -20,8 +20,7 @@ register_converter(UnicodeSlugConverter, 'unicode_slug')
 app_name = "contests"
 
 urlpatterns = [
-    # 리디자인 승격: 목록 정식 URL은 새 디자인(ContestPreviewView)이 담당.
-    # 기존 ContestListView는 롤백 대비로 코드만 보존(라우트 없음).
+    # 목록 정식 URL은 캘린더+리스트 디자인(ContestPreviewView)이 담당.
     path("", ContestPreviewView.as_view(), name="list"),
     # 구 미리보기 URL → 정식 URL로 영구 리다이렉트 (외부 공유 링크 대비)
     path("preview/", RedirectView.as_view(pattern_name="contests:list", permanent=True)),
