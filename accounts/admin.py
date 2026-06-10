@@ -1,17 +1,48 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, StackedInline
 from unfold.contrib.forms.widgets import WysiwygWidget
 
 from .models import User, UserProfile, Inquiry, Report, UserBlock
 
 
+class UserProfileInline(StackedInline):
+    """User 관리 화면에서 실명·전화번호 등 프로필을 함께 보고 편집."""
+    model = UserProfile
+    can_delete = False
+    extra = 0
+    verbose_name_plural = "프로필 (실명·전화번호·배송지 등)"
+    fields = (
+        "name", "phone_number", "gender", "age_range", "birthday",
+        "badminton_level", "shipping_receiver", "shipping_phone_number", "shipping_address",
+    )
+
+
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin, ModelAdmin):
     ordering = ("email",)
-    list_display = ("email", "activity_name", "is_staff", "is_active")
-    search_fields = ("email", "activity_name")
+    inlines = (UserProfileInline,)
+    list_display = ("email", "activity_name", "profile_name", "profile_phone", "is_active", "is_staff", "date_joined")
+    list_select_related = ("profile",)
+    list_filter = ("is_staff", "is_active", "date_joined")
+    search_fields = ("email", "activity_name", "profile__name", "profile__phone_number")
+
+    def _get_profile(self, obj):
+        try:
+            return obj.profile
+        except UserProfile.DoesNotExist:
+            return None
+
+    @admin.display(description="실명")
+    def profile_name(self, obj):
+        p = self._get_profile(obj)
+        return (p.name if p and p.name else "-")
+
+    @admin.display(description="전화번호")
+    def profile_phone(self, obj):
+        p = self._get_profile(obj)
+        return (p.phone_number if p and p.phone_number else "-")
     fieldsets = (
         (None, {"fields": ("email", "password", "activity_name")}),
         (_("Permissions"), {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
