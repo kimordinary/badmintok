@@ -46,6 +46,15 @@ else:
     # 개발 환경 기본값: 모든 호스트 허용 + 내부 컨테이너 이름
     ALLOWED_HOSTS = ['*', 'badmintok-web', 'badmintok-web-prod', 'localhost', '127.0.0.1']
 
+# 운영 보안 점검: 위험 설정이면 로그에 경고만 출력(기동은 막지 않음 — 다운 방지).
+import sys as _sys
+_EXPOSED_SECRET_KEY = 'django-insecure-sspxl=1jonty09c+iave54)vi=uis7yv!r%7f0kd1+cw4bq@sr'
+if not DEBUG:
+    if SECRET_KEY == _EXPOSED_SECRET_KEY:
+        print("[SECURITY] DJANGO_SECRET_KEY가 레포에 노출된 기본값입니다. 강한 값으로 즉시 재발급하세요.", file=_sys.stderr)
+    if '*' in ALLOWED_HOSTS:
+        print("[SECURITY] ALLOWED_HOSTS에 와일드카드(*)가 있습니다. DJANGO_ALLOWED_HOSTS로 도메인을 지정하세요.", file=_sys.stderr)
+
 # Nginx 프록시를 통한 요청 처리
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
@@ -222,6 +231,12 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+    # HSTS: HTTPS 강제(이미 certbot/nginx로 HTTPS 운영 중). 보수적으로 1시간부터 시작.
+    # 안정 확인 후 31536000(1년)+includeSubDomains+preload로 상향 권장.
+    SECURE_HSTS_SECONDS = 3600
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SECURE_REFERRER_POLICY = 'same-origin'
     CSRF_COOKIE_HTTPONLY = False  # JavaScript에서 CSRF 토큰 접근 가능하도록 설정
     CSRF_COOKIE_SAMESITE = 'Lax'
     
@@ -375,7 +390,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),   # 24h→1h: 탈취 시 노출창 축소 (refresh로 자동 갱신)
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': False,
