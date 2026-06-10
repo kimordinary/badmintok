@@ -247,8 +247,11 @@ jobs:
             echo "Checking service health..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod ps
             
-            echo "Running database migrations (non-blocking, capped)..."
-            timeout 120 docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py migrate --noinput || echo "migrate skipped/timed out — site already up"
+            # 마이그레이션은 배포에서 자동 실행하지 않는다.
+            # (대용량 테이블 ALTER가 라이브 INSERT와 락 경합을 일으켜 사이트를 마비시킨 전례.)
+            # 스키마 변경이 필요하면 트래픽 적은 시간에 운영자가 수동으로 적용한다:
+            #   docker compose ... run --rm web python manage.py migrate
+            echo "Skipping auto-migrate (migrations are applied manually off-peak)."
 
             echo "Collecting static files (non-blocking, capped)..."
             timeout 120 docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py collectstatic --noinput || echo "collectstatic skipped/timed out"
