@@ -90,4 +90,4 @@ exec gunicorn badmintok.wsgi:application \
     --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-50}
 
 
-# redeploy marker: force fresh build from latest main (0013 제거 반영)
+# redeploy marker: clean deploy (0013 제거 확정 + GitHub Secrets로 .env.prod 동기화)
