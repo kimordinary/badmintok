@@ -17,6 +17,7 @@ class Notification(models.Model):
         MEMBERSHIP = "membership", _("가입")
         LIKE = "like", _("좋아요")
         BADMINTOK_POST = "badmintok_post", _("배드민톡 새 글")
+        INQUIRY = "inquiry", _("문의 답변")
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -72,6 +73,14 @@ class Notification(models.Model):
         blank=True,
         related_name="notifications",
         verbose_name=_("관련 커뮤니티 게시글"),
+    )
+    related_inquiry = models.ForeignKey(
+        "accounts.Inquiry",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+        verbose_name=_("관련 문의"),
     )
 
     # 알림을 발생시킨 사용자 (댓글/답글 작성자)

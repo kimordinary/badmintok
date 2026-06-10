@@ -153,16 +153,17 @@ def post_detail(request, slug):
     
     # 기본 필터: 삭제되지 않은 배드민톡 글
     base_filter = Q(is_deleted=False, source=Post.Source.BADMINTOK)
-    
+
     # 로그인 사용자가 작성자가 아니면 공개된 글만
     if not request.user.is_authenticated or not request.user.is_staff:
         base_filter &= Q(is_draft=False, published_at__lte=now)
-    
+
+    # 알림 등에서 숫자 ID로도 조회 가능하도록 slug/id 모두 지원
+    base_filter &= Q(id=int(slug)) if str(slug).isdigit() else Q(slug=slug)
     post = get_object_or_404(
         Post.objects.filter(base_filter)
         .select_related("author", "category")
         .prefetch_related("images", "likes", "categories"),
-        slug=slug
     )
     
     # 조회수 증가 (API에서는 단순 증가, 세션 체크 없음)

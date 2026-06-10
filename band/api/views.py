@@ -645,6 +645,17 @@ def band_member_reject(request, band_id, member_id):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
     member = get_object_or_404(BandMember, id=member_id, band=band, status='pending')
+
+    # 삭제 전에 신청자에게 거절 알림 (delete 후엔 신청취소와 구분 불가)
+    from notifications.models import Notification
+    Notification.objects.create(
+        user=member.user,
+        type=Notification.Type.MEMBERSHIP,
+        title=f"[{band.name}] 가입이 거절되었습니다.",
+        message="",
+        related_band=band,
+        actor=request.user,
+    )
     member.delete()
 
     return Response({'message': '가입이 거절되었습니다.'}, status=status.HTTP_200_OK)

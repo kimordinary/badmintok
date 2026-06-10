@@ -4,6 +4,7 @@ from django.dispatch import receiver
 from band.models import BandComment, BandSchedule, BandScheduleApplication, BandMember, BandPostLike, BandBookmark
 from community.models import Comment as CommunityComment, Post as CommunityPost
 from badmintok.models import Notice
+from accounts.models import Inquiry
 from notifications.models import Notification
 
 
@@ -27,6 +28,7 @@ def send_fcm_on_notification(sender, instance, created, **kwargs):
         "related_band_post_id": instance.related_band_post_id,
         "related_community_post_id": instance.related_community_post_id,
         "related_notice_id": instance.related_notice_id,
+        "related_inquiry_id": instance.related_inquiry_id,
     }
     send_to_user(
         instance.user_id,
@@ -58,6 +60,7 @@ def notify_on_band_comment(sender, instance, created, **kwargs):
             title=f"{author.activity_name}님이 회원님의 댓글에 답글을 남겼습니다.",
             message=comment.content[:100],
             related_band_post=post,
+            related_band=post.band,
             actor=author,
         )
     else:
@@ -70,6 +73,7 @@ def notify_on_band_comment(sender, instance, created, **kwargs):
             title=f"{author.activity_name}님이 회원님의 글에 댓글을 남겼습니다.",
             message=comment.content[:100],
             related_band_post=post,
+            related_band=post.band,
             actor=author,
         )
 
@@ -278,6 +282,7 @@ def notify_on_band_post_like(sender, instance, created, **kwargs):
         title=f"{liker.activity_name}님이 회원님의 글을 좋아합니다.",
         message=post.title[:100],
         related_band_post=post,
+        related_band=post.band,
         actor=liker,
     )
 
@@ -310,3 +315,54 @@ def notify_on_badmintok_post(sender, instance, created, **kwargs):
             related_community_post=instance,
             actor=instance.author,
         )
+
+
+# ─── 문의 답변 ───
+
+@receiver(post_save, sender=Inquiry)
+def notify_on_inquiry_answer(sender, instance, created, **kwargs):
+    """문의에 관리자 답변이 등록되면 문의 작성자에게 알림."""
+    if created:
+        return
+    if instance.status != Inquiry.Status.ANSWERED or not instance.admin_response:
+        return
+    # 같은 문의에 대한 답변 알림이 이미 있으면 중복 발송 방지
+    if Notification.objects.filter(
+        user_id=instance.user_id,
+        type=Notification.Type.INQUIRY,
+        related_inquiry=instance,
+    ).exists():
+        return
+
+    Notification.objects.create(
+        user_id=instance.user_id,
+        type=Notification.Type.INQUIRY,
+        title="문의하신 내용의 답변이 도착했어요",
+        message=instance.title,
+        related_inquiry=instance,
+    )
+
+
+# ─── 좋아요 (동호인톡 게시글) ───
+
+@receiver(post_save, sender=CommunityPost.likes.through)
+def notify_on_community_post_like(sender, instance, created, **kwargs):
+    """동호인톡(커뮤니티) 게시글 좋아요 알림"""
+    if not created:
+        return
+
+    post = instance.post
+    liker = instance.user
+    recipient = post.author
+
+    if recipient == liker:
+        return
+
+    Notification.objects.create(
+        user=recipient,
+        type=Notification.Type.LIKE,
+        title=f"{liker.activity_name}님이 회원님의 글을 좋아합니다.",
+        message=post.title[:100],
+        related_community_post=post,
+        actor=liker,
+    )

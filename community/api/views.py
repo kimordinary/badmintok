@@ -152,12 +152,12 @@ def post_detail(request, slug):
     """동호인톡 게시글 상세 API"""
     now = timezone.now()
     
-    # 기본 필터
+    # 기본 필터 (알림 등에서 숫자 ID로도 조회 가능하도록 slug/id 모두 지원)
     base_filter = Q(
         is_deleted=False,
         source__in=[Post.Source.COMMUNITY, Post.Source.MEMBER_REVIEWS],
-        slug=slug
     )
+    base_filter &= Q(id=int(slug)) if str(slug).isdigit() else Q(slug=slug)
     
     # 로그인 사용자가 작성자가 아니면 공개된 글만
     if not request.user.is_authenticated or not request.user.is_staff:
