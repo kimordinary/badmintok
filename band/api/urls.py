@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import match_views
 
 app_name = 'band_api'
 
@@ -59,4 +60,8 @@ urlpatterns = [
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/', views.band_schedule_application_detail, name='band_schedule_application_detail'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/approve/', views.band_schedule_application_approve, name='band_schedule_application_approve'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/', views.band_schedule_application_reject, name='band_schedule_application_reject'),
+
+    # 대진 (matchmaking)
+    path('match/schedules/<int:schedule_id>/start/', match_views.start_session, name='match_start'),
+    path('match/<int:session_id>/', match_views.session_state, name='match_state'),
 ]
