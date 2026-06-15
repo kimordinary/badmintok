@@ -1,14 +1,22 @@
+from itertools import combinations
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.utils import timezone
 
 from band.models import BandMember, BandSchedule, BandScheduleApplication
-from band.match_models import MatchSession, SessionParticipant, Court
+from band.match_models import MatchSession, SessionParticipant, Court, Match, MatchPlayer
 from band.matchmaking.scoring import level_to_score
-from band.api.match_serializers import serialize_session
+from band.match_state import build_pool, build_pairstats
+from band.matchmaking.engine import recommend_next_game, _discipline_feasible
+from band.matchmaking.types import Mode, Preset, Discipline, NeedOperatorChoice, GamePlan, PRESETS
+from band.matchmaking.cost import best_split
+from band.matchmaking.selection import queue_order
+from band.api.match_serializers import serialize_session, serialize_match, serialize_participant
 
 
 def _is_operator(user, band) -> bool:
@@ -104,18 +112,8 @@ def set_attendance(request, session_id, pid):
         return Response({"detail": "잘못된 출석 상태"}, status=status.HTTP_400_BAD_REQUEST)
     sp.attendance = value
     sp.save(update_fields=["attendance"])
-    from band.api.match_serializers import serialize_participant
     return Response(serialize_participant(sp))
 
-
-from django.utils import timezone
-from band.match_models import Match, MatchPlayer
-from band.match_state import build_pool, build_pairstats
-from band.matchmaking.engine import recommend_next_game
-from band.matchmaking.types import Mode, Preset, Discipline, NeedOperatorChoice, GamePlan
-from band.matchmaking.cost import best_split
-from band.matchmaking.types import PRESETS
-from band.api.match_serializers import serialize_match
 
 _MODE_MAP = {
     "mixed_only": Mode.MIXED_ONLY,
@@ -150,9 +148,6 @@ def _fill_court(session, court, forced_discipline=None):
 
     if forced_discipline is not None:
         # 운영자가 종목을 강제 → 그 종목으로 best_split (윈도우 앞 4명 중 가능한 조합)
-        from itertools import combinations
-        from band.matchmaking.selection import queue_order
-        from band.matchmaking.engine import _discipline_feasible
         weights = PRESETS[_PRESET_MAP[session.preset]]
         order = queue_order(pool)
         for combo in combinations(order[:8], 4):

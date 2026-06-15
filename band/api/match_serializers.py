@@ -20,7 +20,7 @@ def serialize_participant(sp):
 
 def serialize_match(match):
     teams = {1: [], 2: []}
-    for mp in match.players.all():
+    for mp in match.players.select_related("participant__user").all():
         teams[mp.team].append({
             "participant_id": mp.participant_id,
             "name": mp.participant.user.activity_name,
