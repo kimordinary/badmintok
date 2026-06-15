@@ -106,3 +106,126 @@ def set_attendance(request, session_id, pid):
     sp.save(update_fields=["attendance"])
     from band.api.match_serializers import serialize_participant
     return Response(serialize_participant(sp))
+
+
+from django.utils import timezone
+from band.match_models import Match, MatchPlayer
+from band.match_state import build_pool, build_pairstats
+from band.matchmaking.engine import recommend_next_game
+from band.matchmaking.types import Mode, Preset, Discipline, NeedOperatorChoice, GamePlan
+from band.matchmaking.cost import best_split
+from band.matchmaking.types import PRESETS
+from band.api.match_serializers import serialize_match
+
+_MODE_MAP = {
+    "mixed_only": Mode.MIXED_ONLY,
+    "singles_gender": Mode.SINGLES_GENDER,
+    "all": Mode.ALL,
+}
+_PRESET_MAP = {"balanced": Preset.BALANCED, "competitive": Preset.COMPETITIVE}
+_DISC_MAP = {"mixed": Discipline.MIXED, "mens": Discipline.MENS, "womens": Discipline.WOMENS}
+
+
+def _on_court_ids(session):
+    ids = set()
+    for m in Match.objects.filter(session=session, status="playing").prefetch_related("players"):
+        ids.update(mp.participant_id for mp in m.players.all())
+    return ids
+
+
+def _create_match(session, court, plan: GamePlan):
+    match = Match.objects.create(
+        session=session, court=court, discipline=plan.discipline.value)
+    for pid in plan.team1:
+        MatchPlayer.objects.create(match=match, participant_id=pid, team=1)
+    for pid in plan.team2:
+        MatchPlayer.objects.create(match=match, participant_id=pid, team=2)
+    return match
+
+
+def _fill_court(session, court, forced_discipline=None):
+    """반환: (match | None, need: NeedOperatorChoice | None)"""
+    pool = build_pool(session, on_court_participant_ids=_on_court_ids(session))
+    stats = build_pairstats(session)
+
+    if forced_discipline is not None:
+        # 운영자가 종목을 강제 → 그 종목으로 best_split (윈도우 앞 4명 중 가능한 조합)
+        from itertools import combinations
+        from band.matchmaking.selection import queue_order
+        from band.matchmaking.engine import _discipline_feasible
+        weights = PRESETS[_PRESET_MAP[session.preset]]
+        order = queue_order(pool)
+        for combo in combinations(order[:8], 4):
+            if not _discipline_feasible(combo, forced_discipline):
+                continue
+            split = best_split(list(combo), forced_discipline, weights, stats, session.female_adjust)
+            if split:
+                return _create_match(session, court, split), None
+        return None, NeedOperatorChoice(reason="강제 종목 구성 불가", options=())
+
+    result = recommend_next_game(
+        pool, _MODE_MAP[session.discipline_mode], _PRESET_MAP[session.preset],
+        stats, female_adjust=session.female_adjust)
+    if isinstance(result, GamePlan):
+        return _create_match(session, court, result), None
+    if isinstance(result, NeedOperatorChoice):
+        return None, result
+    return None, None  # 인원 부족(None)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def fill_court(request, session_id, index):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    court = get_object_or_404(Court, session=session, index=index)
+    if court.matches.filter(status="playing").exists():
+        return Response({"detail": "이미 진행 중인 경기가 있습니다."}, status=status.HTTP_409_CONFLICT)
+
+    forced = request.data.get("discipline")
+    forced_disc = _DISC_MAP.get(forced) if forced else None
+    with transaction.atomic():
+        match, need = _fill_court(session, court, forced_disc)
+    if need is not None:
+        return Response({"match": None, "needs_choice": True,
+                         "reason": need.reason,
+                         "options": [d.value for d in need.options]})
+    if match is None:
+        return Response({"match": None, "needs_choice": False,
+                         "detail": "대기 인원이 부족합니다."})
+    return Response({"match": serialize_match(match), "needs_choice": False})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def end_court(request, session_id, index):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    court = get_object_or_404(Court, session=session, index=index)
+    match = court.matches.filter(status="playing").prefetch_related("players__participant").first()
+    if match is None:
+        return Response({"detail": "진행 중인 경기가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    now = timezone.now()
+    with transaction.atomic():
+        match.status = "done"
+        match.ended_at = now
+        match.save(update_fields=["status", "ended_at"])
+        disc_field = {"mixed": "games_mixed", "mens": "games_mens", "womens": "games_womens"}[match.discipline]
+        for mp in match.players.all():
+            sp = mp.participant
+            setattr(sp, disc_field, getattr(sp, disc_field) + 1)
+            sp.last_game_ended_at = now
+            sp.save(update_fields=[disc_field, "last_game_ended_at"])
+        new_match, need = _fill_court(session, court)
+
+    if need is not None:
+        return Response({"ended": match.id, "match": None, "needs_choice": True,
+                         "reason": need.reason, "options": [d.value for d in need.options]})
+    return Response({
+        "ended": match.id,
+        "match": serialize_match(new_match) if new_match else None,
+        "needs_choice": False,
+    })

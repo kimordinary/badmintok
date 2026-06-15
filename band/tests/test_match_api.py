@@ -97,3 +97,65 @@ class TogglesTest(MatchApiSetup):
         r2 = self.client.post(f"/api/bands/match/{sid}/participants/{pid}/attendance/",
                               {"attendance": "left"}, format="json")
         self.assertEqual(r2.json()["attendance"], "left")
+
+
+class FlowTest(MatchApiSetup):
+    def _present_session(self, specs):
+        # specs: [(email, level, gender), ...] 모두 present 로 시작
+        for email, level, gender in specs:
+            self._approved_applicant(email, level, gender)
+        sid = self.client.post(
+            f"/api/bands/match/schedules/{self.schedule.id}/start/",
+            {"court_count": 1, "discipline_mode": "all"}, format="json").json()["id"]
+        for p in self.client.get(f"/api/bands/match/{sid}/").json()["participants"]:
+            self.client.post(f"/api/bands/match/{sid}/participants/{p['id']}/attendance/",
+                             {"attendance": "present"}, format="json")
+        return sid
+
+    def test_fill_empty_court_creates_match(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female")])
+        resp = self.client.post(f"/api/bands/match/{sid}/courts/1/fill/", {}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNotNone(resp.json()["match"])
+        # 상태 조회 시 코트1에 진행 경기
+        state = self.client.get(f"/api/bands/match/{sid}/").json()
+        self.assertIsNotNone(state["courts"][0]["match"])
+
+    def test_end_increments_counts_and_refills(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female"),
+            ("e@x.com", "b", "male"), ("f@x.com", "b", "male"),
+            ("g@x.com", "b", "female"), ("h@x.com", "b", "female")])
+        self.client.post(f"/api/bands/match/{sid}/courts/1/fill/", {}, format="json")
+        resp = self.client.post(f"/api/bands/match/{sid}/courts/1/end/", {}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        # 끝난 4명은 카운트 1, 새 경기 생성됨
+        state = self.client.get(f"/api/bands/match/{sid}/").json()
+        played = [p for p in state["participants"] if p["total_games"] == 1]
+        self.assertEqual(len(played), 4)
+        self.assertIsNotNone(state["courts"][0]["match"])
+
+    def test_mixed_only_impossible_returns_needs_choice(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "male"), ("d@x.com", "b", "male")])
+        self.client.post(f"/api/bands/match/{sid}/mode/",
+                         {"discipline_mode": "mixed_only"}, format="json")
+        resp = self.client.post(f"/api/bands/match/{sid}/courts/1/fill/", {}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["needs_choice"])
+        self.assertIn("mens", resp.json()["options"])
+
+    def test_fill_with_forced_discipline(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "male"), ("d@x.com", "b", "male")])
+        self.client.post(f"/api/bands/match/{sid}/mode/",
+                         {"discipline_mode": "mixed_only"}, format="json")
+        resp = self.client.post(f"/api/bands/match/{sid}/courts/1/fill/",
+                                {"discipline": "mens"}, format="json")
+        self.assertIsNotNone(resp.json()["match"])
+        self.assertEqual(resp.json()["match"]["discipline"], "mens")

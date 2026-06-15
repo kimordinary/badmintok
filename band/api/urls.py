@@ -68,4 +68,6 @@ urlpatterns = [
     path('match/<int:session_id>/preset/', match_views.set_preset, name='match_set_preset'),
     path('match/<int:session_id>/participants/<int:pid>/attendance/',
          match_views.set_attendance, name='match_attendance'),
+    path('match/<int:session_id>/courts/<int:index>/fill/', match_views.fill_court, name='match_fill'),
+    path('match/<int:session_id>/courts/<int:index>/end/', match_views.end_court, name='match_end_court'),
 ]
