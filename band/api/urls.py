@@ -64,4 +64,8 @@ urlpatterns = [
     # 대진 (matchmaking)
     path('match/schedules/<int:schedule_id>/start/', match_views.start_session, name='match_start'),
     path('match/<int:session_id>/', match_views.session_state, name='match_state'),
+    path('match/<int:session_id>/mode/', match_views.set_mode, name='match_set_mode'),
+    path('match/<int:session_id>/preset/', match_views.set_preset, name='match_set_preset'),
+    path('match/<int:session_id>/participants/<int:pid>/attendance/',
+         match_views.set_attendance, name='match_attendance'),
 ]

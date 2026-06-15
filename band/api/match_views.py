@@ -62,3 +62,47 @@ def session_state(request, session_id):
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     return Response(serialize_session(session))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def set_mode(request, session_id):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    mode = request.data.get("discipline_mode")
+    if mode not in MatchSession.DisciplineMode.values:
+        return Response({"detail": "잘못된 모드"}, status=status.HTTP_400_BAD_REQUEST)
+    session.discipline_mode = mode
+    session.save(update_fields=["discipline_mode", "updated_at"])
+    return Response(serialize_session(session))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def set_preset(request, session_id):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    preset = request.data.get("preset")
+    if preset not in MatchSession.Preset.values:
+        return Response({"detail": "잘못된 성향"}, status=status.HTTP_400_BAD_REQUEST)
+    session.preset = preset
+    session.save(update_fields=["preset", "updated_at"])
+    return Response(serialize_session(session))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def set_attendance(request, session_id, pid):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    sp = get_object_or_404(SessionParticipant, id=pid, session=session)
+    value = request.data.get("attendance")
+    if value not in SessionParticipant.Attendance.values:
+        return Response({"detail": "잘못된 출석 상태"}, status=status.HTTP_400_BAD_REQUEST)
+    sp.attendance = value
+    sp.save(update_fields=["attendance"])
+    from band.api.match_serializers import serialize_participant
+    return Response(serialize_participant(sp))

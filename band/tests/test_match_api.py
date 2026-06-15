@@ -65,3 +65,35 @@ class StateTest(MatchApiSetup):
         body = resp.json()
         self.assertEqual(len(body["courts"]), 2)
         self.assertIn("queue", body)
+
+
+class TogglesTest(MatchApiSetup):
+    def _session(self):
+        return self.client.post(
+            f"/api/bands/match/schedules/{self.schedule.id}/start/",
+            {"court_count": 2}, format="json").json()
+
+    def test_set_mode(self):
+        sid = self._session()["id"]
+        resp = self.client.post(f"/api/bands/match/{sid}/mode/",
+                                {"discipline_mode": "mixed_only"}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["discipline_mode"], "mixed_only")
+
+    def test_set_preset(self):
+        sid = self._session()["id"]
+        resp = self.client.post(f"/api/bands/match/{sid}/preset/",
+                                {"preset": "competitive"}, format="json")
+        self.assertEqual(resp.json()["preset"], "competitive")
+
+    def test_toggle_attendance_back_and_forth(self):
+        u = self._approved_applicant("m1@x.com", "a", "male")
+        sid = self._session()["id"]
+        pid = next(p["id"] for p in self.client.get(f"/api/bands/match/{sid}/").json()["participants"]
+                   if p["user_id"] == u.id)
+        r1 = self.client.post(f"/api/bands/match/{sid}/participants/{pid}/attendance/",
+                              {"attendance": "present"}, format="json")
+        self.assertEqual(r1.json()["attendance"], "present")
+        r2 = self.client.post(f"/api/bands/match/{sid}/participants/{pid}/attendance/",
+                              {"attendance": "left"}, format="json")
+        self.assertEqual(r2.json()["attendance"], "left")
