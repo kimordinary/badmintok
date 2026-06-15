@@ -224,3 +224,46 @@ def end_court(request, session_id, index):
         "match": serialize_match(new_match) if new_match else None,
         "needs_choice": False,
     })
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def edit_match(request, session_id, match_id):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    match = get_object_or_404(Match, id=match_id, session=session, status="playing")
+
+    swap = request.data.get("swap")          # [out_participant_id, in_participant_id]
+    discipline = request.data.get("discipline")
+
+    with transaction.atomic():
+        if swap:
+            out_id, in_id = swap
+            mp = get_object_or_404(MatchPlayer, match=match, participant_id=out_id)
+            # 들어올 사람은 present 이고 다른 코트에 없어야
+            if in_id in _on_court_ids(session):
+                return Response({"detail": "교체 대상이 이미 경기 중입니다."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            in_sp = get_object_or_404(SessionParticipant, id=in_id, session=session,
+                                      attendance="present")
+            mp.participant = in_sp
+            mp.save(update_fields=["participant"])
+        if discipline in _DISC_MAP:
+            match.discipline = discipline
+            match.save(update_fields=["discipline"])
+
+    match.refresh_from_db()
+    match = Match.objects.prefetch_related("players__participant__user").get(id=match.id)
+    return Response(serialize_match(match))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def end_session(request, session_id):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    session.status = MatchSession.Status.ENDED
+    session.save(update_fields=["status", "updated_at"])
+    return Response({"id": session.id, "status": session.status})

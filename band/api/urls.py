@@ -70,4 +70,6 @@ urlpatterns = [
          match_views.set_attendance, name='match_attendance'),
     path('match/<int:session_id>/courts/<int:index>/fill/', match_views.fill_court, name='match_fill'),
     path('match/<int:session_id>/courts/<int:index>/end/', match_views.end_court, name='match_end_court'),
+    path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
+    path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),
 ]

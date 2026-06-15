@@ -159,3 +159,29 @@ class FlowTest(MatchApiSetup):
                                 {"discipline": "mens"}, format="json")
         self.assertIsNotNone(resp.json()["match"])
         self.assertEqual(resp.json()["match"]["discipline"], "mens")
+
+
+class EditTest(FlowTest):
+    def test_swap_replaces_player_in_match(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female"),
+            ("e@x.com", "b", "male")])
+        match = self.client.post(f"/api/bands/match/{sid}/courts/1/fill/", {}, format="json").json()["match"]
+        in_ids = {p["participant_id"] for p in match["team1"] + match["team2"]}
+        state = self.client.get(f"/api/bands/match/{sid}/").json()
+        bench = next(p["participant_id"] for p in state["queue"]
+                     if p["participant_id"] not in in_ids)
+        leaving = next(iter(in_ids))
+        resp = self.client.patch(f"/api/bands/match/{sid}/matches/{match['id']}/",
+                                 {"swap": [leaving, bench]}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        new_ids = {p["participant_id"] for p in resp.json()["team1"] + resp.json()["team2"]}
+        self.assertIn(bench, new_ids)
+        self.assertNotIn(leaving, new_ids)
+
+    def test_end_session(self):
+        sid = self._present_session([("a@x.com", "b", "male")])
+        resp = self.client.post(f"/api/bands/match/{sid}/end/", {}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["status"], "ended")
