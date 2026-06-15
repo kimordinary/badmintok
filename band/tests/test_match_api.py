@@ -185,3 +185,33 @@ class EditTest(FlowTest):
         resp = self.client.post(f"/api/bands/match/{sid}/end/", {}, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["status"], "ended")
+
+
+class RobustnessTest(FlowTest):
+    def test_swap_wrong_length_returns_400(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female"),
+            ("e@x.com", "b", "male")])
+        match = self.client.post(f"/api/bands/match/{sid}/courts/1/fill/", {}, format="json").json()["match"]
+        resp = self.client.patch(
+            f"/api/bands/match/{sid}/matches/{match['id']}/",
+            {"swap": [1]}, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_ended_session_blocks_end_court(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female")])
+        self.client.post(f"/api/bands/match/{sid}/courts/1/fill/", {}, format="json")
+        self.client.post(f"/api/bands/match/{sid}/end/", {}, format="json")
+        resp = self.client.post(f"/api/bands/match/{sid}/courts/1/end/", {}, format="json")
+        self.assertEqual(resp.status_code, 409)
+
+    def test_ended_session_blocks_fill_court(self):
+        sid = self._present_session([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female")])
+        self.client.post(f"/api/bands/match/{sid}/end/", {}, format="json")
+        resp = self.client.post(f"/api/bands/match/{sid}/courts/1/fill/", {}, format="json")
+        self.assertEqual(resp.status_code, 409)

@@ -174,6 +174,8 @@ def fill_court(request, session_id, index):
     session = get_object_or_404(MatchSession, id=session_id)
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
     court = get_object_or_404(Court, session=session, index=index)
     if court.matches.filter(status="playing").exists():
         return Response({"detail": "이미 진행 중인 경기가 있습니다."}, status=status.HTTP_409_CONFLICT)
@@ -198,6 +200,8 @@ def end_court(request, session_id, index):
     session = get_object_or_404(MatchSession, id=session_id)
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
     court = get_object_or_404(Court, session=session, index=index)
     match = court.matches.filter(status="playing").prefetch_related("players__participant").first()
     if match is None:
@@ -232,10 +236,16 @@ def edit_match(request, session_id, match_id):
     session = get_object_or_404(MatchSession, id=session_id)
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
     match = get_object_or_404(Match, id=match_id, session=session, status="playing")
 
     swap = request.data.get("swap")          # [out_participant_id, in_participant_id]
     discipline = request.data.get("discipline")
+
+    if swap is not None:
+        if not isinstance(swap, (list, tuple)) or len(swap) != 2:
+            return Response({"detail": "swap은 [out_id, in_id] 형식이어야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
         if swap:
