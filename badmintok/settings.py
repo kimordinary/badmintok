@@ -305,6 +305,9 @@ GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost/ac
 YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')
 YOUTUBE_PLAYLIST_ID = os.environ.get('YOUTUBE_PLAYLIST_ID', '')
 
+# 업로더 봇 계정 (대회 삭제 등 봇 전용 API 호출 허용 대상)
+UPLOADER_BOT_EMAIL = os.environ.get('UPLOADER_BOT_EMAIL', 'uploader-bot@badmintok.com')
+
 # CORS 설정
 # 환경에 따라 동적으로 설정
 if DEBUG:

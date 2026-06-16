@@ -1,0 +1,103 @@
+from django.conf import settings
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+from band.models import BandSchedule
+
+
+class MatchSession(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", _("진행중")
+        ENDED = "ended", _("종료")
+
+    class DisciplineMode(models.TextChoices):
+        MIXED_ONLY = "mixed_only", _("혼복만")
+        SINGLES_GENDER = "singles_gender", _("남복·여복만")
+        ALL = "all", _("전부 섞기")
+
+    class Preset(models.TextChoices):
+        BALANCED = "balanced", _("균형파")
+        COMPETITIVE = "competitive", _("박빙파")
+
+    schedule = models.OneToOneField(
+        BandSchedule, on_delete=models.CASCADE,
+        related_name="match_session", verbose_name=_("번개 일정"))
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
+    discipline_mode = models.CharField(
+        max_length=20, choices=DisciplineMode.choices, default=DisciplineMode.ALL)
+    preset = models.CharField(max_length=12, choices=Preset.choices, default=Preset.BALANCED)
+    female_adjust = models.IntegerField(default=1)
+    court_count = models.IntegerField(default=4)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="match_sessions")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("대진 세션")
+        verbose_name_plural = _("대진 세션")
+
+
+class SessionParticipant(models.Model):
+    class Attendance(models.TextChoices):
+        NOT_PRESENT = "not_present", _("미출석")
+        PRESENT = "present", _("참여중")
+        LEFT = "left", _("퇴장")
+
+    session = models.ForeignKey(
+        MatchSession, on_delete=models.CASCADE, related_name="participants")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    attendance = models.CharField(
+        max_length=12, choices=Attendance.choices, default=Attendance.NOT_PRESENT)
+    # 세션 시작 시점 스냅샷 (가입 정보가 바뀌어도 세션 내 일관)
+    base_level = models.IntegerField()  # 1..7
+    gender = models.CharField(max_length=10)  # male | female
+    games_mixed = models.IntegerField(default=0)
+    games_mens = models.IntegerField(default=0)
+    games_womens = models.IntegerField(default=0)
+    last_game_ended_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [["session", "user"]]
+        verbose_name = _("대진 참가자")
+        verbose_name_plural = _("대진 참가자")
+
+
+class Court(models.Model):
+    session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="courts")
+    index = models.IntegerField()  # 1..court_count
+
+    class Meta:
+        unique_together = [["session", "index"]]
+        ordering = ["index"]
+
+
+class Match(models.Model):
+    class Status(models.TextChoices):
+        PLAYING = "playing", _("진행중")
+        DONE = "done", _("종료")
+
+    class Discipline(models.TextChoices):
+        MIXED = "mixed", _("혼복")
+        MENS = "mens", _("남복")
+        WOMENS = "womens", _("여복")
+
+    session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="matches")
+    court = models.ForeignKey(Court, on_delete=models.CASCADE, related_name="matches")
+    discipline = models.CharField(max_length=10, choices=Discipline.choices)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PLAYING)
+    started_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("경기")
+        verbose_name_plural = _("경기")
+
+
+class MatchPlayer(models.Model):
+    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="players")
+    participant = models.ForeignKey(SessionParticipant, on_delete=models.CASCADE)
+    team = models.IntegerField()  # 1 | 2
+
+    class Meta:
+        unique_together = [["match", "participant"]]

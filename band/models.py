@@ -700,3 +700,8 @@ class BandBookmark(models.Model):
     def __str__(self):
         return f"{self.user.activity_name} - {self.band.name}"
 
+
+from band.match_models import (  # noqa: E402,F401
+    MatchSession, SessionParticipant, Court, Match, MatchPlayer,
+)
+

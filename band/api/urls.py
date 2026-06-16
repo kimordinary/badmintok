@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import match_views
 
 app_name = 'band_api'
 
@@ -59,4 +60,16 @@ urlpatterns = [
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/', views.band_schedule_application_detail, name='band_schedule_application_detail'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/approve/', views.band_schedule_application_approve, name='band_schedule_application_approve'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/', views.band_schedule_application_reject, name='band_schedule_application_reject'),
+
+    # 대진 (matchmaking)
+    path('match/schedules/<int:schedule_id>/start/', match_views.start_session, name='match_start'),
+    path('match/<int:session_id>/', match_views.session_state, name='match_state'),
+    path('match/<int:session_id>/mode/', match_views.set_mode, name='match_set_mode'),
+    path('match/<int:session_id>/preset/', match_views.set_preset, name='match_set_preset'),
+    path('match/<int:session_id>/participants/<int:pid>/attendance/',
+         match_views.set_attendance, name='match_attendance'),
+    path('match/<int:session_id>/courts/<int:index>/fill/', match_views.fill_court, name='match_fill'),
+    path('match/<int:session_id>/courts/<int:index>/end/', match_views.end_court, name='match_end_court'),
+    path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
+    path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),
 ]
