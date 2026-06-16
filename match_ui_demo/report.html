@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>번개 대진 시뮬레이션 리포트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+:root{--ink:#11161f;--ink2:#475063;--muted:#8b94a6;--line:#e3e7ee;--bg:#f3f5f8;--surface:#fff;--brand:#12a565;--brand-tint:#e7f6ee;--mix:#8b5cf6;--men:#3b82f6;--women:#ec4899;--warn:#e0871b;--warn-tint:#fdf1de;}
+*{box-sizing:border-box}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:40px 16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:920px;margin:0 auto;}
+h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:0 0 6px;}
+.date{color:var(--muted);font-weight:600;font-size:14px;margin-bottom:24px;}
+.lead{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;font-size:15px;color:var(--ink2);}
+h2{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:34px 0 12px;padding-top:8px;}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14px;box-shadow:0 1px 3px rgba(17,22,31,.05);}
+th,td{padding:10px 12px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap;}
+th{background:#fafbfc;font-weight:800;color:var(--ink2);font-size:12.5px;}
+td:first-child,th:first-child{text-align:left;}
+tr:last-child td{border-bottom:none;}
+tr.best{background:var(--brand-tint);}
+tr.bad{background:var(--warn-tint);color:#9a6a1a;}
+.cond td:first-child{color:var(--muted);font-weight:700;width:160px;}
+ul{padding-left:20px;}li{margin:7px 0;font-size:15px;}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:800;color:#fff;}
+.warn-box{background:var(--warn-tint);border:1px solid #f3d9a8;border-radius:12px;padding:12px 16px;font-size:14px;color:#8a5d12;font-weight:600;margin:12px 0;}
+.sec-m{color:var(--men);font-weight:800;} .sec-w{color:var(--women);font-weight:800;}
+.grp{background:#fafbfc;font-weight:800;color:var(--ink2);text-align:left;}
+.kpi{font-weight:800;}
+footer{color:var(--muted);font-size:13px;margin-top:30px;text-align:center;}
+</style></head><body><div class="wrap">
+<h1>🏸 번개 자동 대진 — 시뮬레이션 품질 검증 리포트</h1>
+<div class="date">작성일 2026-06-15 · 실제 매칭 로직(core.jsx)을 끝까지 시뮬레이션</div>
+<div class="lead">한 세션을 끝까지 돌려 <b>출전 균등 + 매칭 품질(실력 균형·다양성)</b>을 측정했습니다. 4개 운영 설정을 동일 난수로 공정 비교합니다.</div>
+<h2>1. 시뮬레이션 조건</h2><table class="cond"><tbody>
+<tr><td>참가자</td><td style="text-align:left">실제 명단 51명 (남 35 · 여 16)</td></tr>
+<tr><td>코트 수</td><td style="text-align:left">8면</td></tr>
+<tr><td>세션 길이</td><td style="text-align:left">3시간(180분)</td></tr>
+<tr><td>게임 시간</td><td style="text-align:left">13~17분 랜덤 (코트별 독립)</td></tr>
+<tr><td>진행 방식</td><td style="text-align:left">흐름형 — 코트가 비면 그 순간 다음 4명 자동 추천</td></tr>
+<tr><td>출석</td><td style="text-align:left">전원 참여중·풀타임 (이상 조건)</td></tr>
+<tr><td>난수</td><td style="text-align:left">4개 설정 동일 시드 → 공정 비교</td></tr>
+</tbody></table>
+<div class="warn-box">⚠️ "전원 풀타임 출석"은 이상적 가정입니다. 실제 지각·조퇴·노쇼는 아직 미반영(다음 과제).</div>
+<h2>2. 종합 결과</h2><table><thead><tr>
+<th>설정</th>
+<th>총 게임</th>
+<th>1인 출전</th>
+<th>실력차 평균</th>
+<th>박빙률<br>(±1내)</th>
+<th>완벽박빙</th>
+<th>첫 파트너</th>
+<th>첫 상대</th>
+<th>최다동반</th>
+</tr></thead><tbody>
+<tr class="best"><td>모두 · 밸런스 ⭐</td><td class="kpi">98</td><td class="kpi">7.7 (7~8)</td><td class="kpi">0.10</td><td class="kpi">100%</td><td class="kpi">90%</td><td class="kpi">94%</td><td class="kpi">80%</td><td class="kpi">2회</td></tr>
+<tr><td>모두 · 동일급수</td><td class="kpi">98</td><td class="kpi">7.7 (7~8)</td><td class="kpi">0.01</td><td class="kpi">100%</td><td class="kpi">99%</td><td class="kpi">87%</td><td class="kpi">72%</td><td class="kpi">3회</td></tr>
+<tr><td>남복/여복 · 밸런스</td><td class="kpi">98</td><td class="kpi">7.7 (7~8)</td><td class="kpi">0.33</td><td class="kpi">99%</td><td class="kpi">68%</td><td class="kpi">86%</td><td class="kpi">66%</td><td class="kpi">3회</td></tr>
+<tr class="bad"><td>혼복만 · 밸런스 ⚠️</td><td class="kpi">11</td><td class="kpi">0.9 (0~1)</td><td class="kpi">—</td><td class="kpi">—</td><td class="kpi">—</td><td class="kpi">—</td><td class="kpi">—</td><td class="kpi">—</td></tr>
+</tbody></table>
+<h2>3. 해석</h2><ul>
+<li><b>출전 균등</b> — 실용 모드 전부 1인 7~8게임(±1). "경기수 적은 순" 정렬만으로 공정성 견고. ✅</li>
+<li><b>실력 균형</b> — 평균 실력차 ≤0.33점, 거의 모든 경기가 ±1급수 이내 박빙. ✅</li>
+<li><b>밸런스 ↔ 동일급수 트레이드오프</b> — 동일급수는 균형을 거의 완벽(0.01)하게 맞추는 대신 다양성 양보(첫 파트너 94%→87%). 밸런스는 다양성이 더 높음. <b>설계 의도대로 작동.</b></li>
+<li><b>남복/여복</b> — 성별로 풀이 갈려 후보가 적어 실력차가 다소 큼(0.33)이지만 박빙률 99%.</li>
+<li><b>혼복만은 비실용</b> — 남35:여16에서 여자가 8코트를 채우는 순간 소진되어 11게임에서 멈춤(1인 0.9게임). 현장에선 "혼복 불가" 알림 반복. → 이 인원엔 <b>모두</b> 또는 <b>남복/여복</b> 권장.</li>
+</ul>
+<div class="lead" style="margin-top:14px"><b>결론.</b> 이상적 조건에서 균등·균형·다양성이 동시에 잘 충족. 권장 기본값은 <span class="tag" style="background:var(--brand)">모두 · 밸런스</span> &nbsp;(균형이 더 중요하면 동일급수로 전환). 남은 과제: <b>출석 변동(지각·조퇴) 반영</b>.</div>
+<h2>부록. 개인별 출전 카운트 <span style="font-size:13px;color:var(--muted);font-weight:600">(모두·밸런스 기준)</span></h2>
+<table><thead><tr><th>이름</th><th>급수</th><th>성</th><th>혼복</th><th>남복</th><th>여복</th><th>계</th></tr></thead><tbody>
+<tr><td class="grp" colspan="7">여자</td></tr>
+<tr><td>이하경</td><td>자강</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>김교린</td><td>S</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>유리연</td><td>S</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>최은지</td><td>S</td><td><span class="sec-w">여</span></td><td>7</td><td>0</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>최정원</td><td>S</td><td><span class="sec-w">여</span></td><td>7</td><td>0</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>황세빈</td><td>S</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>김재옥</td><td>A</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>양지원</td><td>A</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>김수빈</td><td>B</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>전혜지</td><td>B</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>정유림</td><td>B</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>정진현</td><td>B</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>강수진</td><td>D</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>박아현</td><td>D</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>박지현</td><td>D</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>신예지</td><td>D</td><td><span class="sec-w">여</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td class="grp" colspan="7">남자</td></tr>
+<tr><td>고민재</td><td>자강</td><td><span class="sec-m">남</span></td><td>3</td><td>4</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>김락원</td><td>S</td><td><span class="sec-m">남</span></td><td>3</td><td>4</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>송창현</td><td>S</td><td><span class="sec-m">남</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>이현우</td><td>S</td><td><span class="sec-m">남</span></td><td>5</td><td>3</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>최문태</td><td>S</td><td><span class="sec-m">남</span></td><td>3</td><td>4</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>구현명</td><td>A</td><td><span class="sec-m">남</span></td><td>6</td><td>2</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>권혁준</td><td>A</td><td><span class="sec-m">남</span></td><td>6</td><td>2</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>김재혁</td><td>A</td><td><span class="sec-m">남</span></td><td>5</td><td>2</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>김정규</td><td>A</td><td><span class="sec-m">남</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>김준완</td><td>A</td><td><span class="sec-m">남</span></td><td>6</td><td>2</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>김태현</td><td>A</td><td><span class="sec-m">남</span></td><td>4</td><td>3</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>문정호</td><td>A</td><td><span class="sec-m">남</span></td><td>2</td><td>5</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>서정호</td><td>A</td><td><span class="sec-m">남</span></td><td>5</td><td>3</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>신경진</td><td>A</td><td><span class="sec-m">남</span></td><td>2</td><td>5</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>유동호</td><td>A</td><td><span class="sec-m">남</span></td><td>3</td><td>4</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>정수호</td><td>A</td><td><span class="sec-m">남</span></td><td>4</td><td>4</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>조진우</td><td>A</td><td><span class="sec-m">남</span></td><td>7</td><td>1</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>주완호</td><td>A</td><td><span class="sec-m">남</span></td><td>7</td><td>1</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>최정민</td><td>A</td><td><span class="sec-m">남</span></td><td>3</td><td>4</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>허제식</td><td>A</td><td><span class="sec-m">남</span></td><td>6</td><td>2</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>구본진</td><td>B</td><td><span class="sec-m">남</span></td><td>6</td><td>1</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>김영동</td><td>B</td><td><span class="sec-m">남</span></td><td>4</td><td>3</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>이일금</td><td>B</td><td><span class="sec-m">남</span></td><td>5</td><td>3</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>이임규</td><td>B</td><td><span class="sec-m">남</span></td><td>7</td><td>1</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>이재복</td><td>B</td><td><span class="sec-m">남</span></td><td>7</td><td>1</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>이채우</td><td>B</td><td><span class="sec-m">남</span></td><td>8</td><td>0</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>정용준</td><td>B</td><td><span class="sec-m">남</span></td><td>5</td><td>3</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>조우성</td><td>B</td><td><span class="sec-m">남</span></td><td>4</td><td>3</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>조장휘</td><td>B</td><td><span class="sec-m">남</span></td><td>1</td><td>6</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>김이준</td><td>C</td><td><span class="sec-m">남</span></td><td>5</td><td>2</td><td>0</td><td class='kpi'>7</td></tr>
+<tr><td>김태현</td><td>D</td><td><span class="sec-m">남</span></td><td>6</td><td>2</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>오승현</td><td>D</td><td><span class="sec-m">남</span></td><td>6</td><td>2</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>최미르</td><td>D</td><td><span class="sec-m">남</span></td><td>6</td><td>2</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>한예준</td><td>D</td><td><span class="sec-m">남</span></td><td>5</td><td>3</td><td>0</td><td class='kpi'>8</td></tr>
+<tr><td>박성민</td><td>왕초심</td><td><span class="sec-m">남</span></td><td>7</td><td>1</td><td>0</td><td class='kpi'>8</td></tr>
+</tbody></table>
+<footer>김태현 2명(급수 A·D)은 동명이인으로 각각 별도 집계 · 8코트/3시간/13~17분 랜덤 기준</footer>
+</div></body></html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>종목 비율 손잡이 — 프로토타입 검증</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+:root{--ink:#11161f;--ink2:#475063;--muted:#8b94a6;--line:#e3e7ee;--bg:#f3f5f8;--surface:#fff;--brand:#12a565;--brand-tint:#e7f6ee;--mix:#8b5cf6;--men:#3b82f6;--women:#ec4899;}
+*{box-sizing:border-box}body{font-family:'Pretendard Variable',Pretendard,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:40px 16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto}h1{font-size:25px;font-weight:800;letter-spacing:-.03em;margin:0 0 6px}
+.date{color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px}
+.lead{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;font-size:15px;color:var(--ink2)}
+h2{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:32px 0 12px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14px;box-shadow:0 1px 3px rgba(17,22,31,.05)}
+th,td{padding:11px 12px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}th{background:#fafbfc;font-weight:800;color:var(--ink2);font-size:12.5px}td:first-child,th:first-child{text-align:left}tr:last-child td{border-bottom:none}.kpi{font-weight:800}
+tr.base{color:var(--muted)} tr.hi{background:var(--brand-tint)}
+ul{padding-left:20px}li{margin:8px 0;font-size:15px}
+.ratio{display:inline-flex;height:18px;border-radius:5px;overflow:hidden;width:150px;vertical-align:middle;border:1px solid var(--line)}
+.rx{background:var(--mix)}.rm{background:var(--men)}.rw{background:var(--women)}
+.ok{background:#e7f6ee;border:1px solid #b6e3cb;border-radius:12px;padding:12px 16px;font-size:14px;color:#0c7f4e;font-weight:600;margin:14px 0}
+.legend{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin:0 3px 0 10px}
+footer{color:var(--muted);font-size:13px;margin-top:28px;text-align:center}
+</style></head><body><div class="wrap">
+<h1>🎚️ 종목 비율 손잡이 — 프로토타입 검증</h1>
+<div class="date">작성일 2026-06-15 · "모두" 모드에서 혼복/남복/여복 비율을 부드럽게 조절</div>
+<div class="lead"><b>문제:</b> 모두 모드는 여자가 소수라 자연히 혼복으로 쏠려, 여복이 거의 안 생긴다(여자 절반이 여복 0회). <b>해법:</b> 운영자가 대략의 목표 비율만 정하면, 시스템이 <b>뒤처진 종목에 선택 보너스</b>를 줘 그쪽으로 부드럽게 당긴다(강제 X). 같은 모수·난수로 손잡이 단계별 효과를 측정했다.</div>
+<div class="legend">측정 조건: 현실 ABCD 모수 51명(남 30·여 21) · 8코트 · 3시간 · 게임 13~17분 랜덤 · preset 밸런스</div>
+<h2>결과 — 손잡이 단계별</h2>
+<table><thead><tr><th>손잡이</th><th>혼 : 남 : 여 (실제)</th><th>여복<br>게임</th><th>여복 뛴<br>여자</th><th>출전<br>(1인)</th><th>실력차</th><th>박빙률</th><th>첫 파트너</th></tr></thead><tbody>
+<tr class="base"><td>baseline(손잡이 없음)</td><td style="text-align:left"><span class="ratio"><span class="rx" style="width:83%"></span><span class="rm" style="width:13%"></span><span class="rw" style="width:4%"></span></span> 83:13:4</td><td class="kpi">4</td><td class="kpi">12/21</td><td class="kpi">7.7</td><td class="kpi">0.09</td><td class="kpi">100%</td><td class="kpi">97%</td></tr>
+<tr><td>혼복 위주</td><td style="text-align:left"><span class="ratio"><span class="rx" style="width:81%"></span><span class="rm" style="width:14%"></span><span class="rw" style="width:5%"></span></span> 81:14:5</td><td class="kpi">5</td><td class="kpi">15/21</td><td class="kpi">7.7</td><td class="kpi">0.04</td><td class="kpi">100%</td><td class="kpi">95%</td></tr>
+<tr><td>골고루</td><td style="text-align:left"><span class="ratio"><span class="rx" style="width:64%"></span><span class="rm" style="width:23%"></span><span class="rw" style="width:12%"></span></span> 64:23:12</td><td class="kpi">12</td><td class="kpi">19/21</td><td class="kpi">7.7</td><td class="kpi">0.10</td><td class="kpi">100%</td><td class="kpi">97%</td></tr>
+<tr class="hi"><td>남녀복 많이</td><td style="text-align:left"><span class="ratio"><span class="rx" style="width:56%"></span><span class="rm" style="width:28%"></span><span class="rw" style="width:16%"></span></span> 56:28:16</td><td class="kpi">16</td><td class="kpi">21/21</td><td class="kpi">7.7</td><td class="kpi">0.08</td><td class="kpi">100%</td><td class="kpi">97%</td></tr>
+</tbody></table>
+<div class="legend"><span class="sw" style="background:var(--mix)"></span>혼복<span class="sw" style="background:var(--men)"></span>남복<span class="sw" style="background:var(--women)"></span>여복</div>
+<h2>해석</h2><ul>
+<li><b>손잡이가 분명히 작동</b> — 여복이 baseline 4게임 → "남녀복 많이" 16게임으로 4배. 여복 뛴 여자도 12명 → <b>21명 전원</b>.</li>
+<li><b>"골고루"만 줘도 충분</b> — 여복 12게임, 여자 19/21명이 여복 경험. 분위기 환기엔 이 정도가 적당.</li>
+<li><b>품질은 그대로</b> — 어느 단계든 출전 7~8 균등 · 박빙률 100% · 다양성 95~97% 유지. <b>비율만 바뀌고 매칭 품질 손상 없음.</b></li>
+<li><b>목표를 100% 강제하진 않음</b> — 목표 34:33:33을 줘도 실제는 56:28:16. 여자가 41%뿐이라 여복을 33%까지 못 끌어올린다. 이게 의도한 <b>soft(가능한 만큼만 당김)</b> 동작. 무리하게 코트를 놀리거나 박빙을 깨지 않는다.</li>
+<li>운영자 UI는 <b>3단계 토글(혼복 위주 · 골고루 · 남녀복 많이)</b>이면 충분. 지금 종목 모드 토글 옆에 하나 더.</li>
+</ul>
+<div class="ok">✅ 결론: "혼복 쏠림"을 운영자가 손잡이 하나로 부드럽게 조절 가능함을 확인. 출전·균형·다양성을 해치지 않고 종목 비율만 의도대로 이동. (core.jsx에 옵션으로 구현됨 — UI 토글만 붙이면 실제 적용)</div>
+<footer>관련 리포트: <a href="/report-realistic.html">현실 모수 테스트</a> · <a href="/report.html">실제 51명 테스트</a></footer>
+</div></body></html>

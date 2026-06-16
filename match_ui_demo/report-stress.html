@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출시 전 종합 스트레스 테스트 — 번개 대진</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+:root{--ink:#11161f;--ink2:#475063;--muted:#8b94a6;--line:#e3e7ee;--bg:#f3f5f8;--surface:#fff;--brand:#12a565;--brand-tint:#e7f6ee;--warn:#e0871b;--warn-tint:#fdf1de;--danger:#e5484d;--danger-tint:#fdecec}
+*{box-sizing:border-box}body{font-family:'Pretendard Variable',Pretendard,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:40px 16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto}h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:0 0 6px}
+.date{color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px}
+.lead{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px;font-size:15px;color:var(--ink2)}
+h2{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:32px 0 8px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13.5px;box-shadow:0 1px 3px rgba(17,22,31,.05);margin-bottom:6px}
+th,td{padding:9px 11px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}th{background:#fafbfc;font-weight:800;color:var(--ink2);font-size:12px}td:first-child,th:first-child{text-align:left}tr:last-child td{border-bottom:none}.kpi{font-weight:800}
+tr.warn{background:var(--warn-tint)}tr.bad{background:var(--danger-tint)}
+ul{padding-left:20px}li{margin:7px 0;font-size:14.5px}
+.ok{background:#e7f6ee;border:1px solid #b6e3cb;border-radius:12px;padding:12px 16px;font-size:14px;color:#0c7f4e;font-weight:600;margin:12px 0}
+.bad-box{background:var(--danger-tint);border:1px solid #f3b9bb;border-radius:12px;padding:12px 16px;font-size:14px;color:#a3282c;font-weight:600;margin:12px 0}
+.badge{display:inline-block;padding:2px 9px;border-radius:7px;font-size:12px;font-weight:800;color:#fff}
+footer{color:var(--muted);font-size:13px;margin-top:28px;text-align:center}
+a{color:var(--brand)}
+</style></head><body><div class="wrap">
+<h1>🧪 출시 전 종합 스트레스 테스트</h1>
+<div class="date">작성일 2026-06-15 · 자동 검증 (사람·실기기 제외, 알고리즘+백엔드 한계까지)</div>
+<div class="lead">합성 모수로 <b>환경 매트릭스 150조합(급수분포 5 × 성비 6 × 벤치 5, 시드 3개 평균 = 450런)</b> + 혼복 생존곡선 + 극단 엣지 + <b>실서버(Django API) 풀세션 E2E</b>까지 한 번에 돌렸다. 조건: 3시간·게임 13~17분.</div>
+<h2>1. 환경 매트릭스 (모두·밸런스)</h2>
+<div class="ok">✅ <b>150조합 전부 통과</b> — 박빙률 ≥90%, 출전 편차 ≤±3, 첫 파트너 ≥70% 기준에서 문제 조합 <b>0개</b>. 급수분포·성비·벤치가 어떻게 조합돼도 핵심 품질이 유지된다.</div>
+<div class="sub">차원별 평균 영향 (한 차원만 보고 나머지 평균):</div>
+<table><thead><tr><th>벤치(대기)</th><th>박빙률</th><th>첫 파트너(다양성)</th><th>실력차</th></tr></thead><tbody>
+<tr><td>벤치 4명</td><td class='kpi'>100%</td><td class='kpi'>92%</td><td class='kpi'>0.11</td></tr>
+<tr><td>벤치 8명</td><td class='kpi'>100%</td><td class='kpi'>93%</td><td class='kpi'>0.10</td></tr>
+<tr><td>벤치 12명</td><td class='kpi'>100%</td><td class='kpi'>94%</td><td class='kpi'>0.11</td></tr>
+<tr><td>벤치 16명</td><td class='kpi'>100%</td><td class='kpi'>95%</td><td class='kpi'>0.09</td></tr>
+<tr><td>벤치 20명</td><td class='kpi'>100%</td><td class='kpi'>96%</td><td class='kpi'>0.10</td></tr>
+</tbody></table>
+<table><thead><tr><th>여자 비율</th><th>박빙률</th><th>첫 파트너</th><th>여복 게임(평균)</th></tr></thead><tbody>
+<tr><td>여 10%</td><td class='kpi'>100%</td><td class='kpi'>94%</td><td class='kpi'>0</td></tr>
+<tr><td>여 20%</td><td class='kpi'>100%</td><td class='kpi'>94%</td><td class='kpi'>0</td></tr>
+<tr><td>여 30%</td><td class='kpi'>100%</td><td class='kpi'>94%</td><td class='kpi'>0</td></tr>
+<tr><td>여 40%</td><td class='kpi'>100%</td><td class='kpi'>94%</td><td class='kpi'>1</td></tr>
+<tr><td>여 50%</td><td class='kpi'>100%</td><td class='kpi'>94%</td><td class='kpi'>3</td></tr>
+<tr><td>여 60%</td><td class='kpi'>100%</td><td class='kpi'>94%</td><td class='kpi'>8</td></tr>
+</tbody></table>
+<table><thead><tr><th>급수 분포</th><th>박빙률</th><th>실력차</th><th>첫 파트너</th></tr></thead><tbody>
+<tr><td>ABCD중심</td><td class='kpi'>100%</td><td class='kpi'>0.08</td><td class='kpi'>94%</td></tr>
+<tr><td>균등</td><td class='kpi'>100%</td><td class='kpi'>0.12</td><td class='kpi'>94%</td></tr>
+<tr><td>양극화</td><td class='kpi'>100%</td><td class='kpi'>0.16</td><td class='kpi'>94%</td></tr>
+<tr><td>초심다수</td><td class='kpi'>100%</td><td class='kpi'>0.08</td><td class='kpi'>95%</td></tr>
+<tr><td>고수다수</td><td class='kpi'>100%</td><td class='kpi'>0.07</td><td class='kpi'>94%</td></tr>
+</tbody></table>
+<h2>2. 혼복 생존 곡선 (성비 임계점)</h2>
+<div class="sub">혼복만 모드 · 36명/6코트 · 모두 모드라면 76게임이 정상</div>
+<table><thead><tr><th>여자 비율</th><th>혼복만 게임수</th><th>1인 출전</th><th>판정</th></tr></thead><tbody>
+<tr class="bad"><td>여 5%</td><td class='kpi'>0</td><td class='kpi'>0</td><td>붕괴</td></tr>
+<tr class="bad"><td>여 10%</td><td class='kpi'>1</td><td class='kpi'>0.1</td><td>붕괴</td></tr>
+<tr class="bad"><td>여 15%</td><td class='kpi'>1</td><td class='kpi'>0.1</td><td>붕괴</td></tr>
+<tr class="bad"><td>여 20%</td><td class='kpi'>4</td><td class='kpi'>0.4</td><td>붕괴</td></tr>
+<tr class="warn"><td>여 25%</td><td class='kpi'>40</td><td class='kpi'>4.4</td><td>부족</td></tr>
+<tr><td>여 30%</td><td class='kpi'>73</td><td class='kpi'>8.1</td><td>정상</td></tr>
+<tr><td>여 35%</td><td class='kpi'>70</td><td class='kpi'>7.8</td><td>정상</td></tr>
+<tr><td>여 40%</td><td class='kpi'>75</td><td class='kpi'>8.3</td><td>정상</td></tr>
+<tr><td>여 45%</td><td class='kpi'>75</td><td class='kpi'>8.3</td><td>정상</td></tr>
+<tr><td>여 50%</td><td class='kpi'>75</td><td class='kpi'>8.3</td><td>정상</td></tr>
+</tbody></table>
+<div class="bad-box">⚠️ <b>혼복만 임계점 = 여자 25%.</b> 여 20% 이하면 혼복이 거의 안 돌아감(여자가 코트에 다 소진). 30%↑면 정상. → 성비가 한쪽으로 쏠리면 혼복만 대신 <b>모두/남복여복</b>을 써야 함(프로그램이 통제 불가, 현실 제약).</div>
+<h2>3. 극단 엣지 케이스</h2>
+<table><thead><tr><th>시나리오</th><th>게임</th><th>출전</th><th>박빙률</th><th>첫파트너</th><th>멈춤(stall)</th></tr></thead><tbody>
+<tr><td>여 0% (전원 남)</td><td class='kpi'>76</td><td class='kpi'>8~9</td><td class='kpi'>100%</td><td class='kpi'>95%</td><td class='kpi'>0분</td></tr>
+<tr><td>여 100% (전원 여)</td><td class='kpi'>76</td><td class='kpi'>8~9</td><td class='kpi'>100%</td><td class='kpi'>95%</td><td class='kpi'>0분</td></tr>
+<tr><td>단일급수 (전원 B)</td><td class='kpi'>76</td><td class='kpi'>8~9</td><td class='kpi'>100%</td><td class='kpi'>96%</td><td class='kpi'>0분</td></tr>
+<tr class="bad"><td>벤치 0 (24명/6코트)</td><td class='kpi'>76</td><td class='kpi'>12~13</td><td class='kpi'>72%</td><td class='kpi'>18%</td><td class='kpi'>0분</td></tr>
+<tr><td>벤치 2 (26명/6코트)</td><td class='kpi'>76</td><td class='kpi'>11~13</td><td class='kpi'>100%</td><td class='kpi'>88%</td><td class='kpi'>0분</td></tr>
+<tr class="bad"><td>양극화+여20% (혼복)</td><td class='kpi'>4</td><td class='kpi'>0~1</td><td class='kpi'>100%</td><td class='kpi'>100%</td><td class='kpi'>1026분</td></tr>
+</tbody></table>
+<div class="bad-box">🔴 <b>진짜 한계 = 벤치 0~1.</b> 인원이 코트를 딱 채우면(예: 24명/6코트) 대기 인원이 없어 매번 같은 사람들 → 박빙 72%·다양성 18%로 붕괴. <b>벤치 2명만 있어도 회복</b>(박빙 100%·다양성 88%). → 인원/코트는 <b>벤치 최소 2~4명</b> 확보 권장. (전원동성·단일급수는 "모두" 모드가 잘 처리함)</div>
+<h2>4. 실서버(Django API) 풀세션 E2E</h2>
+<div class="ok">✅ <b>통과.</b> 실제 백엔드 API로 20명/4코트 세션을 시작→출석→코트채움→<b>경기종료 30라운드 자동반복</b>까지 돌려, 카운트 균등(편차 ≤3)·매칭 유효(4명 중복 없음)·다양성을 검증. 백엔드 전체 <b>46개 테스트 OK</b>. (시뮬은 core.jsx, 이건 진짜 서버 경로)</div>
+<h2>종합 결론</h2><ul>
+<li><b>알고리즘은 출시해도 될 만큼 견고</b> — 급수분포·성비·벤치 어떤 조합(150)에서도 균등·박빙 유지. 실서버 경로도 E2E 통과.</li>
+<li><b>한계 1 — 벤치 0~1</b>: 대기 인원이 없으면 다양성·박빙 붕괴. 운영 가이드로 "벤치 ≥2~4명" 권장하면 회피.</li>
+<li><b>한계 2 — 혼복만 + 여 25% 미만</b>: 성비 쏠리면 혼복 불가. 현실 제약이라 "모두/남복여복"으로 우회(프로그램은 알림으로 대응).</li>
+<li><b>이 둘 다 알고리즘 버그가 아니라 "물리적 한계"</b> — 인원/성비가 근본적으로 부족한 경우. 운영 가이드로 커버 가능.</li>
+<li><b>남은 출시 리스크는 알고리즘 밖</b> — 실기기 UI·실제 사람 행동·파일럿 운영. 이건 자동 검증 불가, 실제 1회 운영 필요.</li>
+</ul>
+<div class="ok">🚀 결론: <b>알고리즘·백엔드 = 출시 가닥 잡힘.</b> 운영 가이드(벤치 ≥2, 성비 따라 종목 선택)만 문서화하고, <b>실제 파일럿 1회</b>면 제품 출시 판단 가능.</div>
+<footer>관련: <a href="/report-matrix.html">인원/코트 매트릭스</a> · <a href="/report-realistic.html">현실 모수</a> · <a href="/report-ratio.html">종목 비율 손잡이</a></footer>
+</div></body></html>
