@@ -1,13 +1,18 @@
+import logging
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes, parser_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser, BasePermission
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.throttling import UserRateThrottle
+from django.conf import settings
 from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
 from datetime import date, timedelta
+
+logger = logging.getLogger(__name__)
 
 from contests.models import Contest, ContestCategory, ContestSchedule, ContestImage, ContestPrize
 from .serializers import (
@@ -21,6 +26,39 @@ from .serializers import (
 class ContestWriteThrottle(UserRateThrottle):
     """업로더 전용 throttle (시간당 100 요청)"""
     scope = 'contest_write'
+
+
+class IsUploaderBot(BasePermission):
+    """업로더 봇 계정 또는 슈퍼유저만 허용 (대회 삭제 등 파괴적 작업 전용)."""
+    message = '대회 삭제 권한이 없습니다.'
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+        if user.is_superuser:
+            return True
+        bot_email = getattr(settings, 'UPLOADER_BOT_EMAIL', '')
+        return bool(bot_email) and (user.email or '').lower() == bot_email.lower()
+
+
+def _perform_contest_delete(request, contest):
+    """대회 1건 삭제. 하위 데이터는 CASCADE로 자동 삭제되고, 물리 파일은 직접 정리한다."""
+    slug, title, contest_id = contest.slug, contest.title, contest.id
+    logger.info(
+        "[contest_delete] requested_by=%s id=%s slug=%s title=%s",
+        getattr(request.user, 'email', None) or request.user.pk, contest_id, slug, title,
+    )
+
+    # 물리 파일 정리 (DB 행은 on_delete=CASCADE로 함께 삭제됨)
+    for image in contest.images.all():
+        if image.image:
+            image.image.delete(save=False)
+    if contest.pdf_file:
+        contest.pdf_file.delete(save=False)
+
+    contest.delete()
+    return Response({'ok': True, 'deleted': True, 'slug': slug}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -160,10 +198,17 @@ def contest_list(request):
     }, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'DELETE'])
 @permission_classes([AllowAny])
 def contest_detail(request, slug):
-    """대회 상세 API"""
+    """대회 상세 API (GET). DELETE는 업로더 봇/슈퍼유저만 삭제 가능."""
+    if request.method == 'DELETE':
+        permission = IsUploaderBot()
+        if not permission.has_permission(request, None):
+            return Response({'detail': permission.message}, status=status.HTTP_403_FORBIDDEN)
+        contest = get_object_or_404(Contest, slug=slug)
+        return _perform_contest_delete(request, contest)
+
     contest = get_object_or_404(
         Contest.objects.select_related('category', 'sponsor').prefetch_related(
             Prefetch('images', queryset=ContestImage.objects.order_by('order')),
@@ -318,6 +363,15 @@ def contest_pdf_upload(request, slug):
     contest.save(update_fields=['pdf_file', 'updated_at'])
     pdf_url = request.build_absolute_uri(contest.pdf_file.url) if contest.pdf_file else None
     return Response({'slug': contest.slug, 'pdf_url': pdf_url}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsUploaderBot])
+@throttle_classes([ContestWriteThrottle])
+def contest_delete(request, slug):
+    """대회 삭제 (업로더 봇/슈퍼유저 전용). 중복 대회 자동 정리용."""
+    contest = get_object_or_404(Contest, slug=slug)
+    return _perform_contest_delete(request, contest)
 
 
 @api_view(['POST'])

@@ -23,6 +23,7 @@ urlpatterns = [
     # slug에 한글이 포함되므로 str 사용 (Django slug 컨버터는 ASCII만 매칭)
     path('<str:slug>/', views.contest_detail, name='contest_detail'),
     path('<str:slug>/update/', views.contest_update, name='contest_update'),
+    path('<str:slug>/delete/', views.contest_delete, name='contest_delete'),
     path('<str:slug>/like/', views.contest_like, name='contest_like'),
 
     # 업로더 API — 대회 하위 리소스
