@@ -27,8 +27,11 @@ REGION_OPTIONS_FULL = [
 
 
 def _user_can_manage(user, center):
-    # 사이트 관리자 · 등록자 · 지정된 센터 관리자(CenterManager)
-    return center.is_managed_by(user)
+    if not user.is_authenticated:
+        return False
+    if is_site_admin(user):
+        return True
+    return center.created_by_id == user.id
 
 
 def _load_banner_images():

@@ -404,7 +404,7 @@ SIMPLE_JWT = {
 
 # Django Unfold 설정
 from django.templatetags.static import static
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 
 UNFOLD = {
     "SITE_TITLE": "배드민톡",
@@ -543,14 +543,9 @@ UNFOLD = {
                         "link": reverse_lazy("admin:band_bandschedule_changelist"),
                     },
                     {
-                        "title": "배드민턴 센터",
+                        "title": "센터(시설)",
                         "icon": "stadium",
-                        "link": reverse_lazy("admin:centers_center_changelist"),
-                    },
-                    {
-                        "title": "센터 관리자",
-                        "icon": "manage_accounts",
-                        "link": reverse_lazy("admin:centers_centermanager_changelist"),
+                        "link": lambda request: reverse("admin:band_band_changelist") + "?band_type__exact=center",
                     },
                 ],
             },

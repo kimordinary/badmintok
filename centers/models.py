@@ -73,17 +73,6 @@ class Center(models.Model):
     def __str__(self):
         return self.name
 
-    def is_managed_by(self, user):
-        """사이트 관리자 · 등록자 · 지정된 센터 관리자면 True."""
-        if not user or not user.is_authenticated:
-            return False
-        from accounts.permissions import is_site_admin
-        if is_site_admin(user):
-            return True
-        if self.created_by_id == user.id:
-            return True
-        return self.managers.filter(user=user).exists()
-
 
 class CenterBookmark(models.Model):
     """센터 관심 등록."""
@@ -113,33 +102,3 @@ class CenterBookmark(models.Model):
 
     def __str__(self):
         return f"{self.user} ★ {self.center}"
-
-
-class CenterManager(models.Model):
-    """센터 관리자(회원 중 지정). 사이트 관리자가 admin에서 추가한다."""
-
-    class Role(models.TextChoices):
-        OWNER = "owner", _("센터장")
-        ADMIN = "admin", _("관리자")
-
-    center = models.ForeignKey(
-        Center, on_delete=models.CASCADE, related_name="managers",
-        verbose_name=_("센터"),
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-        related_name="managed_centers", verbose_name=_("회원"),
-    )
-    role = models.CharField(
-        _("권한"), max_length=10, choices=Role.choices, default=Role.ADMIN,
-    )
-    created_at = models.DateTimeField(_("지정일"), auto_now_add=True)
-
-    class Meta:
-        verbose_name = _("센터 관리자")
-        verbose_name_plural = _("센터 관리자")
-        unique_together = [("center", "user")]
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.center.name} · {self.user.activity_name} ({self.get_role_display()})"
