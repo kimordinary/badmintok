@@ -94,6 +94,15 @@ function App() {
     setDevice: (device) => set({ device }),
     setTheme: (theme) => set({ theme }),
 
+    // 출석 새로고침: 실제 콘솔(주입 모드)은 서버에서 출석 현황을 다시 불러온다(페이지 재로딩
+    // → checked_in_at 재조회 → 새로 체크인한 사람 반영, 출석 화면으로 복귀). 순수 데모는
+    // 불러올 서버가 없어 다른 화면으로 튀지 않고 그 자리에서만 갱신한다.
+    refresh: () => {
+      const injected = typeof window !== 'undefined' && Array.isArray(window.__BM_PARTICIPANTS__);
+      if (injected) { location.reload(); return; }
+      set({ nowTs: Date.now() });
+    },
+
     setStatus: (id, status) => set((s) => ({
       participants: s.participants.map((p) => {
         if (p.id !== id) return p;

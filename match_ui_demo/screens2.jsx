@@ -114,6 +114,7 @@ function AttendanceScreen({ state, actions }) {
           <div style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 600, marginTop: 4 }}>온 사람만 체크인하면 대진에 들어갑니다. 늦참·조퇴는 언제든 토글.</div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => actions.refresh ? actions.refresh() : location.reload()} title="새로고침" aria-label="새로고침" style={{ ...navBtnStyle, padding: '9px 12px', fontSize: 17, lineHeight: 1 }}>↻</button>
           <Stat label="참여중" value={counts.참여중} accent="var(--brand-ink)" />
           <Stat label="미출석" value={counts.미출석} accent="var(--muted)" />
         </div>
