@@ -66,6 +66,10 @@ class SessionParticipant(models.Model):
 class Court(models.Model):
     session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="courts")
     index = models.IntegerField()  # 1..court_count
+    # 코치(자강) 고정 코트: 지정 시 매 경기 이 코치가 그 코트에 고정
+    coach = models.ForeignKey(
+        SessionParticipant, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="coaching_courts")
 
     class Meta:
         unique_together = [["session", "index"]]
@@ -101,3 +105,38 @@ class MatchPlayer(models.Model):
 
     class Meta:
         unique_together = [["match", "participant"]]
+
+
+class Pair(models.Model):
+    """고정 2인 팀 ('둘이 같이 쳐주세요'). 종목은 두 사람 성별로 자동 결정."""
+    session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="pairs")
+    p1 = models.ForeignKey(SessionParticipant, on_delete=models.CASCADE, related_name="pair_as_p1")
+    p2 = models.ForeignKey(SessionParticipant, on_delete=models.CASCADE, related_name="pair_as_p2")
+    strict = models.BooleanField(default=False)  # True=같이만 / False=따로도 OK(best-effort)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("파트너 쌍")
+        verbose_name_plural = _("파트너 쌍")
+
+
+class PartnerRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", _("대기")
+        APPROVED = "approved", _("승인")
+        REJECTED = "rejected", _("거절")
+
+    session = models.ForeignKey(
+        MatchSession, on_delete=models.CASCADE, related_name="partner_requests")
+    from_participant = models.ForeignKey(
+        SessionParticipant, on_delete=models.CASCADE, related_name="partner_requests_sent")
+    to_participant = models.ForeignKey(
+        SessionParticipant, on_delete=models.CASCADE, related_name="partner_requests_received")
+    strict = models.BooleanField(default=False)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("파트너 신청")
+        verbose_name_plural = _("파트너 신청")

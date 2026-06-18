@@ -70,6 +70,20 @@ urlpatterns = [
          match_views.set_attendance, name='match_attendance'),
     path('match/<int:session_id>/courts/<int:index>/fill/', match_views.fill_court, name='match_fill'),
     path('match/<int:session_id>/courts/<int:index>/end/', match_views.end_court, name='match_end_court'),
+    path('match/<int:session_id>/courts/<int:index>/coach/', match_views.set_coach, name='match_set_coach'),
     path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
     path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),
+
+    # 대진 — 참가자 본인용 (앱)
+    path('match/schedules/<int:schedule_id>/me/', match_views.my_status_by_schedule, name='match_my_status_by_schedule'),
+    path('match/<int:session_id>/me/', match_views.my_status, name='match_my_status'),
+    path('match/<int:session_id>/me/checkin/', match_views.my_checkin, name='match_my_checkin'),
+
+    # 대진 — 파트너 (신청·승인·쌍)
+    path('match/<int:session_id>/partner-requests/', match_views.list_partner_requests, name='match_partner_requests'),
+    path('match/<int:session_id>/partner-requests/create/', match_views.request_partner, name='match_partner_request_create'),
+    path('match/<int:session_id>/partner-requests/<int:req_id>/approve/', match_views.approve_partner_request, name='match_partner_approve'),
+    path('match/<int:session_id>/partner-requests/<int:req_id>/reject/', match_views.reject_partner_request, name='match_partner_reject'),
+    path('match/<int:session_id>/pairs/', match_views.pairs, name='match_pairs'),
+    path('match/<int:session_id>/pairs/<int:pair_id>/', match_views.delete_pair, name='match_pair_delete'),
 ]
