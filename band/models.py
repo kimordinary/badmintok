@@ -615,6 +615,7 @@ class BandScheduleApplication(models.Model):
     )
     rejection_reason = models.TextField(_("거부 사유"), blank=True)
     notes = models.TextField(_("신청 메모"), blank=True)
+    checked_in_at = models.DateTimeField(_("출석 체크인 시각"), null=True, blank=True, help_text="당일 출석 체크인 시각. 있으면 대진 참여중, 비면 미출석/퇴장.")
 
     class Meta:
         verbose_name = _("밴드 일정 신청")

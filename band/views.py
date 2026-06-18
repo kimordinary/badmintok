@@ -2254,6 +2254,12 @@ def schedule_detail(request, band_id, schedule_id):
         if cost_match:
             meeting_cost = cost_match.group(1)
     
+    # 출석 체크인용: 프로필(급수·성별) 완성 여부
+    profile_complete = False
+    if request.user.is_authenticated:
+        pf = getattr(request.user, "profile", None)
+        profile_complete = bool(pf and pf.gender in ("male", "female") and pf.badminton_level)
+
     return render(request, "band/schedule_detail.html", {
         "band": band,
         "schedule": schedule,
@@ -2264,7 +2270,119 @@ def schedule_detail(request, band_id, schedule_id):
         "can_manage": can_manage,
         "is_admin": can_manage,
         "meeting_cost": meeting_cost,
+        "profile_complete": profile_complete,
     })
+
+
+@login_required
+def schedule_match(request, band_id, schedule_id):
+    """번개 자동 대진 운영 진입 (모임장 전용). 승인 참가자를 대진 풀로 불러온다."""
+    band = get_object_or_404(Band, id=band_id)
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band=band)
+
+    member = band.members.filter(user=request.user, status="active").first()
+    can_manage = (member and member.role in ["owner", "admin"]) or is_site_admin(request.user)
+    if not can_manage:
+        return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
+
+    LEVEL_MAP = {"master": "자강", "s": "S", "a": "A", "b": "B", "c": "C", "d": "D", "beginner": "왕초심"}
+    RAMP = {"자강": "l1", "S": "l2", "A": "l3", "B": "l4", "C": "l5", "D": "l6", "왕초심": "l7"}
+    MULTI = {"자강", "왕초심"}
+    apps = schedule.applications.filter(status="approved").select_related("user", "user__profile").order_by("applied_at")
+    players = []
+    for a in apps:
+        pf = getattr(a.user, "profile", None)
+        level = LEVEL_MAP.get(pf.badminton_level, "") if pf else ""
+        players.append({
+            "name": a.user.real_name,
+            "gender": "M" if (pf and pf.gender == "male") else ("F" if (pf and pf.gender == "female") else ""),
+            "level": level,
+            "cls": RAMP.get(level, "none"),
+            "multi": level in MULTI,
+        })
+    missing = [p for p in players if not p["gender"] or not p["level"]]
+
+    male = sum(1 for p in players if p["gender"] == "M")
+    female = sum(1 for p in players if p["gender"] == "F")
+    order = ["자강", "S", "A", "B", "C", "D", "왕초심"]
+    lv = {k: 0 for k in order}
+    for p in players:
+        if p["level"] in lv:
+            lv[p["level"]] += 1
+    levels = [{"label": k, "count": lv[k], "cls": RAMP[k], "multi": k in MULTI} for k in order if lv[k] > 0]
+    summary = {"total": len(players), "male": male, "female": female, "levels": levels, "ready": len(players) - len(missing)}
+
+    return render(request, "band/schedule_match.html", {
+        "band": band,
+        "schedule": schedule,
+        "players": players,
+        "missing": missing,
+        "summary": summary,
+    })
+
+
+@login_required
+def schedule_console(request, band_id, schedule_id):
+    """자동 대진 운영 콘솔 (모임장 전용). 승인 참가자(급수·성별 완비)를 콘솔에 주입."""
+    import json
+
+    band = get_object_or_404(Band, id=band_id)
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band=band)
+
+    member = band.members.filter(user=request.user, status="active").first()
+    can_manage = (member and member.role in ["owner", "admin"]) or is_site_admin(request.user)
+    if not can_manage:
+        return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
+
+    LEVEL_MAP = {"master": "자강", "s": "S", "a": "A", "b": "B", "c": "C", "d": "D", "beginner": "왕초심"}
+    apps = schedule.applications.filter(status="approved").select_related("user", "user__profile").order_by("applied_at")
+    players = []
+    for a in apps:
+        pf = getattr(a.user, "profile", None)
+        gender = "M" if (pf and pf.gender == "male") else ("F" if (pf and pf.gender == "female") else None)
+        level = LEVEL_MAP.get(pf.badminton_level) if pf else None
+        if not gender or not level:
+            continue  # 급수·성별 누락자는 대진 풀에서 제외
+        # 자가 출석 체크인한 사람은 바로 '참여중'으로, 아니면 '미출석'
+        status = "참여중" if a.checked_in_at else "미출석"
+        players.append({"id": a.user.id, "name": a.user.real_name, "gender": gender, "level": level, "status": status})
+
+    # <script> 탈출(저장형 XSS) 방지: '<' 를 유니코드 이스케이프 (실명 등 사용자 입력 포함)
+    players_json = json.dumps(players, ensure_ascii=False).replace("<", "\\u003c")
+    return render(request, "band/schedule_console.html", {
+        "band": band,
+        "schedule": schedule,
+        "players_json": players_json,
+    })
+
+
+@login_required
+def schedule_checkin(request, band_id, schedule_id):
+    """참가자 자가 출석 체크인 / 퇴장. 승인 + 프로필(급수·성별) 완성자만."""
+    band = get_object_or_404(Band, id=band_id)
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band=band)
+    if request.method != "POST":
+        return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
+
+    app = schedule.applications.filter(user=request.user, status="approved").first()
+    if not app:
+        messages.error(request, "승인된 참가자만 출석 체크인할 수 있어요.")
+        return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
+
+    pf = getattr(request.user, "profile", None)
+    complete = bool(pf and pf.gender in ("male", "female") and pf.badminton_level)
+    if not complete:
+        messages.error(request, "출석 체크인 전에 프로필(급수·성별)을 먼저 입력해주세요.")
+        return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
+
+    if request.POST.get("action") == "out":
+        app.checked_in_at = None
+        messages.info(request, "퇴장 처리됐어요. 대진에서 빠집니다.")
+    else:
+        app.checked_in_at = timezone.now()
+        messages.success(request, "출석 체크인 완료! 바로 대진에 반영돼요.")
+    app.save(update_fields=["checked_in_at"])
+    return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
 
 
 @login_required

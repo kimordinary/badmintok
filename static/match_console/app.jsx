@@ -21,7 +21,6 @@ function initState() {
     pending: [], // 수동: 빈 코트 없을 때 예약된 경기들 (코트 비면 투입)
     pinnedMet: {}, // 코치별 만난 사람 { coachId: { pid: true } }  (코치는 court.coachId에 저장)
     pairs: [], // 파트너 고정 쌍 [{ id, members:[pid,pid], strict }]
-    pairRequests: [], // 참가자 파트너 신청(승인 대기) [{ id, from, to }]
     screen: injected ? 'attendance' : 'main',
     device: 'tablet',
     modal: null,
@@ -232,21 +231,6 @@ function App() {
     }),
     removePair: (pairId) => set((s) => ({ pairs: s.pairs.filter((p) => p.id !== pairId) })),
 
-    // 참가자 파트너 신청(승인 대기) → 모임장이 승인/거절
-    requestPair: (fromId, toId) => set((s) => {
-      if (!fromId || !toId || fromId === toId) return {};
-      const used = (id) => s.pairs.some((p) => p.members.includes(id)) || s.pairRequests.some((r) => r.from === id || r.to === id);
-      if (used(fromId) || used(toId)) return {};
-      return { pairRequests: [...s.pairRequests, { id: 'req' + Date.now(), from: fromId, to: toId }] };
-    }),
-    approvePairRequest: (reqId) => set((s) => {
-      const r = s.pairRequests.find((x) => x.id === reqId);
-      if (!r) return { pairRequests: s.pairRequests.filter((x) => x.id !== reqId) };
-      const rest = s.pairs.filter((p) => !p.members.some((m) => [r.from, r.to].includes(m)));
-      return { pairs: [...rest, { id: 'pair' + Date.now(), members: [r.from, r.to], strict: false }], pairRequests: s.pairRequests.filter((x) => x.id !== reqId) };
-    }),
-    rejectPairRequest: (reqId) => set((s) => ({ pairRequests: s.pairRequests.filter((x) => x.id !== reqId) })),
-
     // 코치 고정/해제 (코트별, 다중 코치 가능). id=null → courtNo 코치 해제.
     togglePinned: (id, courtNo) => set((s) => {
       let participants = s.participants.map((p) => ({ ...p }));
@@ -342,9 +326,7 @@ function App() {
 
   // 화면 선택
   let screen;
-  if (st.screen === 'participant') {
-    screen = <ParticipantScreen state={st} actions={actions} />;
-  } else if (st.device === 'mobile') {
+  if (st.device === 'mobile') {
     screen = <MobileApp state={st} actions={actions} />;
   } else if (st.screen === 'attendance') {
     screen = <AttendanceScreen state={st} actions={actions} />;
@@ -419,7 +401,7 @@ function DemoNav({ device, setDevice, screen, switchScreen, theme, setTheme, onR
       </div>
       {device === 'tablet' && (
         <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,.1)', padding: 3, borderRadius: 999, marginLeft: 6 }}>
-          {[{ k: 'main', l: '운영 화면' }, { k: 'attendance', l: '출석 체크' }, { k: 'counts', l: '개인 카운트' }, { k: 'participant', l: '참가자 화면' }].map((t) => (
+          {[{ k: 'main', l: '운영 화면' }, { k: 'attendance', l: '출석 체크' }, { k: 'counts', l: '개인 카운트' }].map((t) => (
             <button key={t.k} onClick={() => switchScreen(t.k)} style={{
               padding: '6px 13px', borderRadius: 999, fontSize: 13, fontWeight: 800, letterSpacing: '-.02em',
               color: screen === t.k ? 'var(--ink)' : 'rgba(255,255,255,.75)', background: screen === t.k ? '#fff' : 'transparent', whiteSpace: 'nowrap',

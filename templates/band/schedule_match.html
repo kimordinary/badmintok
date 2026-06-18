@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}{{ schedule.title }} - 자동 대진 준비 - 배드민톡{% endblock %}
+
+{# 운영 화면이라 앱 다운로드 배너 끔 (하단 sticky CTA와 충돌) #}
+{% block mobile_app_cta %}{% endblock %}
+
+{% block content %}
+{% verbatim %}
+<style>
+  .amp { background: #f4f6f8; min-height: 100%; }
+  .amp * { box-sizing: border-box; }
+  .amp-wrap { max-width: 980px; margin: 0 auto; padding: 16px 16px 140px; }
+  @media (min-width: 720px) { .amp-wrap { padding: 28px 24px 48px; } }
+
+  .amp-back { display: inline-flex; align-items: center; gap: 4px; color: #9aa2b1; font-size: 13.5px; font-weight: 600; text-decoration: none; margin-bottom: 14px; }
+  .amp-back:hover { color: #525a67; }
+
+  .amp-card { background: #fff; border: 1px solid #eef1f5; border-radius: 18px; box-shadow: 0 1px 2px rgba(17,22,31,.04), 0 6px 20px rgba(17,22,31,.05); }
+
+  /* 헤더 */
+  .amp-header { padding: 20px; margin-bottom: 14px; }
+  @media (min-width: 720px) { .amp-header { padding: 24px 26px; } }
+  .amp-eyebrow { display: inline-flex; align-items: center; gap: 6px; background: #e9f6ef; color: #0c7f4e; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .amp-eyebrow .dot { width: 5px; height: 5px; border-radius: 999px; background: #12a565; }
+  .amp-title { font-size: 26px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; margin: 12px 0 0; color: #15171c; }
+  @media (min-width: 720px) { .amp-title { font-size: 30px; } }
+  .amp-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; }
+  .amp-meta .item { display: inline-flex; align-items: center; gap: 7px; }
+  .amp-meta .k { color: #9aa2b1; font-size: 12.5px; font-weight: 600; }
+  .amp-meta .v { color: #525a67; font-size: 14px; font-weight: 500; }
+  .amp-meta .sep { width: 3px; height: 3px; border-radius: 999px; background: #c2c8d2; }
+
+  /* 요약 */
+  .amp-summary { margin-bottom: 14px; display: flex; flex-direction: column; }
+  .amp-summary .sec { padding: 16px 20px; }
+  .amp-summary .sec + .sec { border-top: 1px solid #eef1f5; }
+  .amp-summary .lab { color: #9aa2b1; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  .amp-n { font-size: 34px; font-weight: 800; letter-spacing: -.04em; color: #15171c; line-height: 1; }
+  .amp-of { font-size: 14px; font-weight: 600; color: #9aa2b1; margin-left: 2px; }
+  .amp-ratio { display: flex; align-items: center; gap: 14px; }
+  .amp-ratio .g { display: flex; align-items: baseline; gap: 7px; }
+  .amp-ratio .gl { font-size: 13px; font-weight: 600; color: #525a67; }
+  .amp-ratio .gn { font-size: 26px; font-weight: 800; color: #15171c; letter-spacing: -.03em; }
+  .amp-ratio .vbar { width: 1px; height: 22px; background: #eef1f5; }
+  .amp-dist { display: flex; flex-wrap: wrap; gap: 6px; }
+  .amp-dchip { display: inline-flex; align-items: center; gap: 6px; background: #f6f8fa; border: 1px solid #e6eaef; border-radius: 999px; padding: 4px 10px 4px 5px; font-size: 12.5px; font-weight: 600; color: #525a67; }
+  .amp-dchip .c { color: #15171c; font-weight: 800; }
+  @media (min-width: 720px) {
+    .amp-summary { display: grid; grid-template-columns: auto auto 1fr; align-items: center; }
+    .amp-summary .sec + .sec { border-top: none; border-left: 1px solid #eef1f5; }
+  }
+
+  /* 경고 */
+  .amp-warn { display: flex; gap: 11px; background: #fdf4e3; border: 1px solid #f1e0bd; border-radius: 14px; padding: 13px 16px; margin-bottom: 14px; }
+  .amp-warn svg { flex-shrink: 0; margin-top: 1px; }
+  .amp-warn .tx { color: #b87514; font-size: 13.5px; font-weight: 700; }
+  .amp-warn small { display: block; color: #9a7a3c; font-size: 12.5px; font-weight: 500; margin-top: 2px; line-height: 1.5; }
+
+  /* 명단 */
+  .amp-listhead { display: flex; align-items: baseline; justify-content: space-between; margin: 6px 2px 11px; }
+  .amp-listhead h2 { font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: #15171c; margin: 0; }
+  .amp-listhead .cnt { font-size: 13px; font-weight: 600; color: #9aa2b1; }
+  .amp-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  @media (min-width: 560px) { .amp-grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 880px) { .amp-grid { grid-template-columns: 1fr 1fr 1fr; } }
+  .amp-row { display: flex; align-items: center; gap: 11px; background: #fff; border: 1px solid #eef1f5; border-radius: 13px; padding: 11px 13px; min-height: 54px; box-shadow: 0 1px 2px rgba(17,22,31,.05); }
+  .amp-row.miss { background: #f6f8fa; border: 1px dashed #e6eaef; box-shadow: none; }
+  .amp-row .nm { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; letter-spacing: -.02em; color: #15171c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .amp-row.miss .nm { color: #9aa2b1; font-weight: 600; }
+  .amp-row .gd { font-size: 12.5px; font-weight: 600; color: #9aa2b1; flex-shrink: 0; }
+  .amp-row .gd.x { color: #b87514; }
+
+  /* 급수 배지 — 그레이스케일 농도 램프 */
+  .amp-gb { min-width: 24px; height: 24px; padding: 0 6px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; letter-spacing: -.02em; flex-shrink: 0; }
+  .amp-gb.multi { padding: 0 8px; font-size: 11px; border-radius: 8px; }
+  .amp-gb.l1 { background: #20242e; color: #fff; }
+  .amp-gb.l2 { background: #3a414e; color: #fff; }
+  .amp-gb.l3 { background: #565d6b; color: #fff; }
+  .amp-gb.l4 { background: #828995; color: #fff; }
+  .amp-gb.l5 { background: #b8bec8; color: #232831; }
+  .amp-gb.l6 { background: #d8dce2; color: #2b313b; }
+  .amp-gb.l7 { background: #edeff2; color: #6b7280; }
+  .amp-gb.none { background: repeating-linear-gradient(135deg, #fff, #fff 3px, #f0f2f5 3px, #f0f2f5 6px); color: #c2c8d2; border: 1px dashed #d3d8e0; }
+
+  /* CTA */
+  .amp-cta-wrap { margin-top: 22px; }
+  .amp-cta { display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px; border-radius: 15px; background: #12a565; color: #fff; font-size: 16px; font-weight: 800; text-decoration: none; box-shadow: 0 6px 18px rgba(18,165,101,.28); }
+  .amp-cta:hover { background: #0c7f4e; }
+  .amp-cta:active { transform: translateY(1px); }
+  .amp-cta-note { text-align: center; font-size: 12.5px; color: #9aa2b1; margin: 10px 0 0; }
+  @media (max-width: 719px) {
+    .amp-cta-wrap { position: fixed; left: 0; right: 0; bottom: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(to top, #f4f6f8 62%, transparent); z-index: 20; margin: 0; }
+    .amp-cta-note { display: none; }
+  }
+</style>
+{% endverbatim %}
+
+<div class="amp">
+ <div class="amp-wrap">
+
+  <a href="{% url 'band:schedule_detail' band.id schedule.id %}" class="amp-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    번개로 돌아가기
+  </a>
+
+  <!-- 헤더 -->
+  <div class="amp-card amp-header">
+    <span class="amp-eyebrow"><span class="dot"></span>자동 대진 준비 · 모임장 전용</span>
+    <h1 class="amp-title">{{ schedule.title }}</h1>
+    <div class="amp-meta">
+      {% if schedule.start_datetime %}<span class="item"><span class="k">일시</span><span class="sep"></span><span class="v">{{ schedule.start_datetime|date:"n월 j일 (D) a g:i" }}</span></span>{% endif %}
+      {% if schedule.location %}<span class="item"><span class="k">장소</span><span class="sep"></span><span class="v">{{ schedule.location }}</span></span>{% endif %}
+    </div>
+  </div>
+
+  <!-- 요약 -->
+  <div class="amp-card amp-summary">
+    <div class="sec">
+      <div class="lab">대진 참가</div>
+      <div><span class="amp-n">{{ summary.ready }}</span><span class="amp-of">／ 총 {{ summary.total }}명</span></div>
+    </div>
+    <div class="sec">
+      <div class="lab">성비</div>
+      <div class="amp-ratio">
+        <div class="g"><span class="gl">남</span><span class="gn">{{ summary.male }}</span></div>
+        <span class="vbar"></span>
+        <div class="g"><span class="gl">여</span><span class="gn">{{ summary.female }}</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="lab">급수 분포</div>
+      <div class="amp-dist">
+        {% for l in summary.levels %}
+        <span class="amp-dchip"><span class="amp-gb {{ l.cls }}{% if l.multi %} multi{% endif %}">{{ l.label }}</span><span class="c">{{ l.count }}</span></span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 누락 경고 -->
+  {% if missing %}
+  <div class="amp-warn">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" stroke="#b87514" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div>
+      <div class="tx">급수·성별 누락 {{ missing|length }}명 — 대진에서 제외돼요</div>
+      <small>자동 대진은 급수·성별 정보가 필요해요. 누락 정보를 채우면 다음 회차부터 포함됩니다.</small>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 명단 -->
+  <div class="amp-listhead">
+    <h2>참가자 명단</h2>
+    <span class="cnt">{{ players|length }}명</span>
+  </div>
+  <div class="amp-grid">
+    {% for p in players %}
+    <div class="amp-row{% if not p.gender or not p.level %} miss{% endif %}">
+      <span class="amp-gb {{ p.cls }}{% if p.multi %} multi{% endif %}">{% if p.level %}{{ p.level }}{% else %}?{% endif %}</span>
+      <span class="nm">{{ p.name }}</span>
+      {% if p.gender == 'M' %}<span class="gd">남</span>{% elif p.gender == 'F' %}<span class="gd">여</span>{% else %}<span class="gd x">성별?</span>{% endif %}
+    </div>
+    {% empty %}
+    <div style="grid-column: 1/-1; padding: 40px; text-align: center; color: #9aa2b1;">승인된 참가자가 없습니다.</div>
+    {% endfor %}
+  </div>
+
+  <!-- CTA -->
+  <div class="amp-cta-wrap">
+    <a href="{% url 'band:schedule_console' band.id schedule.id %}" class="amp-cta">
+      출석 체크 시작
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <p class="amp-cta-note">출석 체크 → 운영 화면(자동 대진)으로 이어집니다.</p>
+  </div>
+
+ </div>
+</div>
+{% endblock %}

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>자강 고정 코트 시뮬레이션 보고서</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<style>
+  :root{
+    --bg:#f3f5f8; --surface:#fff; --ink:#15171c; --ink2:#475063; --muted:#8b94a6;
+    --line:#e7ebf1; --brand:#12a565; --brand-ink:#0c7f4e; --brand-tint:#e7f6ee;
+    --hl:#6366f1; --hl-tint:#eef0ff; --warn:#e0871b; --warn-tint:#fdf1de; --danger:#e5484d;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:980px;margin:0 auto;padding:48px 24px 80px;}
+  h1{font-size:30px;font-weight:900;letter-spacing:-.04em;margin:0 0 6px;}
+  .sub{color:var(--muted);font-weight:600;font-size:14.5px;margin-bottom:32px;}
+  h2{font-size:20px;font-weight:900;letter-spacing:-.03em;margin:40px 0 14px;display:flex;align-items:center;gap:9px;}
+  h2 .n{width:26px;height:26px;border-radius:8px;background:var(--ink);color:#fff;font-size:14px;display:inline-flex;align-items:center;justify-content:center;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 1px 3px rgba(17,22,31,.05);margin-bottom:16px;}
+  p{margin:0 0 12px;font-size:14.5px;color:var(--ink2);}
+  b{color:var(--ink);}
+  .key{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0;}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center;}
+  .kpi .v{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1;}
+  .kpi .l{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:8px;}
+  .kpi.g .v{color:var(--brand-ink);} .kpi.i .v{color:var(--hl);} .kpi.w .v{color:var(--warn);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{padding:11px 12px;text-align:center;border-bottom:1px solid var(--line);}
+  th{font-size:12.5px;font-weight:800;color:var(--muted);letter-spacing:-.01em;background:#fafbfc;}
+  td:first-child,th:first-child{text-align:left;font-weight:800;}
+  tbody tr:last-child td{border-bottom:none;}
+  .tag{display:inline-block;padding:2px 9px;border-radius:7px;font-size:12px;font-weight:800;}
+  .tag.on{background:var(--brand-tint);color:var(--brand-ink);}
+  .tag.off{background:var(--surface-3,#eef1f5);color:var(--muted);background:#eef1f5;}
+  .bar{height:9px;border-radius:6px;background:#eef1f5;overflow:hidden;display:inline-block;width:90px;vertical-align:middle;}
+  .bar>i{display:block;height:100%;background:var(--brand);}
+  .callout{border-left:4px solid var(--brand);background:var(--brand-tint);border-radius:0 12px 12px 0;padding:14px 18px;margin:14px 0;font-weight:600;color:var(--ink2);font-size:14.5px;}
+  .callout.w{border-color:var(--warn);background:var(--warn-tint);}
+  .callout.i{border-color:var(--hl);background:var(--hl-tint);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .chip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef1f5;color:var(--ink2);}
+  ul{margin:6px 0 12px;padding-left:20px;} li{font-size:14.5px;color:var(--ink2);margin:5px 0;}
+  .muted{color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>자강 고정 코트 시뮬레이션 보고서</h1>
+  <div class="sub">유명·자강 선수 1명을 한 코트에 고정하고, 모든 참가자가 그와 한 번씩 게임하도록 우선 배정 · 실제 매칭 엔진 기반 · 51명 / 3시간 / 게임 13~17분 랜덤 · 코트수 5~8 · 각 8회 평균</div>
+
+  <div class="key">
+    <div class="kpi g"><div class="v">100%</div><div class="l">커버리지 · 게임 10분</div></div>
+    <div class="kpi w"><div class="v">~78%</div><div class="l">커버리지 · 게임 15분</div></div>
+    <div class="kpi i"><div class="v">13~19</div><div class="l">자강 3시간 게임수</div></div>
+    <div class="kpi"><div class="v">+0.1</div><div class="l">비자강 편차 변화(게임)</div></div>
+  </div>
+
+  <div class="callout">
+    <b>결론 한 줄.</b> 자강 1명 고정은 <b>기존 알고리즘·공정성을 사실상 해치지 않고</b> 얹힌다. 커버리지는 코트수가 아니라 <b>게임시간</b>이 좌우한다 — <b>15분이면 ~78%(39명), 10분이면 100%(전원)</b>. 핵심 레버는 게임시간(=자강 게임수)이다.
+  </div>
+
+  <h2><span class="n">1</span>방법 / 전제</h2>
+  <div class="card">
+    <ul>
+      <li><b>자강 선수</b>: 고민재(M·자강) 1명을 1번 코트에 고정. 매 게임 출전, <b>대기열·카운트 공정성에서 제외</b>(고정 플래그).</li>
+      <li><b>자강 코트</b>: 종목 제약 해제(모두). 나머지 3자리는 <b>"아직 자강과 안 친 사람" 우선 + 경기수 적은·오래 쉰 순</b>으로 선발.</li>
+      <li><b>나머지 코트</b>: 현재 매칭 엔진(<code>recommendMatch</code>) 그대로 — 경기수·휴식 큐 + 밸런스/파트너/상대 코스트.</li>
+      <li><b>비교군(OFF)</b>: 자강 고정 없이 51명 전부 자동 매칭. 비자강 50명의 게임수 분포를 ON과 비교해 공정성 영향 측정.</li>
+      <li>모드 모두 · 성향 밸런스 · 게임 13~17분 랜덤 · 롤링(코트 비는 대로 즉시 생성).</li>
+    </ul>
+    <p class="muted">또 다른 자강 이하경(F)은 일반 참가자로 풀에 둠. 데이터·매칭은 실서비스와 동일한 코드 경로.</p>
+  </div>
+
+  <h2><span class="n">2</span>자강 고정(ON) 결과 — 코트수별</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>코트수</th><th>자강 게임수</th><th>자강과 만남 (/50)</th><th>커버리지</th><th>못 만난 인원</th><th>비자강 경기수<br>평균±편차 (범위)</th></tr></thead>
+      <tbody>
+        <tr><td>5면</td><td>12.5</td><td>37.5</td><td><span class="bar"><i style="width:75%"></i></span> 75%</td><td>12.5</td><td>4.75 ± 0.43 <span class="muted">(4~5)</span></td></tr>
+        <tr><td>6면</td><td>12.5</td><td>37.5</td><td><span class="bar"><i style="width:75%"></i></span> 75%</td><td>12.5</td><td>5.78 ± 0.39 <span class="muted">(5~6)</span></td></tr>
+        <tr><td>7면</td><td>12.6</td><td>37.9</td><td><span class="bar"><i style="width:76%"></i></span> 76%</td><td>12.1</td><td>6.80 ± 0.40 <span class="muted">(6~7)</span></td></tr>
+        <tr><td>8면</td><td>12.6</td><td>37.9</td><td><span class="bar"><i style="width:76%"></i></span> 76%</td><td>12.1</td><td>7.76 ± 0.42 <span class="muted">(7~8)</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout i">
+    <b>핵심 통찰.</b> 커버리지(만난 인원)는 <b>코트를 5→8로 늘려도 거의 변하지 않는다(37~38명).</b> 자강은 어차피 한 코트에서만 뛰므로 <b>자강 게임수(~12.5) × 자리 3 = ~37.5명</b>이 상한. 더 많은 사람을 만나게 하려면 코트가 아니라 <b>시간·게임시간·자강 코트 수</b>를 건드려야 한다.
+  </div>
+
+  <h2><span class="n">3</span>게임시간이 커버리지를 좌우한다 — 10분 vs 15분</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>게임시간</th><th>코트수</th><th>자강 게임수</th><th>자강과 만남 (/50)</th><th>커버리지</th><th>못 만남</th><th>비자강 평균±편차</th></tr></thead>
+      <tbody>
+        <tr><td><b>10분</b></td><td>5면</td><td>19</td><td>50</td><td><span class="bar"><i style="width:100%"></i></span> 100%</td><td>0</td><td>7.22 ± 0.41</td></tr>
+        <tr><td></td><td>6면</td><td>19</td><td>50</td><td><span class="bar"><i style="width:100%"></i></span> 100%</td><td>0</td><td>8.74 ± 0.44</td></tr>
+        <tr><td></td><td>7면</td><td>19</td><td>50</td><td><span class="bar"><i style="width:100%"></i></span> 100%</td><td>0</td><td>10.26 ± 0.44</td></tr>
+        <tr><td></td><td>8면</td><td>19</td><td>50</td><td><span class="bar"><i style="width:100%"></i></span> 100%</td><td>0</td><td>11.78 ± 0.41</td></tr>
+        <tr><td><b>15분</b></td><td>5면</td><td>13</td><td>39</td><td><span class="bar"><i style="width:78%"></i></span> 78%</td><td>11</td><td>4.94 ± 0.24</td></tr>
+        <tr><td></td><td>6면</td><td>13</td><td>39</td><td><span class="bar"><i style="width:78%"></i></span> 78%</td><td>11</td><td>5.98 ± 0.37</td></tr>
+        <tr><td></td><td>7면</td><td>13</td><td>39</td><td><span class="bar"><i style="width:78%"></i></span> 78%</td><td>11</td><td>7.02 ± 0.24</td></tr>
+        <tr><td></td><td>8면</td><td>13</td><td>39</td><td><span class="bar"><i style="width:78%"></i></span> 78%</td><td>11</td><td>8.06 ± 0.24</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout i">
+    <b>10분이면 전원(100%) 커버.</b> 게임시간을 15→10분으로 줄이면 자강 게임이 <b>13 → 19게임</b>으로 늘어 <b>19 × 3자리 = 57 ≥ 50명</b> → 한 명도 빠짐없이 자강과 친다. 커버리지는 코트수와 무관하게 <b>게임시간(=자강 게임수)만으로 결정</b>된다.
+  </div>
+  <div class="callout w">
+    <b>경계선 ≈ 10.6분.</b> 전원(50명)을 채우려면 자강이 <b>최소 17게임</b>(17×3=51자리) 필요 → 게임시간 ≤ <b>180/17 ≈ 10.6분</b>. 즉 <b>10분이면 확실히 전원</b>, 11분부터 조금씩 못 만나는 사람이 생기고, 15분이면 ~39명(78%)에서 멈춘다. <span class="muted">단 10분 게임은 비자강도 7~12게임으로 많아져 체력·코트 회전 부담이 커지는 트레이드오프.</span>
+  </div>
+
+  <h2><span class="n">4</span>공정성 영향 — ON vs OFF 비교 (비자강 50명)</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>코트수</th><th>구분</th><th>평균 경기수</th><th>편차(std)</th><th>최소~최대</th><th>총 게임</th></tr></thead>
+      <tbody>
+        <tr><td>5면</td><td><span class="tag on">자강 ON</span></td><td>4.75</td><td>0.43</td><td>4 ~ 5</td><td>238</td></tr>
+        <tr><td></td><td><span class="tag off">OFF</span></td><td>4.97</td><td>0.24</td><td>4.4 ~ 5.4</td><td>249</td></tr>
+        <tr><td>6면</td><td><span class="tag on">자강 ON</span></td><td>5.78</td><td>0.39</td><td>5 ~ 6</td><td>289</td></tr>
+        <tr><td></td><td><span class="tag off">OFF</span></td><td>5.88</td><td>0.30</td><td>5 ~ 6</td><td>294</td></tr>
+        <tr><td>7면</td><td><span class="tag on">자강 ON</span></td><td>6.80</td><td>0.40</td><td>6 ~ 7</td><td>340</td></tr>
+        <tr><td></td><td><span class="tag off">OFF</span></td><td>6.93</td><td>0.27</td><td>6 ~ 7</td><td>346</td></tr>
+        <tr><td>8면</td><td><span class="tag on">자강 ON</span></td><td>7.76</td><td>0.42</td><td>7 ~ 8</td><td>388</td></tr>
+        <tr><td></td><td><span class="tag off">OFF</span></td><td>7.91</td><td>0.31</td><td>7 ~ 8</td><td>395</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <b>공정성 거의 무영향.</b> 자강을 고정해도 비자강 50명의 평균 경기수는 <b>0.1~0.2게임만 감소</b>, 편차는 <b>0.1 증가</b>(여전히 1게임 미만). 모두가 <b>4~5 / 5~6 / 6~7 / 7~8</b> 범위로 촘촘하게 유지된다. 자강 코트에 불려간 사람도 그 게임이 정상 카운트되어 공정성 큐에 자연 반영되기 때문.
+  </div>
+
+  <h2><span class="n">5</span>"못 만난 사람"은 누구인가 <span class="muted" style="font-weight:600;font-size:13px">(15분 기준)</span></h2>
+  <div class="card">
+    <p>코트수와 무관하게 매번 <b>~12~13명</b>이 자강과 못 만난다. 흥미로운 점: 이들은 <b>경기수가 오히려 최상위</b>다.</p>
+    <p class="muted">예) 8면 ON에서 못 만난 14명 — 대부분 8게임(최대치):</p>
+    <div class="chips">
+      <span class="chip">이일금 B·8g</span><span class="chip">주완호 A·8g</span><span class="chip">이재복 B·8g</span><span class="chip">오승현 D·8g</span><span class="chip">허제식 A·8g</span><span class="chip">송창현 S·8g</span><span class="chip">정용준 B·8g</span><span class="chip">김정규 A·8g</span><span class="chip">이임규 B·8g</span><span class="chip">유리연 S·8g</span><span class="chip">강수진 D·7g</span><span class="chip">문정호 A·7g</span><span class="chip">신경진 A·7g</span><span class="chip">조장휘 B·7g</span>
+    </div>
+    <div class="callout w" style="margin-top:16px">
+      <b>불이익 아님.</b> 자강 코트는 "경기수 적은 사람"을 먼저 끌어가므로, 일반 코트에서 게임이 잘 풀려 경기수가 빨리 쌓인 사람은 자강 큐 상위에 못 올라가 <b>우연히</b> 자강과 못 만난다. 즉 못 만난 사람은 게임을 적게 한 게 아니라 <b>많이 한 사람</b>이다. 급수도 고르게 섞여 특정 급수가 소외되지 않는다.
+    </div>
+  </div>
+
+  <h2><span class="n">6</span>결론 &amp; 권장</h2>
+  <div class="card">
+    <ul>
+      <li><b>도입 가능.</b> 자강 고정은 별도 "예약 코트"로 빠지고 나머지는 기존 엔진 그대로 → 알고리즘·공정성 무손상.</li>
+      <li><b>커버리지는 게임시간으로 조절.</b> 51명·3시간 기준 — <b>15분이면 ~78%(39명)</b>, <b>10분이면 100%(전원)</b>. 경계는 ~10.6분. UI에 진행 중 <b>"자강과 N/50명 만남"</b> 진행률을 보여주면 좋음.</li>
+      <li><b>전원을 꼭 채우고 싶다면</b> (코트 증설은 효과 없음 — 자강은 한 코트에서만 뜀):
+        <ul>
+          <li><b>자강 코트 게임시간 ≤10분</b> 운영 → 전원 (가장 단순)</li>
+          <li>자강 코트 <b>2면</b> → 커버리지 ≈ 2배(인원 많아도 전원 근접)</li>
+          <li><b>세션 연장</b> 또는 인원 36명 이하 모임</li>
+        </ul>
+        <span class="muted">단 10분 게임은 비자강도 7~12게임으로 회전이 빨라 체력 부담 ↑.</span>
+      </li>
+      <li><b>구현 시 필수.</b> 자강은 대기열·카운트 정렬에서 제외(고정 플래그), 카운트 화면엔 별도 표기. 자강 코트 선발은 "안 만난 사람 + 경기수 적은 순" 2키 정렬.</li>
+      <li><b>옵션.</b> 자강 체력 부담(12연속) → "자강도 가끔 쉼" 토글, 또는 자강 파트너를 최약체로 묶어 그 코트 밸런스 살짝 보정.</li>
+    </ul>
+  </div>
+
+  <div class="sub" style="margin-top:30px;text-align:center">실제 매칭 엔진(core.jsx) 기반 시뮬레이션 · 구현 전 타당성 검토용</div>
+</div>
+</body>
+</html>

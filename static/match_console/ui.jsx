@@ -99,8 +99,8 @@ function PlayerLine({ p, showAvatar = true, big = false, dim = false }) {
 function NameWithGender({ p, size = 15 }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, minWidth: 0 }}>
-      <span style={{ fontSize: size, fontWeight: 800, letterSpacing: '-.03em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>{p.name}</span>
       <GenderMark gender={p.gender} size={Math.round(size * 0.82)} />
+      <span style={{ fontSize: size, fontWeight: 800, letterSpacing: '-.03em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>{p.name}</span>
     </span>
   );
 }

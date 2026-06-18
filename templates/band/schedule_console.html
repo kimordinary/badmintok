@@ -1,0 +1,76 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<base href="{% static 'match_console/' %}" />
+<title>{{ schedule.title }} · 자동 대진 운영</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+{% verbatim %}
+<style>
+  :root {
+    --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --bg: #eef0f4; --surface: #ffffff; --surface-2: #f7f8fa; --surface-3: #eff1f5;
+    --ink: #11161f; --ink-2: #475063; --muted: #8b94a6; --line: #e3e7ee; --line-2: #d4dae4;
+    --brand: #12a565; --brand-ink: #0c7f4e; --brand-dk: #0a6b42; --brand-tint: #e7f6ee;
+    --hl: #12a565; --hl-deep: #0a6b42;
+    --mix: #8b5cf6; --mix-ink: #6d28d9; --mix-tint: #f4efff; --mix-line: #e4d8ff;
+    --men: #3b82f6; --men-ink: #1d4ed8; --men-tint: #ebf2ff; --men-line: #d4e3ff;
+    --women: #ec4899; --women-ink: #be185d; --women-tint: #fdeef6; --women-line: #fbd6e8;
+    --avt-m-bg: #dbe7fb; --avt-m-fg: #1d4ed8; --avt-f-bg: #fbdcec; --avt-f-fg: #be185d;
+    --court-strip: 1; --card-radius: 18px;
+    --warn: #e0871b; --warn-tint: #fdf1de; --danger: #e5484d; --danger-tint: #fdecec;
+    --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px;
+    --sh-1: 0 1px 2px rgba(17,22,31,.05), 0 1px 1px rgba(17,22,31,.04);
+    --sh-2: 0 4px 14px rgba(17,22,31,.07), 0 2px 5px rgba(17,22,31,.05);
+    --sh-3: 0 18px 50px rgba(17,22,31,.16), 0 6px 16px rgba(17,22,31,.10);
+  }
+  * { box-sizing: border-box; }
+  [data-theme="clean"] {
+    --bg: #ffffff; --surface: #ffffff; --surface-2: #f5f7f9; --surface-3: #eef1f5;
+    --ink: #15171c; --ink-2: #555d6b; --muted: #9aa2b1; --line: #f1f3f6; --line-2: #eaedf2;
+    --sh-1: none; --sh-2: 0 1px 2px rgba(17,22,31,.04); --sh-3: 0 16px 48px rgba(17,22,31,.14);
+    --card-radius: 20px;
+  }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; overflow: hidden; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4df; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  #root { width: 100vw; height: 100vh; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(18,165,101,.45); } 70% { box-shadow: 0 0 0 12px rgba(18,165,101,0); } 100% { box-shadow: 0 0 0 0 rgba(18,165,101,0); } }
+  @keyframes shuttle { 0% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-6px) rotate(8deg); } 100% { transform: translateY(0) rotate(0); } }
+  @keyframes barGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ovFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ringIn { from { opacity: 0; transform: scale(1.015); } to { opacity: 1; transform: none; } }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes badgePop { 0% { opacity: 0; transform: scale(.4); } 60% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+  .ignore-link { background: transparent; transition: background .12s, color .12s; }
+  .ignore-link:hover { background: var(--surface-3); color: var(--ink-2) !important; }
+</style>
+{% endverbatim %}
+</head>
+<body>
+<div id="root"></div>
+
+<!-- 실제 참가자 주입 (DB 승인자 → 대진 풀) -->
+<script>window.__BM_PARTICIPANTS__ = {{ players_json|safe }};</script>
+
+<!-- React 18 + Babel standalone -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+
+<script type="text/babel" src="core.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel" src="screens2.jsx"></script>
+<script type="text/babel" src="mobile.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

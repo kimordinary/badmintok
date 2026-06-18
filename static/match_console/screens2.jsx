@@ -73,8 +73,6 @@ function AttendanceScreen({ state, actions }) {
   const [psel, setPsel] = useState([]); // 선택된 2명
   const [pstrict, setPstrict] = useState(false); // 같이만(strict)
   const pairs = state.pairs || [];
-  const reqs = state.pairRequests || [];
-  const reqName = (pid) => (participants.find((p) => p.id === pid) || {}).name;
   const partnerName = {};
   pairs.forEach((pr) => {
     const nx = (participants.find((p) => p.id === pr.members[0]) || {}).name;
@@ -101,8 +99,7 @@ function AttendanceScreen({ state, actions }) {
     퇴장: participants.filter((p) => p.status === '퇴장').length,
   };
   const q = query.trim();
-  const pairedIds = new Set(pairs.flatMap((pr) => pr.members));
-  const list = participants.filter((p) => (filter === '전체' || p.status === filter) && (q === '' || p.name.includes(q) || p.level.includes(q)) && !pairedIds.has(p.id));
+  const list = participants.filter((p) => (filter === '전체' || p.status === filter) && (q === '' || p.name.includes(q) || p.level.includes(q)));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
@@ -141,7 +138,6 @@ function AttendanceScreen({ state, actions }) {
           </div>
           <button onClick={() => { setPairing((v) => !v); setPsel([]); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 15px', borderRadius: 999, background: pairing ? 'var(--brand)' : 'var(--surface)', color: pairing ? '#fff' : 'var(--ink-2)', border: pairing ? 'none' : '1px solid var(--line-2)', fontSize: 14, fontWeight: 800, letterSpacing: '-.02em', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {pairing ? '묶기 종료' : '파트너 묶기'}
-            {!pairing && reqs.length > 0 && <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: 'var(--danger)', color: '#fff', fontSize: 11, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{reqs.length}</span>}
           </button>
           <button onClick={() => actions.openAddParticipant()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, background: 'var(--ink)', color: '#fff', fontSize: 14, fontWeight: 800, letterSpacing: '-.02em', whiteSpace: 'nowrap', flexShrink: 0 }}>
             <span style={{ fontSize: 17, lineHeight: 1, marginTop: -1 }}>＋</span> 참가자 추가
@@ -155,71 +151,9 @@ function AttendanceScreen({ state, actions }) {
           </div>
         </div>
       )}
-      {/* 참가자 파트너 신청 (승인 대기) */}
-      {!pairing && reqs.length > 0 && (
-        <div style={{ padding: '10px 22px 0', flexShrink: 0 }}>
-          <div style={{ background: 'var(--warn-tint)', border: '1px solid var(--warn)', borderRadius: 12, padding: '12px 14px' }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--warn)', marginBottom: 9 }}>👥 파트너 신청 {reqs.length}건 있어요 — 승인해주세요</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {reqs.map((r) => (
-                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', borderRadius: 11, padding: '8px 8px 8px 13px', border: '1px solid var(--line)' }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{reqName(r.from)} · {reqName(r.to)}</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => actions.rejectPairRequest(r.id)} style={{ padding: '6px 12px', borderRadius: 8, background: 'var(--surface-3)', border: '1px solid var(--line-2)', color: 'var(--ink-2)', fontSize: 12.5, fontWeight: 800, cursor: 'pointer' }}>거절</button>
-                    <button onClick={() => actions.approvePairRequest(r.id)} style={{ padding: '6px 14px', borderRadius: 8, background: 'var(--brand)', border: 'none', color: '#fff', fontSize: 12.5, fontWeight: 800, cursor: 'pointer' }}>승인</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 카드 그리드 */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 22 }}>
-        {/* 파트너 묶음 (일반 명단에서 빼서 박스로) */}
-        {!pairing && pairs.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 2px 10px' }}>
-              <span style={{ fontSize: 14, fontWeight: 900, letterSpacing: '-.02em', color: 'var(--ink)' }}>👥 파트너 {pairs.length}쌍</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>둘이 항상 같은 팀</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
-              {pairs.map((pr) => {
-                const mem = pr.members.map((id) => participants.find((p) => p.id === id)).filter(Boolean);
-                return (
-                  <div key={pr.id} style={{ background: 'var(--brand-tint)', border: '1px solid var(--brand)', borderRadius: 16, padding: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9, padding: '0 2px' }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--brand-ink)' }}>파트너</span>
-                      {pr.strict && <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'var(--brand)', padding: '1px 6px', borderRadius: 5 }}>같이만</span>}
-                      <button onClick={() => actions.removePair(pr.id)} style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 800, color: 'var(--muted)', padding: '3px 8px', borderRadius: 7, background: 'var(--surface)', border: '1px solid var(--line-2)', cursor: 'pointer' }}>해제</button>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {mem.map((p) => {
-                        const st = STATUS_STYLE[p.status];
-                        return (
-                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface)', borderRadius: 11, padding: '9px 11px' }}>
-                            <LevelChip level={p.level} size={26} />
-                            <div style={{ flex: 1, minWidth: 0 }}><NameWithGender p={p} size={15} /></div>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 999, background: st.bg, color: st.fg, fontSize: 11.5, fontWeight: 800, flexShrink: 0 }}>
-                              <span style={{ width: 6, height: 6, borderRadius: 6, background: st.dot }} />{st.label}
-                            </span>
-                            {p.status !== '참여중' ? (
-                              <button onClick={() => actions.setStatus(p.id, '참여중')} style={{ padding: '6px 11px', borderRadius: 8, background: 'var(--brand)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>출석</button>
-                            ) : (
-                              <button onClick={() => actions.setStatus(p.id, '퇴장')} style={{ padding: '6px 11px', borderRadius: 8, background: 'var(--surface-3)', color: 'var(--danger)', border: '1px solid var(--line-2)', fontSize: 12, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>퇴장</button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
           {list.map((p) => {
             const st = STATUS_STYLE[p.status];
