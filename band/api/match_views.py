@@ -6,23 +6,35 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from band.models import BandMember, BandSchedule, BandScheduleApplication
-from band.match_models import MatchSession, SessionParticipant, Court, Match, MatchPlayer
+from band.match_models import (
+    MatchSession, SessionParticipant, Court, Match, MatchPlayer, Pair, PartnerRequest)
 from band.matchmaking.scoring import level_to_score
-from band.match_state import build_pool, build_pairstats
-from band.matchmaking.engine import recommend_next_game, _discipline_feasible
+from band.match_state import (
+    build_pool, build_pairstats, build_pairs, build_player, build_met_count)
+from band.matchmaking.engine import (
+    recommend_next_game, recommend_with_pairs, _discipline_feasible,
+    pick_ace_three, build_ace_match)
 from band.matchmaking.types import Mode, Preset, Discipline, NeedOperatorChoice, GamePlan, PRESETS
 from band.matchmaking.cost import best_split
 from band.matchmaking.selection import queue_order
-from band.api.match_serializers import serialize_session, serialize_match, serialize_participant
+from band.api.match_serializers import (
+    serialize_session, serialize_match, serialize_participant, serialize_my_status,
+    serialize_pair, serialize_partner_request)
 
 
 def _is_operator(user, band) -> bool:
     return BandMember.objects.filter(
         band=band, user=user, status="active",
         role__in=["owner", "admin"]).exists()
+
+
+def _my_participant(session, user):
+    return SessionParticipant.objects.filter(
+        session=session, user=user).select_related("user").first()
 
 
 def _profile_level_gender(user):
@@ -56,9 +68,12 @@ def start_session(request, schedule_id):
             schedule=schedule, status="approved").select_related("user")
         for app in apps:
             score, gender = _profile_level_gender(app.user)
+            # 번개 상세에서 자가 출석 체크인(checked_in_at)한 사람은 바로 참여중으로
+            attendance = (SessionParticipant.Attendance.PRESENT if app.checked_in_at
+                          else SessionParticipant.Attendance.NOT_PRESENT)
             SessionParticipant.objects.create(
                 session=session, user=app.user, base_level=score, gender=gender,
-                attendance=SessionParticipant.Attendance.NOT_PRESENT)
+                attendance=attendance)
 
     return Response(serialize_session(session), status=status.HTTP_201_CREATED)
 
@@ -131,6 +146,26 @@ def _on_court_ids(session):
     return ids
 
 
+def _notify_next_game(match):
+    """경기 선수들에게 '다음 경기' 알림(=FCM 푸시). 코트 고정 코치는 매 경기 들어가므로 제외."""
+    from notifications.models import Notification
+    schedule = match.session.schedule
+    band = schedule.band
+    coach_id = match.court.coach_id
+    disc = match.get_discipline_display()
+    for mp in match.players.select_related("participant").all():
+        if coach_id and mp.participant_id == coach_id:
+            continue
+        Notification.objects.create(
+            user_id=mp.participant.user_id,
+            type=Notification.Type.MATCH_NEXT_GAME,
+            title="다음 경기예요! 코트로 들어가 주세요",
+            message=f"[{band.name}] 코트 {match.court.index} · {disc}",
+            related_band_schedule=schedule,
+            related_band=band,
+        )
+
+
 def _create_match(session, court, plan: GamePlan):
     match = Match.objects.create(
         session=session, court=court, discipline=plan.discipline.value)
@@ -138,13 +173,34 @@ def _create_match(session, court, plan: GamePlan):
         MatchPlayer.objects.create(match=match, participant_id=pid, team=1)
     for pid in plan.team2:
         MatchPlayer.objects.create(match=match, participant_id=pid, team=2)
+    _notify_next_game(match)
     return match
+
+
+def _coach_ids(session):
+    return set(Court.objects.filter(session=session, coach__isnull=False)
+               .values_list("coach_id", flat=True))
 
 
 def _fill_court(session, court, forced_discipline=None):
     """반환: (match | None, need: NeedOperatorChoice | None)"""
-    pool = build_pool(session, on_court_participant_ids=_on_court_ids(session))
+    coach_ids = _coach_ids(session)
+    # 코치는 본인 코트에 고정 → 일반 풀(큐·공정성)에서 제외
+    pool = build_pool(session, on_court_participant_ids=_on_court_ids(session) | coach_ids)
     stats = build_pairstats(session)
+
+    # 코치 고정 코트: 코치(출석 시) + '못 만난 사람 우선' 3명
+    if court.coach_id is not None and forced_discipline is None:
+        coach_sp = SessionParticipant.objects.filter(
+            id=court.coach_id, session=session,
+            attendance=SessionParticipant.Attendance.PRESENT).select_related("user").first()
+        if coach_sp is not None:
+            met = build_met_count(session, coach_ids, stats)
+            three = pick_ace_three(pool, met)
+            plan = build_ace_match(build_player(coach_sp), three)
+            if plan is not None:
+                return _create_match(session, court, plan), None
+            return None, None  # 코치 코트에 채울 3명 부족
 
     if forced_discipline is not None:
         # 운영자가 종목을 강제 → 그 종목으로 best_split (윈도우 앞 4명 중 가능한 조합)
@@ -158,9 +214,9 @@ def _fill_court(session, court, forced_discipline=None):
                 return _create_match(session, court, split), None
         return None, NeedOperatorChoice(reason="강제 종목 구성 불가", options=())
 
-    result = recommend_next_game(
-        pool, _MODE_MAP[session.discipline_mode], _PRESET_MAP[session.preset],
-        stats, female_adjust=session.female_adjust)
+    result = recommend_with_pairs(
+        pool, build_pairs(session), _MODE_MAP[session.discipline_mode],
+        _PRESET_MAP[session.preset], stats, female_adjust=session.female_adjust)
     if isinstance(result, GamePlan):
         return _create_match(session, court, result), None
     if isinstance(result, NeedOperatorChoice):
@@ -192,6 +248,27 @@ def fill_court(request, session_id, index):
         return Response({"match": None, "needs_choice": False,
                          "detail": "대기 인원이 부족합니다."})
     return Response({"match": serialize_match(match), "needs_choice": False})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def set_coach(request, session_id, index):
+    """코트에 코치(자강) 고정/해제. participant_id 없으면 해제. 같은 코치는 한 코트만."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    court = get_object_or_404(Court, session=session, index=index)
+    pid = request.data.get("participant_id")
+    if not pid:
+        court.coach = None
+        court.save(update_fields=["coach"])
+        return Response(serialize_session(session))
+    sp = get_object_or_404(SessionParticipant, id=pid, session=session)
+    with transaction.atomic():
+        Court.objects.filter(session=session, coach=sp).exclude(id=court.id).update(coach=None)
+        court.coach = sp
+        court.save(update_fields=["coach"])
+    return Response(serialize_session(session))
 
 
 @api_view(["POST"])
@@ -266,6 +343,187 @@ def edit_match(request, session_id, match_id):
     match.refresh_from_db()
     match = Match.objects.prefetch_related("players__participant__user").get(id=match.id)
     return Response(serialize_match(match))
+
+
+# ===== 참가자 본인용 (앱) =====
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_status(request, session_id):
+    """세션 내 '내 라이브 상태' (출석·현재경기·대기순번·게임수). 앱이 폴링."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    sp = _my_participant(session, request.user)
+    return Response(serialize_my_status(session, sp))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_status_by_schedule(request, schedule_id):
+    """일정 기준 '내 상태'. 앱은 schedule_id만 알아도 세션 유무·내 상태 조회 가능."""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id)
+    session = getattr(schedule, "match_session", None)
+    approved = BandScheduleApplication.objects.filter(
+        schedule=schedule, user=request.user, status="approved").exists()
+    if session is None:
+        return Response({
+            "session_id": None, "session_status": None,
+            "participant_id": None, "attendance": None, "games": None,
+            "playing": False, "current_match": None,
+            "queue_position": None, "queue_total": 0, "up_next": False,
+            "approved": approved,
+        })
+    sp = _my_participant(session, request.user)
+    data = serialize_my_status(session, sp)
+    data["approved"] = approved or sp is not None
+    return Response(data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def my_checkin(request, session_id):
+    """참가자 자가 출석/퇴장 (action: in|out). 세션의 승인 참가자 본인만."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    sp = _my_participant(session, request.user)
+    if sp is None:
+        return Response({"detail": "이 번개의 승인 참가자만 출석할 수 있어요."},
+                        status=status.HTTP_403_FORBIDDEN)
+    action = request.data.get("action", "in")
+    if action == "in":
+        sp.attendance = SessionParticipant.Attendance.PRESENT
+    elif action == "out":
+        sp.attendance = SessionParticipant.Attendance.LEFT
+    else:
+        return Response({"detail": "action은 in 또는 out 이어야 합니다."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    sp.save(update_fields=["attendance"])
+    # 웹 번개 상세의 자가 체크인(checked_in_at)과 동기화
+    BandScheduleApplication.objects.filter(
+        schedule=session.schedule, user=request.user, status="approved"
+    ).update(checked_in_at=timezone.now() if action == "in" else None)
+    return Response(serialize_my_status(session, sp))
+
+
+# ===== 파트너 (신청·승인·해제) =====
+
+def _active_pair_for(session, *participant_ids):
+    return Pair.objects.filter(session=session).filter(
+        Q(p1_id__in=participant_ids) | Q(p2_id__in=participant_ids)).first()
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def request_partner(request, session_id):
+    """참가자가 다른 참가자에게 파트너 신청. (모임장 승인 대기)"""
+    session = get_object_or_404(MatchSession, id=session_id)
+    me = _my_participant(session, request.user)
+    if me is None:
+        return Response({"detail": "이 번개의 참가자만 신청할 수 있어요."},
+                        status=status.HTTP_403_FORBIDDEN)
+    to_sp = get_object_or_404(
+        SessionParticipant, id=request.data.get("to_participant_id"), session=session)
+    if to_sp.id == me.id:
+        return Response({"detail": "자기 자신과는 파트너가 될 수 없어요."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if PartnerRequest.objects.filter(
+            session=session, status=PartnerRequest.Status.PENDING,
+            from_participant=me, to_participant=to_sp).exists():
+        return Response({"detail": "이미 신청했어요."}, status=status.HTTP_409_CONFLICT)
+    req = PartnerRequest.objects.create(
+        session=session, from_participant=me, to_participant=to_sp,
+        strict=bool(request.data.get("strict", False)))
+    req = PartnerRequest.objects.select_related(
+        "from_participant__user", "to_participant__user").get(id=req.id)
+    return Response(serialize_partner_request(req), status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_partner_requests(request, session_id):
+    """대기 중 파트너 신청. 모임장=전체, 참가자=본인 관련만."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    qs = PartnerRequest.objects.filter(
+        session=session, status=PartnerRequest.Status.PENDING).select_related(
+        "from_participant__user", "to_participant__user")
+    if not _is_operator(request.user, session.schedule.band):
+        me = _my_participant(session, request.user)
+        if me is None:
+            return Response({"requests": []})
+        qs = qs.filter(Q(from_participant=me) | Q(to_participant=me))
+    return Response({"requests": [serialize_partner_request(r) for r in qs]})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def approve_partner_request(request, session_id, req_id):
+    """모임장이 파트너 신청 승인 → 고정 쌍 생성."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    req = get_object_or_404(PartnerRequest, id=req_id, session=session)
+    if req.status != PartnerRequest.Status.PENDING:
+        return Response({"detail": "이미 처리된 신청입니다."}, status=status.HTTP_409_CONFLICT)
+    if _active_pair_for(session, req.from_participant_id, req.to_participant_id):
+        return Response({"detail": "이미 다른 파트너와 묶여 있어요."},
+                        status=status.HTTP_409_CONFLICT)
+    with transaction.atomic():
+        pair = Pair.objects.create(
+            session=session, p1=req.from_participant, p2=req.to_participant, strict=req.strict)
+        req.status = PartnerRequest.Status.APPROVED
+        req.resolved_at = timezone.now()
+        req.save(update_fields=["status", "resolved_at"])
+    pair = Pair.objects.select_related("p1__user", "p2__user").get(id=pair.id)
+    return Response(serialize_pair(pair), status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def reject_partner_request(request, session_id, req_id):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    req = get_object_or_404(PartnerRequest, id=req_id, session=session)
+    if req.status != PartnerRequest.Status.PENDING:
+        return Response({"detail": "이미 처리된 신청입니다."}, status=status.HTTP_409_CONFLICT)
+    req.status = PartnerRequest.Status.REJECTED
+    req.resolved_at = timezone.now()
+    req.save(update_fields=["status", "resolved_at"])
+    return Response({"id": req.id, "status": req.status})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def pairs(request, session_id):
+    """GET=쌍 목록(전체). POST=모임장이 직접 쌍 생성."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if request.method == "GET":
+        rows = session.pairs.select_related("p1__user", "p2__user").all()
+        return Response({"pairs": [serialize_pair(pr) for pr in rows]})
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    p1 = get_object_or_404(SessionParticipant, id=request.data.get("p1_id"), session=session)
+    p2 = get_object_or_404(SessionParticipant, id=request.data.get("p2_id"), session=session)
+    if p1.id == p2.id:
+        return Response({"detail": "서로 다른 두 명이어야 해요."}, status=status.HTTP_400_BAD_REQUEST)
+    if _active_pair_for(session, p1.id, p2.id):
+        return Response({"detail": "이미 파트너로 묶인 사람이 있어요."},
+                        status=status.HTTP_409_CONFLICT)
+    pair = Pair.objects.create(
+        session=session, p1=p1, p2=p2, strict=bool(request.data.get("strict", False)))
+    pair = Pair.objects.select_related("p1__user", "p2__user").get(id=pair.id)
+    return Response(serialize_pair(pair), status=status.HTTP_201_CREATED)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_pair(request, session_id, pair_id):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    pair = get_object_or_404(Pair, id=pair_id, session=session)
+    pair.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["POST"])

@@ -61,6 +61,14 @@ class GamePlan:
 
 
 @dataclass(frozen=True)
+class PairUnit:
+    """고정 2인 팀. a·b는 participant id. strict=같이만(False=따로도 OK)."""
+    a: int
+    b: int
+    strict: bool = False
+
+
+@dataclass(frozen=True)
 class NeedOperatorChoice:
     """현재 모드로 경기를 못 짤 때. 운영자에게 대안 종목 선택을 요청."""
     reason: str

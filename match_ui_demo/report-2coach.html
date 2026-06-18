@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>코치 2명 시뮬레이션 (쉬운 보고서)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<style>
+  :root{--bg:#f3f5f8;--surface:#fff;--ink:#15171c;--ink2:#475063;--muted:#8b94a6;--line:#e7ebf1;
+    --brand:#12a565;--brand-ink:#0c7f4e;--brand-tint:#e7f6ee;--hl:#6366f1;--hl-tint:#eef0ff;--warn:#e0871b;--warn-tint:#fdf1de;}
+  *{box-sizing:border-box;}
+  body{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0;line-height:1.65;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:860px;margin:0 auto;padding:44px 22px 70px;}
+  h1{font-size:27px;font-weight:900;letter-spacing:-.04em;margin:0 0 4px;}
+  .sub{color:var(--muted);font-weight:600;font-size:14px;margin-bottom:28px;}
+  h2{font-size:18px;font-weight:900;letter-spacing:-.03em;margin:34px 0 12px;}
+  .q{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 1px 3px rgba(17,22,31,.05);margin-bottom:16px;}
+  .q .label{display:inline-block;font-size:12.5px;font-weight:800;color:var(--hl);background:var(--hl-tint);padding:3px 10px;border-radius:7px;margin-bottom:10px;}
+  .q .a{font-size:20px;font-weight:900;letter-spacing:-.03em;margin:2px 0 8px;}
+  .q .a.yes{color:var(--brand-ink);} .q .a.warn{color:var(--warn);}
+  p{margin:0 0 10px;font-size:14.5px;color:var(--ink2);} b{color:var(--ink);}
+  table{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface);border-radius:14px;overflow:hidden;border:1px solid var(--line);}
+  th,td{padding:11px 12px;text-align:center;border-bottom:1px solid var(--line);}
+  th{font-size:12.5px;font-weight:800;color:var(--muted);background:#fafbfc;}
+  td:first-child,th:first-child{text-align:left;font-weight:800;}
+  tbody tr:last-child td{border-bottom:none;}
+  .big{font-size:16px;font-weight:900;}
+  .g{color:var(--brand-ink);} .o{color:var(--warn);} .i{color:var(--hl);}
+  .bar{height:10px;border-radius:6px;background:#eef1f5;overflow:hidden;display:inline-block;width:110px;vertical-align:middle;margin-right:8px;}
+  .bar>i{display:block;height:100%;}
+  .callout{border-left:4px solid var(--brand);background:var(--brand-tint);border-radius:0 12px 12px 0;padding:14px 18px;margin:14px 0;font-weight:600;color:var(--ink2);font-size:14.5px;}
+  .callout.i{border-color:var(--hl);background:var(--hl-tint);}
+  ul{margin:8px 0 0;padding-left:20px;} li{font-size:14.5px;color:var(--ink2);margin:6px 0;}
+  .muted{color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>코치 2명 — 모두 코치와 칠 수 있나?</h1>
+  <div class="sub">코치 2명(고민재·이하경) 고정 · 51명 / 3시간 · 실제 매칭 엔진 · 각 8회 평균. "현재 방식(코치별)" vs "공동 우선 방식" 비교.</div>
+
+  <!-- Q1 -->
+  <div class="q">
+    <span class="label">질문 1</span>
+    <div class="a yes">코치 고정해도 나머지 사람 게임 균등? → 네, 균등해요 ✅</div>
+    <p>코치만 빼고 나머지 49명은 <b>평소 알고리즘 그대로</b> 돌아가서 게임수가 촘촘해요. 거의 다 <b>1~2게임 차이</b> 안.</p>
+    <table>
+      <thead><tr><th>상황</th><th>비코치 평균</th><th>편차</th><th>최소~최대</th></tr></thead>
+      <tbody>
+        <tr><td>6코트 · 15분</td><td>5.8게임</td><td>0.4</td><td>5 ~ 7</td></tr>
+        <tr><td>8코트 · 15분</td><td>8.0게임</td><td>0.2</td><td>7 ~ 8</td></tr>
+        <tr><td>8코트 · 10분</td><td>11.6게임</td><td>0.5</td><td>11 ~ 13</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:10px">→ 코치 고정은 나머지 사람들의 공정성을 건드리지 않아요. 안심하고 써도 됩니다.</p>
+  </div>
+
+  <!-- Q2 -->
+  <div class="q">
+    <span class="label">질문 2</span>
+    <div class="a">코치 2명일 때, 모두 코치와 칠 수 있나?</div>
+    <p>두 가지로 나눠 봐야 해요. <b>① 두 코치를 다 만남</b> vs <b>② 둘 중 한 명이라도 만남.</b></p>
+
+    <h2 style="margin-top:18px;font-size:16px">① 두 코치를 다 만남 (각각 1게임씩)</h2>
+    <p><b>15분이면 일부만</b>, <b>10분이면 전원</b> 가능.</p>
+    <table>
+      <thead><tr><th>게임시간</th><th>두 코치 다 만난 사람</th></tr></thead>
+      <tbody>
+        <tr><td>15분 (6코트)</td><td><span class="bar"><i style="width:73%;background:var(--warn)"></i></span> 36 / 49명</td></tr>
+        <tr><td><b>10분</b> (6·8코트)</td><td><span class="bar"><i style="width:100%;background:var(--brand)"></i></span> <b>49 / 49명 (전원)</b></td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:18px;font-size:16px">② 둘 중 한 명이라도 만남</h2>
+    <p>이건 방식에 따라 갈려요. <b>"공동 우선 방식"으로 바꾸면 항상 100%.</b></p>
+    <table>
+      <thead><tr><th>방식 (15분 기준)</th><th>최소 1명 코치 만남</th><th>두 코치 다 만남</th></tr></thead>
+      <tbody>
+        <tr><td>현재 방식<br><span class="muted" style="font-weight:600">코치별로 "안 만난 사람" 우선</span></td><td><span class="bar"><i style="width:86%;background:var(--warn)"></i></span> 86~98%</td><td class="g big">많음 (30~36명)</td></tr>
+        <tr><td>공동 우선 방식<br><span class="muted" style="font-weight:600">"아무 코치도 못 만난 사람" 최우선</span></td><td><span class="bar"><i style="width:100%;background:var(--hl)"></i></span> <b class="i">항상 100%</b></td><td class="o big">적음 (17~21명)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout i" style="margin-top:14px">
+      <b>트레이드오프.</b> "최소 한 코치는 꼭"을 챙기면(공동 우선) → 전원이 1명은 만나지만, <b>두 코치 다 만나는 사람은 줄어요.</b> 반대로 현재 방식은 "둘 다 만나는 사람"이 많은 대신 <b>아예 못 만나는 사람이 1~7명</b> 생길 수 있어요.
+    </div>
+  </div>
+
+  <!-- 결론 -->
+  <h2>그래서 어떻게?</h2>
+  <div class="q">
+    <ul>
+      <li><b>"모두 적어도 한 코치는 꼭 만나게"가 목표</b> → <b class="i">공동 우선 방식</b>으로 바꾸면 15분에도 100%. (지금은 86~98%)</li>
+      <li><b>"되도록 두 코치 다"가 목표</b> → 현재 방식 유지 + <b>게임시간 10분</b>이면 전원이 두 코치 다 만남.</li>
+      <li>어느 쪽이든 <b>나머지 사람 게임은 균등</b>(1~2게임 차이)하게 유지돼요.</li>
+    </ul>
+    <p style="margin-top:12px"><b>추천:</b> 보통 모임이면 "<b class="i">공동 우선 방식</b>"이 안전해요 — 아무도 코치 한 번 못 쳐보고 가는 일이 없으니까. 원하면 이 방식으로 코드도 바꿔드릴게요.</p>
+  </div>
+
+  <div class="sub" style="margin-top:26px;text-align:center">실제 매칭 엔진 기반 시뮬레이션 · 코치 2명 고정 코트 시나리오</div>
+</div>
+</body>
+</html>

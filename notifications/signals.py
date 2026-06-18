@@ -2,6 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from band.models import BandComment, BandSchedule, BandScheduleApplication, BandMember, BandPostLike, BandBookmark
+from band.match_models import PartnerRequest
 from community.models import Comment as CommunityComment, Post as CommunityPost
 from badmintok.models import Notice
 from accounts.models import Inquiry
@@ -366,3 +367,40 @@ def notify_on_community_post_like(sender, instance, created, **kwargs):
         related_community_post=post,
         actor=liker,
     )
+
+
+# ─── 대진(번개 자동 대진) ───
+# '다음 경기' 알림은 경기 선수(MatchPlayer)가 모두 채워진 뒤 보내야 하므로
+# 시그널이 아니라 band/api/match_views._create_match 에서 직접 생성한다.
+
+@receiver(post_save, sender=PartnerRequest)
+def notify_on_partner_request(sender, instance, created, **kwargs):
+    """파트너 신청 → 받은 사람에게 / 승인 → 양쪽에게."""
+    req = instance
+    schedule = req.session.schedule
+    band = schedule.band
+    from_user = req.from_participant.user
+    to_user = req.to_participant.user
+
+    if created:
+        Notification.objects.create(
+            user=to_user,
+            type=Notification.Type.PARTNER_REQUEST,
+            title=f"{from_user.activity_name}님이 파트너를 신청했어요",
+            message=f"[{band.name}] {schedule.title}",
+            related_band_schedule=schedule,
+            related_band=band,
+            actor=from_user,
+        )
+        return
+
+    if req.status == PartnerRequest.Status.APPROVED:
+        for me, mate in ((from_user, to_user), (to_user, from_user)):
+            Notification.objects.create(
+                user=me,
+                type=Notification.Type.PARTNER_APPROVED,
+                title=f"{mate.activity_name}님과 파트너가 됐어요",
+                message=f"[{band.name}] {schedule.title} · 이제 같은 팀으로 들어갑니다",
+                related_band_schedule=schedule,
+                related_band=band,
+            )

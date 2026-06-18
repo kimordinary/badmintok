@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>모수·코트 매트릭스 테스트 — 번개 대진</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+:root{--ink:#11161f;--ink2:#475063;--muted:#8b94a6;--line:#e3e7ee;--bg:#f3f5f8;--surface:#fff;--brand:#12a565;--brand-tint:#e7f6ee;--mix:#8b5cf6;--men:#3b82f6;--women:#ec4899;--warn:#e0871b}
+*{box-sizing:border-box}body{font-family:'Pretendard Variable',Pretendard,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:40px 16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto}h1{font-size:25px;font-weight:800;letter-spacing:-.03em;margin:0 0 6px}
+.date{color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px}
+.lead{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px;font-size:15px;color:var(--ink2)}
+h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:30px 0 6px}
+.sub{color:var(--muted);font-size:13px;font-weight:600;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13.5px;box-shadow:0 1px 3px rgba(17,22,31,.05)}
+th,td{padding:9px 10px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}th{background:#fafbfc;font-weight:800;color:var(--ink2);font-size:12px}td:first-child,th:first-child{text-align:left}tr:last-child td{border-bottom:none}.kpi{font-weight:800}
+tr.best td:first-child{color:var(--brand);font-weight:800}
+.ratio{display:inline-flex;height:14px;border-radius:4px;overflow:hidden;width:90px;vertical-align:middle;border:1px solid var(--line);margin-right:5px}
+.rx{background:var(--mix)}.rm{background:var(--men)}.rw{background:var(--women)}
+ul{padding-left:20px}li{margin:7px 0;font-size:14.5px}
+.ok{background:#e7f6ee;border:1px solid #b6e3cb;border-radius:12px;padding:12px 16px;font-size:14px;color:#0c7f4e;font-weight:600;margin:14px 0}
+.lv{font-size:12px;color:var(--muted)}
+footer{color:var(--muted);font-size:13px;margin-top:28px;text-align:center}
+</style></head><body><div class="wrap">
+<h1>📐 모수 · 코트 매트릭스 테스트</h1>
+<div class="date">작성일 2026-06-15 · 다양한 인원/코트 조합에서 품질이 유지되는지 일괄 검증</div>
+<div class="lead">합성 모수(ABCD 중심, 여 ~42%)로 <b>5가지 인원/코트 조합 × 종목 4설정 = 20개</b>를 한 번에 돌렸다. 조건: 3시간 · 게임 13~17분 랜덤 · 동일 난수.</div>
+<h2>20명 · 4코트</h2>
+<div class='sub'>남 12 · 여 8 · 벤치(대기) 4명 &nbsp;|&nbsp; <span class='lv'>자강1 · S3 · A5 · B4 · C4 · D2 · 왕초심1</span></div>
+<table><thead><tr><th>설정</th><th>게임</th><th>1인 출전</th><th>실력차</th><th>박빙률</th><th>혼:남:여</th><th>첫 파트너</th><th>최다동반</th></tr></thead><tbody>
+<tr class="best"><td>모두·밸런스</td><td class='kpi'>48</td><td class='kpi'>9.6 (9~10)</td><td class='kpi'>0.10</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:100%"></span><span class="rm" style="width:0%"></span><span class="rw" style="width:0%"></span></span>100:0:0</td><td class='kpi'>86%</td><td class='kpi'>2회</td></tr>
+<tr><td>모두·동일 급수</td><td class='kpi'>48</td><td class='kpi'>9.6 (9~10)</td><td class='kpi'>0.02</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:92%"></span><span class="rm" style="width:4%"></span><span class="rw" style="width:4%"></span></span>92:4:4</td><td class='kpi'>86%</td><td class='kpi'>3회</td></tr>
+<tr><td>남복/여복·밸런스</td><td class='kpi'>48</td><td class='kpi'>9.6 (8~11)</td><td class='kpi'>0.40</td><td class='kpi'>92%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:0%"></span><span class="rm" style="width:62%"></span><span class="rw" style="width:38%"></span></span>0:62:38</td><td class='kpi'>59%</td><td class='kpi'>4회</td></tr>
+<tr><td>혼복·밸런스</td><td class='kpi'>48</td><td class='kpi'>9.6 (9~10)</td><td class='kpi'>0.10</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:100%"></span><span class="rm" style="width:0%"></span><span class="rw" style="width:0%"></span></span>100:0:0</td><td class='kpi'>86%</td><td class='kpi'>2회</td></tr>
+</tbody></table>
+<h2>30명 · 4코트</h2>
+<div class='sub'>남 17 · 여 13 · 벤치(대기) 14명 &nbsp;|&nbsp; <span class='lv'>자강1 · S4 · A7 · B8 · C6 · D3 · 왕초심1</span></div>
+<table><thead><tr><th>설정</th><th>게임</th><th>1인 출전</th><th>실력차</th><th>박빙률</th><th>혼:남:여</th><th>첫 파트너</th><th>최다동반</th></tr></thead><tbody>
+<tr class="best"><td>모두·밸런스</td><td class='kpi'>48</td><td class='kpi'>6.4 (6~7)</td><td class='kpi'>0.08</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:92%"></span><span class="rm" style="width:8%"></span><span class="rw" style="width:0%"></span></span>92:8:0</td><td class='kpi'>93%</td><td class='kpi'>2회</td></tr>
+<tr><td>모두·동일 급수</td><td class='kpi'>48</td><td class='kpi'>6.4 (6~7)</td><td class='kpi'>0.00</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:90%"></span><span class="rm" style="width:6%"></span><span class="rw" style="width:4%"></span></span>90:6:4</td><td class='kpi'>91%</td><td class='kpi'>2회</td></tr>
+<tr><td>남복/여복·밸런스</td><td class='kpi'>48</td><td class='kpi'>6.4 (6~7)</td><td class='kpi'>0.27</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:0%"></span><span class="rm" style="width:56%"></span><span class="rw" style="width:44%"></span></span>0:56:44</td><td class='kpi'>82%</td><td class='kpi'>3회</td></tr>
+<tr><td>혼복·밸런스</td><td class='kpi'>48</td><td class='kpi'>6.4 (6~7)</td><td class='kpi'>0.06</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:100%"></span><span class="rm" style="width:0%"></span><span class="rw" style="width:0%"></span></span>100:0:0</td><td class='kpi'>92%</td><td class='kpi'>2회</td></tr>
+</tbody></table>
+<h2>30명 · 5코트</h2>
+<div class='sub'>남 17 · 여 13 · 벤치(대기) 10명 &nbsp;|&nbsp; <span class='lv'>자강1 · S4 · A7 · B8 · C6 · D3 · 왕초심1</span></div>
+<table><thead><tr><th>설정</th><th>게임</th><th>1인 출전</th><th>실력차</th><th>박빙률</th><th>혼:남:여</th><th>첫 파트너</th><th>최다동반</th></tr></thead><tbody>
+<tr class="best"><td>모두·밸런스</td><td class='kpi'>61</td><td class='kpi'>8.1 (8~9)</td><td class='kpi'>0.10</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:84%"></span><span class="rm" style="width:11%"></span><span class="rw" style="width:5%"></span></span>84:11:5</td><td class='kpi'>95%</td><td class='kpi'>2회</td></tr>
+<tr><td>모두·동일 급수</td><td class='kpi'>61</td><td class='kpi'>8.1 (8~9)</td><td class='kpi'>0.00</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:92%"></span><span class="rm" style="width:3%"></span><span class="rw" style="width:5%"></span></span>92:3:5</td><td class='kpi'>87%</td><td class='kpi'>3회</td></tr>
+<tr><td>남복/여복·밸런스</td><td class='kpi'>61</td><td class='kpi'>8.1 (8~9)</td><td class='kpi'>0.28</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:0%"></span><span class="rm" style="width:57%"></span><span class="rw" style="width:43%"></span></span>0:57:43</td><td class='kpi'>82%</td><td class='kpi'>3회</td></tr>
+<tr><td>혼복·밸런스</td><td class='kpi'>61</td><td class='kpi'>8.1 (8~9)</td><td class='kpi'>0.13</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:100%"></span><span class="rm" style="width:0%"></span><span class="rw" style="width:0%"></span></span>100:0:0</td><td class='kpi'>95%</td><td class='kpi'>2회</td></tr>
+</tbody></table>
+<h2>35명 · 4코트</h2>
+<div class='sub'>남 20 · 여 15 · 벤치(대기) 19명 &nbsp;|&nbsp; <span class='lv'>자강1 · S5 · A8 · B9 · C7 · D4 · 왕초심1</span></div>
+<table><thead><tr><th>설정</th><th>게임</th><th>1인 출전</th><th>실력차</th><th>박빙률</th><th>혼:남:여</th><th>첫 파트너</th><th>최다동반</th></tr></thead><tbody>
+<tr class="best"><td>모두·밸런스</td><td class='kpi'>48</td><td class='kpi'>5.5 (5~6)</td><td class='kpi'>0.19</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:90%"></span><span class="rm" style="width:8%"></span><span class="rw" style="width:2%"></span></span>90:8:2</td><td class='kpi'>96%</td><td class='kpi'>2회</td></tr>
+<tr><td>모두·동일 급수</td><td class='kpi'>48</td><td class='kpi'>5.5 (5~6)</td><td class='kpi'>0.00</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:96%"></span><span class="rm" style="width:0%"></span><span class="rw" style="width:4%"></span></span>96:0:4</td><td class='kpi'>90%</td><td class='kpi'>2회</td></tr>
+<tr><td>남복/여복·밸런스</td><td class='kpi'>48</td><td class='kpi'>5.5 (5~6)</td><td class='kpi'>0.40</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:0%"></span><span class="rm" style="width:56%"></span><span class="rw" style="width:44%"></span></span>0:56:44</td><td class='kpi'>86%</td><td class='kpi'>2회</td></tr>
+<tr><td>혼복·밸런스</td><td class='kpi'>48</td><td class='kpi'>5.5 (5~6)</td><td class='kpi'>0.15</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:100%"></span><span class="rm" style="width:0%"></span><span class="rw" style="width:0%"></span></span>100:0:0</td><td class='kpi'>93%</td><td class='kpi'>2회</td></tr>
+</tbody></table>
+<h2>35명 · 5코트</h2>
+<div class='sub'>남 20 · 여 15 · 벤치(대기) 15명 &nbsp;|&nbsp; <span class='lv'>자강1 · S5 · A8 · B9 · C7 · D4 · 왕초심1</span></div>
+<table><thead><tr><th>설정</th><th>게임</th><th>1인 출전</th><th>실력차</th><th>박빙률</th><th>혼:남:여</th><th>첫 파트너</th><th>최다동반</th></tr></thead><tbody>
+<tr class="best"><td>모두·밸런스</td><td class='kpi'>61</td><td class='kpi'>7.0 (6~8)</td><td class='kpi'>0.15</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:92%"></span><span class="rm" style="width:5%"></span><span class="rw" style="width:3%"></span></span>92:5:3</td><td class='kpi'>94%</td><td class='kpi'>2회</td></tr>
+<tr><td>모두·동일 급수</td><td class='kpi'>61</td><td class='kpi'>7.0 (6~7)</td><td class='kpi'>0.00</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:93%"></span><span class="rm" style="width:7%"></span><span class="rw" style="width:0%"></span></span>93:7:0</td><td class='kpi'>87%</td><td class='kpi'>3회</td></tr>
+<tr><td>남복/여복·밸런스</td><td class='kpi'>61</td><td class='kpi'>7.0 (6~8)</td><td class='kpi'>0.26</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:0%"></span><span class="rm" style="width:57%"></span><span class="rw" style="width:43%"></span></span>0:57:43</td><td class='kpi'>80%</td><td class='kpi'>3회</td></tr>
+<tr><td>혼복·밸런스</td><td class='kpi'>61</td><td class='kpi'>7.0 (6~7)</td><td class='kpi'>0.15</td><td class='kpi'>100%</td><td style='text-align:left'><span class="ratio"><span class="rx" style="width:100%"></span><span class="rm" style="width:0%"></span><span class="rw" style="width:0%"></span></span>100:0:0</td><td class='kpi'>90%</td><td class='kpi'>2회</td></tr>
+</tbody></table>
+<h2>종합 관찰</h2><ul>
+<li><b>모든 조합에서 출전 ±1 균등 · 박빙률 거의 100%</b> — 인원/코트가 바뀌어도 핵심 품질은 견고.</li>
+<li><b>다양성(첫 파트너)은 "벤치(대기 인원)" 크기에 좌우</b> — 20명/4코트(벤치 4)는 86%로 낮고, 35명/4코트(벤치 19)는 96%. 대기 인원이 많을수록 새 조합이 잘 나온다.</li>
+<li><b>벤치가 너무 작으면(20명/4코트=4명) 남복/여복은 박빙 92%·첫파 59%로 떨어짐</b> — 성별로 풀이 또 갈리면 후보가 거의 없어서. 이땐 "모두"가 유리.</li>
+<li><b>코트를 늘리면 1인 게임수↑</b> — 30명 기준 4코트 6.4게임 → 5코트 8.1게임.</li>
+<li><b>혼복만은 전 조합에서 작동</b>(여 42%라 충분). <b>동일급수는 실력차 0.00</b>(거의 완벽), 대신 다양성 소폭↓.</li>
+<li><b>권장: 인원/코트 비율은 "벤치 8명 이상"이 좋음</b> — 그래야 다양성·휴식 여유가 난다. (예: 4코트면 24명+, 5코트면 28명+)</li>
+</ul>
+<div class="ok">✅ 결론: 20~35명 / 4~5코트 어떤 조합이든 균등·균형은 견고. 다양성만 "벤치 크기"에 비례하니, 인원이 빠듯하면(벤치 4~5) "모두" 모드가 안전.</div>
+<footer>관련: <a href="/report-realistic.html">현실 모수</a> · <a href="/report-ratio.html">종목 비율 손잡이</a> · <a href="/report.html">실제 51명</a></footer>
+</div></body></html>
