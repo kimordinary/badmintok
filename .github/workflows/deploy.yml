@@ -219,7 +219,15 @@ jobs:
               docker-compose -f docker-compose.prod.yml --env-file .env.prod logs web
               exit 1
             fi
-            
+
+            # === DB 마이그레이션 (nginx로 트래픽 받기 전에 적용) ===
+            # 신규 코드가 참조하는 컬럼/테이블을 트래픽 유입 전에 맞춰 둔다.
+            # 주의: 과거 '대형 테이블 ALTER가 라이브 INSERT와 락 경합 → 사이트 마비' 전례가 있다.
+            #       대형 스키마 변경(큰 테이블 ALTER/인덱스)이 포함된 PR은 리뷰에서 확인하고,
+            #       위험하면 이 단계를 임시로 주석 처리하고 트래픽 적은 시간에 수동 적용할 것.
+            echo "Applying database migrations..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py migrate --noinput
+
             # Certbot 및 Nginx 시작
             echo "Starting Certbot and Nginx..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d certbot nginx
@@ -247,11 +255,7 @@ jobs:
             echo "Checking service health..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod ps
             
-            # 마이그레이션은 배포에서 자동 실행하지 않는다.
-            # (대용량 테이블 ALTER가 라이브 INSERT와 락 경합을 일으켜 사이트를 마비시킨 전례.)
-            # 스키마 변경이 필요하면 트래픽 적은 시간에 운영자가 수동으로 적용한다:
-            #   docker compose ... run --rm web python manage.py migrate
-            echo "Skipping auto-migrate (migrations are applied manually off-peak)."
+            # 마이그레이션은 위(nginx 기동 전 단계)에서 이미 적용했다.
 
             echo "Collecting static files (non-blocking, capped)..."
             timeout 120 docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py collectstatic --noinput || echo "collectstatic skipped/timed out"
