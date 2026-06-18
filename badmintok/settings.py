@@ -518,7 +518,7 @@ UNFOLD = {
                 ],
             },
             {
-                "title": "밴드/모임",
+                "title": "웹민턴",
                 "separator": True,
                 "collapsible": True,
                 "items": [
@@ -541,6 +541,16 @@ UNFOLD = {
                         "title": "밴드 일정",
                         "icon": "event",
                         "link": reverse_lazy("admin:band_bandschedule_changelist"),
+                    },
+                    {
+                        "title": "배드민턴 센터",
+                        "icon": "stadium",
+                        "link": reverse_lazy("admin:centers_center_changelist"),
+                    },
+                    {
+                        "title": "센터 관리자",
+                        "icon": "manage_accounts",
+                        "link": reverse_lazy("admin:centers_centermanager_changelist"),
                     },
                 ],
             },
