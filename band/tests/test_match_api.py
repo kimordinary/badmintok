@@ -213,6 +213,10 @@ class ParticipantApiTest(FlowTest):
         self.assertIsNotNone(body["participant_id"])
         self.assertIsNotNone(body["queue_position"])
         self.assertTrue(body["up_next"])  # 4명뿐이라 모두 다음 경기 후보
+        # 내 카드 표시용 — 이름·성별·급수
+        self.assertEqual(body["name"], users["a@x.com"].activity_name)
+        self.assertEqual(body["gender"], "male")
+        self.assertEqual(body["base_level"], 4)  # b=4
 
     def test_my_status_shows_current_match_when_playing(self):
         sid, users = self._present_session_users([
