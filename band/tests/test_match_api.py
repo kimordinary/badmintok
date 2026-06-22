@@ -738,6 +738,43 @@ class OperatorExtrasTest(FlowTest):
             {"name": "x", "gender": "unknown"}, format="json").status_code, 400)
 
 
+class SessionBridgeTest(MatchApiSetup):
+    def test_ensure_session_creates_and_is_idempotent(self):
+        from band.match_service import ensure_session
+        from band.match_models import MatchSession
+        u = self._approved_applicant("a@x.com", "b", "male")
+        s1 = ensure_session(self.schedule, self.owner)
+        self.assertEqual(MatchSession.objects.filter(schedule=self.schedule).count(), 1)
+        self.assertEqual(s1.participants.count(), 1)
+        s2 = ensure_session(self.schedule, self.owner)  # 이미 있으면 그대로
+        self.assertEqual(s1.id, s2.id)
+        self.assertEqual(MatchSession.objects.filter(schedule=self.schedule).count(), 1)
+
+    def test_me_returns_session_after_bridge(self):
+        from band.match_service import ensure_session
+        u = self._approved_applicant("a@x.com", "b", "male")
+        ensure_session(self.schedule, self.owner)  # 웹 콘솔 진입 시뮬레이션
+        self.client.force_authenticate(u)
+        body = self.client.get(
+            f"/api/bands/match/schedules/{self.schedule.id}/me/").json()
+        self.assertIsNotNone(body["session_id"])
+        self.assertIsNotNone(body["participant_id"])  # 승인자가 스냅샷에 연결됨
+
+    def test_ensure_session_never_touches_existing(self):
+        """순수 get-or-create: 세션 있으면 재생성·참가자 추가 절대 안 함."""
+        from band.match_service import ensure_session
+        from band.match_models import MatchSession
+        self._approved_applicant("a@x.com", "b", "male")
+        s1 = ensure_session(self.schedule, self.owner)
+        self.assertEqual(s1.participants.count(), 1)
+        # 세션 생성 후 새 승인자가 생겨도 ensure_session은 손대지 않는다(재동기화 아님)
+        self._approved_applicant("late@x.com", "c", "female")
+        s2 = ensure_session(self.schedule, self.owner)
+        self.assertEqual(s1.id, s2.id)
+        self.assertEqual(s2.participants.count(), 1)            # 안 늘어남
+        self.assertEqual(MatchSession.objects.filter(schedule=self.schedule).count(), 1)
+
+
 class RobustnessTest(FlowTest):
     def test_swap_wrong_length_returns_400(self):
         sid = self._present_session([

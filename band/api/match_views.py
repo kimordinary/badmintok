@@ -26,6 +26,7 @@ from band.matchmaking.selection import queue_order
 from band.api.match_serializers import (
     serialize_session, serialize_match, serialize_participant, serialize_my_status,
     serialize_pair, serialize_partner_request, serialize_reservation)
+from band.match_service import create_session_snapshot
 
 
 def _is_operator(user, band) -> bool:
@@ -59,24 +60,8 @@ def start_session(request, schedule_id):
     court_count = int(request.data.get("court_count", 4))
     mode = request.data.get("discipline_mode", MatchSession.DisciplineMode.ALL)
     preset = request.data.get("preset", MatchSession.Preset.BALANCED)
-
-    with transaction.atomic():
-        session = MatchSession.objects.create(
-            schedule=schedule, court_count=court_count,
-            discipline_mode=mode, preset=preset, created_by=request.user)
-        for i in range(1, court_count + 1):
-            Court.objects.create(session=session, index=i)
-        apps = BandScheduleApplication.objects.filter(
-            schedule=schedule, status="approved").select_related("user")
-        for app in apps:
-            score, gender = _profile_level_gender(app.user)
-            # 번개 상세에서 자가 출석 체크인(checked_in_at)한 사람은 바로 참여중으로
-            attendance = (SessionParticipant.Attendance.PRESENT if app.checked_in_at
-                          else SessionParticipant.Attendance.NOT_PRESENT)
-            SessionParticipant.objects.create(
-                session=session, user=app.user, base_level=score, gender=gender,
-                attendance=attendance)
-
+    session = create_session_snapshot(
+        schedule, request.user, court_count=court_count, mode=mode, preset=preset)
     return Response(serialize_session(session), status=status.HTTP_201_CREATED)
 
 

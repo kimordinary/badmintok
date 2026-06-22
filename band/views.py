@@ -2334,6 +2334,11 @@ def schedule_console(request, band_id, schedule_id):
     if not can_manage:
         return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
 
+    # 웹으로 운영을 시작해도 서버 MatchSession을 생성(없으면)해 참가자 앱이 연결되게 한다.
+    # (앱 start API와 동일 로직 — band.match_service)
+    from band.match_service import ensure_session
+    ensure_session(schedule, request.user)
+
     LEVEL_MAP = {"master": "자강", "s": "S", "a": "A", "b": "B", "c": "C", "d": "D", "beginner": "왕초심"}
     apps = schedule.applications.filter(status="approved").select_related("user", "user__profile").order_by("applied_at")
     players = []
