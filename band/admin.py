@@ -565,3 +565,90 @@ class BandBookmarkAdmin(ModelAdmin):
     list_filter = ["created_at"]
     search_fields = ["band__name", "user__activity_name", "user__email"]
     readonly_fields = ["created_at"]
+
+
+# ===== 대진 기록 (관리자 열람·CSV 내보내기, 읽기 전용) =====
+import csv as _csv
+from django.http import HttpResponse
+from band.match_models import (
+    MatchSession, SessionParticipant, Match, MatchPlayer)
+
+
+class MatchPlayerInline(TabularInline):
+    model = MatchPlayer
+    extra = 0
+    can_delete = False
+    readonly_fields = ("participant", "team")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Match)
+class MatchRecordAdmin(ModelAdmin):
+    list_display = ("id", "session", "court", "discipline", "status", "started_at", "ended_at")
+    list_filter = ("discipline", "status", "started_at")
+    search_fields = ("session__schedule__title", "session__schedule__band__name")
+    date_hierarchy = "started_at"
+    inlines = (MatchPlayerInline,)
+    readonly_fields = ("session", "court", "discipline", "status", "started_at", "ended_at")
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(MatchSession)
+class MatchSessionAdmin(ModelAdmin):
+    list_display = ("id", "schedule", "status", "discipline_mode", "preset",
+                    "court_count", "created_by", "created_at")
+    list_filter = ("status", "discipline_mode", "preset", "created_at")
+    search_fields = ("schedule__title", "schedule__band__name")
+    date_hierarchy = "created_at"
+    readonly_fields = ("schedule", "status", "discipline_mode", "preset", "female_adjust",
+                       "court_count", "created_by", "created_at", "updated_at")
+    actions = ("export_matches_csv",)
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.action(description="선택 세션의 경기 기록 CSV 내보내기")
+    def export_matches_csv(self, request, queryset):
+        resp = HttpResponse(content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = "attachment; filename=match_log.csv"
+        resp.write("﻿")  # 엑셀 한글 깨짐 방지(BOM)
+        w = _csv.writer(resp)
+        w.writerow(["match_id", "session_id", "schedule", "band", "started_at", "ended_at",
+                    "court", "discipline", "team", "participant_id", "name", "gender", "base_level"])
+        mps = (MatchPlayer.objects
+               .filter(match__session__in=queryset)
+               .select_related("match__session__schedule__band", "match__court", "participant__user")
+               .order_by("match__session_id", "match_id", "team"))
+        for mp in mps:
+            m = mp.match
+            sc = m.session.schedule
+            w.writerow([m.id, m.session_id, sc.title, sc.band.name if sc.band_id else "",
+                        m.started_at, m.ended_at or "", m.court.index, m.discipline, mp.team,
+                        mp.participant_id, mp.participant.display_name,
+                        mp.participant.gender, mp.participant.base_level])
+        return resp
+
+
+@admin.register(SessionParticipant)
+class SessionParticipantRecordAdmin(ModelAdmin):
+    list_display = ("id", "session", "name_display", "gender", "base_level",
+                    "attendance", "total_games")
+    list_filter = ("attendance", "gender", "base_level")
+    search_fields = ("user__activity_name", "guest_name", "session__schedule__title")
+    readonly_fields = ("session", "user", "guest_name", "gender", "base_level", "attendance",
+                       "games_mixed", "games_mens", "games_womens", "last_game_ended_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description="이름")
+    def name_display(self, obj):
+        return obj.display_name
+
+    @admin.display(description="총 경기")
+    def total_games(self, obj):
+        return obj.games_mixed + obj.games_mens + obj.games_womens

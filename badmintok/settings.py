@@ -550,6 +550,28 @@ UNFOLD = {
                 ],
             },
             {
+                "title": "대진 기록",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "대진 세션",
+                        "icon": "scoreboard",
+                        "link": reverse_lazy("admin:band_matchsession_changelist"),
+                    },
+                    {
+                        "title": "경기 기록",
+                        "icon": "sports_tennis",
+                        "link": reverse_lazy("admin:band_match_changelist"),
+                    },
+                    {
+                        "title": "참가자 기록",
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:band_sessionparticipant_changelist"),
+                    },
+                ],
+            },
+            {
                 "title": "사용자 관리",
                 "separator": True,
                 "collapsible": True,
