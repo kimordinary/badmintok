@@ -348,6 +348,7 @@ class BandScheduleImageSerializer(serializers.ModelSerializer):
 class BandScheduleListSerializer(serializers.ModelSerializer):
     """밴드 일정 목록 시리얼라이저"""
     band_name = serializers.CharField(source='band.name', read_only=True)
+    region_display = serializers.CharField(source='get_region_display', read_only=True)
     created_by = UserSerializer(read_only=True)
     images = BandScheduleImageSerializer(many=True, read_only=True)
     is_full = serializers.SerializerMethodField()
@@ -359,7 +360,7 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
         model = BandSchedule
         fields = [
             'id', 'band', 'band_name', 'title', 'description',
-            'start_datetime', 'end_datetime', 'location',
+            'start_datetime', 'end_datetime', 'region', 'region_display', 'location',
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'cost', 'bank_account', 'is_closed', 'created_by',
@@ -407,6 +408,7 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
 class BandScheduleDetailSerializer(serializers.ModelSerializer):
     """밴드 일정 상세 시리얼라이저"""
     band_name = serializers.CharField(source='band.name', read_only=True)
+    region_display = serializers.CharField(source='get_region_display', read_only=True)
     created_by = UserSerializer(read_only=True)
     images = BandScheduleImageSerializer(many=True, read_only=True)
     is_full = serializers.SerializerMethodField()
@@ -421,7 +423,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
         model = BandSchedule
         fields = [
             'id', 'band', 'band_name', 'title', 'description',
-            'start_datetime', 'end_datetime', 'location',
+            'start_datetime', 'end_datetime', 'region', 'region_display', 'location',
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'cost', 'bank_account', 'is_closed', 'created_by',
@@ -602,7 +604,7 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
         model = BandSchedule
         fields = [
             'title', 'description', 'start_datetime', 'end_datetime',
-            'location', 'max_participants', 'requires_approval',
+            'region', 'location', 'max_participants', 'requires_approval',
             'application_deadline', 'cost', 'bank_account'
         ]
 

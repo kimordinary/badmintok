@@ -562,6 +562,10 @@ class BandSchedule(models.Model):
     description = models.TextField(_("모임 참가 조건"), blank=True)
     start_datetime = models.DateTimeField(_("시작 일시"))
     end_datetime = models.DateTimeField(_("종료 일시"), null=True, blank=True)
+    # 지역: Band와 동일한 9코드 enum 공유 (capital/busan(영남권)/gwangju(호남권)/daejeon(충청권) 등)
+    region = models.CharField(
+        _("지역"), max_length=20, choices=Band.Region.choices,
+        default=Band.Region.ALL, blank=True)
     location = models.CharField(_("장소"), max_length=200, blank=True)
     max_participants = models.IntegerField(_("최대 참가 인원"), null=True, blank=True)
     current_participants = models.IntegerField(_("현재 참가 인원"), default=0)
