@@ -108,6 +108,7 @@ jobs:
           cp -r accounts badmintok band centers community contests notifications templates static nginx mysql scripts deploy-temp/ 2>/dev/null || true
           cp Dockerfile docker-compose.prod.yml entrypoint.sh requirements.txt manage.py deploy-temp/ 2>/dev/null || true
           cp .env.prod env.prod.example deploy-temp/ 2>/dev/null || true
+          cp setup_badmintok_guide_category.py deploy-temp/ 2>/dev/null || true
           
           # 불필요한 파일 제거
           find deploy-temp -name "*.pyc" -delete 2>/dev/null || true
@@ -227,6 +228,10 @@ jobs:
             #       위험하면 이 단계를 임시로 주석 처리하고 트래픽 적은 시간에 수동 적용할 것.
             echo "Applying database migrations..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python manage.py migrate --noinput
+
+            # === 데이터 시드: 배드민톡 '가이드' 카테고리 (멱등) ===
+            echo "Seeding 배드민톡 가이드 카테고리..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web python setup_badmintok_guide_category.py || echo "[seed] guide category step skipped"
 
             # Certbot 및 Nginx 시작
             echo "Starting Certbot and Nginx..."
