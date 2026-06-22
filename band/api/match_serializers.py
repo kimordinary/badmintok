@@ -1,6 +1,17 @@
 from band.match_models import SessionParticipant, Match, Pair, PartnerRequest
-from band.match_state import build_pool, build_pairstats
+from band.match_state import build_pool, build_pairstats, reserved_participant_ids
 from band.matchmaking.selection import queue_order
+
+
+def serialize_reservation(r):
+    return {
+        "id": r.id,
+        "discipline": r.discipline or None,
+        "players": [
+            {"participant_id": rp.participant_id, "name": rp.participant.display_name}
+            for rp in r.players.all()
+        ],
+    }
 
 
 def serialize_pair(pair):
@@ -8,8 +19,8 @@ def serialize_pair(pair):
         "id": pair.id,
         "strict": pair.strict,
         "members": [
-            {"participant_id": pair.p1_id, "name": pair.p1.user.activity_name},
-            {"participant_id": pair.p2_id, "name": pair.p2.user.activity_name},
+            {"participant_id": pair.p1_id, "name": pair.p1.display_name},
+            {"participant_id": pair.p2_id, "name": pair.p2.display_name},
         ],
     }
 
@@ -20,9 +31,9 @@ def serialize_partner_request(req):
         "status": req.status,
         "strict": req.strict,
         "from": {"participant_id": req.from_participant_id,
-                 "name": req.from_participant.user.activity_name},
+                 "name": req.from_participant.display_name},
         "to": {"participant_id": req.to_participant_id,
-               "name": req.to_participant.user.activity_name},
+               "name": req.to_participant.display_name},
     }
 
 
@@ -30,7 +41,7 @@ def serialize_participant(sp):
     return {
         "id": sp.id,
         "user_id": sp.user_id,
-        "name": sp.user.activity_name,
+        "name": sp.display_name,
         "gender": sp.gender,
         "base_level": sp.base_level,
         "attendance": sp.attendance,
@@ -46,7 +57,7 @@ def serialize_match(match):
     for mp in match.players.select_related("participant__user").all():
         teams[mp.team].append({
             "participant_id": mp.participant_id,
-            "name": mp.participant.user.activity_name,
+            "name": mp.participant.display_name,
             "base_level": mp.participant.base_level,
             "gender": mp.participant.gender,
         })
@@ -85,21 +96,25 @@ def serialize_session(session):
         coach = None
         if court.coach_id:
             coach = {"participant_id": court.coach_id,
-                     "name": court.coach.user.activity_name,
+                     "name": court.coach.display_name,
                      "coverage": coverage.get(court.coach_id)}
         courts.append({
             "index": court.index,
+            "name": court.name or None,
             "match": serialize_match(current) if current else None,
             "coach": coach,
         })
-    # 코치는 본인 코트에 고정되어 일반 대기열에서 제외
-    pool = build_pool(session, on_court_participant_ids=on_court_ids | coach_ids)
+    # 코치는 본인 코트 고정, 예약 멤버는 확보 → 일반 대기열에서 제외
+    reserved_ids = reserved_participant_ids(session)
+    pool = build_pool(
+        session, on_court_participant_ids=on_court_ids | coach_ids | reserved_ids)
     queue = [{"participant_id": p.id, "name": p.name, "total_games": p.total_games}
              for p in queue_order(pool)]
     pairs = session.pairs.select_related("p1__user", "p2__user").all()
     pending = session.partner_requests.filter(
         status=PartnerRequest.Status.PENDING).select_related(
         "from_participant__user", "to_participant__user")
+    reservations = session.reservations.prefetch_related("players__participant__user").all()
     return {
         "id": session.id,
         "status": session.status,
@@ -111,6 +126,7 @@ def serialize_session(session):
         "queue": queue,
         "pairs": [serialize_pair(pr) for pr in pairs],
         "partner_requests": [serialize_partner_request(r) for r in pending],
+        "reservations": [serialize_reservation(r) for r in reservations],
     }
 
 

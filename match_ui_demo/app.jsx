@@ -83,10 +83,11 @@ function App() {
       const type = males === 4 ? '남복' : males === 0 ? '여복' : '혼복';
       const sorted = [...players].sort((a, b) => LEVEL_SCORE[b.level] - LEVEL_SCORE[a.level]);
       const teamA = [sorted[0], sorted[3]], teamB = [sorted[1], sorted[2]]; // 1·4 / 2·3 균형
-      const empty = s.courts.find((c) => !c.match && !c.pendingRemove && !c.ace);
-      // 빈 코트 있으면 편집 모달로 바로 배치, 없으면 "예약 경기"로 대기열에 쌓음
+      // 자동 모드: 이미 알림 나간 '다음 경기'는 안 건드리고 항상 '이후 예정(예약)'에 추가.
+      // 수동 모드: 빈 코트 있으면 바로 배치, 없으면 예약.
+      const empty = !s.auto && s.courts.find((c) => !c.match && !c.pendingRemove && !c.ace);
       if (empty) return { modal: { type: 'edit', court: empty, match: { teamA, teamB, type } } };
-      return { pending: [...s.pending, { id: 'g' + Date.now(), teamA, teamB, type }], toast: { kind: 'empty', error: '예약됨', detail: '빈 코트가 없어 예약했어요. 코트가 비면 자동 투입돼요.' } };
+      return { pending: [...s.pending, { id: 'g' + Date.now(), teamA, teamB, type }], toast: { kind: 'empty', courtName: '이후 예정', error: '예약됨', detail: '이후 예정에 추가했어요. 코트가 비면 우선 투입돼요.' } };
     }),
     cancelPending: (gid) => set((s) => ({ pending: s.pending.filter((g) => g.id !== gid) })),
     setPreset: (preset) => set({ preset }),
@@ -190,7 +191,15 @@ function App() {
         }
         return { participants, courts, nowTs: now, toast: { kind: 'empty', courtNo: court.no, courtName, error: '경기 종료', detail: '직접 채워 주세요.', undo } };
       }
-      // 자동 배정: 빈 코트에 다음 경기 바로 올림 (원탭)
+      // 자동 배정: 예약(이후 예정) 우선 투입 → 없으면 자동 추천
+      if (s.pending && s.pending.length) {
+        const g = s.pending[0];
+        const applied = applyMatch({ participants, courts }, court, { ...g, startedAt: now });
+        return {
+          participants: applied.participants, courts: applied.courts, pending: s.pending.slice(1), nowTs: now,
+          toast: { kind: 'call', courtNo: court.no, courtName, players: [...g.teamA, ...g.teamB], type: g.type, reason: '예약', undo },
+        };
+      }
       const r = recommendMatchPaired(participants, s.mode, s.preset, now, s.pairs);
       if (r.match) {
         const applied = applyMatch({ participants, courts }, court, { ...r.match, startedAt: now });

@@ -71,6 +71,11 @@ urlpatterns = [
     path('match/<int:session_id>/courts/<int:index>/fill/', match_views.fill_court, name='match_fill'),
     path('match/<int:session_id>/courts/<int:index>/end/', match_views.end_court, name='match_end_court'),
     path('match/<int:session_id>/courts/<int:index>/coach/', match_views.set_coach, name='match_set_coach'),
+    # 코트 설정(추가/이름·제거) + 임시 인원 추가
+    path('match/<int:session_id>/courts/', match_views.add_court, name='match_court_add'),
+    path('match/<int:session_id>/courts/<int:index>/', match_views.court_detail, name='match_court_detail'),
+    path('match/<int:session_id>/participants/', match_views.add_participant, name='match_participant_add'),
+    path('match/<int:session_id>/participants/sync/', match_views.sync_participants, name='match_participant_sync'),
     path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
     path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),
 
@@ -86,4 +91,8 @@ urlpatterns = [
     path('match/<int:session_id>/partner-requests/<int:req_id>/reject/', match_views.reject_partner_request, name='match_partner_reject'),
     path('match/<int:session_id>/pairs/', match_views.pairs, name='match_pairs'),
     path('match/<int:session_id>/pairs/<int:pair_id>/', match_views.delete_pair, name='match_pair_delete'),
+
+    # 대진 — 예약 경기(이후 예정)
+    path('match/<int:session_id>/reservations/', match_views.create_reservation, name='match_reservation_create'),
+    path('match/<int:session_id>/reservations/<int:reservation_id>/', match_views.delete_reservation, name='match_reservation_delete'),
 ]

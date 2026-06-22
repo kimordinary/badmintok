@@ -11,10 +11,12 @@ from django.utils import timezone
 
 from band.models import BandMember, BandSchedule, BandScheduleApplication
 from band.match_models import (
-    MatchSession, SessionParticipant, Court, Match, MatchPlayer, Pair, PartnerRequest)
+    MatchSession, SessionParticipant, Court, Match, MatchPlayer, Pair, PartnerRequest,
+    ReservedMatch, ReservedMatchPlayer)
 from band.matchmaking.scoring import level_to_score
 from band.match_state import (
-    build_pool, build_pairstats, build_pairs, build_player, build_met_count)
+    build_pool, build_pairstats, build_pairs, build_player, build_met_count,
+    reserved_participant_ids)
 from band.matchmaking.engine import (
     recommend_next_game, recommend_with_pairs, _discipline_feasible,
     pick_ace_three, build_ace_match)
@@ -23,7 +25,7 @@ from band.matchmaking.cost import best_split
 from band.matchmaking.selection import queue_order
 from band.api.match_serializers import (
     serialize_session, serialize_match, serialize_participant, serialize_my_status,
-    serialize_pair, serialize_partner_request)
+    serialize_pair, serialize_partner_request, serialize_reservation)
 
 
 def _is_operator(user, band) -> bool:
@@ -156,6 +158,8 @@ def _notify_next_game(match):
     for mp in match.players.select_related("participant").all():
         if coach_id and mp.participant_id == coach_id:
             continue
+        if not mp.participant.user_id:
+            continue  # 임시(현장) 인원은 계정이 없어 푸시 대상 아님
         Notification.objects.create(
             user_id=mp.participant.user_id,
             type=Notification.Type.MATCH_NEXT_GAME,
@@ -182,11 +186,79 @@ def _coach_ids(session):
                .values_list("coach_id", flat=True))
 
 
+def _reservation_discipline(players, explicit):
+    if explicit:
+        return Discipline(explicit)
+    males = sum(1 for p in players if p.gender == "male")
+    if males == 4:
+        return Discipline.MENS
+    if males == 0:
+        return Discipline.WOMENS
+    return Discipline.MIXED
+
+
+def _consume_reservation(session, court, stats):
+    """투입 가능한(4명 전원 출석·코트 밖) 가장 오래된 예약을 경기로 만든다."""
+    on_court = _on_court_ids(session)
+    weights = PRESETS[_PRESET_MAP[session.preset]]
+    reservations = session.reservations.prefetch_related(
+        "players__participant__user").all()  # created_at 순
+    for r in reservations:
+        sps = [rp.participant for rp in r.players.all()]
+        if len(sps) != 4:
+            continue
+        if any(sp.attendance != SessionParticipant.Attendance.PRESENT or sp.id in on_court
+               for sp in sps):
+            continue
+        players = [build_player(sp) for sp in sps]
+        disc = _reservation_discipline(players, r.discipline)
+        split = best_split(players, disc, weights, stats, session.female_adjust)
+        if split is None:
+            continue
+        match = _create_match(session, court, split)
+        r.delete()
+        return match
+    return None
+
+
+def _manual_fill(session, court, participant_ids, forced=None):
+    """직접 채우기: 지정 4명을 빈 코트에 즉시 투입. 반환: (match|None, error_str|None)."""
+    if not isinstance(participant_ids, (list, tuple)) or len({*participant_ids}) != 4:
+        return None, "서로 다른 4명을 지정해야 합니다."
+    sps = list(SessionParticipant.objects.filter(
+        id__in=participant_ids, session=session).select_related("user"))
+    if len(sps) != 4:
+        return None, "참가자를 찾을 수 없습니다."
+    on_court = _on_court_ids(session)
+    coach_ids = _coach_ids(session)
+    reserved = reserved_participant_ids(session)
+    for sp in sps:
+        if sp.attendance != SessionParticipant.Attendance.PRESENT:
+            return None, "참여중인 사람만 넣을 수 있어요."
+        if sp.id in on_court:
+            return None, "경기 중인 사람은 넣을 수 없어요."
+        if sp.id in coach_ids:
+            return None, "코치는 직접 채우기에 넣을 수 없어요."
+        if sp.id in reserved:
+            return None, "예약에 들어간 사람이 있어요."
+    players = [build_player(sp) for sp in sps]
+    disc = _reservation_discipline(
+        players, forced if forced in Match.Discipline.values else None)
+    weights = PRESETS[_PRESET_MAP[session.preset]]
+    split = best_split(players, disc, weights, build_pairstats(session), session.female_adjust)
+    if split is None:
+        return None, "이 4명으로는 그 종목을 구성할 수 없어요."
+    return _create_match(session, court, split), None
+
+
 def _fill_court(session, court, forced_discipline=None):
     """반환: (match | None, need: NeedOperatorChoice | None)"""
     coach_ids = _coach_ids(session)
-    # 코치는 본인 코트에 고정 → 일반 풀(큐·공정성)에서 제외
-    pool = build_pool(session, on_court_participant_ids=_on_court_ids(session) | coach_ids)
+    reserved_ids = reserved_participant_ids(session)
+    # 코치는 본인 코트 고정, 예약 멤버는 확보 → 일반 풀(큐·공정성)에서 제외
+    pool = build_pool(
+        session,
+        on_court_participant_ids=_on_court_ids(session) | coach_ids | reserved_ids)
     stats = build_pairstats(session)
 
     # 코치 고정 코트: 코치(출석 시) + '못 만난 사람 우선' 3명
@@ -214,6 +286,11 @@ def _fill_court(session, court, forced_discipline=None):
                 return _create_match(session, court, split), None
         return None, NeedOperatorChoice(reason="강제 종목 구성 불가", options=())
 
+    # 예약(이후 예정) 경기가 준비됐으면 자동 추천보다 우선 투입
+    reserved = _consume_reservation(session, court, stats)
+    if reserved is not None:
+        return reserved, None
+
     result = recommend_with_pairs(
         pool, build_pairs(session), _MODE_MAP[session.discipline_mode],
         _PRESET_MAP[session.preset], stats, female_adjust=session.female_adjust)
@@ -237,6 +314,16 @@ def fill_court(request, session_id, index):
         return Response({"detail": "이미 진행 중인 경기가 있습니다."}, status=status.HTTP_409_CONFLICT)
 
     forced = request.data.get("discipline")
+    pids = request.data.get("participant_ids")
+    # 직접 채우기: participant_ids 지정 시 그 4명으로 즉시 투입(자동추천 무시)
+    if pids:
+        with transaction.atomic():
+            match, err = _manual_fill(session, court, pids, forced)
+        if err is not None:
+            return Response({"match": None, "needs_choice": False, "detail": err},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response({"match": serialize_match(match), "needs_choice": False})
+
     forced_disc = _DISC_MAP.get(forced) if forced else None
     with transaction.atomic():
         match, need = _fill_court(session, court, forced_disc)
@@ -523,6 +610,172 @@ def delete_pair(request, session_id, pair_id):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     pair = get_object_or_404(Pair, id=pair_id, session=session)
     pair.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ===== 코트 설정 (면 수·이름·제거) =====
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_court(request, session_id):
+    """코트 추가(면 수 +)."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    with transaction.atomic():
+        last = session.courts.order_by("-index").first()
+        Court.objects.create(
+            session=session, index=(last.index + 1) if last else 1,
+            name=(request.data.get("name") or "").strip())
+        session.court_count = session.courts.count()
+        session.save(update_fields=["court_count", "updated_at"])
+    return Response(serialize_session(session), status=status.HTTP_201_CREATED)
+
+
+@api_view(["PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def court_detail(request, session_id, index):
+    """코트 이름 변경(PATCH) / 제거(DELETE). 진행 중 경기가 있으면 제거 불가."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    court = get_object_or_404(Court, session=session, index=index)
+    if request.method == "PATCH":
+        court.name = (request.data.get("name") or "").strip()
+        court.save(update_fields=["name"])
+        return Response(serialize_session(session))
+    if court.matches.filter(status="playing").exists():
+        return Response({"detail": "진행 중인 경기가 있어 제거할 수 없어요."},
+                        status=status.HTTP_409_CONFLICT)
+    with transaction.atomic():
+        court.delete()
+        session.court_count = session.courts.count()
+        session.save(update_fields=["court_count", "updated_at"])
+    return Response(serialize_session(session))
+
+
+# ===== 임시(현장) 인원 추가 =====
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_participant(request, session_id):
+    """계정 없는 현장 인원을 이름·성별·급수로 추가. 바로 참여중으로 들어간다."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    name = (request.data.get("name") or "").strip()
+    gender = request.data.get("gender")
+    level = request.data.get("level") or ""
+    if not name:
+        return Response({"detail": "이름을 입력해 주세요."}, status=status.HTTP_400_BAD_REQUEST)
+    if gender not in ("male", "female"):
+        return Response({"detail": "성별(male/female)을 선택해 주세요."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    sp = SessionParticipant.objects.create(
+        session=session, user=None, guest_name=name,
+        base_level=level_to_score(level), gender=gender,
+        attendance=SessionParticipant.Attendance.PRESENT)
+    return Response(serialize_participant(sp), status=status.HTTP_201_CREATED)
+
+
+# ===== 승인자 재동기화 (세션 시작 후 승인 보정) =====
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def sync_participants(request, session_id):
+    """세션 시작 후 승인된 신청자를 풀에 추가(스냅샷 1회 한계 보정). 운영자 전용.
+    이미 들어온 사람은 건드리지 않고, 빠진 승인자만 추가한다."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+
+    existing = set(session.participants.exclude(user__isnull=True)
+                   .values_list("user_id", flat=True))
+    apps = BandScheduleApplication.objects.filter(
+        schedule=session.schedule, status="approved").select_related("user")
+    added = 0
+    with transaction.atomic():
+        for app in apps:
+            if app.user_id in existing:
+                continue
+            score, gender = _profile_level_gender(app.user)
+            attendance = (SessionParticipant.Attendance.PRESENT if app.checked_in_at
+                          else SessionParticipant.Attendance.NOT_PRESENT)
+            SessionParticipant.objects.create(
+                session=session, user=app.user, base_level=score, gender=gender,
+                attendance=attendance)
+            added += 1
+    data = serialize_session(session)
+    data["added"] = added
+    return Response(data)
+
+
+# ===== 예약 경기 (이후 예정) =====
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_reservation(request, session_id):
+    """운영자가 대기열 4명을 골라 '이후 예정' 경기 예약. 자동 모드에서도 사용.
+    예약된 4명은 자동 추천 풀에서 제외(확보)되고, 코트가 비면 자동보다 우선 투입."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+
+    ids = request.data.get("participant_ids") or []
+    if not isinstance(ids, (list, tuple)) or len({*ids}) != 4:
+        return Response({"detail": "서로 다른 4명을 선택해야 합니다."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    sps = list(SessionParticipant.objects.filter(id__in=ids, session=session))
+    if len(sps) != 4:
+        return Response({"detail": "참가자를 찾을 수 없습니다."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if any(sp.attendance != SessionParticipant.Attendance.PRESENT for sp in sps):
+        return Response({"detail": "참여중인 사람만 예약할 수 있어요."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    on_court = _on_court_ids(session)
+    coach_ids = _coach_ids(session)
+    reserved_ids = reserved_participant_ids(session)
+    for sp in sps:
+        if sp.id in on_court:
+            return Response({"detail": "경기 중인 사람은 예약할 수 없어요."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if sp.id in coach_ids:
+            return Response({"detail": "코치는 예약 경기에 넣을 수 없어요."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if sp.id in reserved_ids:
+            return Response({"detail": "이미 다른 예약에 들어간 사람이 있어요."},
+                            status=status.HTTP_409_CONFLICT)
+
+    disc = request.data.get("discipline")
+    if disc and disc not in Match.Discipline.values:
+        return Response({"detail": "잘못된 종목"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        r = ReservedMatch.objects.create(
+            session=session, discipline=disc or "", created_by=request.user)
+        for sp in sps:
+            ReservedMatchPlayer.objects.create(reservation=r, participant=sp)
+    r = ReservedMatch.objects.prefetch_related("players__participant__user").get(id=r.id)
+    return Response(serialize_reservation(r), status=status.HTTP_201_CREATED)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_reservation(request, session_id, reservation_id):
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    r = get_object_or_404(ReservedMatch, id=reservation_id, session=session)
+    r.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 

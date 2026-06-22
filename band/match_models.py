@@ -46,7 +46,10 @@ class SessionParticipant(models.Model):
 
     session = models.ForeignKey(
         MatchSession, on_delete=models.CASCADE, related_name="participants")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    # 임시(현장) 인원은 계정이 없으므로 user=None + guest_name 사용
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    guest_name = models.CharField(max_length=50, blank=True)
     attendance = models.CharField(
         max_length=12, choices=Attendance.choices, default=Attendance.NOT_PRESENT)
     # 세션 시작 시점 스냅샷 (가입 정보가 바뀌어도 세션 내 일관)
@@ -62,10 +65,15 @@ class SessionParticipant(models.Model):
         verbose_name = _("대진 참가자")
         verbose_name_plural = _("대진 참가자")
 
+    @property
+    def display_name(self):
+        return self.user.activity_name if self.user_id else (self.guest_name or "임시")
+
 
 class Court(models.Model):
     session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="courts")
     index = models.IntegerField()  # 1..court_count
+    name = models.CharField(max_length=50, blank=True)  # 코트 이름(선택). 비우면 'N번 코트'
     # 코치(자강) 고정 코트: 지정 시 매 경기 이 코치가 그 코트에 고정
     coach = models.ForeignKey(
         SessionParticipant, null=True, blank=True,
@@ -140,3 +148,32 @@ class PartnerRequest(models.Model):
     class Meta:
         verbose_name = _("파트너 신청")
         verbose_name_plural = _("파트너 신청")
+
+
+class ReservedMatch(models.Model):
+    """운영자가 대기열에서 4명을 골라 예약한 '이후 예정' 경기.
+    코트가 비면 자동 추천보다 우선 투입된다. 예약된 4명은 그동안 일반 풀에서 제외(확보)."""
+
+    session = models.ForeignKey(
+        MatchSession, on_delete=models.CASCADE, related_name="reservations")
+    # 비우면 4명 성별로 자동 결정 (mens/womens/mixed)
+    discipline = models.CharField(
+        max_length=10, choices=Match.Discipline.choices, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("예약 경기")
+        verbose_name_plural = _("예약 경기")
+        ordering = ["created_at"]
+
+
+class ReservedMatchPlayer(models.Model):
+    reservation = models.ForeignKey(
+        ReservedMatch, on_delete=models.CASCADE, related_name="players")
+    participant = models.ForeignKey(SessionParticipant, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = [["reservation", "participant"]]

@@ -1,11 +1,12 @@
 from band.matchmaking.types import Player, PairStats, PairUnit
-from band.match_models import SessionParticipant, MatchPlayer, Match, Pair
+from band.match_models import (
+    SessionParticipant, MatchPlayer, Match, Pair, ReservedMatchPlayer)
 
 
 def build_player(sp) -> Player:
     return Player(
         id=sp.id,
-        name=sp.user.activity_name,
+        name=sp.display_name,
         gender=sp.gender,
         base_level=sp.base_level,
         games_mixed=sp.games_mixed,
@@ -68,3 +69,9 @@ def _pairs(ids):
 def build_pairs(session) -> list[PairUnit]:
     return [PairUnit(a=pr.p1_id, b=pr.p2_id, strict=pr.strict)
             for pr in Pair.objects.filter(session=session)]
+
+
+def reserved_participant_ids(session) -> set:
+    """예약 경기에 묶인 참가자 id (일반 풀·큐에서 제외해 확보)."""
+    return set(ReservedMatchPlayer.objects.filter(
+        reservation__session=session).values_list("participant_id", flat=True))

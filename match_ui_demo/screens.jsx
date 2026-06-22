@@ -287,7 +287,7 @@ function QueueRow({ p, rank, nowTs, highlight, selectable, selected, onToggle })
 }
 
 // ---------- 대기열 패널 ----------
-function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCancelPending, pairs, participants, onRemovePair }) {
+function QueuePanel({ queue, nextUp, nowTs, manual, select, onMakeGame, pending, onCancelPending, pairs, participants, onRemovePair }) {
   const nameOf = (id) => { const p = (participants || []).find((x) => x.id === id); return p ? p.name : '?'; };
   const [view, setView] = useState('block'); // 'block' | 'list'
   const [sel, setSel] = useState([]); // 수동: 대기열에서 고른 선수들
@@ -323,7 +323,7 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
             ))}
           </div>
         </div>
-        {manual && (
+        {select && (
           <div style={{ position: 'relative', marginTop: 10, display: 'flex', alignItems: 'center' }}>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름·급수로 검색" style={{ width: '100%', padding: '8px 30px 8px 12px', borderRadius: 9, border: '1px solid var(--line-2)', background: 'var(--surface-2)', fontSize: 13, fontWeight: 600, color: 'var(--ink)', outline: 'none', fontFamily: 'inherit' }} />
             {q && <button onClick={() => setQ('')} style={{ position: 'absolute', right: 8, width: 20, height: 20, borderRadius: 10, background: 'var(--surface-3)', color: 'var(--muted)', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>}
@@ -367,7 +367,7 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)' }}>{rest.length}명</span>
               </div>
             )}
-            {rest.filter(show).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} selectable={manual} selected={isSel(p)} onToggle={() => toggle(p)} />)}
+            {rest.filter(show).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} selectable={select} selected={isSel(p)} onToggle={() => toggle(p)} />)}
             {qq !== '' && rest.filter(show).length === 0 && <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>검색 결과가 없습니다.</div>}
             {queue.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>대기 인원이 없습니다.</div>}
             {queue.length > 0 && rest.length === 0 && groups.length > 0 && <div style={{ padding: '14px 4px', textAlign: 'center', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600 }}>이후 대기 인원이 없습니다.</div>}
@@ -375,12 +375,12 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
         ) : (
           <>
             {/* 리스트: 전체 우선순위 일렬, 상위 4명 강조 */}
-            {queue.filter(show).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} highlight={!manual && i < 4} selectable={manual} selected={isSel(p)} onToggle={() => toggle(p)} />)}
+            {queue.filter(show).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} highlight={!manual && i < 4} selectable={select} selected={isSel(p)} onToggle={() => toggle(p)} />)}
             {queue.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>대기 인원이 없습니다.</div>}
           </>
         )}
       </div>
-      {manual && sel.length > 0 && (
+      {select && sel.length > 0 && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--line)', padding: '12px 14px', background: 'var(--surface)', boxShadow: '0 -4px 14px rgba(17,22,31,.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>{sel.length}/4명 선택</span>
@@ -398,7 +398,7 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
             width: '100%', padding: '13px', borderRadius: 12, fontSize: 14.5, fontWeight: 800, letterSpacing: '-.02em',
             background: sel.length === 4 ? 'var(--brand)' : 'var(--surface-3)', color: sel.length === 4 ? '#fff' : 'var(--muted)',
             cursor: sel.length === 4 ? 'pointer' : 'not-allowed',
-          }}>{sel.length === 4 ? '이 4명으로 경기 만들기' : `${4 - sel.length}명 더 선택`}</button>
+          }}>{sel.length === 4 ? (manual ? '이 4명으로 경기 만들기' : '이 4명 이후 예정에 추가') : `${4 - sel.length}명 더 선택`}</button>
         </div>
       )}
     </aside>
@@ -545,19 +545,19 @@ function MainScreen({ state, actions }) {
     for (const ct of courts) {
       if (!ct.ace || ct.match || ct.pendingRemove) continue;
       const ace = poolView.find((p) => p.id === ct.coachId);
-      const three = ace ? pickAceThree(poolView.filter((p) => !coachIds.has(p.id) && !taken.has(p.id)), metCount, nowTs) : null;
+      const three = ace ? pickAceThree(poolView.filter((p) => !coachIds.has(p.id) && !taken.has(p.id) && !pendingIds.has(p.id)), metCount, nowTs) : null;
       out[ct.no] = three ? { match: buildAceMatch(ace, three) } : { error: '대기 부족', detail: '코치와 칠 대기 인원이 부족합니다.' };
       if (three) three.forEach((p) => taken.add(p.id));
     }
     for (const ct of courts) {
       if (ct.match || ct.pendingRemove || ct.ace) continue;
-      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id));
+      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id) && !pendingIds.has(p.id));
       const r = recommendMatchPaired(avail, mode, preset, nowTs, state.pairs);
       out[ct.no] = r;
       if (r.match) [...r.match.teamA, ...r.match.teamB].forEach((p) => taken.add(p.id));
     }
     return out;
-  }, [pool, courts, mode, preset, nowTs, coachIds, state.pinnedMet, state.pairs]);
+  }, [pool, courts, mode, preset, nowTs, coachIds, state.pinnedMet, state.pairs, pendingIds]);
 
   // 코치별 커버리지·이름 (코트번호 → {name, coverage})
   const coachInfo = useMemo(() => {
@@ -581,7 +581,7 @@ function MainScreen({ state, actions }) {
     const groups = [];
     let err = null;
     for (let i = 0; i < 3; i++) {
-      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id));
+      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id) && !pendingIds.has(p.id));
       const r = recommendMatchPaired(avail, mode, preset, nowTs, state.pairs);
       if (r && r.match) {
         groups.push(r.match);
@@ -589,7 +589,7 @@ function MainScreen({ state, actions }) {
       } else { if (r && r.error && !err) err = r.error; break; }
     }
     return { groups, err };
-  }, [pool, mode, preset, nowTs, state.auto, coachIds, state.pairs]);
+  }, [pool, mode, preset, nowTs, state.auto, coachIds, state.pairs, pendingIds]);
 
   const stats = {
     playing: pool.filter((p) => p.court != null).length,
@@ -615,7 +615,7 @@ function MainScreen({ state, actions }) {
             ))}
           </div>
         </main>
-        <QueuePanel queue={queue} nextUp={nextUp} nowTs={nowTs} manual={!state.auto} onMakeGame={actions.makeGameFromQueue} pending={state.pending} onCancelPending={actions.cancelPending} pairs={state.pairs} participants={pool} onRemovePair={actions.removePair} />
+        <QueuePanel queue={queue} nextUp={nextUp} nowTs={nowTs} manual={!state.auto} select={true} onMakeGame={actions.makeGameFromQueue} pending={state.pending} onCancelPending={actions.cancelPending} pairs={state.pairs} participants={pool} onRemovePair={actions.removePair} />
       </div>
 
       {/* 플로팅 경고 (벤치 부족 — 상시 조건이라 떠 있음) */}
