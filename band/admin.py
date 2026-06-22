@@ -40,9 +40,24 @@ class BandAdminForm(forms.ModelForm):
                     self.initial["profile_image"] = None
 
 
+class BandMemberInline(TabularInline):
+    """밴드/센터 편집 화면에서 멤버를 인라인으로 추가/지정.
+
+    센터(band_type=center) 관리자는 여기서 회원을 role='관리자'로 지정하면 된다.
+    """
+    model = BandMember
+    extra = 0
+    autocomplete_fields = ("user",)
+    fields = ("user", "role", "status", "joined_at")
+    readonly_fields = ("joined_at",)
+    verbose_name = "멤버/관리자"
+    verbose_name_plural = "멤버/관리자 (role을 '관리자'로 지정 = 센터 관리자)"
+
+
 @admin.register(Band)
 class BandAdmin(ModelAdmin):
     form = BandAdminForm
+    inlines = [BandMemberInline]
     list_display = [
         "name", "band_type", "created_by", "is_approved", "is_public",
         "join_approval_required", "display_approved_at", "deletion_requested", "created_at", "approval_actions", "deletion_actions", "delete_action"
