@@ -111,6 +111,19 @@ class Band(models.Model):
     def member_count(self):
         return self.members.filter(status="active").count()
 
+    def is_managed_by(self, user):
+        """사이트 관리자 · 등록자 · 활성 owner/admin 멤버면 True (센터 관리자 포함)."""
+        if not user or not user.is_authenticated:
+            return False
+        from accounts.permissions import is_site_admin
+        if is_site_admin(user):
+            return True
+        if self.created_by_id == user.id:
+            return True
+        return self.members.filter(
+            user=user, status="active", role__in=["owner", "admin"]
+        ).exists()
+
     @property
     def bookmark_count(self):
         return self.bookmarks.count()

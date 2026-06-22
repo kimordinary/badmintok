@@ -83,11 +83,10 @@ class CenterSerializer(serializers.ModelSerializer):
 
     def get_can_manage(self, obj):
         request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
+        if not request:
             return False
-        if is_site_admin(request.user):
-            return True
-        return obj.created_by_id == request.user.id
+        # 사이트 관리자 · 등록자 · 지정 센터 관리자(owner/admin 멤버)
+        return obj.is_managed_by(request.user)
 
     def get_is_site_admin(self, obj):
         request = self.context.get("request")

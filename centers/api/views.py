@@ -12,7 +12,6 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.permissions import is_site_admin
 from band.models import Band, BandBookmark
 from .serializers import CenterSerializer, CenterWriteSerializer
 
@@ -106,7 +105,7 @@ def center_detail(request, center_id):
 
     band = get_object_or_404(Band, id=center_id, band_type="center")
 
-    if not (is_site_admin(request.user) or band.created_by_id == request.user.id):
+    if not band.is_managed_by(request.user):
         return Response({"detail": "수정/삭제 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "DELETE":
