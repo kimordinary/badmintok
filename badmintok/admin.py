@@ -13,7 +13,7 @@ import json
 import hashlib
 from unfold.admin import ModelAdmin
 
-from .models import BadmintokBanner, Banner, Notice, VisitorLog, OutboundClick, YoutubeVideo, AppDownloadClick
+from .models import BadmintokBanner, Banner, Notice, Promotion, VisitorLog, OutboundClick, YoutubeVideo, AppDownloadClick
 from .fields import (
     get_unconverted_images_stats,
     convert_existing_image_to_webp,
@@ -111,6 +111,52 @@ class BannerAdmin(ModelAdmin):
         }),
         ("노출 설정", {
             "fields": ("is_active", "order", ("start_date", "end_date"))
+        }),
+        ("날짜 정보", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
+        }),
+    )
+
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(Promotion)
+class PromotionAdmin(ModelAdmin):
+    list_display = (
+        "id", "image_preview", "title", "is_active", "display_status",
+        "display_order", "link_url", "start_at", "end_at", "created_at"
+    )
+    list_editable = ("is_active", "display_order")
+    list_filter = ("is_active", "start_at", "end_at")
+    search_fields = ("title", "link_url")
+    ordering = ("display_order", "-created_at")
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-width: 200px; max-height: 88px; object-fit: contain;" />',
+                obj.image.url
+            )
+        return "-"
+    image_preview.short_description = "이미지"
+
+    def display_status(self, obj):
+        if obj.is_currently_active:
+            return format_html('<span style="color: #10b981;">● 노출중</span>')
+        elif not obj.is_active:
+            return format_html('<span style="color: #9ca3af;">● 비활성</span>')
+        else:
+            return format_html('<span style="color: #f59e0b;">● 기간외</span>')
+    display_status.short_description = "노출 상태"
+
+    fieldsets = (
+        ("프로모션 정보", {
+            "fields": ("title", "image", "link_url"),
+            "description": "이미지 권장: 비율 2.3:1 (예: 1050×456 @3x). 라운드/여백은 앱에서 처리.",
+        }),
+        ("노출 설정", {
+            "fields": ("is_active", "display_order", ("start_at", "end_at"))
         }),
         ("날짜 정보", {
             "fields": ("created_at", "updated_at"),

@@ -8,12 +8,12 @@ from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from django.core.paginator import Paginator
 
-from badmintok.models import BadmintokBanner, Banner, Notice, YoutubeVideo
+from badmintok.models import BadmintokBanner, Banner, Notice, Promotion, YoutubeVideo
 from community.models import Post, Category
 from community.api.serializers import CategorySerializer
 from badmintok.api.serializers import (
     BannerSerializer, AppBannerSerializer, NoticeListSerializer, NoticeSerializer,
-    PostListSerializer, PostDetailSerializer, YoutubeVideoSerializer
+    PostListSerializer, PostDetailSerializer, PromotionSerializer, YoutubeVideoSerializer
 )
 
 
@@ -285,6 +285,25 @@ def app_banner_list(request):
     return Response({
         'banners': serializer.data
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def app_promotion_list(request):
+    """앱 홈 프로모션 캐러셀 API
+
+    활성(is_active=True) + 노출 기간(start_at/end_at) 필터
+    display_order 순으로 정렬
+    """
+    now = timezone.now()
+    qs = Promotion.objects.filter(is_active=True).filter(
+        Q(start_at__isnull=True) | Q(start_at__lte=now)
+    ).filter(
+        Q(end_at__isnull=True) | Q(end_at__gte=now)
+    ).order_by('display_order', '-created_at')
+
+    data = PromotionSerializer(qs, many=True, context={'request': request}).data
+    return Response({'promotions': data}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])

@@ -37,6 +37,7 @@ urlpatterns = [
     # 공통 리소스
     path('banners/', views.banner_list, name='banner_list'),  # 기존 배드민톡 배너
     path('app-banners/', views.app_banner_list, name='app_banner_list'),  # 새 앱/웹 메인 배너
+    path('app-promotions/', views.app_promotion_list, name='app_promotion_list'),  # 앱 홈 프로모션 캐러셀
     path('notices/', views.notice_list, name='notice_list'),
     path('notices/<int:notice_id>/', views.notice_detail, name='notice_detail'),
     path('youtube-videos/', views.youtube_video_list, name='youtube_video_list'),

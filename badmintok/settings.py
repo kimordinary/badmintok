@@ -609,6 +609,11 @@ UNFOLD = {
                         "link": reverse_lazy("admin:badmintok_banner_changelist"),
                     },
                     {
+                        "title": "프로모션",
+                        "icon": "campaign",
+                        "link": reverse_lazy("admin:badmintok_promotion_changelist"),
+                    },
+                    {
                         "title": "유튜브 영상",
                         "icon": "play_circle",
                         "link": reverse_lazy("admin:badmintok_youtubevideo_changelist"),

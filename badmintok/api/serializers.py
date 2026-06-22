@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from badmintok.models import BadmintokBanner, Banner, Notice, YoutubeVideo
+from badmintok.models import BadmintokBanner, Banner, Notice, Promotion, YoutubeVideo
 from community.models import Post, PostImage
 from accounts.models import User
 
@@ -190,6 +190,22 @@ class AppBannerSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.mobile_image.url)
             return obj.mobile_image.url
         return None
+
+
+class PromotionSerializer(serializers.ModelSerializer):
+    """앱 홈 프로모션 캐러셀 Serializer (앱 파싱 호환 키)"""
+    mobile_image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Promotion
+        fields = ['id', 'title', 'mobile_image_url', 'link_url', 'display_order']
+
+    def get_mobile_image_url(self, obj):
+        if not obj.image:
+            return ''
+        request = self.context.get('request')
+        url = obj.image.url
+        return request.build_absolute_uri(url) if request else url
 
 
 class NoticeListSerializer(serializers.ModelSerializer):

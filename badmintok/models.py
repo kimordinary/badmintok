@@ -93,6 +93,59 @@ class Banner(models.Model):
         return True
 
 
+def promotion_image_upload_to(instance, filename):
+    """프로모션 이미지 파일명 생성 함수"""
+    ext = os.path.splitext(filename)[1].lower()
+    unique_filename = f"{uuid.uuid4().hex[:12]}{ext}"
+    return f"promotions/{unique_filename}"
+
+
+class Promotion(models.Model):
+    """앱 홈 프로모션 캐러셀 (앱 광고 배너와 동일 패턴, 독립 모델)"""
+
+    title = models.CharField("식별용 제목", max_length=100)
+    image = WebPImageField(
+        "이미지(2.3:1, 권장 1050×456)",
+        upload_to=promotion_image_upload_to,
+    )
+    link_url = models.CharField(
+        "링크(app:// 또는 https://)",
+        max_length=500,
+        blank=True,
+    )
+    display_order = models.PositiveIntegerField(
+        "정렬 순서",
+        default=0,
+        help_text="숫자가 낮을수록 먼저 노출됩니다.",
+    )
+    is_active = models.BooleanField("노출", default=True)
+    start_at = models.DateTimeField("노출 시작", null=True, blank=True, help_text="비워두면 즉시 노출")
+    end_at = models.DateTimeField("노출 종료", null=True, blank=True, help_text="비워두면 무기한 노출")
+    created_at = models.DateTimeField("등록일", auto_now_add=True)
+    updated_at = models.DateTimeField("수정일", auto_now=True)
+
+    class Meta:
+        verbose_name = "프로모션"
+        verbose_name_plural = "프로모션"
+        ordering = ["display_order", "-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_currently_active(self):
+        """현재 노출 중인지 확인 (활성화 + 기간 내)"""
+        from django.utils import timezone
+        now = timezone.now()
+        if not self.is_active:
+            return False
+        if self.start_at and now < self.start_at:
+            return False
+        if self.end_at and now > self.end_at:
+            return False
+        return True
+
+
 class Notice(models.Model):
     """공지사항 모델"""
     title = models.CharField(_("제목"), max_length=200)
