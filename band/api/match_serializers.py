@@ -174,12 +174,17 @@ def serialize_my_status(session, sp, user=None):
 
     games = None
     sp_level, sp_gender = (None, None)
+    excluded_from_pool = False
     if sp:
         games = {
             "mixed": sp.games_mixed, "mens": sp.games_mens, "womens": sp.games_womens,
             "total": sp.games_mixed + sp.games_mens + sp.games_womens,
         }
         sp_level, sp_gender = sp.live_level_gender()
+        # present인데 프로필 미완성이라 매칭 후보에서 빠진 상태 (앱 안내용 신호)
+        excluded_from_pool = (
+            sp.attendance == SessionParticipant.Attendance.PRESENT
+            and not sp.is_match_eligible())
 
     profile = None
     if user is not None and getattr(user, "is_authenticated", False):
@@ -208,4 +213,5 @@ def serialize_my_status(session, sp, user=None):
         "queue_total": queue_total,
         "up_next": up_next,
         "profile": profile,
+        "excluded_from_pool": excluded_from_pool,
     }

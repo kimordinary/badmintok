@@ -23,7 +23,8 @@ def build_pool(session, on_court_participant_ids=None) -> list[Player]:
     qs = session.participants.filter(
         attendance=SessionParticipant.Attendance.PRESENT
     ).exclude(id__in=on_court).select_related("user__profile")
-    return [build_player(sp) for sp in qs]
+    # 프로필(실명·성별·급수) 미완성 회원은 매칭 후보에서 제외 (입구 게이트와 일관)
+    return [build_player(sp) for sp in qs if sp.is_match_eligible()]
 
 
 def build_met_count(session, coach_ids, stats) -> dict:

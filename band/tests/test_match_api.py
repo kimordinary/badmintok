@@ -241,6 +241,23 @@ class ParticipantApiTest(FlowTest):
                                 {"action": "in"}, format="json")
         self.assertEqual(back.json()["attendance"], "present")
 
+    def test_present_member_excluded_from_pool_when_profile_incomplete(self):
+        # present로 체크인한 뒤 급수를 비우면: present는 유지되나 매칭 후보에선 제외
+        sid, users = self._present_session_users([
+            ("a@x.com", "b", "male"), ("b@x.com", "b", "male"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female")])
+        u = users["a@x.com"]
+        u.profile.badminton_level = ""
+        u.profile.save()
+        self.client.force_authenticate(u)
+        body = self.client.get(f"/api/bands/match/{sid}/me/").json()
+        self.assertEqual(body["attendance"], "present")        # 출석 상태는 유지
+        self.assertTrue(body["excluded_from_pool"])            # 매칭 후보에서 제외
+        self.assertFalse(body["profile"]["complete"])
+        self.assertIn("level", body["profile"]["missing"])
+        # 실제 pool에서도 빠져 queue에 안 잡힘
+        self.assertIsNone(body["queue_position"])
+
     def test_non_participant_checkin_forbidden(self):
         sid, _ = self._present_session_users([("a@x.com", "b", "male")])
         stranger = User.objects.create_user(email="z@z.com", password="x", activity_name="Z")

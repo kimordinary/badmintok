@@ -24,7 +24,8 @@ class MatchSessionE2E(TestCase):
         for i in range(20):
             u = User.objects.create_user(email=f"u{i}@x.com", password="x", activity_name=f"P{i:02d}")
             UserProfile.objects.update_or_create(
-                user=u, defaults={"badminton_level": LEVELS[i % len(LEVELS)], "gender": GENDERS[i % len(GENDERS)]})
+                user=u, defaults={"badminton_level": LEVELS[i % len(LEVELS)],
+                                  "gender": GENDERS[i % len(GENDERS)], "name": f"P{i:02d}"})
             BandScheduleApplication.objects.create(schedule=self.schedule, user=u, status="approved")
         self.client.force_authenticate(self.owner)
 

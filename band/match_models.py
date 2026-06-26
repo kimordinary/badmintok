@@ -83,6 +83,15 @@ class SessionParticipant(models.Model):
         gender = raw if raw in ("male", "female") else "unknown"
         return level_to_score(level), gender
 
+    def is_match_eligible(self):
+        """매칭 pool 자격. 회원은 프로필(실명·성별·급수) 완성 시에만,
+        게스트(현장 인원)는 계정·프로필이 없으므로 항상 자격 있음.
+        입구 체크인 게이트와 동일 기준(User.match_profile_ready)으로 일관 유지.
+        """
+        if not self.user_id:
+            return True
+        return self.user.match_profile_ready
+
 
 class Court(models.Model):
     session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="courts")
