@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from band.models import Band, BandSchedule, MatchSession, SessionParticipant
 from band.match_state import build_pool, build_pairstats
+from accounts.models import UserProfile
 
 User = get_user_model()
 
@@ -10,6 +11,7 @@ User = get_user_model()
 class MatchStateTest(TestCase):
     def setUp(self):
         self.u = User.objects.create_user(email="a@a.com", password="x", activity_name="A")
+        UserProfile.objects.create(user=self.u, name="A", gender="male", badminton_level="b")
         band = Band.objects.create(name="b", created_by=self.u)
         sch = BandSchedule.objects.create(
             band=band, title="t", start_datetime=timezone.now(), created_by=self.u)
@@ -20,6 +22,7 @@ class MatchStateTest(TestCase):
             session=self.session, user=self.u, base_level=4, gender="male",
             attendance="present")
         u2 = User.objects.create_user(email="b@b.com", password="x", activity_name="B")
+        UserProfile.objects.create(user=u2, name="B", gender="female", badminton_level="c")
         SessionParticipant.objects.create(
             session=self.session, user=u2, base_level=3, gender="female",
             attendance="not_present")

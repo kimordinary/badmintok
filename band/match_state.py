@@ -4,11 +4,12 @@ from band.match_models import (
 
 
 def build_player(sp) -> Player:
+    base_level, gender = sp.live_level_gender()
     return Player(
         id=sp.id,
         name=sp.display_name,
-        gender=sp.gender,
-        base_level=sp.base_level,
+        gender=gender,
+        base_level=base_level,
         games_mixed=sp.games_mixed,
         games_mens=sp.games_mens,
         games_womens=sp.games_womens,
@@ -21,7 +22,7 @@ def build_pool(session, on_court_participant_ids=None) -> list[Player]:
     on_court = on_court_participant_ids or set()
     qs = session.participants.filter(
         attendance=SessionParticipant.Attendance.PRESENT
-    ).exclude(id__in=on_court)
+    ).exclude(id__in=on_court).select_related("user__profile")
     return [build_player(sp) for sp in qs]
 
 

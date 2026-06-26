@@ -24,7 +24,7 @@ class MatchApiSetup(TestCase):
     def _approved_applicant(self, email, level, gender):
         u = User.objects.create_user(email=email, password="x", activity_name=email[:3])
         UserProfile.objects.update_or_create(
-            user=u, defaults={"badminton_level": level, "gender": gender})
+            user=u, defaults={"badminton_level": level, "gender": gender, "name": email[:3]})
         BandScheduleApplication.objects.create(
             schedule=self.schedule, user=u, status="approved")
         return u

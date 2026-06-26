@@ -38,12 +38,13 @@ def serialize_partner_request(req):
 
 
 def serialize_participant(sp):
+    base_level, gender = sp.live_level_gender()
     return {
         "id": sp.id,
         "user_id": sp.user_id,
         "name": sp.display_name,
-        "gender": sp.gender,
-        "base_level": sp.base_level,
+        "gender": gender,
+        "base_level": base_level,
         "attendance": sp.attendance,
         "games_mixed": sp.games_mixed,
         "games_mens": sp.games_mens,
@@ -54,12 +55,13 @@ def serialize_participant(sp):
 
 def serialize_match(match):
     teams = {1: [], 2: []}
-    for mp in match.players.select_related("participant__user").all():
+    for mp in match.players.select_related("participant__user__profile").all():
+        base_level, gender = mp.participant.live_level_gender()
         teams[mp.team].append({
             "participant_id": mp.participant_id,
             "name": mp.participant.display_name,
-            "base_level": mp.participant.base_level,
-            "gender": mp.participant.gender,
+            "base_level": base_level,
+            "gender": gender,
         })
     return {
         "id": match.id,
@@ -71,7 +73,7 @@ def serialize_match(match):
 
 
 def serialize_session(session):
-    participants = list(session.participants.select_related("user"))
+    participants = list(session.participants.select_related("user__profile"))
     court_rows = list(session.courts.select_related("coach__user").all())
     coach_ids = {c.coach_id for c in court_rows if c.coach_id}
 
@@ -171,11 +173,13 @@ def serialize_my_status(session, sp, user=None):
         current_match = cm
 
     games = None
+    sp_level, sp_gender = (None, None)
     if sp:
         games = {
             "mixed": sp.games_mixed, "mens": sp.games_mens, "womens": sp.games_womens,
             "total": sp.games_mixed + sp.games_mens + sp.games_womens,
         }
+        sp_level, sp_gender = sp.live_level_gender()
 
     profile = None
     if user is not None and getattr(user, "is_authenticated", False):
@@ -194,8 +198,8 @@ def serialize_my_status(session, sp, user=None):
         "session_status": session.status,
         "participant_id": sp.id if sp else None,
         "name": sp.display_name if sp else None,
-        "gender": sp.gender if sp else None,
-        "base_level": sp.base_level if sp else None,
+        "gender": sp_gender,
+        "base_level": sp_level,
         "attendance": sp.attendance if sp else None,
         "games": games,
         "playing": playing,

@@ -69,6 +69,20 @@ class SessionParticipant(models.Model):
     def display_name(self):
         return self.user.activity_name if self.user_id else (self.guest_name or "임시")
 
+    def live_level_gender(self):
+        """매칭·표시용 (base_level, gender).
+        회원은 accounts 프로필을 실시간 참조해 프로필 변경을 즉시 반영하고,
+        게스트(현장 인원)는 생성 시 입력한 스냅샷 값을 그대로 쓴다.
+        """
+        if not self.user_id:
+            return self.base_level, self.gender
+        from band.matchmaking.scoring import level_to_score
+        profile = getattr(self.user, "profile", None)
+        level = getattr(profile, "badminton_level", "") if profile else ""
+        raw = getattr(profile, "gender", None) if profile else None
+        gender = raw if raw in ("male", "female") else "unknown"
+        return level_to_score(level), gender
+
 
 class Court(models.Model):
     session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="courts")
