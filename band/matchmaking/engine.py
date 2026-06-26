@@ -16,13 +16,14 @@ def _disciplines_for_mode(mode: Mode) -> tuple[Discipline, ...]:
 
 
 def _discipline_feasible(combo, discipline) -> bool:
+    # unknown(무관)은 남/여 어느 쪽으로도 세지 않는다 → 성별 종목에서 자동 제외
     males = sum(1 for p in combo if p.gender == MALE)
-    females = len(combo) - males
+    females = sum(1 for p in combo if p.gender == FEMALE)
     if discipline == Discipline.MENS:
         return males == 4
     if discipline == Discipline.WOMENS:
         return females == 4
-    # MIXED: 동성팀 1개까지 허용 → 남녀 각 최소 1명
+    # MIXED: 동성팀 1개까지 허용 → 남녀 각 최소 1명 (나머지 자리는 unknown도 채움 가능)
     return males >= 1 and females >= 1
 
 
@@ -168,9 +169,10 @@ def build_ace_match(coach, three):
         return None
     four = [coach] + list(three)
     males = sum(1 for p in four if p.gender == MALE)
+    females = sum(1 for p in four if p.gender == FEMALE)
     if males == 4:
         disc = Discipline.MENS
-    elif males == 0:
+    elif females == 4:
         disc = Discipline.WOMENS
     else:
         disc = Discipline.MIXED

@@ -425,7 +425,7 @@ def my_status(request, session_id):
     """세션 내 '내 라이브 상태' (출석·현재경기·대기순번·게임수). 앱이 폴링."""
     session = get_object_or_404(MatchSession, id=session_id)
     sp = _my_participant(session, request.user)
-    return Response(serialize_my_status(session, sp))
+    return Response(serialize_my_status(session, sp, request.user))
 
 
 @api_view(["GET"])
@@ -445,7 +445,7 @@ def my_status_by_schedule(request, schedule_id):
             "approved": approved,
         })
     sp = _my_participant(session, request.user)
-    data = serialize_my_status(session, sp)
+    data = serialize_my_status(session, sp, request.user)
     data["approved"] = approved or sp is not None
     return Response(data)
 
@@ -463,6 +463,13 @@ def my_checkin(request, session_id):
                         status=status.HTTP_403_FORBIDDEN)
     action = request.data.get("action", "in")
     if action == "in":
+        missing = request.user.match_profile_missing
+        if missing:
+            return Response({
+                "detail": "출석 체크인 전에 프로필(실명·성별·급수)을 먼저 입력해주세요.",
+                "code": "profile_incomplete",
+                "missing": missing,
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         sp.attendance = SessionParticipant.Attendance.PRESENT
     elif action == "out":
         sp.attendance = SessionParticipant.Attendance.LEFT
@@ -474,7 +481,7 @@ def my_checkin(request, session_id):
     BandScheduleApplication.objects.filter(
         schedule=session.schedule, user=request.user, status="approved"
     ).update(checked_in_at=timezone.now() if action == "in" else None)
-    return Response(serialize_my_status(session, sp))
+    return Response(serialize_my_status(session, sp, request.user))
 
 
 # ===== 파트너 (신청·승인·해제) =====

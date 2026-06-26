@@ -130,7 +130,7 @@ def serialize_session(session):
     }
 
 
-def serialize_my_status(session, sp):
+def serialize_my_status(session, sp, user=None):
     """요청자 본인의 라이브 상태 (앱 참가자가 폴링). sp=None이면 비참가자."""
     playing_matches = list(
         Match.objects.filter(session=session, status="playing")
@@ -177,6 +177,18 @@ def serialize_my_status(session, sp):
             "total": sp.games_mixed + sp.games_mens + sp.games_womens,
         }
 
+    profile = None
+    if user is not None and getattr(user, "is_authenticated", False):
+        missing = user.match_profile_missing
+        pf = getattr(user, "profile", None)
+        profile = {
+            "complete": not missing,
+            "missing": missing,
+            "name": (pf.name if pf else "") or "",
+            "gender": (pf.gender if pf else "unknown") or "unknown",
+            "level": (pf.badminton_level if pf else "") or "",
+        }
+
     return {
         "session_id": session.id,
         "session_status": session.status,
@@ -191,4 +203,5 @@ def serialize_my_status(session, sp):
         "queue_position": queue_position,
         "queue_total": queue_total,
         "up_next": up_next,
+        "profile": profile,
     }

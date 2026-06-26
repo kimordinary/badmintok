@@ -13,7 +13,9 @@ from band.matchmaking.scoring import level_to_score
 def _level_gender(user):
     profile = getattr(user, "profile", None)
     level = getattr(profile, "badminton_level", "") if profile else ""
-    gender = getattr(profile, "gender", "unknown") if profile else "unknown"
+    raw = getattr(profile, "gender", None) if profile else None
+    # 성별 null·빈값·미정이면 'unknown'(무관)으로 폴백 → 성별 없어도 start 실패 안 함
+    gender = raw if raw in ("male", "female") else "unknown"
     return level_to_score(level), gender
 
 

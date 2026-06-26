@@ -605,12 +605,12 @@ class KakaoCallbackView(View):
             user.set_unusable_password()
             user.save()
         else:
-            # 기존 사용자도 카카오 로그인으로 업데이트
+            # 기존 회원: 활동명을 카카오 닉네임으로 덮어쓰지 않는다(비었을 때만 초기값).
             update_fields = []
             if not user.auth_provider:
                 user.auth_provider = "kakao"
                 update_fields.append("auth_provider")
-            if nickname and user.activity_name != nickname:
+            if nickname and not user.activity_name:
                 user.activity_name = nickname
                 update_fields.append("activity_name")
             if update_fields:
@@ -645,41 +645,29 @@ class KakaoCallbackView(View):
 
         profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
 
+        # 기존 회원: 성별·생일·실명·급수·사진 등 프로필을 일절 덮어쓰지 않는다.
+        # 카카오 값은 최초 가입(get_or_create defaults) 때만 채워진다.
         update_fields = set()
-        if not created_profile:
-            for field, value in profile_defaults.items():
-                if value and getattr(profile_obj, field) != value:
-                    setattr(profile_obj, field, value)
-                    update_fields.add(field)
-
-        default_profile_path = "images/userprofile/user.png"
-
-        if is_default_image:
-            current_name = profile_obj.profile_image.name if profile_obj.profile_image else ""
-            if current_name and current_name != default_profile_path:
-                try:
-                    profile_obj.profile_image.delete(save=False)
-                except Exception:
-                    pass
-            if current_name != default_profile_path:
-                profile_obj.profile_image.name = default_profile_path
-                update_fields.add("profile_image")
-        elif profile_image_url:
-            try:
-                image_response = requests.get(profile_image_url, timeout=5)
-                image_response.raise_for_status()
-                parsed = urlparse(profile_image_url)
-                basename = os.path.basename(parsed.path.rstrip("/"))
-                base, _ = os.path.splitext(basename)
-                file_name = f"kakao_{user.id}.jpg"
-                storage = profile_obj.profile_image.field.storage
-                save_path = f"images/userprofile/{file_name}"
-                stored_path = storage.save(save_path, ContentFile(image_response.content))
-                if profile_obj.profile_image.name != stored_path:
-                    profile_obj.profile_image.name = stored_path
+        if created_profile:
+            default_profile_path = "images/userprofile/user.png"
+            if is_default_image:
+                current_name = profile_obj.profile_image.name if profile_obj.profile_image else ""
+                if current_name != default_profile_path:
+                    profile_obj.profile_image.name = default_profile_path
                     update_fields.add("profile_image")
-            except requests.RequestException:
-                pass
+            elif profile_image_url:
+                try:
+                    image_response = requests.get(profile_image_url, timeout=5)
+                    image_response.raise_for_status()
+                    file_name = f"kakao_{user.id}.jpg"
+                    storage = profile_obj.profile_image.field.storage
+                    save_path = f"images/userprofile/{file_name}"
+                    stored_path = storage.save(save_path, ContentFile(image_response.content))
+                    if profile_obj.profile_image.name != stored_path:
+                        profile_obj.profile_image.name = stored_path
+                        update_fields.add("profile_image")
+                except requests.RequestException:
+                    pass
 
         if update_fields:
             profile_obj.save(update_fields=list(update_fields))
@@ -784,11 +772,12 @@ class KakaoMobileLoginView(View):
                 user.set_unusable_password()
                 user.save()
             else:
+                # 기존 회원: 활동명을 카카오 닉네임으로 덮어쓰지 않는다(비었을 때만 초기값).
                 update_fields = []
                 if not user.auth_provider:
                     user.auth_provider = "kakao"
                     update_fields.append("auth_provider")
-                if nickname and user.activity_name != nickname:
+                if nickname and not user.activity_name:
                     user.activity_name = nickname
                     update_fields.append("activity_name")
                 if update_fields:
@@ -819,17 +808,11 @@ class KakaoMobileLoginView(View):
                 profile_defaults["phone_number"] = phone_number
             
             profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
-            
+
+            # 기존 회원: 성별·생일·실명·급수·사진 등 프로필을 일절 덮어쓰지 않는다.
+            # 카카오 값은 최초 가입(get_or_create defaults) 때만 채워진다.
             update_fields = set()
-            if not created_profile:
-                for field, value in profile_defaults.items():
-                    if value and getattr(profile_obj, field) != value:
-                        setattr(profile_obj, field, value)
-                        update_fields.add(field)
-            
-            # 프로필 이미지 처리
-            default_profile_path = "images/userprofile/user.png"
-            if not is_default_image and profile_image_url:
+            if created_profile and not is_default_image and profile_image_url:
                 try:
                     image_response = requests.get(profile_image_url, timeout=5)
                     image_response.raise_for_status()
@@ -842,7 +825,7 @@ class KakaoMobileLoginView(View):
                         update_fields.add("profile_image")
                 except requests.RequestException:
                     pass
-            
+
             if update_fields:
                 profile_obj.save(update_fields=list(update_fields))
             
@@ -1036,11 +1019,12 @@ class NaverCallbackView(View):
             user.set_unusable_password()
             user.save()
         else:
+            # 기존 회원: 활동명을 네이버 닉네임으로 덮어쓰지 않는다(비었을 때만 초기값).
             update_fields = []
             if not user.auth_provider:
                 user.auth_provider = "naver"
                 update_fields.append("auth_provider")
-            if nickname and user.activity_name != nickname:
+            if nickname and not user.activity_name:
                 user.activity_name = nickname
                 update_fields.append("activity_name")
             if update_fields:
@@ -1073,16 +1057,10 @@ class NaverCallbackView(View):
 
         profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
 
+        # 기존 회원: 성별·생일·실명·급수·사진 등 프로필을 일절 덮어쓰지 않는다.
+        # 네이버 값은 최초 가입(get_or_create defaults) 때만 채워진다.
         update_fields = set()
-        if not created_profile:
-            for field, value in profile_defaults.items():
-                if value and getattr(profile_obj, field) != value:
-                    setattr(profile_obj, field, value)
-                    update_fields.add(field)
-
-        default_profile_path = "images/userprofile/user.png"
-
-        if profile_image:
+        if created_profile and profile_image:
             try:
                 image_response = requests.get(profile_image, timeout=5)
                 image_response.raise_for_status()
@@ -1195,11 +1173,12 @@ class NaverMobileLoginView(View):
                 user.set_unusable_password()
                 user.save()
             else:
+                # 기존 회원: 활동명을 네이버 닉네임으로 덮어쓰지 않는다(비었을 때만 초기값).
                 update_fields = []
                 if not user.auth_provider:
                     user.auth_provider = "naver"
                     update_fields.append("auth_provider")
-                if nickname and user.activity_name != nickname:
+                if nickname and not user.activity_name:
                     user.activity_name = nickname
                     update_fields.append("activity_name")
                 if update_fields:
@@ -1228,17 +1207,11 @@ class NaverMobileLoginView(View):
                 profile_defaults["phone_number"] = mobile
             
             profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
-            
+
+            # 기존 회원: 성별·생일·실명·급수·사진 등 프로필을 일절 덮어쓰지 않는다.
+            # 네이버 값은 최초 가입(get_or_create defaults) 때만 채워진다.
             update_fields = set()
-            if not created_profile:
-                for field, value in profile_defaults.items():
-                    if value and getattr(profile_obj, field) != value:
-                        setattr(profile_obj, field, value)
-                        update_fields.add(field)
-            
-            # 프로필 이미지 처리
-            default_profile_path = "images/userprofile/user.png"
-            if profile_image:
+            if created_profile and profile_image:
                 try:
                     image_response = requests.get(profile_image, timeout=5)
                     image_response.raise_for_status()
@@ -1251,7 +1224,7 @@ class NaverMobileLoginView(View):
                         update_fields.add("profile_image")
                 except requests.RequestException:
                     pass
-            
+
             if update_fields:
                 profile_obj.save(update_fields=list(update_fields))
             
@@ -1440,11 +1413,12 @@ class GoogleCallbackView(View):
             user.set_unusable_password()
             user.save()
         else:
+            # 기존 회원: 활동명을 구글 이름으로 덮어쓰지 않는다(비었을 때만 초기값).
             update_fields = []
             if not user.auth_provider:
                 user.auth_provider = "google"
                 update_fields.append("auth_provider")
-            if name and user.activity_name != name:
+            if name and not user.activity_name:
                 user.activity_name = name
                 update_fields.append("activity_name")
             if update_fields:
@@ -1457,14 +1431,10 @@ class GoogleCallbackView(View):
 
         profile_obj, created_profile = UserProfile.objects.get_or_create(user=user, defaults=profile_defaults)
 
+        # 기존 회원: 실명·급수·성별·사진 등 프로필을 일절 덮어쓰지 않는다.
+        # 구글 값은 최초 가입(get_or_create defaults) 때만 채워진다.
         update_fields = set()
-        if not created_profile:
-            for field, value in profile_defaults.items():
-                if value and getattr(profile_obj, field) != value:
-                    setattr(profile_obj, field, value)
-                    update_fields.add(field)
-
-        if picture:
+        if created_profile and picture:
             try:
                 image_response = requests.get(picture, timeout=5)
                 image_response.raise_for_status()
@@ -1592,11 +1562,12 @@ class GoogleMobileLoginView(View):
                 user.set_unusable_password()
                 user.save()
             else:
+                # 기존 회원: 활동명을 구글 이름으로 덮어쓰지 않는다(비었을 때만 초기값).
                 update_fields = []
                 if not user.auth_provider:
                     user.auth_provider = "google"
                     update_fields.append("auth_provider")
-                if name and user.activity_name != name:
+                if name and not user.activity_name:
                     user.activity_name = name
                     update_fields.append("activity_name")
                 if update_fields:
@@ -1608,14 +1579,10 @@ class GoogleMobileLoginView(View):
                 user=user, defaults=profile_defaults
             )
 
+            # 기존 회원: 실명·급수·성별·사진 등 프로필을 일절 덮어쓰지 않는다.
+            # 구글 값은 최초 가입(get_or_create defaults) 때만 채워진다.
             update_fields = set()
-            if not created_profile:
-                for field, value in profile_defaults.items():
-                    if value and getattr(profile_obj, field) != value:
-                        setattr(profile_obj, field, value)
-                        update_fields.add(field)
-
-            if picture:
+            if created_profile and picture:
                 try:
                     image_response = requests.get(picture, timeout=5)
                     image_response.raise_for_status()

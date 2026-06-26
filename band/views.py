@@ -2254,11 +2254,10 @@ def schedule_detail(request, band_id, schedule_id):
         if cost_match:
             meeting_cost = cost_match.group(1)
     
-    # 출석 체크인용: 프로필(급수·성별) 완성 여부
+    # 출석 체크인용: 프로필(실명·성별·급수) 완성 여부
     profile_complete = False
     if request.user.is_authenticated:
-        pf = getattr(request.user, "profile", None)
-        profile_complete = bool(pf and pf.gender in ("male", "female") and pf.badminton_level)
+        profile_complete = request.user.match_profile_ready
 
     return render(request, "band/schedule_detail.html", {
         "band": band,
@@ -2299,8 +2298,9 @@ def schedule_match(request, band_id, schedule_id):
             "level": level,
             "cls": RAMP.get(level, "none"),
             "multi": level in MULTI,
+            "incomplete": bool(a.user.match_profile_missing),
         })
-    missing = [p for p in players if not p["gender"] or not p["level"]]
+    missing = [p for p in players if p["incomplete"]]
 
     male = sum(1 for p in players if p["gender"] == "M")
     female = sum(1 for p in players if p["gender"] == "F")
@@ -2374,10 +2374,8 @@ def schedule_checkin(request, band_id, schedule_id):
         messages.error(request, "승인된 참가자만 출석 체크인할 수 있어요.")
         return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
 
-    pf = getattr(request.user, "profile", None)
-    complete = bool(pf and pf.gender in ("male", "female") and pf.badminton_level)
-    if not complete:
-        messages.error(request, "출석 체크인 전에 프로필(급수·성별)을 먼저 입력해주세요.")
+    if not request.user.match_profile_ready:
+        messages.error(request, "출석 체크인 전에 프로필(실명·성별·급수)을 먼저 입력해주세요.")
         return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
 
     if request.POST.get("action") == "out":

@@ -86,6 +86,24 @@ class User(AbstractUser):
         return self.activity_name  # 실명이 없으면 활동명 반환
 
     @property
+    def match_profile_missing(self):
+        """출석 체크인 게이트: 비어 있는 항목 코드 리스트 (name|gender|level)."""
+        pf = getattr(self, "profile", None)
+        missing = []
+        if not (pf and pf.name and pf.name.strip()):
+            missing.append("name")
+        if not (pf and pf.gender in ("male", "female")):
+            missing.append("gender")
+        if not (pf and pf.badminton_level):
+            missing.append("level")
+        return missing
+
+    @property
+    def match_profile_ready(self):
+        """실명·성별·급수가 모두 채워졌는지."""
+        return not self.match_profile_missing
+
+    @property
     def profile_image_url(self):
         default_url = static("images/userprofile/user.png")
         profile = getattr(self, "profile", None)
