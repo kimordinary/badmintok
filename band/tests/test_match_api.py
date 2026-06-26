@@ -53,6 +53,22 @@ class StartSessionTest(MatchApiSetup):
             {"court_count": 2}, format="json")
         self.assertEqual(resp.status_code, 403)
 
+    def test_site_admin_can_operate_without_membership(self):
+        # 밴드 멤버가 아니어도 사이트 관리자(슈퍼유저)는 대진 시작·운영 가능 (조회 can_manage와 일치)
+        admin = User.objects.create_user(email="adm@x.com", password="x", activity_name="Adm")
+        admin.is_superuser = True
+        admin.is_staff = True
+        admin.save()
+        self._approved_applicant("m1@x.com", "a", "male")
+        self.client.force_authenticate(admin)
+        sid = self.client.post(
+            f"/api/bands/match/schedules/{self.schedule.id}/start/",
+            {"court_count": 1, "discipline_mode": "all"}, format="json")
+        self.assertEqual(sid.status_code, 201)
+        # 시작뿐 아니라 다른 운영 액션(세션 종료)도 통과해야 함
+        end = self.client.post(f"/api/bands/match/{sid.json()['id']}/end/", {}, format="json")
+        self.assertEqual(end.status_code, 200)
+
 
 class StateTest(MatchApiSetup):
     def test_get_state_returns_courts_and_queue(self):

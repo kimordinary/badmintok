@@ -30,6 +30,10 @@ from band.match_service import create_session_snapshot
 
 
 def _is_operator(user, band) -> bool:
+    # 조회 can_manage 산정과 동일 기준: 사이트 관리자(슈퍼유저)는 모든 번개 운영 가능
+    from accounts.permissions import is_site_admin
+    if is_site_admin(user):
+        return True
     return BandMember.objects.filter(
         band=band, user=user, status="active",
         role__in=["owner", "admin"]).exists()
