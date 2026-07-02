@@ -27,6 +27,7 @@ urlpatterns = [
     path('<str:slug>/like/', views.contest_like, name='contest_like'),
 
     # 업로더 API — 대회 하위 리소스
+    path('<str:slug>/images/replace/', views.contest_image_replace, name='contest_image_replace'),
     path('<str:slug>/images/', views.contest_image_upload, name='contest_image_upload'),
     path('<str:slug>/pdf/', views.contest_pdf_upload, name='contest_pdf_upload'),
     path('<str:slug>/schedules/', views.contest_schedule_create, name='contest_schedule_create'),

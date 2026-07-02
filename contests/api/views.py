@@ -349,6 +349,40 @@ def contest_image_upload(request, slug):
     )
 
 
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+@throttle_classes([ContestWriteThrottle])
+@parser_classes([MultiPartParser, FormParser])
+def contest_image_replace(request, slug):
+    """기존 대회 이미지를 모두 삭제하고 새 포스터 1장으로 대표 이미지를 교체."""
+    contest = get_object_or_404(Contest, slug=slug)
+    if not request.FILES.get('image'):
+        return Response({'ok': False, 'error': 'image is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    old_images = list(contest.images.all())
+    deleted_existing = len(old_images)
+    for img in old_images:
+        if img.image:
+            img.image.delete(save=False)  # 물리 파일 삭제 (orphan 방지)
+        img.delete()
+
+    data = request.data.copy()
+    if not data.get('order'):
+        data['order'] = 0
+    serializer = ContestImageWriteSerializer(data=data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    new_image = serializer.save(contest=contest)
+
+    url = request.build_absolute_uri(new_image.image.url)
+    return Response({
+        'ok': True,
+        'replaced': True,
+        'deleted_existing': deleted_existing,
+        'image': {'id': new_image.id, 'url': url, 'order': new_image.order},
+        'first_image': url,
+    }, status=status.HTTP_200_OK)
+
+
 @api_view(['PATCH'])
 @permission_classes([IsAdminUser])
 @throttle_classes([ContestWriteThrottle])
