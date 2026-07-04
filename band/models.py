@@ -16,18 +16,19 @@ class Band(models.Model):
         CENTER = "center", _("센터")
     
     class Region(models.TextChoices):
+        # 앱(정본)과 일치하는 권역 코드 — 필터 확장은 REGION_GROUPS 참조
         ALL = "all", _("전체")
         CAPITAL = "capital", _("수도권")
-        # 'busan' 코드는 영남권(부산/대구/울산/경북/경남) 전체를 의미
-        BUSAN = "busan", _("영남권")
-        DAEGU = "daegu", _("대구권")
-        # 'gwangju' 코드는 호남권(광주/전북/전남) 전체를 의미
-        GWANGJU = "gwangju", _("호남권")
-        # 'daejeon' 코드는 충청권(대전/세종/충북/충남) 전체를 의미
-        DAEJEON = "daejeon", _("충청권")
-        ULSAN = "ulsan", _("울산권")
-        GANGWON = "gangwon", _("강원권")
-        JEJU = "jeju", _("제주권")
+        YEONGNAM = "yeongnam", _("영남권")
+        BUSAN = "busan", _("부산")
+        DAEGU = "daegu", _("대구")
+        HONAM = "honam", _("호남권")
+        GWANGJU = "gwangju", _("광주")
+        CHUNGCHEONG = "chungcheong", _("충청권")
+        DAEJEON = "daejeon", _("대전")
+        ULSAN = "ulsan", _("울산")
+        GANGWON = "gangwon", _("강원")
+        JEJU = "jeju", _("제주")
     
     # 분류 코드 → 라벨 매핑 (모델 레벨에서 공통 사용)
     CATEGORY_LABELS = {
@@ -562,7 +563,7 @@ class BandSchedule(models.Model):
     description = models.TextField(_("모임 참가 조건"), blank=True)
     start_datetime = models.DateTimeField(_("시작 일시"))
     end_datetime = models.DateTimeField(_("종료 일시"), null=True, blank=True)
-    # 지역: Band와 동일한 9코드 enum 공유 (capital/busan(영남권)/gwangju(호남권)/daejeon(충청권) 등)
+    # 지역: Band와 동일한 권역 enum 공유 (capital/yeongnam/honam/chungcheong 등, 앱 정본)
     region = models.CharField(
         _("지역"), max_length=20, choices=Band.Region.choices,
         default=Band.Region.ALL, blank=True)

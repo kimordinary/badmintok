@@ -10,15 +10,19 @@ class Center(models.Model):
 
     # band 앱과 일관된 지역 코드 사용
     class Region(models.TextChoices):
+        # 앱(정본)과 일치하는 권역 코드 — 필터 확장은 band.api.views.REGION_GROUPS 참조
         ALL = "all", _("전체")
         CAPITAL = "capital", _("수도권")
-        BUSAN = "busan", _("영남권")
-        DAEGU = "daegu", _("대구권")
-        GWANGJU = "gwangju", _("호남권")
-        DAEJEON = "daejeon", _("충청권")
-        ULSAN = "ulsan", _("울산권")
-        GANGWON = "gangwon", _("강원권")
-        JEJU = "jeju", _("제주권")
+        YEONGNAM = "yeongnam", _("영남권")
+        BUSAN = "busan", _("부산")
+        DAEGU = "daegu", _("대구")
+        HONAM = "honam", _("호남권")
+        GWANGJU = "gwangju", _("광주")
+        CHUNGCHEONG = "chungcheong", _("충청권")
+        DAEJEON = "daejeon", _("대전")
+        ULSAN = "ulsan", _("울산")
+        GANGWON = "gangwon", _("강원")
+        JEJU = "jeju", _("제주")
 
     name = models.CharField(_("센터명"), max_length=200, db_index=True)
     region = models.CharField(

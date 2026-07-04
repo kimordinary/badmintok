@@ -70,6 +70,8 @@ class BandForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # 센터 전용 필드 — 일반 모임/동호회 생성 폼엔 렌더링되지 않으므로 필수 해제
+        self.fields["facility_court_count"].required = False
         # 기존 밴드의 categories 값을 초기값으로 설정
         instance = getattr(self, "instance", None)
         if instance and instance.pk and instance.categories:
@@ -77,6 +79,10 @@ class BandForm(forms.ModelForm):
         elif instance and instance.pk:
             # categories가 비어 있으면 기본으로 주요 유형 하나를 넣어둠
             self.fields["categories"].initial = [instance.band_type]
+
+    def clean_facility_court_count(self):
+        # 빈 값으로 제출되면(비센터 생성) 0으로 보정 — 모델 필드는 NOT NULL
+        return self.cleaned_data.get("facility_court_count") or 0
 
 
 class BandPostForm(forms.ModelForm):

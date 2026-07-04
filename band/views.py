@@ -254,16 +254,15 @@ def band_list(request):
             # 모임/동호회 이름 사용
             band.parent_band_name = band.name
         
-        # 권역만 표시 (전체, 수도권, 부산권, 대구권, 광주권, 대전권, 울산권, 제주권)
+        # 권역 필터 (REGION_GROUPS 우산 코드 기준)
         region_choices = [
             ("all", "전체"),
             ("capital", "수도권"),
-            ("busan", "영남권"),
-            ("daegu", "대구권"),
-            ("gwangju", "호남권"),
-            ("daejeon", "충청권"),
-            ("ulsan", "울산권"),
-            ("jeju", "제주권"),
+            ("yeongnam", "영남권"),
+            ("honam", "호남권"),
+            ("chungcheong", "충청권"),
+            ("gangwon", "강원"),
+            ("jeju", "제주"),
         ]
         
         # 배너 이미지 가져오기
@@ -372,16 +371,15 @@ def band_list(request):
         total_members=Count("members", filter=Q(members__status="active"))
     ).order_by("-total_members", "-created_at")[:5]
     
-    # 권역만 표시 (전체, 수도권, 부산권, 대구권, 광주권, 대전권, 울산권, 제주권)
+    # 권역 필터 (REGION_GROUPS 우산 코드 기준)
     region_choices = [
         ("all", "전체"),
         ("capital", "수도권"),
-        ("busan", "영남권"),
-        ("daegu", "대구권"),
-        ("gwangju", "호남권"),
-        ("daejeon", "충청권"),
-        ("ulsan", "울산권"),
-        ("jeju", "제주권"),
+        ("yeongnam", "영남권"),
+        ("honam", "호남권"),
+        ("chungcheong", "충청권"),
+        ("gangwon", "강원"),
+        ("jeju", "제주"),
     ]
     
     # 배너 이미지 가져오기
