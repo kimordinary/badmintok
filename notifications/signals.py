@@ -297,7 +297,10 @@ def notify_on_badmintok_post(sender, instance, created, **kwargs):
     - 동호인톡 등 다른 source는 대상 외
     - 임시저장 / 삭제된 게시물은 대상 외
     - 작성자 본인은 수신자에서 제외
+    - WP 매거진 동기화로 생성된 글은 전체 푸시 제외(대량 발송 방지)
     """
+    if getattr(instance, "_skip_sync_notify", False):
+        return
     if not created:
         return
     if instance.source != CommunityPost.Source.BADMINTOK:

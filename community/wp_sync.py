@@ -148,6 +148,7 @@ def sync_wp_post(wp_post, category_map, author):
     if published:
         obj.published_at = published
     obj.is_draft = wp_post.get("status") != "publish"
+    obj._skip_sync_notify = True  # 동기화 글은 전체 푸시 발송 안 함
     obj.save()
 
     if dj_cats:
