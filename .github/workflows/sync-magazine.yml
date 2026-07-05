@@ -1,0 +1,48 @@
+name: Sync Magazine (WP → Django)
+
+# 워드프레스 매거진 글을 배드민톡(BadmintokPost)으로 동기화한다.
+# - 수동 트리거: 지금 프로덕션 확인용
+# - 자동(schedule): 앱(flutter_html) 배포 후 아래 주석 해제하여 자동 동기화
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_id:
+        description: '특정 WP 글 ID (비우면 전체 발행글 동기화)'
+        required: false
+        default: ''
+  # 자동 동기화 — 앱 준비 후 주석 해제
+  # schedule:
+  #   - cron: '*/30 * * * *'   # 30분마다
+
+concurrency:
+  group: sync-magazine
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run WP→Django sync on Lightsail
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          port: ${{ secrets.LIGHTSAIL_SSH_PORT }}
+          script: |
+            set -e
+            USER_HOME="/home/${{ secrets.LIGHTSAIL_USER }}"
+            if [ "${{ secrets.LIGHTSAIL_USER }}" = "ec2-user" ]; then
+              USER_HOME="/home/ec2-user"
+            fi
+            cd $USER_HOME/badmintok
+
+            POST_ARG=""
+            if [ -n "${{ github.event.inputs.post_id }}" ]; then
+              POST_ARG="--post-id ${{ github.event.inputs.post_id }}"
+            fi
+
+            echo "=== 매거진 동기화 실행 ==="
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web \
+              python manage.py sync_wp_magazine --status publish $POST_ARG
