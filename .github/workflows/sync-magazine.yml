@@ -43,6 +43,10 @@ jobs:
               POST_ARG="--post-id ${{ github.event.inputs.post_id }}"
             fi
 
+            echo "=== 실행 중 컨테이너 목록 ==="
+            docker ps --format '{{.Names}} | {{.Status}}'
+
             echo "=== 매거진 동기화 실행 ==="
-            docker exec badmintok-web-prod \
-              python manage.py sync_wp_magazine --status publish $POST_ARG
+            WEB=$(docker ps --format '{{.Names}}' | grep -i web | head -1)
+            echo "web 컨테이너: $WEB"
+            docker exec "$WEB" python manage.py sync_wp_magazine --status publish $POST_ARG
