@@ -154,15 +154,19 @@ def sync_wp_post(wp_post, category_map, author):
     return obj, created
 
 
-def fetch_wp_posts(wp_base, auth=None, post_id=None, status="publish,draft", per_page=20):
-    """WP 글 목록/단건 조회."""
+def fetch_wp_posts(wp_base, auth=None, post_id=None, status="publish", per_page=20):
+    """WP 글 목록/단건 조회.
+    인증(auth)이 있으면 edit 컨텍스트로 임시저장(draft)까지, 없으면 발행글만(view).
+    """
+    common = {}
+    if auth:
+        common["context"] = "edit"  # 인증 시에만 (임시저장 포함 가능)
     if post_id:
-        r = requests.get(f"{wp_base}/posts/{post_id}", params={"context": "edit"},
+        r = requests.get(f"{wp_base}/posts/{post_id}", params=common,
                          auth=auth, timeout=30)
         r.raise_for_status()
         return [r.json()]
-    r = requests.get(f"{wp_base}/posts",
-                     params={"per_page": per_page, "status": status, "context": "edit"},
-                     auth=auth, timeout=30)
+    params = {"per_page": per_page, "status": status, **common}
+    r = requests.get(f"{wp_base}/posts", params=params, auth=auth, timeout=30)
     r.raise_for_status()
     return r.json()
