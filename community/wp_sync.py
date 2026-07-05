@@ -7,6 +7,7 @@ import os
 import re
 import hashlib
 import requests
+from urllib.parse import unquote
 from django.utils.dateparse import parse_datetime
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
@@ -121,7 +122,8 @@ def sync_wp_post(wp_post, category_map, author):
     title = wp_post["title"]["rendered"]
     content = clean_wp_content(wp_post["content"]["rendered"])
     content = download_content_images(content)  # 외부 이미지 → Django media
-    slug = (wp_post.get("slug") or "")[:45]
+    # WP가 한글 slug를 %인코딩(post_name)으로 주므로 디코딩해서 사용
+    slug = unquote(wp_post.get("slug") or "")[:45]
 
     dj_cats = [category_map[c] for c in wp_post.get("categories", []) if c in category_map]
     main_cat = dj_cats[0] if dj_cats else None

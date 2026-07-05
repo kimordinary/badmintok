@@ -44,5 +44,5 @@ jobs:
             fi
 
             echo "=== 매거진 동기화 실행 ==="
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod exec -T web \
+            docker exec badmintok-web-prod \
               python manage.py sync_wp_magazine --status publish $POST_ARG
