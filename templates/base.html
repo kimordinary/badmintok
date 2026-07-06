@@ -6,12 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}배드민톡{% endblock %}</title>
     {% block og_title_meta %}<meta property="og:title" content="배드민톡">{% endblock %}
-    <!-- 파비콘 -->
-    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon/favicon.ico' %}">
-    <!-- 추가 파비콘 (선택사항) - 필요시 주석 해제하고 파일 추가 -->
-    <!-- <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}"> -->
-    <!-- <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}"> -->
-    <!-- <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}"> -->
+    <!-- 파비콘 (app logo, 라운드 처리) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon/favicon-32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon/favicon-16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/favicon/favicon-180.png' %}">
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <meta name="theme-color" content="#31AA60">
@@ -53,7 +51,7 @@
                 <span class="hamburger-line"></span>
             </button>
 
-            <a class="logo" href="{% url 'home' %}" aria-label="Badmintok Home">Badmintok</a>
+            <a class="logo" href="{% url 'home' %}" aria-label="Badmintok Home"><img src="{% static 'images/badmintok-text-logo.png' %}" alt="Badmintok" class="logo-img"></a>
 
             <nav class="main-nav" aria-label="주요 카테고리">
                 <ul>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load community_filters %}
+{% load static %}
+
+{% block title %}{{ tag.name }} 배드민턴 리뷰·용품 모음 | 배드민톡{% endblock %}
+
+{% block og_title_meta %}<meta property="og:title" content="{{ tag.name }} 배드민턴 리뷰·용품 모음 | 배드민톡">{% endblock %}
+
+{% block og_tags %}
+<meta property="og:description" content="{% if tag.description %}{{ tag.description }}{% else %}{{ tag.name }} 배드민턴 라켓·신발·용품 리뷰와 소식을 배드민톡에서 모아보세요.{% endif %}">
+{% endblock %}
+
+{% block extra_head %}
+<meta name="description" content="{% if tag.description %}{{ tag.description }}{% else %}{{ tag.name }} 배드민턴 라켓·신발·용품 리뷰와 소식을 배드민톡에서 모아보세요.{% endif %}">
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width: 900px; margin: 0 auto; padding: 24px 16px;">
+        <nav style="font-size: 14px; color: #64748b; margin-bottom: 12px;">
+            <a href="{% url 'badmintok' %}" style="color: #64748b; text-decoration: none;">배드민톡</a>
+            <span style="margin: 0 6px;">›</span>{{ tag.name }}
+        </nav>
+
+        <h1 style="font-size: 28px; font-weight: 800; margin-bottom: 8px; color: #1e293b;">{{ tag.name }}</h1>
+        <p style="color: #64748b; margin-bottom: 24px;">
+            {% if tag.description %}{{ tag.description }}{% else %}{{ tag.name }} 관련 배드민턴 리뷰·용품·소식 모음{% endif %}
+        </p>
+
+        {% if posts %}
+        <div style="display: grid; gap: 16px;">
+            {% for post in posts %}
+            <a href="{% url 'badmintok_detail' post.slug %}"
+               style="display: flex; gap: 16px; text-decoration: none; color: inherit; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff;">
+                {% if post.thumbnail %}
+                <img src="{{ post.thumbnail.url }}" alt="{{ post.title }}" style="width: 120px; height: 120px; object-fit: cover; flex-shrink: 0;" loading="lazy">
+                {% elif post.images.exists %}
+                <img src="{{ post.images.first.image.url }}" alt="{{ post.title }}" style="width: 120px; height: 120px; object-fit: cover; flex-shrink: 0;" loading="lazy">
+                {% endif %}
+                <div style="padding: 16px; flex: 1; min-width: 0;">
+                    <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #1e293b;">{{ post.title }}</h2>
+                    <p style="color: #64748b; font-size: 14px; line-height: 1.5;">{{ post.content|striptags|truncatewords:20 }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: #94a3b8; padding: 40px 0; text-align: center;">아직 {{ tag.name }} 관련 글이 없습니다.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

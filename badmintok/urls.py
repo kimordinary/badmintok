@@ -21,7 +21,7 @@ from django.contrib.sitemaps.views import sitemap, index as sitemap_index
 from django.contrib.syndication.views import Feed
 from django.urls import include, path
 from django.shortcuts import redirect
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 from . import views
 from .sitemaps import sitemaps
 from community import admin_uploads
@@ -39,9 +39,16 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", views.home, name="home"),
     path("badminton-tournament/", include(("contests.urls", "contests"), namespace="contests")),
-    path("badmintok/", views.badmintok, name="badmintok"),
-    path("badmintok/create/", views.badmintok_create, name="badmintok_create"),
-    path("badmintok/<str:slug>/", views.badmintok_detail, name="badmintok_detail"),
+    # 배드민톡 매거진 (구 /badmintok/ → /magazine/)
+    path("magazine/", views.badmintok, name="badmintok"),
+    path("magazine/create/", views.badmintok_create, name="badmintok_create"),
+    path("magazine/tag/<slug:slug>/", views.badmintok_tag, name="badmintok_tag"),
+    path("magazine/<str:slug>/", views.badmintok_detail, name="badmintok_detail"),
+    # 기존 /badmintok/* → /magazine/* 301 리다이렉션 (SEO 보존, 쿼리스트링 유지)
+    path("badmintok/", RedirectView.as_view(pattern_name="badmintok", permanent=True, query_string=True)),
+    path("badmintok/create/", RedirectView.as_view(pattern_name="badmintok_create", permanent=True, query_string=True)),
+    path("badmintok/tag/<slug:slug>/", RedirectView.as_view(pattern_name="badmintok_tag", permanent=True, query_string=True)),
+    path("badmintok/<str:slug>/", RedirectView.as_view(pattern_name="badmintok_detail", permanent=True, query_string=True)),
     # 기존 뉴스/리뷰 URL은 통합 페이지로 리다이렉트
     path("news/", views.news_redirect, name="news"),
     path("reviews/", views.reviews_redirect, name="reviews"),

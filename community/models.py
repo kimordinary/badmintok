@@ -80,6 +80,49 @@ class CommunityCategoryManager(models.Manager):
         return super().get_queryset().filter(source='community')
 
 
+class Tag(models.Model):
+    """게시글 태그 모델 (브랜드 등 교차 분류 · SEO 아카이브용)"""
+
+    class Source(models.TextChoices):
+        COMMUNITY = "community", _("동호인톡")
+        BADMINTOK = "badmintok", _("배드민톡")
+
+    name = models.CharField(_("태그명"), max_length=50)
+    slug = models.SlugField(_("슬러그"), max_length=50, help_text=_("URL에 사용될 식별자"))
+    source = models.CharField(
+        _("출처"), max_length=20, choices=Source.choices, default=Source.BADMINTOK
+    )
+    description = models.CharField(
+        _("설명"), max_length=200, blank=True,
+        help_text=_("태그 아카이브 페이지의 SEO meta description")
+    )
+    display_order = models.PositiveIntegerField(_("표시 순서"), default=0)
+    is_active = models.BooleanField(_("활성화"), default=True)
+    created_at = models.DateTimeField(_("생성일"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("수정일"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("태그")
+        verbose_name_plural = _("태그")
+        ordering = ["display_order", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["source", "slug"], name="uniq_tag_source_slug"),
+        ]
+        indexes = [
+            models.Index(fields=["source", "is_active", "display_order"]),
+            models.Index(fields=["slug"]),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class BadmintokTagManager(models.Manager):
+    """배드민톡 태그만 필터링하는 Manager"""
+    def get_queryset(self):
+        return super().get_queryset().filter(source="badmintok")
+
+
 class Post(models.Model):
     """게시글 모델"""
     
@@ -103,6 +146,13 @@ class Post(models.Model):
         related_name="posts_multi",
         verbose_name=_("카테고리"),
         help_text=_("여러 카테고리 선택 가능")
+    )
+    tags = models.ManyToManyField(
+        "Tag",
+        blank=True,
+        related_name="posts",
+        verbose_name=_("태그"),
+        help_text=_("브랜드 등 교차 분류 태그")
     )
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,

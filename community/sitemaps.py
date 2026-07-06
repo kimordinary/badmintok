@@ -111,6 +111,35 @@ class BadmintokListSitemap(Sitemap):
         ))
 
 
+class BadmintokTagSitemap(Sitemap):
+    """배드민톡 브랜드 태그 아카이브 사이트맵.
+
+    글이 하나라도 있는 활성 태그만 등록 (thin content 방지).
+    """
+    changefreq = "weekly"
+    priority = 0.7
+
+    def items(self):
+        from .models import Tag
+        now = timezone.now()
+        return Tag.objects.filter(
+            source="badmintok", is_active=True,
+            posts__source=Post.Source.BADMINTOK,
+            posts__is_deleted=False, posts__is_draft=False,
+            posts__published_at__lte=now,
+        ).distinct().order_by("display_order", "name")
+
+    def location(self, obj):
+        return reverse("badmintok_tag", args=[obj.slug])
+
+    def lastmod(self, obj):
+        now = timezone.now()
+        p = obj.posts.filter(
+            is_deleted=False, is_draft=False, published_at__lte=now,
+        ).order_by("-updated_at").first()
+        return p.updated_at if p else None
+
+
 # 카테고리 허브 sitemap (?tab= / ?category=)은 의도적으로 제거:
 # - 구글이 쿼리스트링 URL을 카노니컬 후보로 안 잡고 색인 효과 미미
 # - 메인 페이지(/badmintok/, /community/) 사이트맵으로 충분

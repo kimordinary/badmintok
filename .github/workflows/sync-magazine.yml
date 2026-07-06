@@ -49,4 +49,4 @@ jobs:
             echo "=== 매거진 동기화 실행 ==="
             WEB=$(docker ps --format '{{.Names}}' | grep -i web | head -1)
             echo "web 컨테이너: $WEB"
-            docker exec "$WEB" python manage.py sync_wp_magazine --status publish $POST_ARG
+            docker exec "$WEB" python manage.py sync_wp_magazine --status publish --prune $POST_ARG

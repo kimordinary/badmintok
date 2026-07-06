@@ -52,8 +52,8 @@ class CommunityPostFeed(Feed):
 
 class BadmintokPostFeed(Feed):
     """배드민톡 게시글 RSS 피드"""
-    title = "배드민톡 - 배드민톡"
-    link = "/badmintok/"
+    title = "배드민턴 매거진 - 배드민톡"
+    link = "/magazine/"
     description = "배드민톡 최신 게시글 (뉴스, 리뷰, 피드)"
     
     def items(self):

@@ -125,6 +125,14 @@ main > section {
     color: var(--brand);
     text-decoration: none;
     letter-spacing: 0.2px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.logo-img {
+    height: 20px;
+    width: auto;
+    display: block;
 }
 
 .main-nav ul {

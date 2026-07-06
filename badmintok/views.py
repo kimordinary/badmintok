@@ -30,6 +30,28 @@ def home(request):
     return render(request, "home.html", context)
 
 
+def badmintok_tag(request, slug):
+    """브랜드 태그 아카이브 페이지 (SEO 허브)."""
+    from django.shortcuts import get_object_or_404
+    from django.utils import timezone
+    from community.models import Tag
+
+    tag = get_object_or_404(Tag, slug=slug, source="badmintok", is_active=True)
+    now = timezone.now()
+    posts = Post.objects.filter(
+        tags=tag,
+        source=Post.Source.BADMINTOK,
+        is_deleted=False, is_draft=False,
+    ).filter(
+        Q(published_at__lte=now) | Q(published_at__isnull=True)
+    ).select_related("author", "category").prefetch_related("images").order_by("-published_at")
+
+    return render(request, "badmintok/tag.html", {
+        "tag": tag,
+        "posts": posts,
+    })
+
+
 def badmintok_detail(request, slug):
     """배드민톡 게시글 상세 뷰"""
     from django.shortcuts import get_object_or_404
@@ -50,7 +72,7 @@ def badmintok_detail(request, slug):
     queryset = Post.objects.filter(base_filter).filter(slug=slug).order_by('-created_at')
     
     # 같은 slug가 여러 개일 경우 최신 글을 가져옴
-    post = queryset.select_related("author", "category").prefetch_related("images", "likes", "categories").first()
+    post = queryset.select_related("author", "category").prefetch_related("images", "likes", "categories", "tags").first()
     
     if not post:
         from django.http import Http404

@@ -9,6 +9,7 @@ from community.sitemaps import (
     CommunityPostSitemap,
     BadmintokPostSitemap,
     MemberReviewPostSitemap,
+    BadmintokTagSitemap,
 )
 from band.sitemaps import (
     BandSitemap,
@@ -145,6 +146,7 @@ sitemaps = {
     # 콘텐츠 (?tab=·?category= 같은 쿼리스트링 URL은 의도적으로 제외)
     'community_posts':      CommunityPostSitemap,
     'badmintok_posts':      BadmintokPostSitemap,
+    'badmintok_tags':       BadmintokTagSitemap,
     'member_reviews':       MemberReviewPostSitemap,
     'bands':                BandSitemap,
     'band_posts':           BandPostSitemap,

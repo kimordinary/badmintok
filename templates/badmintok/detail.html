@@ -131,14 +131,16 @@
     <div>
     <div class="container" style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
         <div style="max-width: 800px; margin: 0 auto;">
-            <!-- 카테고리 -->
-            {% if post.category %}
-            <div style="margin-bottom: 24px;">
-                <span style="display: inline-block; padding: 6px 14px; background: #f1f5f9; color: var(--brand); border-radius: 20px; font-size: 13px; font-weight: 600;">
-                    {{ post.get_category_display }}
-                </span>
-            </div>
-            {% endif %}
+            <!-- 빵부스러기 -->
+            <nav aria-label="위치" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #64748b; margin-bottom: 16px; flex-wrap: wrap;">
+                <a href="{% url 'home' %}" style="color: #64748b; text-decoration: none;">홈</a>
+                <span style="opacity: 0.5;">›</span>
+                <a href="{% url 'badmintok' %}" style="color: #64748b; text-decoration: none;">배드민톡</a>
+                {% if post.category %}
+                <span style="opacity: 0.5;">›</span>
+                <span style="color: #475569;">{{ post.get_category_display }}</span>
+                {% endif %}
+            </nav>
 
             <!-- 게시글 내용 -->
             <article style="margin-bottom: 48px; line-height: 1.9; color: #1e293b;">
@@ -147,6 +149,15 @@
                 </div>
                 <textarea id="post-content-raw" style="display:none">{{ post.content }}</textarea>
             </article>
+
+            {% if post.tags.all %}
+            <div class="post-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px;">
+                {% for tag in post.tags.all %}
+                <a href="{% url 'badmintok_tag' tag.slug %}"
+                   style="display: inline-block; padding: 6px 14px; background: #f1f5f9; color: #475569; border-radius: 20px; font-size: 14px; text-decoration: none;">#{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             <!-- 좋아요 / 공유 버튼 -->
             <div style="display: flex; gap: 12px; margin-bottom: 48px; padding: 32px 0; border-bottom: 1px solid #e2e8f0;">
@@ -600,12 +611,25 @@
                 line-height: 1.8;
             }
             .post-content blockquote {
-                border-left: 4px solid var(--brand);
-                padding-left: 20px;
+                border-left: 6px solid var(--brand);
+                background: #f0faf4;
+                padding: 20px 24px;
                 margin: 32px 0;
-                color: #64748b;
-                font-style: italic;
-                font-size: 18px;
+                border-radius: 0 10px 10px 0;
+                color: #334155;
+                font-size: 17px;
+                line-height: 1.75;
+            }
+            .post-content blockquote p {
+                margin: 0;
+            }
+            .post-content blockquote cite {
+                display: block;
+                margin-top: 10px;
+                font-size: 14px;
+                font-weight: 600;
+                font-style: normal;
+                color: var(--brand);
             }
             .post-content code {
                 background: #f1f5f9;
@@ -811,6 +835,15 @@
                 gap: 10px;
                 flex-wrap: wrap;
                 margin: 20px 0;
+                justify-content: center;
+            }
+            .post-content .wp-block-button__width-25 { width: 25%; }
+            .post-content .wp-block-button__width-50 { width: 50%; }
+            .post-content .wp-block-button__width-75 { width: 75%; }
+            .post-content .wp-block-button__width-100 { width: 100%; }
+            .post-content .wp-block-button[class*="wp-block-button__width-"] .wp-block-button__link {
+                width: 100%;
+                text-align: center;
             }
             .post-content .wp-block-button__link,
             .post-content .wp-block-button a {
@@ -820,7 +853,7 @@
                 padding: 12px 24px;
                 border-radius: 10px;
                 font-weight: 700;
-                text-decoration: none;
+                text-decoration: none !important;
             }
             .post-content .wp-block-button__link:hover,
             .post-content .wp-block-button a:hover {
