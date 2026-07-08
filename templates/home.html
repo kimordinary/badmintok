@@ -1544,7 +1544,13 @@
                     console.log('JSON parsing failed for excerpt:', e);
                 }
             }
-            // 일반 텍스트인 경우 그대로 유지
+            else {
+                // JSON이 아닌 HTML/텍스트(WP 매거진·Quill) → 태그 제거 + 요약
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = text;
+                let plain = tempDiv.textContent.trim().replace(/\s+/g, ' ');
+                excerptEl.textContent = plain.length > 80 ? plain.substring(0, 80) + '...' : (plain || '내용 없음');
+            }
         });
     });
 </script>
