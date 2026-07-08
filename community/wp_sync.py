@@ -103,7 +103,26 @@ def get_system_author():
     if user.activity_name != "배드민톡":
         user.activity_name = "배드민톡"
         user.save(update_fields=["activity_name"])
+    _ensure_system_author_profile(user)
     return user
+
+
+def _ensure_system_author_profile(user):
+    """시스템 작성자 프로필 이미지를 배드민톡 앱 로고로 보정(한 번만)."""
+    try:
+        from accounts.models import UserProfile
+        from django.conf import settings
+        from django.core.files import File
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        cur = profile.profile_image.name if profile.profile_image else ""
+        if "badmintok-profile" in cur:
+            return  # 이미 설정됨
+        logo = os.path.join(settings.BASE_DIR, "static", "images", "badmintok-profile.png")
+        if os.path.exists(logo):
+            with open(logo, "rb") as f:
+                profile.profile_image.save("badmintok-profile.png", File(f), save=True)
+    except Exception:
+        pass
 
 
 def build_category_map(wp_base, auth=None):
