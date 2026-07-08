@@ -10,10 +10,31 @@
 
 {% block og_tags %}
 {% if post.meta_description %}
+<meta name="description" content="{{ post.meta_description }}">
 <meta property="og:description" content="{{ post.meta_description }}">
 {% else %}
+<meta name="description" content="{{ post.content|striptags|truncatewords:30 }}">
 <meta property="og:description" content="{{ post.content|striptags|truncatewords:30 }}">
 {% endif %}
+{% endblock %}
+
+{% block og_type %}<meta property="og:type" content="article">{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ post.title|escapejs }}",
+  "description": "{% if post.meta_description %}{{ post.meta_description|escapejs }}{% else %}{{ post.content|striptags|truncatewords:30|escapejs }}{% endif %}",
+  {% if post.thumbnail %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ post.thumbnail.url }}",{% elif post.images.exists %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ post.images.first.image.url }}",{% endif %}
+  "datePublished": "{{ post.published_at|date:'c' }}",
+  "dateModified": "{{ post.updated_at|date:'c' }}",
+  "author": {"@type": "Person", "name": "{{ post.author.activity_name|escapejs }}"},
+  "publisher": {"@type": "Organization", "name": "배드민톡", "logo": {"@type": "ImageObject", "url": "{{ request.scheme }}://{{ request.get_host }}{% static 'images/badmintok-text-logo.png' %}"}},
+  "mainEntityOfPage": {"@type": "WebPage", "@id": "{{ request.build_absolute_uri }}"}
+}
+</script>
 {% endblock %}
 
 {% block content %}

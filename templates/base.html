@@ -17,7 +17,7 @@
     <meta name="google-site-verification" content="3GKxaCC4B7n8hJKWECJj2a56RtEiufHDCSmgIe34Dcg" />
     <meta name="naver-site-verification" content="32d5f1c3fdac130baa3f598c4061dac1ca605bbb" />
     <!-- Open Graph 기본 태그 -->
-    <meta property="og:type" content="website">
+    {% block og_type %}<meta property="og:type" content="website">{% endblock %}
     <meta property="og:site_name" content="배드민톡">
     <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
     <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image/OG image (1).png' %}{% endblock %}">

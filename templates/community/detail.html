@@ -10,10 +10,32 @@
 
 {% block og_tags %}
 {% if post.meta_description %}
+<meta name="description" content="{{ post.meta_description }}">
 <meta property="og:description" content="{{ post.meta_description }}">
 {% else %}
+<meta name="description" content="{{ post.content|striptags|truncatewords:30 }}">
 <meta property="og:description" content="{{ post.content|striptags|truncatewords:30 }}">
 {% endif %}
+{% endblock %}
+
+{% block og_type %}<meta property="og:type" content="article">{% endblock %}
+
+{% block extra_head %}
+{% load static %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ post.title|escapejs }}",
+  "description": "{% if post.meta_description %}{{ post.meta_description|escapejs }}{% else %}{{ post.content|striptags|truncatewords:30|escapejs }}{% endif %}",
+  {% if post.thumbnail %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ post.thumbnail.url }}",{% elif post.images.exists %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ post.images.first.image.url }}",{% endif %}
+  "datePublished": "{{ post.published_at|date:'c' }}",
+  "dateModified": "{{ post.updated_at|date:'c' }}",
+  "author": {"@type": "Person", "name": "{{ post.author.activity_name|escapejs }}"},
+  "publisher": {"@type": "Organization", "name": "배드민톡", "logo": {"@type": "ImageObject", "url": "{{ request.scheme }}://{{ request.get_host }}{% static 'images/badmintok-text-logo.png' %}"}},
+  "mainEntityOfPage": {"@type": "WebPage", "@id": "{{ request.build_absolute_uri }}"}
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -26,7 +48,7 @@
         <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
                 <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1e293b;">{{ post.title }}</h1>
-                {% if user == post.author %}
+                {% if user == post.author or user.is_staff %}
                     <div style="display: flex; gap: 8px;">
                         <a href="{% url 'community:update' post.slug %}" class="btn btn-ghost" style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; font-weight: 500; text-decoration: none; height: 36px; box-sizing: border-box; line-height: 1.5; font-family: inherit; border: 1px solid rgba(49, 170, 96, .3); background: #fff; color: var(--brand); cursor: pointer; transition: background .2s ease, color .2s ease;">수정</a>
                         <form action="{% url 'community:delete' post.slug %}" method="post" style="display: inline;">
@@ -130,6 +152,21 @@
                 .post-content a:hover {
                     color: var(--brand-700);
                 }
+                /* Quill 에디터 서식 클래스 (정렬·글씨크기·들여쓰기) */
+                .post-content .ql-align-center { text-align: center; }
+                .post-content .ql-align-right { text-align: right; }
+                .post-content .ql-align-justify { text-align: justify; }
+                .post-content .ql-size-small { font-size: 0.75em; }
+                .post-content .ql-size-large { font-size: 1.5em; }
+                .post-content .ql-size-huge { font-size: 2.5em; }
+                .post-content .ql-indent-1 { padding-left: 3em; }
+                .post-content .ql-indent-2 { padding-left: 6em; }
+                .post-content .ql-indent-3 { padding-left: 9em; }
+                .post-content .ql-indent-4 { padding-left: 12em; }
+                .post-content .ql-indent-5 { padding-left: 15em; }
+                .post-content .ql-indent-6 { padding-left: 18em; }
+                .post-content .ql-indent-7 { padding-left: 21em; }
+                .post-content .ql-indent-8 { padding-left: 24em; }
             </style>
         </div>
 

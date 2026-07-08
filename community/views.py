@@ -639,7 +639,10 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     slug_url_kwarg = "slug"
 
     def get_queryset(self):
-        return Post.objects.filter(is_deleted=False, author=self.request.user).select_related("category")
+        qs = Post.objects.filter(is_deleted=False).select_related("category")
+        if self.request.user.is_staff:
+            return qs  # 사이트 관리자는 모든 글 수정/삭제 가능
+        return qs.filter(author=self.request.user)
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -750,7 +753,10 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     slug_url_kwarg = "slug"
 
     def get_queryset(self):
-        return Post.objects.filter(is_deleted=False, author=self.request.user).select_related("category")
+        qs = Post.objects.filter(is_deleted=False).select_related("category")
+        if self.request.user.is_staff:
+            return qs  # 사이트 관리자는 모든 글 수정/삭제 가능
+        return qs.filter(author=self.request.user)
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()

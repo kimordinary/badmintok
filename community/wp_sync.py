@@ -171,6 +171,29 @@ def sync_wp_post(wp_post, category_map, author, tag_map=None):
     if published:
         obj.published_at = published
     obj.is_draft = wp_post.get("status") != "publish"
+
+    # 메타 설명 (WP "요약(excerpt)" 칸 → meta_description)
+    excerpt_html = (wp_post.get("excerpt") or {}).get("rendered", "")
+    if excerpt_html:
+        meta = re.sub(r"<[^>]+>", "", excerpt_html).strip()
+        obj.meta_description = meta[:160]
+
+    # 썸네일 (WP featured image → thumbnail)
+    media = (wp_post.get("_embedded") or {}).get("wp:featuredmedia") or []
+    src = media[0].get("source_url") if media and isinstance(media[0], dict) else None
+    if src:
+        try:
+            img = requests.get(src, timeout=20)
+            img.raise_for_status()
+            ext = os.path.splitext(src.split("?")[0])[1].lower()
+            if ext not in _ALLOWED_EXT:
+                ext = ".jpg"
+            fname = f"wp_thumb_{hashlib.md5(src.encode()).hexdigest()}{ext}"
+            obj.thumbnail.save(fname, ContentFile(img.content), save=False)
+            obj.thumbnail_alt = (media[0].get("alt_text") or title)[:200]
+        except Exception:
+            pass
+
     obj._skip_sync_notify = True  # 동기화 글은 전체 푸시 발송 안 함
     obj.save()
 
@@ -188,7 +211,7 @@ def fetch_wp_posts(wp_base, auth=None, post_id=None, status="publish", per_page=
     """WP 글 목록/단건 조회.
     인증(auth)이 있으면 edit 컨텍스트로 임시저장(draft)까지, 없으면 발행글만(view).
     """
-    common = {}
+    common = {"_embed": "wp:featuredmedia"}  # 썸네일(대표이미지) URL 포함
     if auth:
         common["context"] = "edit"  # 인증 시에만 (임시저장 포함 가능)
     if post_id:
