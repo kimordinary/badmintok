@@ -76,25 +76,24 @@
 
         <!-- 게시글 내용 -->
         <div style="min-height: 200px; margin-bottom: 32px; line-height: 1.8; color: #1e293b;">
-            <!-- 이미지 목록 -->
-            {% if post.images.exists %}
+            <!-- 이미지 목록 (본문에 이미지가 없을 때만 표시 — 중복 방지) -->
+            {% if post.images.exists and '<img' not in post.content %}
                 <div style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px;">
                     {% for image in post.images.all %}
-                        <img src="{{ image.image.url }}" alt="게시글 이미지 {{ forloop.counter }}" 
+                        <img src="{{ image.image.url }}" alt="게시글 이미지 {{ forloop.counter }}"
                              style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
                     {% endfor %}
                 </div>
             {% endif %}
 
             <!-- 텍스트 내용 (Quill HTML) -->
-            <div class="post-content" style="word-wrap: break-word;">
-                {{ post.content|add_nofollow_external }}
-            </div>
+            <div class="post-content" style="word-wrap: break-word;">{{ post.content|add_nofollow_external }}</div>
             <style>
                 .post-content {
                     font-size: 16px;
                     line-height: 1.8;
                     color: #1e293b;
+                    white-space: pre-wrap;  /* 개행문자(\n) 줄바꿈 렌더 (앱 작성 글 대응) */
                 }
                 .post-content h1, .post-content h2, .post-content h3 {
                     margin: 24px 0 16px 0;
