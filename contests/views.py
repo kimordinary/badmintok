@@ -136,6 +136,7 @@ class ContestPreviewView(ListView):
                 "endDow": dow_names[(end.weekday() + 1) % 7],
                 "multiDay": multi_day, "dday": dday, "status": status,
             })
+        items.sort(key=lambda x: x["date"])
         return items
 
     def get_context_data(self, **kwargs):
@@ -147,7 +148,9 @@ class ContestPreviewView(ListView):
         dow_names = ["일", "월", "화", "수", "목", "금", "토"]
 
         if self.request.GET.get("demo"):
-            context["preview_data"] = json.dumps(self._demo_items(today), cls=DjangoJSONEncoder)
+            demo_items = self._demo_items(today)
+            context["preview_data"] = json.dumps(demo_items, cls=DjangoJSONEncoder)
+            context["items"] = demo_items
             context["regions"] = [r[0] for r in Contest.Region.choices]
             context["today_iso"] = today.isoformat()
             context["today"] = today
@@ -223,10 +226,13 @@ class ContestPreviewView(ListView):
                 "status": status,
             })
 
+        items.sort(key=lambda x: x["date"])
         context["preview_data"] = json.dumps(items, cls=DjangoJSONEncoder)
+        context["items"] = items
         context["regions"] = [r[0] for r in Contest.Region.choices]
         context["today_iso"] = today.isoformat()
         context["today"] = today
+        context["last_updated"] = max((c.updated_at for c in self.object_list if c.updated_at), default=None)
         context["canonical_url"] = self.request.build_absolute_uri(self.request.path)
         return context
 

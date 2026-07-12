@@ -1650,7 +1650,6 @@ main > section {
 .site-footer {
     background: var(--brand-800);
     color: #fff;
-    margin-top: 24px;
 }
 
 .footer-grid {
@@ -2810,10 +2809,6 @@ body.disable-mobile-overlay {
         image-rendering: crisp-edges;
     }
 
-    /* 데스크탑 하단 CTA 가려지는 영역 보정 */
-    body {
-        padding-bottom: 96px;
-    }
 }
 
 /* 모바일 하단 앱 다운로드 CTA (홈 제외 모든 페이지) */
