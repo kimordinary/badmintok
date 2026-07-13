@@ -418,6 +418,10 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     is_site_admin = serializers.SerializerMethodField()
     applications = serializers.SerializerMethodField()
     d_day = serializers.SerializerMethodField()
+    waiting_count = serializers.SerializerMethodField()
+    waitlist_capacity = serializers.SerializerMethodField()
+    my_waiting_position = serializers.SerializerMethodField()
+    quota_status = serializers.SerializerMethodField()
 
     class Meta:
         model = BandSchedule
@@ -427,16 +431,94 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'cost', 'bank_account', 'is_closed', 'created_by',
+            'use_level_quota', 'quota_by_gender', 'level_quota',
             'images', 'is_full', 'is_applied', 'user_application',
             'can_manage', 'is_site_admin', 'applications', 'd_day',
+            'waiting_count', 'waitlist_capacity', 'my_waiting_position', 'quota_status',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
 
     def get_is_full(self, obj):
+        # 정원제: 모든 급수 칸이 마감되면 True(=신규 신청은 대기로)
+        if obj.use_level_quota:
+            lq = obj.level_quota or {}
+            if not lq:
+                return False
+            approved = obj.applications.filter(status='approved').select_related('user__profile')
+            counts = {}
+            for a in approved:
+                pf = getattr(a.user, 'profile', None)
+                _lv = getattr(pf, 'badminton_level', '') if pf else ''
+                _g = getattr(pf, 'gender', '') if pf else ''
+                c = counts.setdefault(_lv, {'male': 0, 'female': 0, 'total': 0})
+                c['total'] += 1
+                if _g in ('male', 'female'):
+                    c[_g] += 1
+            for code, cell in lq.items():
+                c = counts.get(code, {'male': 0, 'female': 0, 'total': 0})
+                if obj.quota_by_gender:
+                    if c['male'] < int(cell.get('male', 0) or 0) or c['female'] < int(cell.get('female', 0) or 0):
+                        return False
+                else:
+                    if c['total'] < int(cell.get('total', 0) or 0):
+                        return False
+            return True
         if obj.max_participants:
             return obj.current_participants >= obj.max_participants
         return False
+
+    def get_waiting_count(self, obj):
+        return obj.applications.filter(status='waiting').count()
+
+    def get_waitlist_capacity(self, obj):
+        return BandScheduleApplication.WAITLIST_CAPACITY
+
+    def get_my_waiting_position(self, obj):
+        request = self.context.get('request')
+        if not (request and request.user.is_authenticated):
+            return None
+        app = obj.applications.filter(user=request.user, status='waiting').first()
+        if not app:
+            return None
+        wids = list(obj.applications.filter(status='waiting').order_by('applied_at').values_list('user_id', flat=True))
+        if request.user.id in wids:
+            return wids.index(request.user.id) + 1
+        return None
+
+    def get_quota_status(self, obj):
+        if not obj.use_level_quota:
+            return None
+        LEVEL_LABEL = {'master': '자강', 's': 'S', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'beginner': '초심'}
+        LEVEL_ORDER = ['master', 's', 'a', 'b', 'c', 'd', 'beginner']
+        lq = obj.level_quota or {}
+        counts = {}
+        for a in obj.applications.filter(status='approved').select_related('user__profile'):
+            pf = getattr(a.user, 'profile', None)
+            _lv = getattr(pf, 'badminton_level', '') if pf else ''
+            _g = getattr(pf, 'gender', '') if pf else ''
+            c = counts.setdefault(_lv, {'male': 0, 'female': 0, 'total': 0})
+            c['total'] += 1
+            if _g in ('male', 'female'):
+                c[_g] += 1
+        result = []
+        for code in LEVEL_ORDER:
+            if code not in lq:
+                continue
+            c = counts.get(code, {'male': 0, 'female': 0, 'total': 0})
+            cell = lq.get(code, {})
+            if obj.quota_by_gender:
+                result.append({
+                    'level': code, 'label': LEVEL_LABEL[code], 'by_gender': True,
+                    'male_approved': c['male'], 'male_quota': int(cell.get('male', 0) or 0),
+                    'female_approved': c['female'], 'female_quota': int(cell.get('female', 0) or 0),
+                })
+            else:
+                result.append({
+                    'level': code, 'label': LEVEL_LABEL[code], 'by_gender': False,
+                    'total_approved': c['total'], 'total_quota': int(cell.get('total', 0) or 0),
+                })
+        return result
 
     def get_is_applied(self, obj):
         request = self.context.get('request')
@@ -484,8 +566,9 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
                 role__in=['owner', 'admin'], status='active'
             ).exists()
             if is_manager:
-                # 관리자: approved + pending 모두 반환
-                apps = obj.applications.select_related('user', 'user__profile').exclude(status='cancelled')
+                # 관리자: approved + pending + waiting (신청순), rejected/cancelled 제외
+                apps = obj.applications.select_related('user', 'user__profile').filter(
+                    status__in=['approved', 'pending', 'waiting']).order_by('applied_at')
             else:
                 # 일반 사용자: approved만 반환
                 apps = obj.applications.select_related('user', 'user__profile').filter(status='approved')
@@ -605,7 +688,8 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
         fields = [
             'title', 'description', 'start_datetime', 'end_datetime',
             'region', 'location', 'max_participants', 'requires_approval',
-            'application_deadline', 'cost', 'bank_account'
+            'application_deadline', 'cost', 'bank_account',
+            'use_level_quota', 'quota_by_gender', 'level_quota'
         ]
 
     def validate(self, attrs):

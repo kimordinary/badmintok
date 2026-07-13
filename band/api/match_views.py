@@ -440,6 +440,20 @@ def my_status_by_schedule(request, schedule_id):
     session = getattr(schedule, "match_session", None)
     approved = BandScheduleApplication.objects.filter(
         schedule=schedule, user=request.user, status="approved").exists()
+    # 신청/대기 상태 + 대기 순번(1-base, 신청순)
+    my_app = BandScheduleApplication.objects.filter(schedule=schedule, user=request.user).first()
+    waiting_total = BandScheduleApplication.objects.filter(schedule=schedule, status="waiting").count()
+    waiting_position = None
+    if my_app and my_app.status == "waiting":
+        _wids = list(BandScheduleApplication.objects.filter(
+            schedule=schedule, status="waiting").order_by("applied_at").values_list("user_id", flat=True))
+        if request.user.id in _wids:
+            waiting_position = _wids.index(request.user.id) + 1
+    waitlist_extra = {
+        "application_status": my_app.status if my_app else None,
+        "waiting_position": waiting_position,
+        "waiting_total": waiting_total,
+    }
     if session is None:
         return Response({
             "session_id": None, "session_status": None,
@@ -447,10 +461,12 @@ def my_status_by_schedule(request, schedule_id):
             "playing": False, "current_match": None,
             "queue_position": None, "queue_total": 0, "up_next": False,
             "approved": approved,
+            **waitlist_extra,
         })
     sp = _my_participant(session, request.user)
     data = serialize_my_status(session, sp, request.user)
     data["approved"] = approved or sp is not None
+    data.update(waitlist_extra)
     return Response(data)
 
 

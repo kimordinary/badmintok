@@ -1129,43 +1129,67 @@ def band_schedule_apply(request, band_id, schedule_id):
     if schedule.is_closed:
         return Response({'error': '모집이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # 정원 확인
-    if schedule.max_participants and schedule.current_participants >= schedule.max_participants:
-        return Response({'error': '참가 인원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-
     notes = request.data.get('notes', '')
 
-    # 승인 필요 여부에 따라 상태 결정
-    if schedule.requires_approval:
-        initial_status = 'pending'
+    # 정원/대기 판정 — 급수별 정원(use_level_quota) 켜면 급수·성별 칸 기준, 아니면 총원
+    profile = getattr(request.user, 'profile', None)
+    lvl = getattr(profile, 'badminton_level', '') or ''
+    gender = getattr(profile, 'gender', '') or ''
+    if schedule.use_level_quota:
+        lq = schedule.level_quota or {}
+        if lvl not in lq:
+            return Response({'error': '이 모임에서 모집하지 않는 급수예요. (프로필 급수를 확인하세요)'}, status=status.HTTP_400_BAD_REQUEST)
+        if schedule.quota_by_gender:
+            cell_quota = int(lq.get(lvl, {}).get(gender, 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=lvl, user__profile__gender=gender).count()
+        else:
+            cell_quota = int(lq.get(lvl, {}).get('total', 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=lvl).count()
+        is_full = cell_approved >= cell_quota
+    else:
+        approved_cnt = schedule.applications.filter(status='approved').count()
+        is_full = bool(schedule.max_participants) and approved_cnt >= schedule.max_participants
+
+    waiting_cnt = schedule.applications.filter(status='waiting').count()
+    if is_full and waiting_cnt >= BandScheduleApplication.WAITLIST_CAPACITY:
+        return Response({'error': '참가·대기 인원이 모두 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 상태 결정: 마감 → 대기, 아니면 승인제 여부에 따라 pending/approved
+    if is_full:
+        new_status = 'waiting'
+        message = '대기 신청이 완료되었습니다.'
+    elif schedule.requires_approval:
+        new_status = 'pending'
         message = '참가 신청이 완료되었습니다. 승인을 기다려주세요.'
     else:
-        initial_status = 'approved'
+        new_status = 'approved'
         message = '참가 신청이 완료되었습니다.'
 
     if existing and existing.status in ['rejected', 'cancelled']:
-        # 기존 신청 재활용
-        existing.status = initial_status
+        # 재신청 — 신규와 동일 취급, 대기 순번 위해 applied_at 갱신
+        existing.status = new_status
         existing.notes = notes
-        existing.reviewed_at = timezone.now() if not schedule.requires_approval else None
+        existing.applied_at = timezone.now()
+        existing.reviewed_at = timezone.now() if new_status == 'approved' else None
         existing.reviewed_by = None
         existing.rejection_reason = ''
         existing.save()
     else:
-        # 새 신청
         BandScheduleApplication.objects.create(
             schedule=schedule,
             user=request.user,
-            status=initial_status,
-            notes=notes
+            status=new_status,
+            notes=notes,
         )
 
     # 자동승인 시 참가 인원 증가
-    if initial_status == 'approved':
+    if new_status == 'approved':
         schedule.current_participants += 1
         schedule.save(update_fields=['current_participants'])
 
-    return Response({'message': message}, status=status.HTTP_201_CREATED)
+    return Response({'message': message, 'status': new_status}, status=status.HTTP_201_CREATED)
 
 
 @csrf_exempt
@@ -1239,8 +1263,23 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
         BandScheduleApplication, id=application_id, schedule=schedule, status='pending'
     )
 
-    # 정원 확인
-    if schedule.max_participants and schedule.current_participants >= schedule.max_participants:
+    # 정원 확인 — 정원제면 신청자 급수·성별 칸 기준, 아니면 총원
+    app_profile = getattr(application.user, 'profile', None)
+    if schedule.use_level_quota:
+        lq = schedule.level_quota or {}
+        _lv = getattr(app_profile, 'badminton_level', '') or ''
+        _g = getattr(app_profile, 'gender', '') or ''
+        if schedule.quota_by_gender:
+            cell_quota = int(lq.get(_lv, {}).get(_g, 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=_lv, user__profile__gender=_g).count()
+        else:
+            cell_quota = int(lq.get(_lv, {}).get('total', 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=_lv).count()
+        if cell_approved >= cell_quota:
+            return Response({'error': '해당 급수 정원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    elif schedule.max_participants and schedule.current_participants >= schedule.max_participants:
         return Response({'error': '참가 인원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
     application.status = 'approved'
@@ -1253,6 +1292,79 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
     schedule.save(update_fields=['current_participants'])
 
     return Response({'message': '신청이 승인되었습니다.'}, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_application_promote(request, band_id, schedule_id, application_id):
+    """대기자 승격 API (관리자) — waiting → approved. 자리가 있을 때만."""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).first()
+    if not manager and not is_site_admin(request.user):
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    application = get_object_or_404(BandScheduleApplication, id=application_id, schedule=schedule)
+    if application.status != 'waiting':
+        return Response({'error': '대기 중인 신청이 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 자리 확인 — 정원제면 신청자 급수·성별 칸 기준, 아니면 총원
+    app_profile = getattr(application.user, 'profile', None)
+    if schedule.use_level_quota:
+        lq = schedule.level_quota or {}
+        _lv = getattr(app_profile, 'badminton_level', '') or ''
+        _g = getattr(app_profile, 'gender', '') or ''
+        if schedule.quota_by_gender:
+            cell_quota = int(lq.get(_lv, {}).get(_g, 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=_lv, user__profile__gender=_g).count()
+        else:
+            cell_quota = int(lq.get(_lv, {}).get('total', 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=_lv).count()
+        if cell_approved >= cell_quota:
+            return Response({'error': '해당 급수 자리가 없어 승격할 수 없습니다. 참가자를 먼저 취소해 자리를 비우세요.'}, status=status.HTTP_400_BAD_REQUEST)
+    elif schedule.max_participants and schedule.applications.filter(status='approved').count() >= schedule.max_participants:
+        return Response({'error': '자리가 없어 승격할 수 없습니다. 참가자를 먼저 취소해 자리를 비우세요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    application.status = 'approved'
+    application.reviewed_at = timezone.now()
+    application.reviewed_by = request.user
+    application.save(update_fields=['status', 'reviewed_at', 'reviewed_by'])
+    schedule.current_participants = schedule.applications.filter(status='approved').count()
+    schedule.save(update_fields=['current_participants'])
+
+    return Response({'message': '대기자를 참가자로 올렸습니다.'}, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_application_kick(request, band_id, schedule_id, application_id):
+    """참석 취소 API (관리자) — approved → cancelled. 자리 1개 생김."""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).first()
+    if not manager and not is_site_admin(request.user):
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    application = get_object_or_404(BandScheduleApplication, id=application_id, schedule=schedule)
+    if application.status != 'approved':
+        return Response({'error': '참가 확정 상태가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    application.status = 'cancelled'
+    application.save(update_fields=['status'])
+    schedule.current_participants = schedule.applications.filter(status='approved').count()
+    schedule.save(update_fields=['current_participants'])
+
+    return Response({'message': '참가를 취소했습니다. 대기자를 승격할 수 있어요.'}, status=status.HTTP_200_OK)
 
 
 @csrf_exempt
@@ -1293,10 +1405,10 @@ def band_schedule_notice_send(request, band_id, schedule_id):
         except (ValueError, TypeError):
             return Response({'error': 'recipient_user_id는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
         is_participant = BandScheduleApplication.objects.filter(
-            schedule=schedule, user_id=recipient_user_id, status='approved'
+            schedule=schedule, user_id=recipient_user_id, status__in=['approved', 'waiting']
         ).exists()
         if not is_participant:
-            return Response({'error': '해당 사용자는 일정 참가자가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': '해당 사용자는 일정 참가자/대기자가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
         recipient_ids = [recipient_user_id]
     else:
         # 전체 승인 참가자 (발송자 본인 제외)

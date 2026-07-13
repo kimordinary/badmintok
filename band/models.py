@@ -570,6 +570,12 @@ class BandSchedule(models.Model):
     location = models.CharField(_("장소"), max_length=200, blank=True)
     max_participants = models.IntegerField(_("최대 참가 인원"), null=True, blank=True)
     current_participants = models.IntegerField(_("현재 참가 인원"), default=0)
+    # 급수별 정원 (토글). 켜면 안 고른 급수는 신청 불가, 칸이 차면 대기(waiting)로.
+    use_level_quota = models.BooleanField(_("급수별 정원 사용"), default=False)
+    # 성별로 나눌지: True면 급수별 {male,female}, False면 급수별 {total}(성별 무관)
+    quota_by_gender = models.BooleanField(_("급수 정원 성별 구분"), default=False)
+    # 성별구분: {"a": {"male": 7, "female": 3}} / 무관: {"a": {"total": 10}} — 키는 UserProfile.BadmintonLevel 값
+    level_quota = models.JSONField(_("급수별 정원"), default=dict, blank=True)
     requires_approval = models.BooleanField(_("승인 필요"), default=False)
     application_deadline = models.DateTimeField(_("신청 마감일"), null=True, blank=True)
     cost = models.IntegerField(_("참가비"), default=0, null=True, blank=True, help_text="참가비 (원). 0 또는 비워두면 무료.")
@@ -607,6 +613,9 @@ class BandScheduleApplication(models.Model):
         APPROVED = "approved", _("승인됨")
         REJECTED = "rejected", _("거부됨")
         CANCELLED = "cancelled", _("취소됨")
+        WAITING = "waiting", _("대기(정원초과)")
+
+    WAITLIST_CAPACITY = 5  # 대기 정원 (정원초과 대기 최대 인원)
 
     schedule = models.ForeignKey(
         BandSchedule,
