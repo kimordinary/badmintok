@@ -33,8 +33,36 @@ function MiniCourt({ type, teamA, teamB, recommend = false }) {
   );
 }
 
+// 컴팩트 매치업 — 좌우 진영(팀A ｜네트｜ 팀B)을 코트 박스로 표현, 카드 폭은 좁게
+function MiniCourtCompact({ type, teamA, teamB }) {
+  const theme = useTheme();
+  const clean = theme === 'clean';
+  const c = disciplineColor(type);
+  const tint = `var(--${c}-tint)`;
+  const line = `var(--${c}-line)`;
+  const main = `var(--${c})`;
+  const TeamSide = ({ team, align }) => (
+    <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 7, padding: '3px 1px', alignItems: align === 'right' ? 'flex-end' : 'flex-start' }}>
+      {team.map((p) => <PlayerCell key={p.id} p={p} levelSize={20} nameSize={17} gap={6} reverse={align === 'right'} shortLevel />)}
+    </div>
+  );
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'stretch', background: tint, border: `1.5px solid ${line}`, borderRadius: 12, padding: '9px 10px' }}>
+      {/* 코트 라인 모티프 */}
+      <div style={{ position: 'absolute', inset: 5, border: `1px dashed ${line}`, borderRadius: 8, opacity: 0.7, pointerEvents: 'none' }} />
+      <TeamSide team={teamA} align="left" />
+      {/* 네트 (세로선 + VS) */}
+      <div style={{ position: 'relative', zIndex: 1, width: 0, alignSelf: 'stretch', margin: '0 7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', top: 0, bottom: 0, width: 2, background: main, opacity: 0.5, left: '50%', transform: 'translateX(-50%)' }} />
+        <span style={{ position: 'relative', zIndex: 1, background: tint, color: clean ? 'var(--muted)' : main, fontSize: 10, fontWeight: 900, padding: '3px 0', letterSpacing: '.04em' }}>VS</span>
+      </div>
+      <TeamSide team={teamB} align="right" />
+    </div>
+  );
+}
+
 // ---------- 코트 카드 ----------
-function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onManualFill, acePinned, coachName, coverage }) {
+function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onManualFill, acePinned, coachName, coverage, compact = false }) {
   const theme = useTheme();
   const clean = theme === 'clean';
   const strip = false; // 코트 상단 종목색 스트립 제거 (색 보더 촌스러움)
@@ -47,7 +75,7 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onManualFi
 
   return (
       <div style={{
-      background: court.pendingRemove ? 'var(--warn-tint)' : (emphasizeEmpty && !playing ? '#f2faf5' : 'var(--surface)'), borderRadius: 'var(--card-radius)', boxShadow: 'var(--sh-2)',
+      background: court.pendingRemove ? 'var(--warn-tint)' : ((emphasizeEmpty && !playing && !compact) ? '#f2faf5' : 'var(--surface)'), borderRadius: 'var(--card-radius)', boxShadow: 'var(--sh-2)',
       border: court.pendingRemove ? '1px solid var(--warn-tint)' : '1px solid var(--line)', overflow: 'hidden', display: 'flex', flexDirection: 'column',
       borderTop: court.pendingRemove ? '4px solid var(--warn)' : (strip ? `4px solid ${playing ? accent : 'var(--line-2)'}` : '1px solid var(--line)'),
     }}>
@@ -82,12 +110,14 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onManualFi
         </div>
       </div>
 
-      <div style={{ padding: '4px 14px 0', flex: 1 }}>
+      <div style={{ padding: compact ? '2px 11px 0' : '4px 14px 0', flex: 1 }}>
         {playing ? (
-          <MiniCourt type={type} teamA={court.match.teamA} teamB={court.match.teamB} />
+          compact ? <MiniCourtCompact type={type} teamA={court.match.teamA} teamB={court.match.teamB} />
+          : <MiniCourt type={type} teamA={court.match.teamA} teamB={court.match.teamB} />
         ) : a && rec && rec.match ? (
           <div style={{ position: 'relative' }}>
-            <MiniCourt type={type} teamA={rec.match.teamA} teamB={rec.match.teamB} recommend />
+            {compact ? <MiniCourtCompact type={type} teamA={rec.match.teamA} teamB={rec.match.teamB} />
+            : <MiniCourt type={type} teamA={rec.match.teamA} teamB={rec.match.teamB} recommend />}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '28px 0', textAlign: 'center' }}>
@@ -218,17 +248,17 @@ function Stat({ label, value, accent }) {
 }
 
 // ---------- 대기열: 다음 경기 미니 블록 (실제 추천 4명) ----------
-function QueueNextBlock({ courtNo, courtName, match, preview = false, label, onCancel }) {
+function QueueNextBlock({ courtNo, courtName, match, preview = false, label, onCancel, onEdit, compact = false }) {
   const c = disciplineColor(match.type);
   const TeamCol = ({ team, align }) => (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7, alignItems: align === 'right' ? 'flex-end' : 'flex-start' }}>
+    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6, alignItems: align === 'right' ? 'flex-end' : 'flex-start' }}>
       {team.map((p) => (
-        <PlayerCell key={p.id} p={p} levelSize={18} nameSize={14} reverse={align === 'right'} gap={6} />
+        <PlayerCell key={p.id} p={p} levelSize={18} nameSize={14} reverse={align === 'right'} gap={6} shortLevel={compact} />
       ))}
     </div>
   );
   return (
-    <div style={{ background: 'var(--surface)', border: preview ? '1px dashed var(--line-2)' : '1px solid var(--line-2)', borderRadius: 14, borderTop: preview ? '3px dashed var(--muted)' : '1px solid var(--line-2)', overflow: 'hidden', marginBottom: 10 }}>
+    <div style={{ background: 'var(--surface)', border: preview ? '1px dashed var(--line-2)' : '1px solid var(--line-2)', borderRadius: 14, borderTop: preview ? '3px dashed var(--muted)' : '1px solid var(--line-2)', overflow: 'hidden', marginBottom: compact ? 0 : 10, height: compact ? '100%' : 'auto' }}>
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 11px', background: preview ? 'var(--surface-2)' : `var(--${c}-tint)`, borderBottom: '1px solid var(--line)' }}>
         <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: '-.02em', color: preview ? 'var(--ink-2)' : 'var(--brand-ink)', whiteSpace: 'nowrap' }}>{label || (preview ? '이후 예정' : '다음 경기')}</span>
@@ -236,7 +266,8 @@ function QueueNextBlock({ courtNo, courtName, match, preview = false, label, onC
           <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--muted)', background: 'var(--surface-3)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap' }}>잠정</span>
         )}
         <DisciplineBadge type={match.type} />
-        {onCancel && <button onClick={onCancel} style={{ marginLeft: 'auto', width: 22, height: 22, borderRadius: 7, background: 'var(--surface-3)', color: 'var(--muted)', fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>}
+        {onEdit && <button onClick={onEdit} style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 7, background: 'var(--surface-3)', color: 'var(--ink-2)', fontSize: 11.5, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>편집</button>}
+        {onCancel && <button onClick={onCancel} style={{ marginLeft: onEdit ? 5 : 'auto', width: 22, height: 22, borderRadius: 7, background: 'var(--surface-3)', color: 'var(--muted)', fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>}
       </div>
       {/* 팀A | 네트 | 팀B */}
       <div style={{ display: 'flex', alignItems: 'stretch', padding: '10px 12px' }}>
@@ -252,33 +283,33 @@ function QueueNextBlock({ courtNo, courtName, match, preview = false, label, onC
 }
 
 // ---------- 대기열 행 (리스트 공용) ----------
-function QueueRow({ p, rank, nowTs, highlight, selectable, selected, onToggle }) {
+function QueueRow({ p, rank, nowTs, highlight, selectable, selected, onToggle, big = false }) {
   const restMin = p.lastFinished == null ? null : Math.round((nowTs - p.lastFinished) / 60000);
   const first = p.totalGames === 0;
   const longWait = !first && restMin != null && restMin >= 20;
   const Wrap = selectable ? 'button' : 'div';
   return (
     <Wrap onClick={selectable ? onToggle : undefined} style={{
-      width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', borderRadius: 12, textAlign: 'left',
-      background: (selected || (!selectable && highlight)) ? 'var(--brand-tint)' : 'transparent',
-      border: selected ? '1px solid var(--brand)' : '1px solid transparent',
+      width: '100%', display: 'flex', alignItems: 'center', gap: big ? 11 : 10, padding: big ? '11px 13px' : '8px 8px', borderRadius: 12, textAlign: 'left',
+      background: selected ? 'var(--brand-tint)' : ((!selectable && highlight) ? 'var(--brand-tint)' : (big ? 'var(--surface-3)' : 'transparent')),
+      border: selected ? '1.5px solid var(--brand)' : (big ? '1px solid var(--line)' : '1px solid transparent'),
       cursor: selectable ? 'pointer' : 'default',
     }}>
       {selectable ? (
-        <span style={{ width: 20, height: 20, borderRadius: 6, flexShrink: 0, border: selected ? 'none' : '1.5px solid var(--line-2)', background: selected ? 'var(--brand)' : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-          {selected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+        <span style={{ width: big ? 23 : 20, height: big ? 23 : 20, borderRadius: 7, flexShrink: 0, border: selected ? 'none' : '1.5px solid var(--line-2)', background: selected ? 'var(--brand)' : (big ? 'var(--surface)' : 'transparent'), display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          {selected && <svg width={big ? 14 : 12} height={big ? 14 : 12} viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
         </span>
       ) : (
-        <span style={{ width: 20, textAlign: 'center', fontSize: 13, fontWeight: 900, color: highlight ? 'var(--brand-ink)' : 'var(--muted)' }}>{rank}</span>
+        <span style={{ width: 20, textAlign: 'center', fontSize: big ? 14 : 13, fontWeight: 900, color: highlight ? 'var(--brand-ink)' : 'var(--muted)' }}>{rank}</span>
       )}
-      <LevelChip level={p.level} size={22} />
+      <LevelChip level={p.level} size={big ? 26 : 22} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <NameWithGender p={p} size={14.5} />
+          <NameWithGender p={p} size={big ? 16 : 14.5} />
           {first && <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--brand-ink)', background: '#fff', border: '1px solid var(--brand)', padding: '1px 6px', borderRadius: 6, whiteSpace: 'nowrap' }}>첫 경기</span>}
           {longWait && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--warn)', padding: '1px 6px', borderRadius: 6, whiteSpace: 'nowrap' }}>오래 대기</span>}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, fontWeight: 600 }}>
+        <div style={{ fontSize: big ? 12 : 11, color: 'var(--muted)', marginTop: 2, fontWeight: 600 }}>
           {p.totalGames}경기{restMin != null ? ` · ${restMin}분 휴식` : ' · 아직 안 뜀'}
         </div>
       </div>
@@ -287,24 +318,54 @@ function QueueRow({ p, rank, nowTs, highlight, selectable, selected, onToggle })
 }
 
 // ---------- 대기열 패널 ----------
-function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCancelPending, pairs, participants, onRemovePair }) {
+function QueuePanel({ queue, nextUp, nowTs, manual, select, onMakeGame, pending, onCancelPending, onEditPending, pairs, participants, onRemovePair, fill = false }) {
   const nameOf = (id) => { const p = (participants || []).find((x) => x.id === id); return p ? p.name : '?'; };
   const [view, setView] = useState('block'); // 'block' | 'list'
   const [sel, setSel] = useState([]); // 수동: 대기열에서 고른 선수들
-  const [q, setQ] = useState(''); // 수동: 이름·급수 검색
+  const [q, setQ] = useState(''); // 수동: 이름 검색
+  const [genderFilter, setGenderFilter] = useState('all'); // 'all' | 'M' | 'F'
+  const [sortMode, setSortMode] = useState('default'); // 'default'(대기순) | 'level'(급수순)
   const toggle = (p) => setSel((s) => s.find((x) => x.id === p.id) ? s.filter((x) => x.id !== p.id) : (s.length < 4 ? [...s, p] : s));
   const isSel = (p) => !!sel.find((x) => x.id === p.id);
   const qq = q.trim().toLowerCase();
-  const show = (p) => qq === '' || p.name.toLowerCase().includes(qq) || (p.level && p.level.toLowerCase().includes(qq));
+  const show = (p) => (qq === '' || p.name.toLowerCase().includes(qq)) && (genderFilter === 'all' || p.gender === genderFilter);
+  const LS = (typeof window !== 'undefined' && window.LEVEL_SCORE) || {};
+  const orderList = (list) => sortMode === 'level' ? [...list].sort((a, b) => (LS[b.level] || 0) - (LS[a.level] || 0)) : list;
   // 다음 차례 look-ahead: #1=다음 경기(확정), #2·3=이후 예정(잠정)
   const groups = nextUp.groups;
   const nextIds = new Set();
   groups.forEach((m) => [...m.teamA, ...m.teamB].forEach((p) => nextIds.add(p.id)));
   const waitingError = groups.length === 0 ? nextUp.err : null;
   const rest = queue.filter((p) => !nextIds.has(p.id));
+  const segChips = (opts, val, setter) => (
+    <div style={{ display: 'inline-flex', background: 'var(--surface-3)', borderRadius: 8, padding: 2, gap: 2 }}>
+      {opts.map((o) => (
+        <button key={o.v} onClick={() => setter(o.v)} style={{
+          padding: '5px 11px', borderRadius: 6, fontSize: 12, fontWeight: 800, letterSpacing: '-.02em', whiteSpace: 'nowrap',
+          color: val === o.v ? 'var(--ink)' : 'var(--muted)', background: val === o.v ? 'var(--surface)' : 'transparent', boxShadow: val === o.v ? 'var(--sh-1)' : 'none',
+        }}>{o.l}</button>
+      ))}
+    </div>
+  );
+  const searchBox = select ? (
+    <div style={{ marginBottom: 11, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: 160 }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 검색" style={{ width: '100%', padding: '8px 28px 8px 12px', borderRadius: 9, border: '1px solid var(--line-2)', background: 'var(--surface-2)', fontSize: 13, fontWeight: 600, color: 'var(--ink)', outline: 'none', fontFamily: 'inherit' }} />
+        {q && <button onClick={() => setQ('')} style={{ position: 'absolute', right: 7, width: 18, height: 18, borderRadius: 9, background: 'var(--surface-3)', color: 'var(--muted)', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--muted)', letterSpacing: '-.01em' }}>정렬</span>
+        {segChips([{ v: 'default', l: '대기순' }, { v: 'level', l: '급수순' }], sortMode, setSortMode)}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--muted)', letterSpacing: '-.01em' }}>성별</span>
+        {segChips([{ v: 'all', l: '전체' }, { v: 'M', l: '남' }, { v: 'F', l: '여' }], genderFilter, setGenderFilter)}
+      </div>
+    </div>
+  ) : null;
 
   return (
-    <aside data-help="queue" style={{ width: 336, flexShrink: 0, background: 'var(--surface)', borderLeft: '1px solid var(--line)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <aside data-help="queue" style={{ ...(fill ? { flex: 1, minWidth: 0 } : { width: 336, flexShrink: 0 }), background: 'var(--surface)', borderLeft: '1px solid var(--line)', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--line)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: '-.03em', color: 'var(--ink)' }}>대기열</span>
@@ -323,15 +384,19 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
             ))}
           </div>
         </div>
-        {manual && (
-          <div style={{ position: 'relative', marginTop: 10, display: 'flex', alignItems: 'center' }}>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름·급수로 검색" style={{ width: '100%', padding: '8px 30px 8px 12px', borderRadius: 9, border: '1px solid var(--line-2)', background: 'var(--surface-2)', fontSize: 13, fontWeight: 600, color: 'var(--ink)', outline: 'none', fontFamily: 'inherit' }} />
-            {q && <button onClick={() => setQ('')} style={{ position: 'absolute', right: 8, width: 20, height: 20, borderRadius: 10, background: 'var(--surface-3)', color: 'var(--muted)', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 16px' }}>
+        {/* 다음/예정 경기 — block 전용, 최상단 가로 나란히 */}
+        {view === 'block' && (
+          <div style={{ display: 'grid', gridTemplateColumns: fill ? 'repeat(auto-fit, minmax(230px, 1fr))' : '1fr', gap: fill ? 9 : 0, marginBottom: ((pending || []).length + groups.length) ? 12 : 0, alignItems: 'stretch' }}>
+            {(pending || []).map((g) => <QueueNextBlock key={g.id} match={g} label="예약 경기" onCancel={() => onCancelPending(g.id)} onEdit={manual && onEditPending ? () => onEditPending(g) : undefined} compact={fill} />)}
+            {groups.map((m, i) => <QueueNextBlock key={i} match={m} preview={i > 0} compact={fill} />)}
           </div>
         )}
-        {/* 파트너 쌍 표시 + 해제 (만들기는 출석 화면) */}
+        {/* 파트너 — 다음 경기 아래 */}
         {pairs && pairs.length > 0 && (
-          <div style={{ marginTop: 11, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ marginBottom: 11, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '-.01em' }}>파트너 {pairs.length}쌍</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {pairs.map((pr) => (
@@ -344,15 +409,8 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
             </div>
           </div>
         )}
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 16px' }}>
         {view === 'block' ? (
           <>
-            {/* 수동 예약 경기 (빈 코트 없을 때 쌓임 → 코트 비면 투입) */}
-            {(pending || []).map((g) => <QueueNextBlock key={g.id} match={g} label="예약 경기" onCancel={() => onCancelPending(g.id)} />)}
-            {/* 다음 경기(확정) + 이후 예정(잠정) */}
-            {groups.map((m, i) => <QueueNextBlock key={i} match={m} preview={i > 0} />)}
             {waitingError && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 12, background: 'var(--warn-tint)', marginBottom: 10 }}>
                 <span style={{ fontSize: 15 }}>⚠️</span>
@@ -367,7 +425,10 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)' }}>{rest.length}명</span>
               </div>
             )}
-            {rest.filter(show).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} selectable={manual} selected={isSel(p)} onToggle={() => toggle(p)} />)}
+            {rest.length > 0 && searchBox}
+            <div style={{ display: 'grid', gridTemplateColumns: fill ? '1fr 1fr' : '1fr', gap: fill ? '8px 10px' : '2px' }}>
+              {orderList(rest.filter(show)).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} selectable={select} selected={isSel(p)} onToggle={() => toggle(p)} big={fill} />)}
+            </div>
             {qq !== '' && rest.filter(show).length === 0 && <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>검색 결과가 없습니다.</div>}
             {queue.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>대기 인원이 없습니다.</div>}
             {queue.length > 0 && rest.length === 0 && groups.length > 0 && <div style={{ padding: '14px 4px', textAlign: 'center', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600 }}>이후 대기 인원이 없습니다.</div>}
@@ -375,12 +436,15 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
         ) : (
           <>
             {/* 리스트: 전체 우선순위 일렬, 상위 4명 강조 */}
-            {queue.filter(show).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} highlight={!manual && i < 4} selectable={manual} selected={isSel(p)} onToggle={() => toggle(p)} />)}
+            {searchBox}
+            <div style={{ display: 'grid', gridTemplateColumns: fill ? '1fr 1fr' : '1fr', gap: fill ? '8px 10px' : '2px' }}>
+              {orderList(queue.filter(show)).map((p, i) => <QueueRow key={p.id} p={p} rank={i + 1} nowTs={nowTs} highlight={!manual && sortMode === 'default' && genderFilter === 'all' && i < 4} selectable={select} selected={isSel(p)} onToggle={() => toggle(p)} big={fill} />)}
+            </div>
             {queue.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>대기 인원이 없습니다.</div>}
           </>
         )}
       </div>
-      {manual && sel.length > 0 && (
+      {select && sel.length > 0 && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--line)', padding: '12px 14px', background: 'var(--surface)', boxShadow: '0 -4px 14px rgba(17,22,31,.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>{sel.length}/4명 선택</span>
@@ -398,7 +462,7 @@ function QueuePanel({ queue, nextUp, nowTs, manual, onMakeGame, pending, onCance
             width: '100%', padding: '13px', borderRadius: 12, fontSize: 14.5, fontWeight: 800, letterSpacing: '-.02em',
             background: sel.length === 4 ? 'var(--brand)' : 'var(--surface-3)', color: sel.length === 4 ? '#fff' : 'var(--muted)',
             cursor: sel.length === 4 ? 'pointer' : 'not-allowed',
-          }}>{sel.length === 4 ? '이 4명으로 경기 만들기' : `${4 - sel.length}명 더 선택`}</button>
+          }}>{sel.length === 4 ? (manual ? '이 4명으로 경기 만들기' : '이 4명 이후 예정에 추가') : `${4 - sel.length}명 더 선택`}</button>
         </div>
       )}
     </aside>
@@ -527,11 +591,21 @@ function MainScreen({ state, actions }) {
   const [coach, setCoach] = useState(false);
   const { participants, courts, mode, preset } = state;
   const nowTs = state.nowTs;
+  const compact = state.layout === 'compact';
   const pool = participants;
   const pendingIds = useMemo(() => new Set((state.pending || []).flatMap((g) => [...g.teamA, ...g.teamB].map((p) => p.id))), [state.pending]);
+  // 실제로 코트에 있는 사람(진실의 원천 = courts[].match + 코치). p.court 필드가 꼬여도 여기 없으면 대기열로 복귀시킨다.
+  const onCourtIds = useMemo(() => {
+    const s = new Set();
+    courts.forEach((c) => {
+      if (c.match) [...c.match.teamA, ...c.match.teamB].forEach((p) => s.add(p.id));
+      if (c.ace && c.coachId) s.add(c.coachId); // 코치는 경기 없어도 코트 점유
+    });
+    return s;
+  }, [courts]);
   const queue = useMemo(
-    () => sortQueue(pool.filter((p) => p.status === '참여중' && p.court == null && !pendingIds.has(p.id)), nowTs),
-    [pool, nowTs, pendingIds]
+    () => sortQueue(pool.filter((p) => p.status === '참여중' && !onCourtIds.has(p.id) && !pendingIds.has(p.id)), nowTs),
+    [pool, nowTs, pendingIds, onCourtIds]
   );
   const coachIds = useMemo(() => new Set(courts.filter((c) => c.ace).map((c) => c.coachId)), [courts]);
   // 빈 코트별 추천 (코치 코트들 먼저 → 나머지 순차)
@@ -545,19 +619,19 @@ function MainScreen({ state, actions }) {
     for (const ct of courts) {
       if (!ct.ace || ct.match || ct.pendingRemove) continue;
       const ace = poolView.find((p) => p.id === ct.coachId);
-      const three = ace ? pickAceThree(poolView.filter((p) => !coachIds.has(p.id) && !taken.has(p.id)), metCount, nowTs) : null;
+      const three = ace ? pickAceThree(poolView.filter((p) => !coachIds.has(p.id) && !taken.has(p.id) && !pendingIds.has(p.id)), metCount, nowTs, mode, ace.gender) : null;
       out[ct.no] = three ? { match: buildAceMatch(ace, three) } : { error: '대기 부족', detail: '코치와 칠 대기 인원이 부족합니다.' };
       if (three) three.forEach((p) => taken.add(p.id));
     }
     for (const ct of courts) {
       if (ct.match || ct.pendingRemove || ct.ace) continue;
-      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id));
+      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id) && !pendingIds.has(p.id));
       const r = recommendMatchPaired(avail, mode, preset, nowTs, state.pairs);
       out[ct.no] = r;
       if (r.match) [...r.match.teamA, ...r.match.teamB].forEach((p) => taken.add(p.id));
     }
     return out;
-  }, [pool, courts, mode, preset, nowTs, coachIds, state.pinnedMet, state.pairs]);
+  }, [pool, courts, mode, preset, nowTs, coachIds, state.pinnedMet, state.pairs, pendingIds]);
 
   // 코치별 커버리지·이름 (코트번호 → {name, coverage})
   const coachInfo = useMemo(() => {
@@ -581,7 +655,7 @@ function MainScreen({ state, actions }) {
     const groups = [];
     let err = null;
     for (let i = 0; i < 3; i++) {
-      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id));
+      const avail = poolView.filter((p) => !taken.has(p.id) && !coachIds.has(p.id) && !pendingIds.has(p.id));
       const r = recommendMatchPaired(avail, mode, preset, nowTs, state.pairs);
       if (r && r.match) {
         groups.push(r.match);
@@ -589,7 +663,7 @@ function MainScreen({ state, actions }) {
       } else { if (r && r.error && !err) err = r.error; break; }
     }
     return { groups, err };
-  }, [pool, mode, preset, nowTs, state.auto, coachIds, state.pairs]);
+  }, [pool, mode, preset, nowTs, state.auto, coachIds, state.pairs, pendingIds]);
 
   const stats = {
     playing: pool.filter((p) => p.court != null).length,
@@ -608,19 +682,19 @@ function MainScreen({ state, actions }) {
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
       <ControlBar mode={mode} setMode={actions.setMode} preset={preset} setPreset={actions.setPreset} auto={state.auto} setAuto={actions.setAuto} stats={stats} onSwitch={actions.switchScreen} onCheckin={actions.openCheckin} onSettings={actions.openSettings} onHelp={() => setCoach(true)} />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <main data-help="court" style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: 16 }}>
+        <main data-help="court" style={{ flex: compact ? '0 0 440px' : 1, overflowY: 'auto', padding: compact ? 14 : 20, background: compact ? 'var(--surface-3)' : 'transparent' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fill, minmax(330px, 1fr))', gap: compact ? 10 : 16 }}>
             {courts.map((ct) => (
-              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} auto={state.auto} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} onManualFill={actions.manualFill} acePinned={ct.ace} coachName={coachInfo[ct.no] && coachInfo[ct.no].name} coverage={coachInfo[ct.no] && coachInfo[ct.no].coverage} />
+              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} auto={state.auto} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} onManualFill={actions.manualFill} acePinned={ct.ace} coachName={coachInfo[ct.no] && coachInfo[ct.no].name} coverage={coachInfo[ct.no] && coachInfo[ct.no].coverage} compact={compact} />
             ))}
           </div>
         </main>
-        <QueuePanel queue={queue} nextUp={nextUp} nowTs={nowTs} manual={!state.auto} onMakeGame={actions.makeGameFromQueue} pending={state.pending} onCancelPending={actions.cancelPending} pairs={state.pairs} participants={pool} onRemovePair={actions.removePair} />
+        <QueuePanel queue={queue} nextUp={nextUp} nowTs={nowTs} manual={!state.auto} select={true} onMakeGame={actions.makeGameFromQueue} pending={state.pending} onCancelPending={actions.cancelPending} onEditPending={actions.openEditPending} pairs={state.pairs} participants={pool} onRemovePair={actions.removePair} fill={compact} />
       </div>
 
       {/* 플로팅 경고 (벤치 부족 — 상시 조건이라 떠 있음) */}
       {lowBench && (
-        <div style={{ position: 'absolute', top: 76, left: 20, right: 356, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, zIndex: 30, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: 76, left: 20, right: compact ? 'auto' : 356, width: compact ? 340 : 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, zIndex: 30, pointerEvents: 'none' }}>
           {lowBench && (
             <div style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 14, background: 'var(--surface)', border: `1px solid ${bench <= 1 ? 'var(--danger)' : 'var(--warn)'}`, boxShadow: 'var(--sh-3)', maxWidth: '100%', animation: 'slideUp .22s ease both' }}>
               <span style={{ fontSize: 18, flexShrink: 0 }}>{bench <= 1 ? '🔴' : '⚠️'}</span>
@@ -638,6 +712,33 @@ function MainScreen({ state, actions }) {
 }
 
 // ---------- 참가자 화면 (본인 시점 · 관리 권한 없음) ----------
+// 참가자 자가 체크인 화면 (출석 전 / 프로필 미완성)
+function CheckinView({ mode, me, onCheckin }) {
+  const need = mode === '프로필';
+  return (
+    <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--line)', boxShadow: 'var(--sh-2)', padding: '34px 24px', textAlign: 'center', marginTop: 4 }}>
+      <div style={{ width: 58, height: 58, borderRadius: 17, background: need ? 'var(--warn-tint)' : 'var(--brand-tint)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 27, marginBottom: 16 }}>{need ? '⚠️' : '🏸'}</div>
+      <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--ink)', letterSpacing: '-.02em', marginBottom: 8 }}>{need ? '프로필을 완성해주세요' : '아직 출석 전이에요'}</div>
+      <div style={{ fontSize: 14, color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6, marginBottom: 22 }}>{need ? <>급수·성별을 입력해야<br />대진에 들어갈 수 있어요.</> : <>오늘 참여하려면<br />출석 체크를 해주세요.</>}</div>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 14, background: 'var(--surface-2)', border: '1px solid var(--line)', marginBottom: 22 }}>
+        <LevelChip level={me.level} size={30} />
+        <NameWithGender p={me} size={17} />
+      </div>
+      {need ? (
+        <>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn)', background: 'var(--warn-tint)', padding: '5px 11px', borderRadius: 999 }}>급수 미입력</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn)', background: 'var(--warn-tint)', padding: '5px 11px', borderRadius: 999 }}>성별 미입력</span>
+          </div>
+          <button style={{ width: '100%', padding: '15px', borderRadius: 14, background: 'var(--warn)', color: '#fff', border: 'none', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>프로필 입력하기</button>
+        </>
+      ) : (
+        <button onClick={onCheckin} style={{ width: '100%', padding: '16px', borderRadius: 14, background: 'var(--brand)', color: '#fff', border: 'none', fontSize: 17, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 0 var(--brand-dk)' }}>✓ 출석 체크하기</button>
+      )}
+    </div>
+  );
+}
+
 function ParticipantScreen({ state, actions }) {
   const nowTs = state.nowTs;
   const present = useMemo(() => state.participants.filter((p) => p.status !== '미출석'), [state.participants]);
@@ -645,19 +746,26 @@ function ParticipantScreen({ state, actions }) {
   const [showPartner, setShowPartner] = useState(false);
   const [pSel, setPSel] = useState('');
   const [pq, setPq] = useState(''); // 바텀시트 파트너 검색
+  const [preview, setPreview] = useState('auto'); // 데모: 상태 화면 미리보기 강제
   const me = state.participants.find((p) => p.id === meId) || present[0];
 
   const coachIds = useMemo(() => new Set(state.courts.filter((c) => c.ace).map((c) => c.coachId)), [state.courts]);
   const queue = useMemo(() => sortQueue(state.participants.filter((p) => p.status === '참여중' && p.court == null && !coachIds.has(p.id)), nowTs), [state.participants, nowTs, coachIds]);
   const nextGroups = useMemo(() => {
-    const taken = new Set(); const pv = state.participants.map((p) => ({ ...p })); const gs = [];
-    for (let i = 0; i < 3; i++) {
-      const av = pv.filter((p) => !taken.has(p.id) && !coachIds.has(p.id));
-      const r = recommendMatchPaired(av, state.mode, state.preset, nowTs, state.pairs);
-      if (r && r.match) { gs.push(r.match); [...r.match.teamA, ...r.match.teamB].forEach((p) => taken.add(p.id)); } else break;
+    const gs = []; const taken = new Set();
+    // 수동 예약(pending) = 확정된 다음 경기 → 최우선 (자동/수동 공통)
+    (state.pending || []).forEach((g) => { gs.push(g); [...g.teamA, ...g.teamB].forEach((p) => taken.add(p.id)); });
+    // 자동 모드에서만 추천 look-ahead로 이후 예정 채움 (수동은 예약만 확정)
+    if (state.auto) {
+      const pv = state.participants.map((p) => ({ ...p }));
+      for (let i = gs.length; i < 3; i++) {
+        const av = pv.filter((p) => !taken.has(p.id) && !coachIds.has(p.id));
+        const r = recommendMatchPaired(av, state.mode, state.preset, nowTs, state.pairs);
+        if (r && r.match) { gs.push(r.match); [...r.match.teamA, ...r.match.teamB].forEach((p) => taken.add(p.id)); } else break;
+      }
     }
-    return gs;
-  }, [state.participants, state.courts, state.mode, state.preset, nowTs, state.pairs, coachIds]);
+    return gs.slice(0, 3);
+  }, [state.participants, state.courts, state.mode, state.preset, nowTs, state.pairs, coachIds, state.pending, state.auto]);
 
   if (!me) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>참가자가 없습니다.</div>;
 
@@ -681,45 +789,72 @@ function ParticipantScreen({ state, actions }) {
   let badge, title, sub, accent, tint;
   if (me.status === '퇴장') { badge = '퇴장'; title = '쉬는 중'; sub = '복귀하면 다시 대진에 들어가요.'; accent = 'var(--muted)'; tint = 'var(--surface-3)'; }
   else if (isCoach) { badge = '코치 고정'; title = `${coachCourtName || '코치 코트'} 고정`; sub = '이 코트에 고정돼서 계속 경기해요.'; accent = 'var(--hl)'; tint = '#eef0ff'; }
-  else if (myCourt) { badge = '경기 중'; title = `${myCourt.name || myCourt.no + '번 코트'}에서 경기 중`; sub = '지금 경기하고 있어요.'; accent = 'var(--brand)'; tint = 'var(--brand-tint)'; }
+  else if (myCourt) {
+    const cn = myCourt.name || myCourt.no + '번 코트';
+    const justStarted = myCourt.match && myCourt.match.startedAt && (nowTs - myCourt.match.startedAt) < 120000; // 2분 미만
+    if (justStarted) { badge = '입장'; title = `${cn}로 들어가세요!`; sub = '지금 코트로 이동하세요.'; accent = 'var(--brand)'; tint = 'var(--brand-tint)'; }
+    else { badge = '경기 중'; title = `${cn}에서 경기 중`; sub = '지금 경기하고 있어요.'; accent = 'var(--brand)'; tint = 'var(--brand-tint)'; }
+  }
   else if (inNext0) { badge = '곧 입장'; title = '곧 들어가세요!'; sub = '다음 경기 확정 — 코트 근처에서 대기하세요.'; accent = 'var(--brand)'; tint = 'var(--brand-tint)'; }
   else if (inLater) { badge = '다음다음'; title = '다음다음 경기 예정'; sub = '조금만 기다리면 차례예요.'; accent = 'var(--warn)'; tint = 'var(--warn-tint)'; }
   else if (qpos >= 0) { badge = `대기 ${qpos + 1}번째`; title = '대기 중'; sub = '순서가 오면 알려드려요.'; accent = 'var(--ink-2)'; tint = 'var(--surface-3)'; }
   else { badge = '대기'; title = '대기 중'; sub = ''; accent = 'var(--muted)'; tint = 'var(--surface-3)'; }
 
+  // 데모: 상단 드롭다운으로 상태 화면 강제 미리보기
+  if (preview !== 'auto') {
+    const cn = (myCourt && (myCourt.name || myCourt.no + '번 코트')) || '해당 코트';
+    const O = {
+      입장: { badge: '입장', title: `${cn}로 들어가세요!`, sub: '지금 코트로 이동하세요.', accent: 'var(--brand)', tint: 'var(--brand-tint)' },
+      경기중: { badge: '경기 중', title: `${cn}에서 경기 중`, sub: '지금 경기하고 있어요.', accent: 'var(--brand)', tint: 'var(--brand-tint)' },
+      곧입장: { badge: '곧 입장', title: '곧 들어가세요!', sub: '다음 경기 확정 — 코트 근처에서 대기하세요.', accent: 'var(--brand)', tint: 'var(--brand-tint)' },
+      다음다음: { badge: '다음다음', title: '다음다음 경기 예정', sub: '조금만 기다리면 차례예요.', accent: 'var(--warn)', tint: 'var(--warn-tint)' },
+      대기: { badge: '대기 3번째', title: '대기 중', sub: '순서가 오면 알려드려요.', accent: 'var(--ink-2)', tint: 'var(--surface-3)' },
+      코치: { badge: '코치 고정', title: '코치 코트 고정', sub: '이 코트에 고정돼서 계속 경기해요.', accent: 'var(--hl)', tint: '#eef0ff' },
+      퇴장: { badge: '퇴장', title: '쉬는 중', sub: '복귀하면 다시 대진에 들어가요.', accent: 'var(--muted)', tint: 'var(--surface-3)' },
+    }[preview];
+    if (O) { badge = O.badge; title = O.title; sub = O.sub; accent = O.accent; tint = O.tint; }
+  }
+
   const myMatch = myCourt ? myCourt.match : (inNext0 ? nextGroups[0] : null);
   const restMin = me.lastFinished == null ? null : Math.round((nowTs - me.lastFinished) / 60000);
   const alert = myCourt || inNext0;
 
+  const checkinMode = preview === '출석전' || preview === '프로필';
+  const demoBar = (
+    <div style={{ padding: '14px 2px 10px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)' }}>참가자 화면 (데모)</span>
+      <select value={me.id} onChange={(e) => setMeId(e.target.value)} style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: 9, border: '1px solid var(--line-2)', background: 'var(--surface)', fontSize: 13, fontWeight: 700, color: 'var(--ink)', fontFamily: 'inherit' }}>
+        {present.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.level})</option>)}
+      </select>
+      <select value={preview} onChange={(e) => setPreview(e.target.value)} title="상태 화면 미리보기" style={{ padding: '6px 10px', borderRadius: 9, border: `1px solid ${preview === 'auto' ? 'var(--line-2)' : 'var(--brand)'}`, background: preview === 'auto' ? 'var(--surface)' : 'var(--brand-tint)', fontSize: 13, fontWeight: 700, color: preview === 'auto' ? 'var(--ink)' : 'var(--brand-ink)', fontFamily: 'inherit' }}>
+        <option value="auto">실제 상태</option>
+        <option value="출석전">출석 전</option>
+        <option value="프로필">프로필 미완성</option>
+        <option value="입장">▶ 입장</option>
+        <option value="경기중">경기 중</option>
+        <option value="곧입장">곧 입장</option>
+        <option value="다음다음">다음다음</option>
+        <option value="대기">대기</option>
+        <option value="코치">코치 고정</option>
+        <option value="퇴장">퇴장</option>
+      </select>
+    </div>
+  );
+  if (checkinMode) {
+    return (
+      <div style={{ height: '100%', overflowY: 'auto', background: 'var(--surface-2)', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: 400, maxWidth: '100%', padding: '0 16px 28px', display: 'flex', flexDirection: 'column' }}>
+          {demoBar}
+          <CheckinView mode={preview} me={me} onCheckin={() => setPreview('auto')} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: 'var(--surface-2)', display: 'flex', justifyContent: 'center' }}>
       <div style={{ width: 400, maxWidth: '100%', padding: '0 16px 28px', display: 'flex', flexDirection: 'column' }}>
-        {/* 데모용 참가자 선택 */}
-        <div style={{ padding: '14px 2px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)' }}>참가자 화면 (데모)</span>
-          <select value={me.id} onChange={(e) => setMeId(e.target.value)} style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: 9, border: '1px solid var(--line-2)', background: 'var(--surface)', fontSize: 13, fontWeight: 700, color: 'var(--ink)', fontFamily: 'inherit' }}>
-            {present.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.level})</option>)}
-          </select>
-        </div>
-
-        {/* 알림 배너 */}
-        {myCoachCourt ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', borderRadius: 16, background: 'var(--hl)', color: '#fff', boxShadow: '0 6px 18px rgba(99,102,241,.3)', marginBottom: 12, animation: 'slideUp .25s ease both' }}>
-            <span style={{ fontSize: 22 }}>👑</span>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: '-.02em' }}>{coachCourtName} 고정!</div>
-              <div style={{ fontSize: 13, fontWeight: 600, opacity: .92, marginTop: 1 }}>이 코트에서 계속 경기해요. 그 코트로 가세요.</div>
-            </div>
-          </div>
-        ) : alert ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', borderRadius: 16, background: 'var(--brand)', color: '#fff', boxShadow: '0 6px 18px rgba(18,165,101,.3)', marginBottom: 12, animation: 'slideUp .25s ease both' }}>
-            <span style={{ fontSize: 22 }}>{myCourt ? '🏸' : '⏰'}</span>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: '-.02em' }}>{myCourt ? '지금 경기 중!' : '곧 경기예요!'}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, opacity: .92, marginTop: 1 }}>{myCourt ? `${myCourt.name || myCourt.no + '번 코트'}에서 진행 중` : '다음 경기 확정 — 코트로 가세요'}</div>
-            </div>
-          </div>
-        ) : null}
+        {demoBar}
 
         {/* 내 카드 */}
         <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--line)', boxShadow: 'var(--sh-2)', padding: 20, marginBottom: 12 }}>

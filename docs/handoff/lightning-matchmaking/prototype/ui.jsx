@@ -7,24 +7,42 @@ function useTheme() { return useContext(ThemeContext); }
 
 // 급수 칩 — 진하기 순(자강=가장 진함). 종목 색과 안 겹치도록 슬레이트 램프.
 const LEVEL_STYLE = {
-  자강:   { bg: '#11161f', fg: '#ffd66b', ring: '#3b3320' },
-  S:      { bg: '#2b3344', fg: '#ffffff' },
-  A:      { bg: '#414b60', fg: '#ffffff' },
-  B:      { bg: '#5b6678', fg: '#ffffff' },
-  C:      { bg: '#828c9e', fg: '#ffffff' },
-  D:      { bg: '#c2cad6', fg: '#2b3344' },
-  왕초심: { bg: '#e1e6ee', fg: '#5b6678' },
+  자강:   { bg: '#0f172a', fg: '#ffd66b', ring: '#3b3320' },
+  S:      { bg: '#1e293b', fg: '#ffffff' },
+  A:      { bg: '#334155', fg: '#ffffff' },
+  B:      { bg: '#475569', fg: '#ffffff' },
+  C:      { bg: '#64748b', fg: '#ffffff' },
+  D:      { bg: '#cbd5e1', fg: '#1e293b' },
+  초심: { bg: '#f1f5f9', fg: '#64748b', ring: '#cbd5e1' },
 };
-function LevelChip({ level, size = 26 }) {
+function LevelChip({ level, size = 26, short = false }) {
   const s = LEVEL_STYLE[level] || LEVEL_STYLE.C;
-  const isWang = level === '왕초심';
-  const isMulti = level.length >= 2; // 자강·왕초심 등 2글자는 알약형
+  // 코트 전용 short: 폭을 원형으로 균일하게 — 초심→"초", 자강→왕관, 나머지는 한 글자 그대로
+  if (short) {
+    const isMaster = level === '자강';
+    const txt = level === '초심' ? '초' : level;
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: size, height: size, borderRadius: '50%', background: s.bg, color: s.fg,
+        fontSize: 12.5, fontWeight: 800, letterSpacing: '-.02em',
+        boxShadow: s.ring ? `inset 0 0 0 1.5px ${s.ring}` : 'none', flexShrink: 0,
+      }}>
+        {isMaster ? (
+          <svg viewBox="0 0 24 24" width={Math.round(size * 0.6)} height={Math.round(size * 0.6)} fill="currentColor" style={{ display: 'block' }}>
+            <path d="M4 18.5 L3 8 L8.5 12 L12 5.5 L15.5 12 L21 8 L20 18.5 Z" />
+          </svg>
+        ) : txt}
+      </span>
+    );
+  }
+  const isMulti = level.length >= 2; // 자강·초심 등 2글자는 알약형
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       minWidth: isMulti ? 'auto' : size, height: size, padding: isMulti ? '0 8px' : '0 6px',
       borderRadius: size / 2, background: s.bg, color: s.fg,
-      fontSize: isWang ? 11 : isMulti ? 11.5 : 12.5, fontWeight: 800, letterSpacing: '-.02em',
+      fontSize: isMulti ? 11.5 : 12.5, fontWeight: 800, letterSpacing: '-.02em',
       boxShadow: s.ring ? `inset 0 0 0 1.5px ${s.ring}` : 'none', flexShrink: 0, whiteSpace: 'nowrap',
     }}>{level}</span>
   );
@@ -106,10 +124,10 @@ function NameWithGender({ p, size = 15 }) {
 }
 
 // 선수 셀: [급수칩] ♂이름  — 한 줄. reverse면 우측 정렬용으로 칩이 바깥쪽.
-function PlayerCell({ p, levelSize = 20, nameSize = 15, reverse = false, dim = false, gap = 8, flags = null }) {
+function PlayerCell({ p, levelSize = 20, nameSize = 15, reverse = false, dim = false, gap = 8, flags = null, shortLevel = false }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap, flexDirection: reverse ? 'row-reverse' : 'row', opacity: dim ? 0.5 : 1, minWidth: 0 }}>
-      <LevelChip level={p.level} size={levelSize} />
+      <LevelChip level={p.level} size={levelSize} short={shortLevel} />
       <NameWithGender p={p} size={nameSize} />
       {flags}
     </div>
