@@ -2707,11 +2707,11 @@ def schedule_application_cancel(request, band_id, schedule_id):
         messages.error(request, "신청 내역이 없습니다.")
         return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
     
-    # 취소 가능한 상태인지 확인 (대기중 또는 승인됨)
-    if application.status not in ["pending", "approved"]:
+    # 취소 가능한 상태인지 확인 (승인대기 pending / 승인 approved / 정원대기 waiting)
+    if application.status not in ["pending", "approved", "waiting"]:
         messages.error(request, "취소할 수 없는 상태입니다.")
         return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
-    
+
     # 취소 처리
     was_approved = application.status == "approved"
     application.status = "cancelled"

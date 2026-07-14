@@ -1214,20 +1214,23 @@ def band_schedule_cancel(request, band_id, schedule_id):
     if not application:
         return Response({'error': '신청 내역이 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if application.status not in ['pending', 'approved']:
+    # 참가(pending/approved)뿐 아니라 대기(waiting)도 같은 엔드포인트로 취소
+    if application.status not in ['pending', 'approved', 'waiting']:
         return Response({'error': '취소할 수 없는 상태입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
     was_approved = application.status == 'approved'
+    was_waiting = application.status == 'waiting'
     application.status = 'cancelled'
     application.reviewed_at = timezone.now()
     application.save()
 
-    # 승인 상태였다면 참가 인원 감소
+    # 승인 상태였다면 참가 인원 감소 (대기는 인원에 포함 안 되므로 변화 없음)
     if was_approved:
         schedule.current_participants = max(0, schedule.current_participants - 1)
         schedule.save(update_fields=['current_participants'])
 
-    return Response({'message': '참가 신청이 취소되었습니다.'}, status=status.HTTP_200_OK)
+    msg = '대기가 취소되었습니다.' if was_waiting else '참가 신청이 취소되었습니다.'
+    return Response({'message': msg}, status=status.HTTP_200_OK)
 
 
 @csrf_exempt
