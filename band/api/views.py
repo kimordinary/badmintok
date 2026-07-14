@@ -1148,6 +1148,17 @@ def band_schedule_apply(request, band_id, schedule_id):
             cell_approved = schedule.applications.filter(
                 status='approved', user__profile__badminton_level=lvl).count()
         is_full = cell_approved >= cell_quota
+    elif schedule.quota_by_gender:
+        # 성별 전용 정원 (급수 무관)
+        gq = schedule.gender_quota or {}
+        if gender not in ('male', 'female'):
+            return Response({'error': '성별 정보가 없어요. 프로필 성별을 확인하세요.'}, status=status.HTTP_400_BAD_REQUEST)
+        if gender not in gq:
+            return Response({'error': '이 모임에서 모집하지 않는 성별이에요.'}, status=status.HTTP_400_BAD_REQUEST)
+        cell_quota = int(gq.get(gender, 0) or 0)
+        cell_approved = schedule.applications.filter(
+            status='approved', user__profile__gender=gender).count()
+        is_full = cell_approved >= cell_quota
     else:
         approved_cnt = schedule.applications.filter(status='approved').count()
         is_full = bool(schedule.max_participants) and approved_cnt >= schedule.max_participants
@@ -1279,6 +1290,11 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
                 status='approved', user__profile__badminton_level=_lv).count()
         if cell_approved >= cell_quota:
             return Response({'error': '해당 급수 정원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    elif schedule.quota_by_gender:
+        gq = schedule.gender_quota or {}
+        _g = getattr(app_profile, 'gender', '') or ''
+        if schedule.applications.filter(status='approved', user__profile__gender=_g).count() >= int(gq.get(_g, 0) or 0):
+            return Response({'error': '해당 성별 정원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
     elif schedule.max_participants and schedule.current_participants >= schedule.max_participants:
         return Response({'error': '참가 인원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1328,6 +1344,11 @@ def band_schedule_application_promote(request, band_id, schedule_id, application
                 status='approved', user__profile__badminton_level=_lv).count()
         if cell_approved >= cell_quota:
             return Response({'error': '해당 급수 자리가 없어 승격할 수 없습니다. 참가자를 먼저 취소해 자리를 비우세요.'}, status=status.HTTP_400_BAD_REQUEST)
+    elif schedule.quota_by_gender:
+        gq = schedule.gender_quota or {}
+        _g = getattr(app_profile, 'gender', '') or ''
+        if schedule.applications.filter(status='approved', user__profile__gender=_g).count() >= int(gq.get(_g, 0) or 0):
+            return Response({'error': '해당 성별 자리가 없어 승격할 수 없습니다. 참가자를 먼저 취소해 자리를 비우세요.'}, status=status.HTTP_400_BAD_REQUEST)
     elif schedule.max_participants and schedule.applications.filter(status='approved').count() >= schedule.max_participants:
         return Response({'error': '자리가 없어 승격할 수 없습니다. 참가자를 먼저 취소해 자리를 비우세요.'}, status=status.HTTP_400_BAD_REQUEST)
 

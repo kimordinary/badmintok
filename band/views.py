@@ -1976,6 +1976,15 @@ def schedule_create(request, band_id):
             _lq = _json.loads(request.POST.get("level_quota_json") or "{}") if _use_lq else {}
         except (ValueError, TypeError):
             _lq = {}
+        # 성별 전용 모드(급수 미사용 + 성별 구분)에서만 gender_quota 사용
+        try:
+            _gq = _json.loads(request.POST.get("gender_quota_json") or "{}") if (_by_gender and not _use_lq) else {}
+        except (ValueError, TypeError):
+            _gq = {}
+        # 성별 전용인데 정원 미입력 → 생성 거부
+        if _by_gender and not _use_lq and not _gq:
+            messages.error(request, "성별 정원을 입력하세요.")
+            return redirect(request.path)
         schedule = BandSchedule.objects.create(
             band=band,
             title=schedule_title,
@@ -1991,6 +2000,7 @@ def schedule_create(request, band_id):
             use_level_quota=_use_lq,
             quota_by_gender=_by_gender,
             level_quota=_lq,
+            gender_quota=_gq,
             created_by=request.user
         )
         
@@ -2097,6 +2107,22 @@ def schedule_update(request, band_id, schedule_id):
         from band.cost_utils import resolve_cost
         cost_value = resolve_cost(meeting_cost, description)
 
+        # 정원 설정 (급수별 / 성별 전용 — 독립 토글)
+        import json as _json
+        _use_lq = request.POST.get("use_level_quota") == "1"
+        _by_gender = request.POST.get("quota_by_gender") == "1"
+        try:
+            _lq = _json.loads(request.POST.get("level_quota_json") or "{}") if _use_lq else {}
+        except (ValueError, TypeError):
+            _lq = {}
+        try:
+            _gq = _json.loads(request.POST.get("gender_quota_json") or "{}") if (_by_gender and not _use_lq) else {}
+        except (ValueError, TypeError):
+            _gq = {}
+        if _by_gender and not _use_lq and not _gq:
+            messages.error(request, "성별 정원을 입력하세요.")
+            return redirect(request.path)
+
         # 스케줄 업데이트
         schedule.title = schedule_title
         schedule.description = description
@@ -2106,6 +2132,10 @@ def schedule_update(request, band_id, schedule_id):
         schedule.max_participants = int(meeting_capacity) if meeting_capacity else None
         schedule.cost = cost_value
         schedule.bank_account = bank_account
+        schedule.use_level_quota = _use_lq
+        schedule.quota_by_gender = _by_gender
+        schedule.level_quota = _lq
+        schedule.gender_quota = _gq
         schedule.save()
         
         # 지역 정보를 부모 Band에 저장
@@ -2311,6 +2341,17 @@ def schedule_detail(request, band_id, schedule_id):
                     "total_approved": c["total"], "total_quota": int(cell.get("total", 0) or 0),
                 })
 
+    # 성별 전용 정원 현황 (quota_by_gender & not use_level_quota)
+    gender_status = None
+    if not schedule.use_level_quota and schedule.quota_by_gender:
+        gq = schedule.gender_quota or {}
+        gender_status = {
+            "male_approved": schedule.applications.filter(status="approved", user__profile__gender="male").count(),
+            "male_quota": int(gq.get("male", 0) or 0),
+            "female_approved": schedule.applications.filter(status="approved", user__profile__gender="female").count(),
+            "female_quota": int(gq.get("female", 0) or 0),
+        }
+
     return render(request, "band/schedule_detail.html", {
         "band": band,
         "schedule": schedule,
@@ -2329,6 +2370,7 @@ def schedule_detail(request, band_id, schedule_id):
         "is_full": is_full,
         "my_waiting_position": my_waiting_position,
         "quota_status": quota_status,
+        "gender_status": gender_status,
     })
 
 
@@ -2480,6 +2522,19 @@ def schedule_apply(request, band_id, schedule_id):
             cell_quota = int(lq.get(lvl, {}).get("total", 0) or 0)
             cell_approved = schedule.applications.filter(
                 status="approved", user__profile__badminton_level=lvl).count()
+        is_full = cell_approved >= cell_quota
+    elif schedule.quota_by_gender:
+        # 성별 전용 정원 (급수 무관)
+        gq = schedule.gender_quota or {}
+        if gender not in ("male", "female"):
+            messages.error(request, "성별 정보가 없어요. 프로필 성별을 확인하세요.")
+            return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+        if gender not in gq:
+            messages.error(request, "이 모임에서 모집하지 않는 성별이에요.")
+            return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+        cell_quota = int(gq.get(gender, 0) or 0)
+        cell_approved = schedule.applications.filter(
+            status="approved", user__profile__gender=gender).count()
         is_full = cell_approved >= cell_quota
     else:
         approved_cnt = schedule.applications.filter(status="approved").count()

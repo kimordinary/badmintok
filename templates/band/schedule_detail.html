@@ -189,7 +189,7 @@
             {% endif %}
 
             <!-- 참가자 목록 -->
-            {% if approved_participants or quota_status %}
+            {% if approved_participants or quota_status or gender_status %}
             <div style="margin-bottom: 24px; background: #f8fafc; border-radius: 12px; overflow: hidden;">
                 <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
                     <h3 style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b;">참가자 <span style="color: var(--brand);">{{ approved_participants|length }}명</span></h3>
@@ -210,6 +210,18 @@
                         {% endif %}
                     </div>
                     {% endfor %}
+                </div>
+                {% endif %}
+                {% if gender_status %}
+                <div style="padding: 6px 20px 12px; border-bottom: 1px solid #e2e8f0;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:13.5px; font-weight:700; color:#3b82f6;">남</span>
+                        <span style="font-size:13px; color:#64748b; font-weight:600;">{{ gender_status.male_approved }}/{{ gender_status.male_quota }}명</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0;">
+                        <span style="font-size:13.5px; font-weight:700; color:#ec4899;">여</span>
+                        <span style="font-size:13px; color:#64748b; font-weight:600;">{{ gender_status.female_approved }}/{{ gender_status.female_quota }}명</span>
+                    </div>
                 </div>
                 {% endif %}
                 <div style="background: white;">

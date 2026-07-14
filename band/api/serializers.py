@@ -422,6 +422,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     waitlist_capacity = serializers.SerializerMethodField()
     my_waiting_position = serializers.SerializerMethodField()
     quota_status = serializers.SerializerMethodField()
+    gender_status = serializers.SerializerMethodField()
 
     class Meta:
         model = BandSchedule
@@ -431,16 +432,17 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'max_participants', 'current_participants',
             'requires_approval', 'application_deadline',
             'cost', 'bank_account', 'is_closed', 'created_by',
-            'use_level_quota', 'quota_by_gender', 'level_quota',
+            'use_level_quota', 'quota_by_gender', 'level_quota', 'gender_quota',
             'images', 'is_full', 'is_applied', 'user_application',
             'can_manage', 'is_site_admin', 'applications', 'd_day',
-            'waiting_count', 'waitlist_capacity', 'my_waiting_position', 'quota_status',
+            'waiting_count', 'waitlist_capacity', 'my_waiting_position',
+            'quota_status', 'gender_status',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
 
     def get_is_full(self, obj):
-        # 정원제: 모든 급수 칸이 마감되면 True(=신규 신청은 대기로)
+        # 급수 정원제: 모든 급수 칸이 마감되면 True(=신규 신청은 대기로)
         if obj.use_level_quota:
             lq = obj.level_quota or {}
             if not lq:
@@ -464,9 +466,31 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
                     if c['total'] < int(cell.get('total', 0) or 0):
                         return False
             return True
+        # 성별 전용 정원제: 모든 성별 칸 마감 시 True
+        if obj.quota_by_gender:
+            gq = obj.gender_quota or {}
+            if not gq:
+                return False
+            for g, q in gq.items():
+                appr = obj.applications.filter(status='approved', user__profile__gender=g).count()
+                if appr < int(q or 0):
+                    return False
+            return True
         if obj.max_participants:
             return obj.current_participants >= obj.max_participants
         return False
+
+    def get_gender_status(self, obj):
+        # 성별 전용 모드일 때만 (급수 모드/제한없음이면 null)
+        if obj.use_level_quota or not obj.quota_by_gender:
+            return None
+        gq = obj.gender_quota or {}
+        return {
+            'male_approved': obj.applications.filter(status='approved', user__profile__gender='male').count(),
+            'male_quota': int(gq.get('male', 0) or 0),
+            'female_approved': obj.applications.filter(status='approved', user__profile__gender='female').count(),
+            'female_quota': int(gq.get('female', 0) or 0),
+        }
 
     def get_waiting_count(self, obj):
         return obj.applications.filter(status='waiting').count()
@@ -689,16 +713,27 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
             'title', 'description', 'start_datetime', 'end_datetime',
             'region', 'location', 'max_participants', 'requires_approval',
             'application_deadline', 'cost', 'bank_account',
-            'use_level_quota', 'quota_by_gender', 'level_quota'
+            'use_level_quota', 'quota_by_gender', 'level_quota', 'gender_quota'
         ]
 
     def validate(self, attrs):
-        """cost가 비어있거나 0이면 description에서 자동 추출."""
+        """cost가 비어있거나 0이면 description에서 자동 추출 + 성별 전용 정원 검증."""
         from band.cost_utils import resolve_cost
         description = attrs.get('description')
         if description is None and self.instance is not None:
             description = self.instance.description
         attrs['cost'] = resolve_cost(attrs.get('cost'), description or '')
+
+        # 성별 전용 모드(급수 미사용 + 성별 구분)면 gender_quota 필수
+        def _cur(name, default):
+            if name in attrs:
+                return attrs[name]
+            return getattr(self.instance, name, default) if self.instance else default
+        ulq = _cur('use_level_quota', False)
+        qbg = _cur('quota_by_gender', False)
+        gq = _cur('gender_quota', {})
+        if qbg and not ulq and not gq:
+            raise serializers.ValidationError({'gender_quota': '성별 정원을 입력하세요.'})
         return attrs
 
 

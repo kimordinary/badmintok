@@ -572,10 +572,16 @@ class BandSchedule(models.Model):
     current_participants = models.IntegerField(_("현재 참가 인원"), default=0)
     # 급수별 정원 (토글). 켜면 안 고른 급수는 신청 불가, 칸이 차면 대기(waiting)로.
     use_level_quota = models.BooleanField(_("급수별 정원 사용"), default=False)
-    # 성별로 나눌지: True면 급수별 {male,female}, False면 급수별 {total}(성별 무관)
-    quota_by_gender = models.BooleanField(_("급수 정원 성별 구분"), default=False)
-    # 성별구분: {"a": {"male": 7, "female": 3}} / 무관: {"a": {"total": 10}} — 키는 UserProfile.BadmintonLevel 값
+    # 성별로 나눌지. use_level_quota와 직교(독립):
+    #   use_level_quota=True  + quota_by_gender=True  → 급수×성별 (level_quota {lv:{male,female}})
+    #   use_level_quota=True  + quota_by_gender=False → 급수      (level_quota {lv:{total}})
+    #   use_level_quota=False + quota_by_gender=True  → 성별 전용 (gender_quota {male,female})
+    #   use_level_quota=False + quota_by_gender=False → 제한 없음 (max_participants)
+    quota_by_gender = models.BooleanField(_("정원 성별 구분"), default=False)
+    # 급수 모드용: 성별구분 {"a": {"male": 7, "female": 3}} / 무관 {"a": {"total": 10}}
     level_quota = models.JSONField(_("급수별 정원"), default=dict, blank=True)
+    # 성별 전용 모드용: {"male": 10, "female": 10} — 키 없는 성별은 모집 안 함
+    gender_quota = models.JSONField(_("성별 정원"), default=dict, blank=True)
     requires_approval = models.BooleanField(_("승인 필요"), default=False)
     application_deadline = models.DateTimeField(_("신청 마감일"), null=True, blank=True)
     cost = models.IntegerField(_("참가비"), default=0, null=True, blank=True, help_text="참가비 (원). 0 또는 비워두면 무료.")

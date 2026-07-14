@@ -225,39 +225,63 @@
                         </div>
                     </div>
 
-                    <!-- 급수별 정원 -->
+                    <!-- 참가 정원 (급수별 / 성별로 나눠 받기 — 독립 토글) -->
                     <div style="margin-bottom: 32px;">
                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                             <input type="checkbox" id="useLevelQuota" name="use_level_quota" value="1" {% if is_update and schedule.use_level_quota %}checked{% endif %} style="width:18px; height:18px; cursor:pointer; accent-color: var(--brand);">
                             <span style="font-size:14px; font-weight:600; color:#1e293b;">급수별 정원 받기</span>
                         </label>
-                        <p style="margin:6px 0 0 26px; font-size:12.5px; color:#94a3b8;">켜면 급수별로 정원을 정해요. 안 고른 급수는 신청을 받지 않고, 칸이 차면 자동으로 대기로 넘어가요.</p>
-                        <div id="levelQuotaBox" style="display:none; margin-top:12px; border:1px solid #e2e8f0; border-radius:12px; padding:16px; background:#f8fafc;">
-                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:14px;">
-                                <input type="checkbox" id="quotaByGender" name="quota_by_gender" value="1" {% if is_update and schedule.quota_by_gender %}checked{% endif %} style="width:16px; height:16px; accent-color:var(--brand);">
-                                <span style="font-size:13.5px; font-weight:600; color:#475569;">성별로 나눠 받기 <span style="color:#94a3b8; font-weight:500;">(끄면 급수별 총원만)</span></span>
-                            </label>
-                            <div id="lqHeader" style="display:grid; gap:10px; align-items:center; margin-bottom:8px;"></div>
-                            <div id="lqRows" style="display:grid; gap:10px; align-items:center;"></div>
+                        <p style="margin:6px 0 0 26px; font-size:12.5px; color:#94a3b8;">급수마다 정원을 정해요. 안 고른 급수는 신청을 못 받아요.</p>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:14px;">
+                            <input type="checkbox" id="quotaByGender" name="quota_by_gender" value="1" {% if is_update and schedule.quota_by_gender %}checked{% endif %} style="width:18px; height:18px; cursor:pointer; accent-color: var(--brand);">
+                            <span style="font-size:14px; font-weight:600; color:#1e293b;">성별로 나눠 받기</span>
+                        </label>
+                        <p style="margin:6px 0 0 26px; font-size:12.5px; color:#94a3b8;">남/여 정원을 따로 정해요. 급수별과 함께 켜면 급수마다 남/여로 나눠요.</p>
+
+                        <div id="quotaBox" style="display:none; margin-top:14px; border:1px solid #e2e8f0; border-radius:12px; padding:16px; background:#f8fafc;">
+                            <!-- 급수 모드 -->
+                            <div id="levelArea" style="display:none;">
+                                <div id="lqHeader" style="display:grid; gap:10px; align-items:center; margin-bottom:8px;"></div>
+                                <div id="lqRows" style="display:grid; gap:10px; align-items:center;"></div>
+                            </div>
+                            <!-- 성별 전용 모드 -->
+                            <div id="genderArea" style="display:none;">
+                                <div style="display:grid; grid-template-columns:52px 1fr; gap:12px; align-items:center;">
+                                    <span style="font-size:14px; font-weight:800; color:#3b82f6;">남</span>
+                                    <input type="number" id="gqMale" min="0" placeholder="0" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:7px; box-sizing:border-box;">
+                                    <span style="font-size:14px; font-weight:800; color:#ec4899;">여</span>
+                                    <input type="number" id="gqFemale" min="0" placeholder="0" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:7px; box-sizing:border-box;">
+                                </div>
+                                <p style="margin:8px 0 0; font-size:12px; color:#94a3b8;">한 성별만 받으려면 다른 쪽을 0(또는 빈칸)으로 두세요.</p>
+                            </div>
                             <div style="margin-top:14px; padding-top:12px; border-top:1px solid #e2e8f0; font-size:14px; font-weight:800; color:#1e293b;">총 정원 <span id="lqTotal" style="color:var(--brand);">0</span>명</div>
-                            <input type="hidden" name="level_quota_json" id="levelQuotaJson" value='{% if is_update and schedule.level_quota %}{{ schedule.level_quota|safe }}{% else %}{}{% endif %}'>
                         </div>
+                        <input type="hidden" name="level_quota_json" id="levelQuotaJson" value='{% if is_update and schedule.level_quota %}{{ schedule.level_quota|safe }}{% else %}{}{% endif %}'>
+                        <input type="hidden" name="gender_quota_json" id="genderQuotaJson" value='{% if is_update and schedule.gender_quota %}{{ schedule.gender_quota|safe }}{% else %}{}{% endif %}'>
                     </div>
 
                     <script>
                     (function(){
                         var LEVELS=[['master','자강'],['s','S'],['a','A'],['b','B'],['c','C'],['d','D'],['beginner','초심']];
-                        var toggle=document.getElementById('useLevelQuota'), byGender=document.getElementById('quotaByGender'),
-                            box=document.getElementById('levelQuotaBox'), header=document.getElementById('lqHeader'),
-                            rows=document.getElementById('lqRows'), totalEl=document.getElementById('lqTotal'),
-                            jsonEl=document.getElementById('levelQuotaJson'), capEl=document.getElementById('meeting_capacity');
-                        if(!toggle||!box||!rows) return;
-                        var initial={}; try{ initial=JSON.parse(jsonEl.value||'{}'); }catch(e){ initial={}; }
+                        var useLevel=document.getElementById('useLevelQuota'), byGender=document.getElementById('quotaByGender'),
+                            box=document.getElementById('quotaBox'), levelArea=document.getElementById('levelArea'), genderArea=document.getElementById('genderArea'),
+                            header=document.getElementById('lqHeader'), rows=document.getElementById('lqRows'), totalEl=document.getElementById('lqTotal'),
+                            gqMale=document.getElementById('gqMale'), gqFemale=document.getElementById('gqFemale'),
+                            levelJson=document.getElementById('levelQuotaJson'), genderJson=document.getElementById('genderQuotaJson'),
+                            capEl=document.getElementById('meeting_capacity');
+                        if(!useLevel||!byGender||!box) return;
+                        var initLevel={}, initGender={};
+                        try{ initLevel=JSON.parse(levelJson.value||'{}'); }catch(e){}
+                        try{ initGender=JSON.parse(genderJson.value||'{}'); }catch(e){}
+                        if(initGender.male!=null) gqMale.value=initGender.male;
+                        if(initGender.female!=null) gqFemale.value=initGender.female;
+
+                        function mode(){ if(useLevel.checked) return byGender.checked?'lg':'l'; if(byGender.checked) return 'g'; return 'none'; }
                         function mkInput(cls,code,val,dis){
                             var i=document.createElement('input'); i.type='number'; i.min='0'; i.className=cls; i.setAttribute('data-level',code); i.placeholder='0'; i.disabled=dis; i.value=(val!=null?val:'');
                             i.style.cssText='width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:7px;box-sizing:border-box;'; return i;
                         }
-                        function render(){
+                        function renderLevels(){
                             var split=byGender.checked;
                             var cols = split ? '1fr 76px 76px' : '1fr 100px';
                             header.style.gridTemplateColumns=cols; rows.style.gridTemplateColumns=cols;
@@ -266,7 +290,7 @@
                                 : '<span style="font-size:12px;font-weight:800;color:#64748b;">급수</span><span style="font-size:12px;font-weight:800;color:#64748b;text-align:center;">정원</span>';
                             rows.innerHTML='';
                             LEVELS.forEach(function(l){
-                                var code=l[0], label=l[1], iv=initial[code]||{}, on=!!initial[code];
+                                var code=l[0], label=l[1], iv=initLevel[code]||{}, on=!!initLevel[code];
                                 var chk=document.createElement('label');
                                 chk.style.cssText='display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;';
                                 chk.innerHTML='<input type="checkbox" class="lq-on" data-level="'+code+'"'+(on?' checked':'')+'> '+label;
@@ -274,30 +298,49 @@
                                 if(split){ rows.appendChild(mkInput('lq-m',code,iv.male,!on)); rows.appendChild(mkInput('lq-f',code,iv.female,!on)); }
                                 else { rows.appendChild(mkInput('lq-t',code,iv.total,!on)); }
                             });
-                            recompute();
                         }
                         function recompute(){
-                            var split=byGender.checked, quota={}, total=0;
-                            rows.querySelectorAll('.lq-on').forEach(function(onEl){
-                                var code=onEl.getAttribute('data-level');
-                                if(split){
-                                    var m=rows.querySelector('.lq-m[data-level="'+code+'"]'), f=rows.querySelector('.lq-f[data-level="'+code+'"]');
-                                    m.disabled=!onEl.checked; f.disabled=!onEl.checked;
-                                    if(onEl.checked){ var mv=parseInt(m.value||'0',10)||0, fv=parseInt(f.value||'0',10)||0; quota[code]={male:mv,female:fv}; total+=mv+fv; }
-                                } else {
-                                    var t=rows.querySelector('.lq-t[data-level="'+code+'"]');
-                                    t.disabled=!onEl.checked;
-                                    if(onEl.checked){ var tv=parseInt(t.value||'0',10)||0; quota[code]={total:tv}; total+=tv; }
-                                }
-                            });
-                            totalEl.textContent=total; jsonEl.value=JSON.stringify(quota);
-                            if(toggle.checked && capEl && total>0){ capEl.value=total; }
+                            var m=mode(), total=0;
+                            if(m==='l'||m==='lg'){
+                                var split=byGender.checked, quota={};
+                                rows.querySelectorAll('.lq-on').forEach(function(onEl){
+                                    var code=onEl.getAttribute('data-level');
+                                    if(split){
+                                        var mi=rows.querySelector('.lq-m[data-level="'+code+'"]'), fi=rows.querySelector('.lq-f[data-level="'+code+'"]');
+                                        mi.disabled=!onEl.checked; fi.disabled=!onEl.checked;
+                                        if(onEl.checked){ var mv=parseInt(mi.value||'0',10)||0, fv=parseInt(fi.value||'0',10)||0; quota[code]={male:mv,female:fv}; total+=mv+fv; }
+                                    } else {
+                                        var ti=rows.querySelector('.lq-t[data-level="'+code+'"]');
+                                        ti.disabled=!onEl.checked;
+                                        if(onEl.checked){ var tv=parseInt(ti.value||'0',10)||0; quota[code]={total:tv}; total+=tv; }
+                                    }
+                                });
+                                levelJson.value=JSON.stringify(quota); genderJson.value='{}';
+                            } else if(m==='g'){
+                                var gq={}, mv=parseInt(gqMale.value||'0',10)||0, fv=parseInt(gqFemale.value||'0',10)||0;
+                                if(mv>0){ gq.male=mv; total+=mv; }
+                                if(fv>0){ gq.female=fv; total+=fv; }
+                                genderJson.value=JSON.stringify(gq); levelJson.value='{}';
+                            } else {
+                                levelJson.value='{}'; genderJson.value='{}';
+                            }
+                            totalEl.textContent=total;
+                            if(m!=='none' && capEl && total>0){ capEl.value=total; }
                         }
-                        function sync(){ box.style.display=toggle.checked?'':'none'; if(capEl){ capEl.readOnly=toggle.checked; } render(); }
-                        toggle.addEventListener('change', sync);
-                        byGender.addEventListener('change', function(){ try{ initial=JSON.parse(jsonEl.value||'{}'); }catch(e){} render(); });
+                        function render(){
+                            var m=mode();
+                            box.style.display=(m==='none')?'none':'';
+                            levelArea.style.display=(m==='l'||m==='lg')?'':'none';
+                            genderArea.style.display=(m==='g')?'':'none';
+                            if(capEl){ capEl.readOnly=(m!=='none'); }
+                            if(m==='l'||m==='lg'){ renderLevels(); }
+                            recompute();
+                        }
+                        useLevel.addEventListener('change', render);
+                        byGender.addEventListener('change', function(){ try{ initLevel=JSON.parse(levelJson.value||'{}'); }catch(e){} render(); });
                         rows.addEventListener('change', recompute); rows.addEventListener('input', recompute);
-                        sync();
+                        gqMale.addEventListener('input', recompute); gqFemale.addEventListener('input', recompute);
+                        render();
                     })();
                     </script>
 
