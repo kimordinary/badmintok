@@ -49,6 +49,59 @@ def notification_list(request):
     })
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def notification_sent(request):
+    """보낸 쪽지(내가 발송한 일정 안내) 목록. 동시 발송분은 하나로 묶어 수신자 표기."""
+    from collections import OrderedDict
+    sent = Notification.objects.filter(
+        actor=request.user, type=Notification.Type.SCHEDULE_NOTICE
+    ).select_related(
+        "user", "user__profile", "related_band", "related_band_schedule"
+    ).order_by("-created_at")
+
+    # (초 단위 시각, 메시지, 일정) 기준 그룹핑
+    groups = OrderedDict()
+    for n in sent:
+        key = (n.created_at.replace(microsecond=0), n.message, n.related_band_schedule_id)
+        g = groups.get(key)
+        if g is None:
+            g = {
+                "message": n.message,
+                "created_at": n.created_at,
+                "band_id": n.related_band_id,
+                "band_name": n.related_band.name if n.related_band else None,
+                "schedule_id": n.related_band_schedule_id,
+                "schedule_title": n.related_band_schedule.title if n.related_band_schedule else None,
+                "recipients": [],
+            }
+            groups[key] = g
+        if n.user:
+            g["recipients"].append({
+                "id": n.user.id,
+                "name": getattr(n.user, "activity_name", "") or getattr(n.user, "real_name", ""),
+            })
+
+    grouped = list(groups.values())
+    for g in grouped:
+        g["recipient_count"] = len(g["recipients"])
+
+    page_number = request.GET.get("page", 1)
+    page_size = min(int(request.GET.get("page_size", 20)), 100)
+    paginator = Paginator(grouped, page_size)
+    page_obj = paginator.get_page(page_number)
+
+    return Response({
+        "count": paginator.count,
+        "page_size": page_size,
+        "current_page": page_obj.number,
+        "total_pages": paginator.num_pages,
+        "next": page_obj.next_page_number() if page_obj.has_next() else None,
+        "previous": page_obj.previous_page_number() if page_obj.has_previous() else None,
+        "results": list(page_obj),
+    })
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def notification_read(request, notification_id):

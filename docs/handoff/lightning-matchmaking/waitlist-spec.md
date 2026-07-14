@@ -138,6 +138,22 @@
 - **수신 대상**: 개별 발송(`recipient_user_id` 지정)은 `approved`+`waiting` 허용 → 대기자에게 "자리 났어요" 발송 가능. 전체 발송(`null`)은 approved만.
 - 응답 `201`: `{ "message": "알림이 발송되었습니다.", "recipient_count": N }`
 
+**쪽지 조회 (마이페이지)**
+- **받은 쪽지**: `GET /api/notifications/?type=schedule_notice` (기존 알림 목록 API, type 필터)
+- **보낸 쪽지**: `GET /api/notifications/sent/?page=&page_size=` — 내가 발송한 일정 안내 목록. **동시 발송분은 하나로 묶음**.
+  - 응답: `{ count, total_pages, current_page, next, previous, results: [ … ] }`
+  - 각 항목:
+    ```json
+    {
+      "message": "자리 났어요",
+      "created_at": "2026-07-15T…",
+      "band_id": 9, "band_name": "…",
+      "schedule_id": 6, "schedule_title": "토요 번개",
+      "recipient_count": 3,
+      "recipients": [ { "id": 12, "name": "홍길동" }, … ]
+    }
+    ```
+
 ---
 
 ## 4. 웹 UI (templates/band/schedule_detail.html)
