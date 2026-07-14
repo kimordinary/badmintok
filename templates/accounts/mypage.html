@@ -98,6 +98,18 @@
                         </svg>
                     </div>
                 </a>
+                <a href="{% url 'accounts:mypage_sent_notices' %}" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; color: inherit; transition: background 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px;">📤</span>
+                        <span style="font-size: 16px; font-weight: 500; color: #1e293b;">보낸 쪽지</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 14px; color: var(--muted);">{{ sent_notices_count }}</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </a>
             </div>
 
             <!-- 설정 -->

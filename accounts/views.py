@@ -89,6 +89,13 @@ def mypage(request):
     unread_notices_count = Notification.objects.filter(
         user=user, type=Notification.Type.SCHEDULE_NOTICE, is_read=False
     ).count()
+    # 보낸 쪽지(내가 발송한 일정 알림) 그룹 수 — 동시 발송분은 하나로 집계
+    from django.db.models.functions import TruncSecond
+    sent_notices_count = Notification.objects.filter(
+        actor=user, type=Notification.Type.SCHEDULE_NOTICE
+    ).annotate(sec=TruncSecond("created_at")).values(
+        "sec", "message", "related_band_schedule"
+    ).distinct().count()
 
     return render(request, "accounts/mypage.html", {
         "profile": profile,
@@ -97,6 +104,7 @@ def mypage(request):
         "bookmarked_bands_count": bookmarked_bands_count,
         "total_posts_comments_count": total_posts_comments_count,
         "received_notices_count": received_notices_count,
+        "sent_notices_count": sent_notices_count,
         "unread_notices_count": unread_notices_count,
     })
 
@@ -281,6 +289,48 @@ def mypage_schedule_notices(request):
     return render(request, "accounts/mypage_schedule_notices.html", {
         "notices_page": notices_page,
         "title": "받은 쪽지",
+    })
+
+
+@login_required
+def mypage_sent_notices(request):
+    """보낸 쪽지(내가 발송한 일정 알림) 목록. 동시 발송분은 하나로 묶어 수신자 표기."""
+    from notifications.models import Notification
+    from collections import OrderedDict
+    user = request.user
+    per_page = 20
+    page = request.GET.get('page', 1)
+
+    sent = Notification.objects.filter(
+        actor=user, type=Notification.Type.SCHEDULE_NOTICE,
+    ).select_related(
+        "user", "related_band", "related_band_schedule",
+    ).order_by("-created_at")
+
+    # (초 단위 시각, 메시지, 일정) 기준으로 묶어 수신자 목록 집계
+    groups = OrderedDict()
+    for n in sent:
+        key = (n.created_at.replace(microsecond=0), n.message, n.related_band_schedule_id)
+        g = groups.get(key)
+        if g is None:
+            g = {
+                "message": n.message,
+                "created_at": n.created_at,
+                "band": n.related_band,
+                "schedule": n.related_band_schedule,
+                "recipients": [],
+            }
+            groups[key] = g
+        if n.user:
+            g["recipients"].append(n.user)
+
+    grouped = list(groups.values())
+    paginator = Paginator(grouped, per_page)
+    notices_page = paginator.get_page(page)
+
+    return render(request, "accounts/mypage_sent_notices.html", {
+        "notices_page": notices_page,
+        "title": "보낸 쪽지",
     })
 
 
