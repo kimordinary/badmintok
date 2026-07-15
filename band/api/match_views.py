@@ -817,15 +817,61 @@ def create_reservation(request, session_id):
     return Response(serialize_reservation(r), status=status.HTTP_201_CREATED)
 
 
-@api_view(["DELETE"])
+@api_view(["PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
-def delete_reservation(request, session_id, reservation_id):
+def reservation_detail(request, session_id, reservation_id):
+    """예약 경기 수정(PATCH: 멤버·종목 교체, id·큐 순서 유지) / 삭제(DELETE). 운영자 전용.
+    PATCH body: participant_ids(4명 필수), discipline(선택·생략 시 성별 자동)."""
     session = get_object_or_404(MatchSession, id=session_id)
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     r = get_object_or_404(ReservedMatch, id=reservation_id, session=session)
-    r.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+
+    if request.method == "DELETE":
+        r.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # PATCH — 멤버·종목만 교체, 코트/예약 순서는 건드리지 않음
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    ids = request.data.get("participant_ids") or []
+    if not isinstance(ids, (list, tuple)) or len({*ids}) != 4:
+        return Response({"detail": "서로 다른 4명을 선택해야 합니다."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    sps = list(SessionParticipant.objects.filter(id__in=ids, session=session))
+    if len(sps) != 4:
+        return Response({"detail": "참가자를 찾을 수 없습니다."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if any(sp.attendance != SessionParticipant.Attendance.PRESENT for sp in sps):
+        return Response({"detail": "참여중인 사람만 예약할 수 있어요."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    on_court = _on_court_ids(session)
+    coach_ids = _coach_ids(session)
+    # 이 예약의 기존 멤버는 중복 체크에서 제외(그대로 두거나 교체 가능)
+    reserved_ids = reserved_participant_ids(session) - set(
+        r.players.values_list("participant_id", flat=True))
+    for sp in sps:
+        if sp.id in on_court:
+            return Response({"detail": "경기 중인 사람은 예약할 수 없어요."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if sp.id in coach_ids:
+            return Response({"detail": "코치는 예약 경기에 넣을 수 없어요."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if sp.id in reserved_ids:
+            return Response({"detail": "이미 다른 예약에 들어간 사람이 있어요."},
+                            status=status.HTTP_409_CONFLICT)
+    disc = request.data.get("discipline")
+    if disc and disc not in Match.Discipline.values:
+        return Response({"detail": "잘못된 종목"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        r.discipline = disc or ""
+        r.save(update_fields=["discipline"])
+        r.players.all().delete()
+        for sp in sps:
+            ReservedMatchPlayer.objects.create(reservation=r, participant=sp)
+    r = ReservedMatch.objects.prefetch_related("players__participant__user").get(id=r.id)
+    return Response(serialize_reservation(r))
 
 
 @api_view(["POST"])

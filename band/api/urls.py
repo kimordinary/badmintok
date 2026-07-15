@@ -98,5 +98,5 @@ urlpatterns = [
 
     # 대진 — 예약 경기(이후 예정)
     path('match/<int:session_id>/reservations/', match_views.create_reservation, name='match_reservation_create'),
-    path('match/<int:session_id>/reservations/<int:reservation_id>/', match_views.delete_reservation, name='match_reservation_delete'),
+    path('match/<int:session_id>/reservations/<int:reservation_id>/', match_views.reservation_detail, name='match_reservation_detail'),
 ]
