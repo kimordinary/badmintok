@@ -90,3 +90,27 @@ class PairStats:
 
     def opponent_count(self, a: int, b: int) -> int:
         return self._opponent.get(self._key(a, b), 0)
+
+    def partners_of(self, pid: int) -> dict:
+        """pid와 함께 뛴 파트너별 횟수 {상대 participant_id: count} (0회 제외)."""
+        out = {}
+        for (a, b), c in self._partner.items():
+            if not c:
+                continue
+            if a == pid:
+                out[b] = c
+            elif b == pid:
+                out[a] = c
+        return out
+
+    def opponents_of(self, pid: int) -> dict:
+        """pid와 맞붙은 상대별 횟수 {상대 participant_id: count} (0회 제외)."""
+        out = {}
+        for (a, b), c in self._opponent.items():
+            if not c:
+                continue
+            if a == pid:
+                out[b] = c
+            elif b == pid:
+                out[a] = c
+        return out

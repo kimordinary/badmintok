@@ -37,9 +37,9 @@ def serialize_partner_request(req):
     }
 
 
-def serialize_participant(sp):
+def serialize_participant(sp, stats=None):
     base_level, gender = sp.live_level_gender()
-    return {
+    data = {
         "id": sp.id,
         "user_id": sp.user_id,
         "name": sp.display_name,
@@ -51,6 +51,11 @@ def serialize_participant(sp):
         "games_womens": sp.games_womens,
         "total_games": sp.games_mixed + sp.games_mens + sp.games_womens,
     }
+    # 경기기록 시트용 파트너/상대 이력 {상대 participant_id: 횟수} (0회 제외)
+    if stats is not None:
+        data["partner_count"] = {str(k): v for k, v in stats.partners_of(sp.id).items()}
+        data["opponent_count"] = {str(k): v for k, v in stats.opponents_of(sp.id).items()}
+    return data
 
 
 def serialize_match(match):
@@ -78,10 +83,12 @@ def serialize_session(session):
     court_rows = list(session.courts.select_related("coach__user").all())
     coach_ids = {c.coach_id for c in court_rows if c.coach_id}
 
+    # 파트너/상대 이력 (참가자 partner_count/opponent_count + 코치 커버리지 공용)
+    stats = build_pairstats(session)
+
     # 코치 커버리지: 출석 비-코치 중 그 코치와 한 번이라도 친 사람 수 / 전체
     coverage = {}
     if coach_ids:
-        stats = build_pairstats(session)
         present_ids = [p.id for p in participants
                        if p.attendance == "present" and p.id not in coach_ids]
         for cid in coach_ids:
@@ -124,7 +131,7 @@ def serialize_session(session):
         "discipline_mode": session.discipline_mode,
         "preset": session.preset,
         "court_count": session.court_count,
-        "participants": [serialize_participant(p) for p in participants],
+        "participants": [serialize_participant(p, stats) for p in participants],
         "courts": courts,
         "queue": queue,
         "pairs": [serialize_pair(pr) for pr in pairs],
