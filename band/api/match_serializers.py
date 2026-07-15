@@ -67,6 +67,7 @@ def serialize_match(match):
         "id": match.id,
         "discipline": match.discipline,
         "status": match.status,
+        "started_at": match.started_at.isoformat() if match.started_at else None,
         "team1": teams[1],
         "team2": teams[2],
     }
@@ -163,6 +164,14 @@ def serialize_my_status(session, sp, user=None):
     # 다음 경기 후보: 대기열 상위 (빈 코트 × 4) 또는 최소 4명 안에 들면 곧 입장
     up_next = (not playing) and queue_position is not None and \
         queue_position <= max(4, empty_courts * 4)
+    # 대기 단계 신호 (앱 화면 표시용): 0=곧 입장, 1=다음다음, None=그 외/해당없음
+    up_next_level = None
+    if not playing and queue_position is not None:
+        _grp = max(4, empty_courts * 4)
+        if queue_position <= _grp:
+            up_next_level = 0
+        elif queue_position <= _grp * 2:
+            up_next_level = 1
 
     current_match = None
     if current is not None:
@@ -212,6 +221,7 @@ def serialize_my_status(session, sp, user=None):
         "queue_position": queue_position,
         "queue_total": queue_total,
         "up_next": up_next,
+        "up_next_level": up_next_level,
         "profile": profile,
         "excluded_from_pool": excluded_from_pool,
     }
