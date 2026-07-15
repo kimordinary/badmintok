@@ -3,7 +3,8 @@
 모바일 앱 팀 전달용. **디자인(화면) ↔ API ↔ 동작**을 한곳에 매핑한다.
 전체 사양(진입 경로·데이터 매핑·매칭 알고리즘·API 전체·푸시)은 → [`live-matchmaking-overview.md`](./live-matchmaking-overview.md) (이 폴더 안).
 
-**관련 스펙 문서** (번개 참가/모집):
+**관련 스펙 문서**:
+- 참가자 화면 상태(대진): [participant-status-spec.md](./participant-status-spec.md) — `/me/` 응답 → 상태 배너 10종 매핑 (started_at·up_next_level 포함)
 - 대기하기(Waitlist): [waitlist-spec.md](./waitlist-spec.md) — 정원 마감 시 대기·승격·참석취소·대기순번·쪽지
 - 급수별 정원(Level Quota): [quota-spec.md](./quota-spec.md) — 급수·성별 정원 모집, 성별 나눔 토글, 급수별 현황
 

@@ -259,7 +259,7 @@
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `match/schedules/<schedule_id>/me/` | **일정만 알아도** 내 상태. 세션 없으면 `session_id:null`+`approved`. 앱 진입 시 첫 호출 |
-| GET | `match/<sid>/me/` | 내 라이브 상태(폴링): `attendance`·`games`·`playing`·`current_match`(court_index·my_team·**is_coach_court**)·`queue_position`·`queue_total`·**`up_next`**(다음 경기 후보 알림용) |
+| GET | `match/<sid>/me/` | 내 라이브 상태(폴링): `attendance`·`games`·`playing`·`current_match`(court_index·my_team·**is_coach_court**·**started_at**)·`queue_position`·`queue_total`·**`up_next`**·**`up_next_level`**(0=곧입장/1=다음다음/null). 상태→화면 매핑은 [participant-status-spec.md](./participant-status-spec.md) |
 | POST | `match/<sid>/me/checkin/` | 본인 출석/퇴장. body: `action`(in\|out). **웹 `checked_in_at`과 양방향 동기화.** 세션 종료 시 409 |
 
 ### 8.3 파트너 (고정 2인 팀)
