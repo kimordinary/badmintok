@@ -78,6 +78,7 @@ urlpatterns = [
     path('match/<int:session_id>/courts/', match_views.add_court, name='match_court_add'),
     path('match/<int:session_id>/courts/<int:index>/', match_views.court_detail, name='match_court_detail'),
     path('match/<int:session_id>/participants/', match_views.add_participant, name='match_participant_add'),
+    path('match/<int:session_id>/participants/<int:pid>/', match_views.edit_participant, name='match_participant_edit'),
     path('match/<int:session_id>/participants/sync/', match_views.sync_participants, name='match_participant_sync'),
     path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
     path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),

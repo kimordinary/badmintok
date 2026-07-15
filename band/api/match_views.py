@@ -694,6 +694,38 @@ def add_participant(request, session_id):
     return Response(serialize_participant(sp), status=status.HTTP_201_CREATED)
 
 
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def edit_participant(request, session_id, pid):
+    """세션 참가자 정보 수정(운영자) — 이름·급수·성별.
+    세션 스냅샷(SessionParticipant)만 바꾸며 계정 유저 프로필 원본은 건드리지 않는다.
+    (이 대진에서만 적용 · 세션 종료 후 세션 데이터에만 남음)
+    보낸 필드만 부분 수정: name / level / gender."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    sp = get_object_or_404(SessionParticipant, id=pid, session=session)
+    fields = []
+    if "name" in request.data:
+        sp.guest_name = (request.data.get("name") or "").strip()  # 세션 표시 이름 override
+        fields.append("guest_name")
+    if "gender" in request.data:
+        g = request.data.get("gender")
+        if g not in ("male", "female"):
+            return Response({"detail": "성별(male/female)을 선택해 주세요."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        sp.gender = g
+        fields.append("gender")
+    if "level" in request.data:
+        sp.base_level = level_to_score(request.data.get("level") or "")
+        fields.append("base_level")
+    if fields:
+        sp.save(update_fields=fields)
+    return Response(serialize_participant(sp))
+
+
 # ===== 승인자 재동기화 (세션 시작 후 승인 보정) =====
 
 @api_view(["POST"])

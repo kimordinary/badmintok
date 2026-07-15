@@ -67,7 +67,8 @@ class SessionParticipant(models.Model):
 
     @property
     def display_name(self):
-        return self.user.activity_name if self.user_id else (self.guest_name or "임시")
+        # guest_name은 현장 인원 이름 + 세션 내 표시 이름 override 겸용(프로필 원본 불변)
+        return self.guest_name or (self.user.activity_name if self.user_id else "임시")
 
     def live_level_gender(self):
         """매칭·표시용 (base_level, gender).
