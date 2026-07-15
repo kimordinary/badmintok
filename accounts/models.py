@@ -142,7 +142,7 @@ class UserProfile(models.Model):
     name = models.CharField(_("이름"), max_length=100, blank=True)
     
     class BadmintonLevel(models.TextChoices):
-        BEGINNER = "beginner", _("왕초심")
+        BEGINNER = "beginner", _("초심")
         D = "d", _("D")
         C = "c", _("C")
         B = "b", _("B")

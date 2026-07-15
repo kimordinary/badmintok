@@ -42,7 +42,7 @@ class Player:
     id: int
     name: str
     gender: str          # MALE | FEMALE
-    base_level: int      # 1..7 (왕초심1 .. 자강7)
+    base_level: int      # 1..7 (초심1 .. 자강7)
     games_mixed: int = 0
     games_mens: int = 0
     games_womens: int = 0

@@ -2386,9 +2386,9 @@ def schedule_match(request, band_id, schedule_id):
     if not can_manage:
         return redirect("band:schedule_detail", band_id=band.id, schedule_id=schedule.id)
 
-    LEVEL_MAP = {"master": "자강", "s": "S", "a": "A", "b": "B", "c": "C", "d": "D", "beginner": "왕초심"}
-    RAMP = {"자강": "l1", "S": "l2", "A": "l3", "B": "l4", "C": "l5", "D": "l6", "왕초심": "l7"}
-    MULTI = {"자강", "왕초심"}
+    LEVEL_MAP = {"master": "자강", "s": "S", "a": "A", "b": "B", "c": "C", "d": "D", "beginner": "초심"}
+    RAMP = {"자강": "l1", "S": "l2", "A": "l3", "B": "l4", "C": "l5", "D": "l6", "초심": "l7"}
+    MULTI = {"자강", "초심"}
     apps = schedule.applications.filter(status="approved").select_related("user", "user__profile").order_by("applied_at")
     players = []
     for a in apps:
@@ -2406,7 +2406,7 @@ def schedule_match(request, band_id, schedule_id):
 
     male = sum(1 for p in players if p["gender"] == "M")
     female = sum(1 for p in players if p["gender"] == "F")
-    order = ["자강", "S", "A", "B", "C", "D", "왕초심"]
+    order = ["자강", "S", "A", "B", "C", "D", "초심"]
     lv = {k: 0 for k in order}
     for p in players:
         if p["level"] in lv:
@@ -2441,7 +2441,7 @@ def schedule_console(request, band_id, schedule_id):
     from band.match_service import ensure_session
     ensure_session(schedule, request.user)
 
-    LEVEL_MAP = {"master": "자강", "s": "S", "a": "A", "b": "B", "c": "C", "d": "D", "beginner": "왕초심"}
+    LEVEL_MAP = {"master": "자강", "s": "S", "a": "A", "b": "B", "c": "C", "d": "D", "beginner": "초심"}
     apps = schedule.applications.filter(status="approved").select_related("user", "user__profile").order_by("applied_at")
     players = []
     for a in apps:
