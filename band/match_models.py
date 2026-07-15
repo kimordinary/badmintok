@@ -55,6 +55,8 @@ class SessionParticipant(models.Model):
     # 세션 시작 시점 스냅샷 (가입 정보가 바뀌어도 세션 내 일관)
     base_level = models.IntegerField()  # 1..7
     gender = models.CharField(max_length=10)  # male | female
+    # 회원 급수·성별을 운영자가 세션에서 덮어썼는지. True면 프로필 대신 위 스냅샷 사용
+    overridden = models.BooleanField(default=False)
     games_mixed = models.IntegerField(default=0)
     games_mens = models.IntegerField(default=0)
     games_womens = models.IntegerField(default=0)
@@ -74,8 +76,9 @@ class SessionParticipant(models.Model):
         """매칭·표시용 (base_level, gender).
         회원은 accounts 프로필을 실시간 참조해 프로필 변경을 즉시 반영하고,
         게스트(현장 인원)는 생성 시 입력한 스냅샷 값을 그대로 쓴다.
+        단, 운영자가 세션에서 덮어썼으면(overridden) 회원도 스냅샷을 쓴다(프로필 원본 불변).
         """
-        if not self.user_id:
+        if not self.user_id or self.overridden:
             return self.base_level, self.gender
         from band.matchmaking.scoring import level_to_score
         profile = getattr(self.user, "profile", None)

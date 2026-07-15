@@ -707,22 +707,27 @@ def edit_participant(request, session_id, pid):
     if session.status == MatchSession.Status.ENDED:
         return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
     sp = get_object_or_404(SessionParticipant, id=pid, session=session)
-    fields = []
+    if "gender" in request.data and request.data.get("gender") not in ("male", "female"):
+        return Response({"detail": "성별(male/female)을 선택해 주세요."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    fields = set()
+    # 회원 급수·성별을 세션에서 처음 덮어쓸 때: 현재 유효값을 스냅샷으로 고정하고 override 표시.
+    # 이후 live_level_gender가 프로필 대신 이 스냅샷을 사용 — 프로필 원본은 불변.
+    if sp.user_id and (("level" in request.data) or ("gender" in request.data)) and not sp.overridden:
+        sp.base_level, sp.gender = sp.live_level_gender()
+        sp.overridden = True
+        fields.update(["base_level", "gender", "overridden"])
     if "name" in request.data:
         sp.guest_name = (request.data.get("name") or "").strip()  # 세션 표시 이름 override
-        fields.append("guest_name")
+        fields.add("guest_name")
     if "gender" in request.data:
-        g = request.data.get("gender")
-        if g not in ("male", "female"):
-            return Response({"detail": "성별(male/female)을 선택해 주세요."},
-                            status=status.HTTP_400_BAD_REQUEST)
-        sp.gender = g
-        fields.append("gender")
+        sp.gender = request.data.get("gender")
+        fields.add("gender")
     if "level" in request.data:
         sp.base_level = level_to_score(request.data.get("level") or "")
-        fields.append("base_level")
+        fields.add("base_level")
     if fields:
-        sp.save(update_fields=fields)
+        sp.save(update_fields=list(fields))
     return Response(serialize_participant(sp))
 
 
