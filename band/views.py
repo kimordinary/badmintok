@@ -1994,7 +1994,7 @@ def schedule_create(request, band_id):
             location=meeting_location,
             max_participants=int(meeting_capacity) if meeting_capacity else None,
             current_participants=0,
-            requires_approval=False,
+            requires_approval=(request.POST.get("requires_approval") == "1"),
             cost=cost_value,
             bank_account=bank_account,
             use_level_quota=_use_lq,
@@ -2136,6 +2136,7 @@ def schedule_update(request, band_id, schedule_id):
         schedule.quota_by_gender = _by_gender
         schedule.level_quota = _lq
         schedule.gender_quota = _gq
+        schedule.requires_approval = request.POST.get("requires_approval") == "1"
         schedule.save()
         
         # 지역 정보를 부모 Band에 저장
@@ -2543,7 +2544,12 @@ def schedule_apply(request, band_id, schedule_id):
     if is_full and waiting_cnt >= BandScheduleApplication.WAITLIST_CAPACITY:
         messages.error(request, "참가·대기 인원이 모두 마감되었습니다.")
         return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
-    new_status = "waiting" if is_full else "pending"
+    if is_full:
+        new_status = "waiting"
+    elif schedule.requires_approval:
+        new_status = "pending"
+    else:
+        new_status = "approved"
 
     if request.method == "POST":
         # 번개는 누구나 참가 가능 (멤버가 아니어도 OK)
@@ -2568,7 +2574,17 @@ def schedule_apply(request, band_id, schedule_id):
                 application.status = new_status
                 application.save()
 
-            messages.success(request, "대기 신청되었습니다. 자리가 나면 모임장이 승격해요." if new_status == "waiting" else "신청이 완료되었습니다.")
+            # 자동 승인(approved) 시 참가 인원 갱신
+            if new_status == "approved":
+                schedule.current_participants = schedule.applications.filter(status="approved").count()
+                schedule.save(update_fields=["current_participants"])
+            if new_status == "waiting":
+                msg = "대기 신청되었습니다. 자리가 나면 모임장이 승격해요."
+            elif new_status == "pending":
+                msg = "신청이 완료되었습니다. 모임장 승인을 기다려주세요."
+            else:
+                msg = "참가가 확정되었습니다."
+            messages.success(request, msg)
             return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
     else:
         form = BandScheduleApplicationForm()
