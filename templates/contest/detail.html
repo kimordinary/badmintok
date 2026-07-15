@@ -332,7 +332,7 @@
                 <div class="ai-summary-container">
                     <div class="ai-summary-content" id="aiSummaryContent">
                         {% if contest.description %}
-                            <p>{{ contest.description|linebreaksbr }}</p>
+                            {{ contest.description|ai_summary_html }}
                         {% else %}
                             <p>{{ seo_body_text }}</p>
                         {% endif %}
@@ -770,9 +770,28 @@
     }
 
     .ai-summary-content p {
-        margin: 0;
+        margin: 0 0 14px;
         line-height: 1.7;
         color: #475569;
+    }
+
+    .ai-summary-content p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* SEO 본문 구조: 섹션 제목 */
+    .ai-summary-content h3 {
+        margin: 28px 0 10px;
+        padding-left: 12px;
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1.45;
+        color: #1e293b;
+        border-left: 3px solid var(--brand, #12a565);
+    }
+
+    .ai-summary-content h3:first-child {
+        margin-top: 0;
     }
 
     /* 그라데이션 페이드 효과 */
@@ -1189,6 +1208,17 @@
 
         .contest-detail__description-header h2 {
             font-size: 17px;
+        }
+
+        .ai-summary-content h3 {
+            margin: 22px 0 8px;
+            padding-left: 10px;
+            font-size: 15.5px;
+        }
+
+        .ai-summary-content p {
+            margin-bottom: 12px;
+            font-size: 15px;
         }
 
         .pdf-download-btn {
