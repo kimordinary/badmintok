@@ -1394,6 +1394,37 @@ def band_schedule_application_kick(request, band_id, schedule_id, application_id
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def band_schedule_application_demote(request, band_id, schedule_id, application_id):
+    """대기명단으로 이동 API (관리자) — approved → waiting. 자리 1개 생기고 대기 맨 뒤로."""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active'
+    ).first()
+    if not manager and not is_site_admin(request.user):
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    application = get_object_or_404(BandScheduleApplication, id=application_id, schedule=schedule)
+    if application.status != 'approved':
+        return Response({'error': '참가 확정 상태가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    if schedule.applications.filter(status='waiting').count() >= BandScheduleApplication.WAITLIST_CAPACITY:
+        return Response({'error': '대기 명단이 가득 차서 이동할 수 없어요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    application.status = 'waiting'
+    application.applied_at = timezone.now()  # 대기 맨 뒤로
+    application.reviewed_at = None
+    application.reviewed_by = None
+    application.save(update_fields=['status', 'applied_at', 'reviewed_at', 'reviewed_by'])
+    schedule.current_participants = schedule.applications.filter(status='approved').count()
+    schedule.save(update_fields=['current_participants'])
+
+    return Response({'message': '대기명단으로 이동했어요. (대기 맨 뒤 순번)'}, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def band_schedule_notice_send(request, band_id, schedule_id):
     """일정 알림 발송 API (모임장 → 참가자).
 

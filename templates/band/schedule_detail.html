@@ -440,7 +440,10 @@
         </div>
         <div class="participant-note-modal__body" id="participantNoteModalBody" style="margin-top: 12px; padding: 14px; background: #f8fafc; border-radius: 8px; font-size: 14px; color: #1e293b; white-space: pre-wrap; min-height: 60px;"></div>
 
-        <form method="post" id="participantKickForm" action="" style="margin-top: 14px;">{% csrf_token %}
+        <form method="post" id="participantDemoteForm" action="" style="margin-top: 14px;">{% csrf_token %}
+            <button type="submit" onclick="return confirm('이 참가자를 대기명단으로 옮길까요? 자리가 1개 생기고 대기 맨 뒤 순번으로 갑니다.')" style="width: 100%; padding: 11px; background: #fff; border: 1px solid #e2e8f0; color: #475569; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer;">대기명단으로 이동</button>
+        </form>
+        <form method="post" id="participantKickForm" action="" style="margin-top: 8px;">{% csrf_token %}
             <button type="submit" onclick="return confirm('이 참가자의 참가를 취소할까요? 자리가 1개 생겨서 대기자를 승격할 수 있어요.')" style="width: 100%; padding: 11px; background: #fff; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer;">참가 취소 (자리 비우기)</button>
         </form>
 
@@ -677,6 +680,7 @@
 
         const noticeApiUrl = "{% url 'api:band_api:band_schedule_notice_send' band.id schedule.id %}";
         const kickUrlTemplate = "{% url 'band:schedule_kick' band.id schedule.id 0 %}";
+        const demoteUrlTemplate = "{% url 'band:schedule_demote' band.id schedule.id 0 %}";
         let currentUserId = null;
 
         function setFeedback(text, color) {
@@ -693,6 +697,7 @@
             currentUserId = row.dataset.userId || null;
             // 참가 취소 form action 세팅 (approved 참가자 대상)
             var kickForm = document.getElementById('participantKickForm');
+            var demoteForm = document.getElementById('participantDemoteForm');
             var appId = row.dataset.appId || null;
             var rowStatus = row.dataset.status || '';
             if (kickForm) {
@@ -701,6 +706,14 @@
                     kickForm.style.display = '';
                 } else {
                     kickForm.style.display = 'none';
+                }
+            }
+            if (demoteForm) {
+                if (appId && rowStatus === 'approved') {
+                    demoteForm.action = demoteUrlTemplate.replace(/\/0\/demote\/$/, '/' + appId + '/demote/');
+                    demoteForm.style.display = '';
+                } else {
+                    demoteForm.style.display = 'none';
                 }
             }
             if (messageEl) messageEl.value = '';

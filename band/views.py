@@ -2677,6 +2677,32 @@ def schedule_kick(request, band_id, schedule_id, application_id):
 
 
 @login_required
+def schedule_demote(request, band_id, schedule_id, application_id):
+    """대기명단으로 이동 (모임장) — approved → waiting. 자리 1개 생기고 대기 맨 뒤로."""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+    application = get_object_or_404(BandScheduleApplication, id=application_id, schedule=schedule)
+    member = schedule.band.members.filter(user=request.user, status="active").first()
+    if not is_site_admin(request.user) and (not member or member.role not in ["owner", "admin"]):
+        messages.error(request, "권한이 없습니다.")
+        return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+    if application.status != "approved":
+        messages.error(request, "참가 확정 상태가 아닙니다.")
+        return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+    if schedule.applications.filter(status="waiting").count() >= BandScheduleApplication.WAITLIST_CAPACITY:
+        messages.error(request, "대기 명단이 가득 차서 이동할 수 없어요.")
+        return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+    application.status = "waiting"
+    application.applied_at = timezone.now()  # 대기 맨 뒤로
+    application.reviewed_at = None
+    application.reviewed_by = None
+    application.save(update_fields=["status", "applied_at", "reviewed_at", "reviewed_by"])
+    schedule.current_participants = schedule.applications.filter(status="approved").count()
+    schedule.save(update_fields=["current_participants"])
+    messages.success(request, "대기명단으로 이동했어요. (대기 맨 뒤 순번)")
+    return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+
+
+@login_required
 def schedule_application_reject(request, band_id, schedule_id, application_id):
     """일정 신청 거부"""
     schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)

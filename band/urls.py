@@ -55,6 +55,8 @@ urlpatterns = [
          views.schedule_promote, name="schedule_promote"),
     path("<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/kick/",
          views.schedule_kick, name="schedule_kick"),
+    path("<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/demote/",
+         views.schedule_demote, name="schedule_demote"),
     path("<int:band_id>/schedules/<int:schedule_id>/toggle-close/",
          views.schedule_toggle_close, name="schedule_toggle_close"),
 ]

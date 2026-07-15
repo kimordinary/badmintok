@@ -62,6 +62,7 @@ urlpatterns = [
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/', views.band_schedule_application_reject, name='band_schedule_application_reject'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/promote/', views.band_schedule_application_promote, name='band_schedule_application_promote'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/kick/', views.band_schedule_application_kick, name='band_schedule_application_kick'),
+    path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/demote/', views.band_schedule_application_demote, name='band_schedule_application_demote'),
 
     # 대진 (matchmaking)
     path('match/schedules/<int:schedule_id>/start/', match_views.start_session, name='match_start'),
