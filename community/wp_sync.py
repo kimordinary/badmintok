@@ -60,6 +60,27 @@ _IMG_SRC = re.compile(r'(<img[^>]+\bsrc=")([^"]+)(")')
 _ALLOWED_EXT = (".jpg", ".jpeg", ".png", ".gif", ".webp")
 
 
+def _to_webp(content, quality=82):
+    """이미지 bytes → WebP bytes. 반환 (bytes, ext).
+    애니메이션 GIF·변환 실패는 원본 유지(첫 프레임 손실/오류 방지)."""
+    try:
+        from io import BytesIO
+        from PIL import Image
+        im = Image.open(BytesIO(content))
+        im.load()
+        if getattr(im, "is_animated", False):
+            return content, "." + (im.format or "gif").lower()
+        if im.mode in ("P", "LA"):
+            im = im.convert("RGBA")
+        elif im.mode not in ("RGB", "RGBA"):
+            im = im.convert("RGB")
+        buf = BytesIO()
+        im.save(buf, format="WEBP", quality=quality, method=6)
+        return buf.getvalue(), ".webp"
+    except Exception:
+        return content, ".jpg"
+
+
 def download_content_images(html, subdir="community/wp_images"):
     """본문의 외부 이미지(WP/Cloudways)를 Django media로 내려받고 src를 로컬 URL로 치환.
     이미 로컬(/media 등)인 이미지는 그대로 둔다. 실패 시 원본 URL 유지.
@@ -74,12 +95,10 @@ def download_content_images(html, subdir="community/wp_images"):
         try:
             r = requests.get(url, timeout=20)
             r.raise_for_status()
-            ext = os.path.splitext(url.split("?")[0])[1].lower()
-            if ext not in _ALLOWED_EXT:
-                ext = ".jpg"
+            data, ext = _to_webp(r.content)
             name = f"{subdir}/{hashlib.md5(url.encode()).hexdigest()}{ext}"
             if not default_storage.exists(name):
-                default_storage.save(name, ContentFile(r.content))
+                default_storage.save(name, ContentFile(data))
             return pre + default_storage.url(name) + post
         except Exception:
             return m.group(0)  # 실패 시 원본 유지
@@ -204,11 +223,9 @@ def sync_wp_post(wp_post, category_map, author, tag_map=None):
         try:
             img = requests.get(src, timeout=20)
             img.raise_for_status()
-            ext = os.path.splitext(src.split("?")[0])[1].lower()
-            if ext not in _ALLOWED_EXT:
-                ext = ".jpg"
+            data, ext = _to_webp(img.content)
             fname = f"wp_thumb_{hashlib.md5(src.encode()).hexdigest()}{ext}"
-            obj.thumbnail.save(fname, ContentFile(img.content), save=False)
+            obj.thumbnail.save(fname, ContentFile(data), save=False)
             obj.thumbnail_alt = (media[0].get("alt_text") or title)[:200]
         except Exception:
             pass
