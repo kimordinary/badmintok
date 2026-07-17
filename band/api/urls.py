@@ -82,6 +82,7 @@ urlpatterns = [
     path('match/<int:session_id>/participants/sync/', match_views.sync_participants, name='match_participant_sync'),
     path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
     path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),
+    path('match/<int:session_id>/reset/', match_views.reset_session, name='match_reset'),
 
     # 대진 — 참가자 본인용 (앱)
     path('match/schedules/<int:schedule_id>/me/', match_views.my_status_by_schedule, name='match_my_status_by_schedule'),

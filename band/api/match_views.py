@@ -883,3 +883,41 @@ def end_session(request, session_id):
     session.status = MatchSession.Status.ENDED
     session.save(update_fields=["status", "updated_at"])
     return Response({"id": session.id, "status": session.status})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def reset_session(request, session_id):
+    """대진 세션 리셋 (운영자). body: mode = "game" | "full".
+    - game: 경기·이력·예약·파트너·코치고정·개인 경기수만 초기화. 참가자·출석 유지.
+    - full: 위 + 현장 게스트 삭제 + 전원 출석 초기화 → 최초 화면(체크인부터).
+      (참가자 급수/성별 편집(override)은 유지)"""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    mode = request.data.get("mode", "game")
+    if mode not in ("game", "full"):
+        return Response({"detail": 'mode는 "game" 또는 "full" 이어야 합니다.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        # 경기·이력·예약·파트너·코치 초기화 (game/full 공통)
+        Match.objects.filter(session=session).delete()          # MatchPlayer cascade
+        Pair.objects.filter(session=session).delete()
+        PartnerRequest.objects.filter(session=session).delete()
+        ReservedMatch.objects.filter(session=session).delete()  # ReservedMatchPlayer cascade
+        session.courts.update(coach=None)
+        if mode == "full":
+            session.participants.filter(user__isnull=True).delete()  # 현장 게스트 삭제
+            session.participants.update(
+                games_mixed=0, games_mens=0, games_womens=0,
+                last_game_ended_at=None,
+                attendance=SessionParticipant.Attendance.NOT_PRESENT)
+        else:
+            session.participants.update(
+                games_mixed=0, games_mens=0, games_womens=0, last_game_ended_at=None)
+
+    session.refresh_from_db()
+    return Response(serialize_session(session))
