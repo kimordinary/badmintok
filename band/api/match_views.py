@@ -926,6 +926,23 @@ def reset_session(request, session_id):
         session.courts.update(coach=None)
         if mode == "full":
             session.participants.filter(user__isnull=True).delete()  # 현장 게스트 삭제
+            # 원본 승인 명단과 재동기화 (최초 화면 + 최신 명단)
+            approved_uids = set(BandScheduleApplication.objects.filter(
+                schedule=session.schedule, status="approved").values_list("user_id", flat=True))
+            # 더 이상 승인 아닌 회원(취소·강등) 제거
+            session.participants.exclude(user__isnull=True).exclude(
+                user_id__in=approved_uids).delete()
+            # 세션에 빠진 승인자 편입
+            existing = set(session.participants.values_list("user_id", flat=True))
+            for app in BandScheduleApplication.objects.filter(
+                    schedule=session.schedule, status="approved").select_related("user"):
+                if app.user_id in existing:
+                    continue
+                score, gender = _profile_level_gender(app.user)
+                SessionParticipant.objects.create(
+                    session=session, user=app.user, base_level=score, gender=gender,
+                    attendance=SessionParticipant.Attendance.NOT_PRESENT)
+            # 전원 출석·경기수 초기화
             session.participants.update(
                 games_mixed=0, games_mens=0, games_womens=0,
                 last_game_ended_at=None,
