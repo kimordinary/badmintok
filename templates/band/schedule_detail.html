@@ -183,7 +183,7 @@
             
             {% if can_manage %}
             <!-- 모임장 전용: 자동 대진 시작 (참가자 위 — 당일 바로 보이게) -->
-            <a href="{% url 'band:schedule_match' band.id schedule.id %}" style="display: flex; align-items: center; justify-content: center; width: 100%; padding: 15px; background: var(--brand); color: white; border-radius: 12px; text-decoration: none; font-size: 15.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(18,165,101,.28); margin-bottom: 18px;">
+            <a href="{% url 'band:schedule_console' band.id schedule.id %}" style="display: flex; align-items: center; justify-content: center; width: 100%; padding: 15px; background: var(--brand); color: white; border-radius: 12px; text-decoration: none; font-size: 15.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(18,165,101,.28); margin-bottom: 18px;">
                 번개 시작 · 자동 대진
             </a>
             {% endif %}
