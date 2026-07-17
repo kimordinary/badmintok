@@ -8,7 +8,7 @@ def serialize_reservation(r):
         "id": r.id,
         "discipline": r.discipline or None,
         "players": [
-            {"participant_id": rp.participant_id, "name": rp.participant.display_name}
+            {"participant_id": rp.participant_id, "name": rp.participant.display_real_name}
             for rp in r.players.all()
         ],
     }
@@ -19,8 +19,8 @@ def serialize_pair(pair):
         "id": pair.id,
         "strict": pair.strict,
         "members": [
-            {"participant_id": pair.p1_id, "name": pair.p1.display_name},
-            {"participant_id": pair.p2_id, "name": pair.p2.display_name},
+            {"participant_id": pair.p1_id, "name": pair.p1.display_real_name},
+            {"participant_id": pair.p2_id, "name": pair.p2.display_real_name},
         ],
     }
 
@@ -31,9 +31,9 @@ def serialize_partner_request(req):
         "status": req.status,
         "strict": req.strict,
         "from": {"participant_id": req.from_participant_id,
-                 "name": req.from_participant.display_name},
+                 "name": req.from_participant.display_real_name},
         "to": {"participant_id": req.to_participant_id,
-               "name": req.to_participant.display_name},
+               "name": req.to_participant.display_real_name},
     }
 
 
@@ -42,7 +42,7 @@ def serialize_participant(sp, stats=None):
     data = {
         "id": sp.id,
         "user_id": sp.user_id,
-        "name": sp.display_name,
+        "name": sp.display_real_name,
         "gender": gender,
         "base_level": base_level,
         "attendance": sp.attendance,
@@ -64,7 +64,7 @@ def serialize_match(match):
         base_level, gender = mp.participant.live_level_gender()
         teams[mp.team].append({
             "participant_id": mp.participant_id,
-            "name": mp.participant.display_name,
+            "name": mp.participant.display_real_name,
             "base_level": base_level,
             "gender": gender,
         })
@@ -106,7 +106,7 @@ def serialize_session(session):
         coach = None
         if court.coach_id:
             coach = {"participant_id": court.coach_id,
-                     "name": court.coach.display_name,
+                     "name": court.coach.display_real_name,
                      "coverage": coverage.get(court.coach_id)}
         courts.append({
             "index": court.index,
@@ -218,7 +218,7 @@ def serialize_my_status(session, sp, user=None):
         "session_id": session.id,
         "session_status": session.status,
         "participant_id": sp.id if sp else None,
-        "name": sp.display_name if sp else None,
+        "name": sp.display_real_name if sp else None,
         "gender": sp_gender,
         "base_level": sp_level,
         "attendance": sp.attendance if sp else None,

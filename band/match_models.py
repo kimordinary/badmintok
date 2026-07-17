@@ -72,6 +72,12 @@ class SessionParticipant(models.Model):
         # guest_name은 현장 인원 이름 + 세션 내 표시 이름 override 겸용(프로필 원본 불변)
         return self.guest_name or (self.user.activity_name if self.user_id else "임시")
 
+    @property
+    def display_real_name(self):
+        # 대진 현장 확인용 — 회원은 실명(user.real_name이 실명 없으면 활동명 폴백),
+        # 게스트/운영자 편집 이름은 guest_name 그대로.
+        return self.guest_name or (self.user.real_name if self.user_id else "임시")
+
     def live_level_gender(self):
         """매칭·표시용 (base_level, gender).
         회원은 accounts 프로필을 실시간 참조해 프로필 변경을 즉시 반영하고,

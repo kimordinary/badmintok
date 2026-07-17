@@ -7,7 +7,7 @@ def build_player(sp) -> Player:
     base_level, gender = sp.live_level_gender()
     return Player(
         id=sp.id,
-        name=sp.display_name,
+        name=sp.display_real_name,  # 대진 현장 확인용 실명(없으면 활동명)
         gender=gender,
         base_level=base_level,
         games_mixed=sp.games_mixed,
