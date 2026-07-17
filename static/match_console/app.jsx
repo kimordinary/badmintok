@@ -96,7 +96,7 @@ function mapServerState(d, prev) {
   });
   const pairs = (d.pairs || []).map((pr) => ({ id: pr.id, members: (pr.members || []).map((m) => String(m.participant_id)), strict: pr.strict }));
   const pairRequests = (d.partner_requests || []).map((r) => ({ id: r.id, from: String(r.from.participant_id), to: String(r.to.participant_id) }));
-  return { participants, courts, pending, pairs, pairRequests, mode: _SRV_MODE[d.discipline_mode] || prev.mode };
+  return { participants, courts, pending, pairs, pairRequests, auto: d.auto != null ? d.auto : prev.auto, mode: _SRV_MODE[d.discipline_mode] || prev.mode };
 }
 
 function App() {
@@ -177,7 +177,7 @@ function App() {
       return { mode };
     }),
     honWarnPick: (mode) => set({ mode, modal: null }), // 모달에서 종목 전환 + 닫기
-    setAuto: (auto) => set({ auto }),
+    setAuto: (auto) => CONNECTED ? srv('/auto/', 'POST', { auto: !!auto }) : set({ auto }),
     setLayout: (layout) => set({ layout }),
     manualFill: (court) => set({ modal: { type: 'edit', court, match: null } }), // 수동: 빈 슬롯 편집 모달
     makeGameFromQueue: (players) => CONNECTED ? srv('/reservations/', 'POST', { participant_ids: players.map((p) => Number(p.id)) }) : set((s) => {

@@ -28,6 +28,8 @@ class MatchSession(models.Model):
     preset = models.CharField(max_length=12, choices=Preset.choices, default=Preset.BALANCED)
     female_adjust = models.IntegerField(default=1)
     court_count = models.IntegerField(default=4)
+    # 자동 배치(경기 종료 시 다음 경기 자동 투입) on/off. False(수동)면 예약만 투입하고 코트는 비워둔다.
+    auto = models.BooleanField(default=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="match_sessions")
     created_at = models.DateTimeField(auto_now_add=True)

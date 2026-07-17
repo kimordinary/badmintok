@@ -108,6 +108,18 @@ def set_preset(request, session_id):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def set_auto(request, session_id):
+    """자동 배치 on/off. False(수동)면 경기 종료 시 자동 투입 안 함(예약만)."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    session.auto = bool(request.data.get("auto", True))
+    session.save(update_fields=["auto", "updated_at"])
+    return Response(serialize_session(session))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def set_attendance(request, session_id, pid):
     session = get_object_or_404(MatchSession, id=session_id)
     if not _is_operator(request.user, session.schedule.band):
@@ -240,8 +252,9 @@ def _manual_fill(session, court, participant_ids, forced=None):
     return _create_match(session, court, split), None
 
 
-def _fill_court(session, court, forced_discipline=None):
-    """반환: (match | None, need: NeedOperatorChoice | None)"""
+def _fill_court(session, court, forced_discipline=None, allow_auto=True):
+    """반환: (match | None, need: NeedOperatorChoice | None).
+    allow_auto=False(수동 모드)면 예약만 투입하고 자동 추천은 건너뛴다(코트 비움)."""
     coach_ids = _coach_ids(session)
     reserved_ids = reserved_participant_ids(session)
     # 코치는 본인 코트 고정, 예약 멤버는 확보 → 일반 풀(큐·공정성)에서 제외
@@ -279,6 +292,8 @@ def _fill_court(session, court, forced_discipline=None):
     reserved = _consume_reservation(session, court, stats)
     if reserved is not None:
         return reserved, None
+    if not allow_auto:
+        return None, None  # 수동 모드: 자동 추천 스킵, 코트 비워둠
 
     result = recommend_with_pairs(
         pool, build_pairs(session), _MODE_MAP[session.discipline_mode],
@@ -371,7 +386,7 @@ def end_court(request, session_id, index):
             setattr(sp, disc_field, getattr(sp, disc_field) + 1)
             sp.last_game_ended_at = now
             sp.save(update_fields=[disc_field, "last_game_ended_at"])
-        new_match, need = _fill_court(session, court)
+        new_match, need = _fill_court(session, court, allow_auto=session.auto)
 
     if need is not None:
         return Response({"ended": match.id, "match": None, "needs_choice": True,

@@ -131,6 +131,7 @@ def serialize_session(session):
         "discipline_mode": session.discipline_mode,
         "preset": session.preset,
         "court_count": session.court_count,
+        "auto": session.auto,
         "participants": [serialize_participant(p, stats) for p in participants],
         "courts": courts,
         "queue": queue,
