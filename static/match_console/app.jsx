@@ -107,9 +107,11 @@ function App() {
   const refetch = () => apiCall('/', 'GET')
     .then((d) => d && setSt((s) => ({ ...s, ...mapServerState(d, s) })))
     .catch(() => {});
-  // 액션 API 헬퍼: 성공 시 재조회, 실패 시 토스트
-  const srv = (p, m, b) => apiCall(p, m, b).then(refetch).catch((e) =>
-    set({ toast: { kind: 'alert', error: '오류', detail: e.message || '요청 실패' } }));
+  // 액션 API 헬퍼: 응답이 session_state면 그걸로 즉시 반영(왕복 1회), 부분응답이면 재조회
+  const srv = (p, m, b) => apiCall(p, m, b).then((d) => {
+    if (d && Array.isArray(d.participants)) setSt((s) => ({ ...s, ...mapServerState(d, s) }));
+    else refetch();
+  }).catch((e) => set({ toast: { kind: 'alert', error: '오류', detail: e.message || '요청 실패' } }));
 
   // 서버 연동 모드: session_state 폴링 → 서버 상태로 렌더 (2.5초)
   useEffect(() => {
@@ -180,7 +182,18 @@ function App() {
     setAuto: (auto) => CONNECTED ? srv('/auto/', 'POST', { auto: !!auto }) : set({ auto }),
     setLayout: (layout) => set({ layout }),
     manualFill: (court) => set({ modal: { type: 'edit', court, match: null } }), // 수동: 빈 슬롯 편집 모달
-    makeGameFromQueue: (players) => CONNECTED ? srv('/reservations/', 'POST', { participant_ids: players.map((p) => Number(p.id)) }) : set((s) => {
+    makeGameFromQueue: (players) => {
+      if (CONNECTED) {
+        const ids = players.map((p) => Number(p.id));
+        const empty = st.courts.find((c) => !c.match && !c.ace && !c.pendingRemove);
+        if (empty && !st.auto) {
+          const males = players.filter((p) => p.gender === 'M').length;
+          const type = males === 4 ? '남복' : males === 0 ? '여복' : '혼복';
+          return srv('/courts/' + empty.no + '/fill/', 'POST', { participant_ids: ids, discipline: DISC_TO_SRV[type] });
+        }
+        return srv('/reservations/', 'POST', { participant_ids: ids });
+      }
+      return set((s) => {
       // 대기열에서 고른 4명으로 경기 만들기 → 균형 분할 + 종목 추론
       const males = players.filter((p) => p.gender === 'M').length;
       const type = males === 4 ? '남복' : males === 0 ? '여복' : '혼복';
@@ -191,7 +204,8 @@ function App() {
       const empty = !s.auto && s.courts.find((c) => !c.match && !c.pendingRemove && !c.ace);
       if (empty) return { modal: { type: 'edit', court: empty, match: { teamA, teamB, type } } };
       return { pending: [...s.pending, { id: 'g' + Date.now(), teamA, teamB, type }], toast: { kind: 'empty', courtName: '이후 예정', error: '예약됨', detail: '이후 예정에 추가했어요. 코트가 비면 우선 투입돼요.' } };
-    }),
+      });
+    },
     cancelPending: (gid) => CONNECTED ? srv('/reservations/' + gid + '/', 'DELETE') : set((s) => ({ pending: s.pending.filter((g) => g.id !== gid) })),
     setPreset: (preset) => CONNECTED ? srv('/preset/', 'POST', { preset: PRESET_TO_SRV[preset] }) : set({ preset }),
     switchScreen: (screen) => set({ screen }),
