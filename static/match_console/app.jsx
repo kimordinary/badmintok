@@ -87,7 +87,16 @@ function mapServerState(d, prev) {
     match: c.match ? mapServerMatch(c.match) : null,
     ace: !!c.coach, coachId: c.coach ? String(c.coach.participant_id) : undefined,
   }));
-  return { participants, courts, mode: _SRV_MODE[d.discipline_mode] || prev.mode };
+  // 예약(reservations)·파트너(pairs)·파트너신청(partner_requests) 매핑
+  const pmap = {}; participants.forEach((p) => { pmap[p.id] = p; });
+  const plById = (pid) => pmap[String(pid)] || { id: String(pid), name: '', gender: 'M', level: 'D' };
+  const pending = (d.reservations || []).map((r) => {
+    const ply = (r.players || []).map((x) => plById(x.participant_id));
+    return { id: r.id, teamA: ply.slice(0, 2), teamB: ply.slice(2, 4), type: _SRV_DISC[r.discipline] || '혼복' };
+  });
+  const pairs = (d.pairs || []).map((pr) => ({ id: pr.id, members: (pr.members || []).map((m) => String(m.participant_id)), strict: pr.strict }));
+  const pairRequests = (d.partner_requests || []).map((r) => ({ id: r.id, from: String(r.from.participant_id), to: String(r.to.participant_id) }));
+  return { participants, courts, pending, pairs, pairRequests, mode: _SRV_MODE[d.discipline_mode] || prev.mode };
 }
 
 function App() {
@@ -183,7 +192,7 @@ function App() {
       if (empty) return { modal: { type: 'edit', court: empty, match: { teamA, teamB, type } } };
       return { pending: [...s.pending, { id: 'g' + Date.now(), teamA, teamB, type }], toast: { kind: 'empty', courtName: '이후 예정', error: '예약됨', detail: '이후 예정에 추가했어요. 코트가 비면 우선 투입돼요.' } };
     }),
-    cancelPending: (gid) => set((s) => ({ pending: s.pending.filter((g) => g.id !== gid) })),
+    cancelPending: (gid) => CONNECTED ? srv('/reservations/' + gid + '/', 'DELETE') : set((s) => ({ pending: s.pending.filter((g) => g.id !== gid) })),
     setPreset: (preset) => CONNECTED ? srv('/preset/', 'POST', { preset: PRESET_TO_SRV[preset] }) : set({ preset }),
     switchScreen: (screen) => set({ screen }),
     setDevice: (device) => set({ device }),
@@ -337,7 +346,7 @@ function App() {
 
     // 예약 경기(pending) 편집 — 코트에 넣지 않고 예약 명단만 교체 (court 안 건드림)
     openEditPending: (g) => set({ modal: { type: 'edit', pending: g, court: { no: g.id, match: { type: g.type, teamA: g.teamA, teamB: g.teamB }, ace: false }, match: { type: g.type, teamA: g.teamA, teamB: g.teamB } } }),
-    editPending: (pendingId, match) => set((s) => ({
+    editPending: (pendingId, match) => CONNECTED ? (set({ modal: null }), srv('/reservations/' + pendingId + '/', 'PATCH', { participant_ids: [...match.teamA, ...match.teamB].map((p) => Number(p.id)), discipline: DISC_TO_SRV[match.type] })) : set((s) => ({
       pending: (s.pending || []).map((g) => (g.id === pendingId ? { ...g, teamA: match.teamA, teamB: match.teamB, type: match.type } : g)),
       modal: null,
     })),
@@ -380,27 +389,27 @@ function App() {
     openRecord: (p) => set({ modal: { type: 'record', p } }),
 
     // 파트너 묶기 / 해제
-    addPair: (members, strict) => set((s) => {
+    addPair: (members, strict) => CONNECTED ? srv('/pairs/', 'POST', { p1_id: Number(members[0]), p2_id: Number(members[1]), strict: !!strict }) : set((s) => {
       if (!members || members.length !== 2 || members[0] === members[1]) return {};
       const rest = s.pairs.filter((p) => !p.members.some((m) => members.includes(m))); // 이미 묶인 사람은 새로 덮어씀
       return { pairs: [...rest, { id: 'pair' + Date.now(), members: [...members], strict: !!strict }] };
     }),
-    removePair: (pairId) => set((s) => ({ pairs: s.pairs.filter((p) => p.id !== pairId) })),
+    removePair: (pairId) => CONNECTED ? srv('/pairs/' + pairId + '/', 'DELETE') : set((s) => ({ pairs: s.pairs.filter((p) => p.id !== pairId) })),
 
     // 참가자 파트너 신청(승인 대기) → 모임장이 승인/거절
-    requestPair: (fromId, toId) => set((s) => {
+    requestPair: (fromId, toId) => CONNECTED ? srv('/pairs/', 'POST', { p1_id: Number(fromId), p2_id: Number(toId), strict: false }) : set((s) => {
       if (!fromId || !toId || fromId === toId) return {};
       const used = (id) => s.pairs.some((p) => p.members.includes(id)) || s.pairRequests.some((r) => r.from === id || r.to === id);
       if (used(fromId) || used(toId)) return {};
       return { pairRequests: [...s.pairRequests, { id: 'req' + Date.now(), from: fromId, to: toId }] };
     }),
-    approvePairRequest: (reqId) => set((s) => {
+    approvePairRequest: (reqId) => CONNECTED ? srv('/partner-requests/' + reqId + '/approve/', 'POST') : set((s) => {
       const r = s.pairRequests.find((x) => x.id === reqId);
       if (!r) return { pairRequests: s.pairRequests.filter((x) => x.id !== reqId) };
       const rest = s.pairs.filter((p) => !p.members.some((m) => [r.from, r.to].includes(m)));
       return { pairs: [...rest, { id: 'pair' + Date.now(), members: [r.from, r.to], strict: false }], pairRequests: s.pairRequests.filter((x) => x.id !== reqId) };
     }),
-    rejectPairRequest: (reqId) => set((s) => ({ pairRequests: s.pairRequests.filter((x) => x.id !== reqId) })),
+    rejectPairRequest: (reqId) => CONNECTED ? srv('/partner-requests/' + reqId + '/reject/', 'POST') : set((s) => ({ pairRequests: s.pairRequests.filter((x) => x.id !== reqId) })),
 
     // 코치 고정/해제 (코트별, 다중 코치 가능). id=null → courtNo 코치 해제.
     togglePinned: (id, courtNo) => CONNECTED ? srv('/courts/' + courtNo + '/coach/', 'POST', id ? { participant_id: Number(id) } : {}) : set((s) => {
@@ -443,7 +452,7 @@ function App() {
     }),
 
     // 스텝퍼: 개수를 목표치로 맞춤 (증설=빈 코트 추가, 감축=뒤 코트부터 빈 건 제거·경기 중은 pendingRemove)
-    setCourtCount: (target) => set((s) => {
+    setCourtCount: (target) => { if (CONNECTED) { const cur = (st.courts || []).length; const calls = []; if (target > cur) { for (let i = 0; i < target - cur; i++) calls.push(apiCall('/courts/', 'POST', {})); } else { for (let i = cur - 1; i >= target; i--) { const cno = st.courts[i] && st.courts[i].no; if (cno != null) calls.push(apiCall('/courts/' + cno + '/', 'DELETE')); } } return Promise.all(calls).then(refetch).catch((e) => set({ toast: { kind: 'alert', error: '오류', detail: e.message } })); } return set((s) => {
       const t = Math.max(1, target);
       const active = s.courts.filter((c) => !c.pendingRemove);
       if (t > active.length) {
@@ -477,10 +486,11 @@ function App() {
         return { courts, participants };
       }
       return {};
-    }),
+    });
+    },
 
     // 특정 코트 예약제거 토글 (경기 중일 때) / 빈 코트 즉시 제거
-    toggleRemoveCourt: (courtNo) => set((s) => {
+    toggleRemoveCourt: (courtNo) => CONNECTED ? srv('/courts/' + courtNo + '/', 'DELETE') : set((s) => {
       if (s.courts.filter((c) => !c.pendingRemove).length <= 1) return {};
       const target = s.courts.find((c) => c.no === courtNo);
       if (!target) return {};
@@ -492,7 +502,7 @@ function App() {
       };
     }),
     // 코트 이름 변경 (빈 문자열이면 기본 'N번 코트'로 복귀)
-    renameCourt: (courtNo, name) => set((s) => ({
+    renameCourt: (courtNo, name) => CONNECTED ? srv('/courts/' + courtNo + '/', 'PATCH', { name: name }) : set((s) => ({
       courts: s.courts.map((c) => (c.no === courtNo ? { ...c, name: name.trim() || undefined } : c)),
     })),
     undo: () => set((s) => (s.toast && s.toast.undo ? { ...s.toast.undo, toast: null, nowTs: Date.now() } : { toast: null })),
