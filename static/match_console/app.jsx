@@ -31,9 +31,88 @@ function initState() {
   };
 }
 
+// ===== 서버 연동 (schedule_console 임베드 시에만 활성) =====
+const CONNECTED = typeof window !== 'undefined' && window.__BM_SESSION_ID__ != null;
+const API_BASE = (typeof window !== 'undefined' && window.__BM_API_BASE__) || '';
+const CSRF = (typeof window !== 'undefined' && window.__BM_CSRF__) || '';
+
+async function apiCall(path, method, body) {
+  const opt = { method, credentials: 'same-origin', headers: {} };
+  if (method !== 'GET') {
+    opt.headers['X-CSRFToken'] = CSRF;
+    opt.headers['Content-Type'] = 'application/json';
+    if (body != null) opt.body = JSON.stringify(body);
+  }
+  const res = await fetch(API_BASE + path, opt);
+  if (!res.ok) {
+    let d = {}; try { d = await res.json(); } catch (e) {}
+    const err = new Error(d.detail || ('HTTP ' + res.status)); err.data = d; err.status = res.status; throw err;
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+const _srvGender = (g) => (g === 'male' ? 'M' : g === 'female' ? 'F' : '');
+const _srvLevel = (bl) => LEVEL_ORDER[7 - bl] || 'D';   // base_level 7=자강 .. 1=초심
+const _SRV_ATT = { present: '참여중', not_present: '미출석', left: '퇴장' };
+const _SRV_MODE = { all: '모두', mixed: '혼복', singles_gender: '남복/여복' };
+const _SRV_DISC = { mixed: '혼복', mens: '남복', womens: '여복' };
+// 데모 → 서버 (액션 전송용)
+const DISC_TO_SRV = { 혼복: 'mixed', 남복: 'mens', 여복: 'womens' };
+const MODE_TO_SRV = { 모두: 'all', 혼복: 'mixed', '남복/여복': 'singles_gender' };
+const PRESET_TO_SRV = { 밸런스: 'balanced', 경쟁: 'competitive' };
+const LEVEL_TO_CODE = { 자강: 'master', S: 's', A: 'a', B: 'b', C: 'c', D: 'd', 초심: 'beginner' };
+
+function mapServerMatch(m) {
+  const pl = (x) => ({ id: String(x.participant_id), name: x.name, gender: _srvGender(x.gender), level: _srvLevel(x.base_level) });
+  return { type: _SRV_DISC[m.discipline] || '혼복', teamA: (m.team1 || []).map(pl), teamB: (m.team2 || []).map(pl), startedAt: m.started_at ? new Date(m.started_at).getTime() : null };
+}
+
+// 서버 session_state → 데모 UI 상태(participants/courts/mode) 매핑
+function mapServerState(d, prev) {
+  const partCourt = {};
+  (d.courts || []).forEach((c) => {
+    if (c.match) [...(c.match.team1 || []), ...(c.match.team2 || [])].forEach((pl) => { partCourt[pl.participant_id] = c.index; });
+    if (c.coach) partCourt[c.coach.participant_id] = c.index;
+  });
+  const participants = (d.participants || []).map((p) => ({
+    id: String(p.id), name: p.name, gender: _srvGender(p.gender), level: _srvLevel(p.base_level),
+    status: _SRV_ATT[p.attendance] || '미출석',
+    court: partCourt[p.id] != null ? partCourt[p.id] : null, team: null,
+    games: { 혼복: p.games_mixed || 0, 남복: p.games_mens || 0, 여복: p.games_womens || 0 },
+    totalGames: p.total_games || 0, lastFinished: null,
+    partnerCount: p.partner_count || {}, opponentCount: p.opponent_count || {},
+  }));
+  const courts = (d.courts || []).map((c) => ({
+    no: c.index, name: c.name || undefined,
+    match: c.match ? mapServerMatch(c.match) : null,
+    ace: !!c.coach, coachId: c.coach ? String(c.coach.participant_id) : undefined,
+  }));
+  return { participants, courts, mode: _SRV_MODE[d.discipline_mode] || prev.mode };
+}
+
 function App() {
   const [st, setSt] = useState(initState);
   const set = (patch) => setSt((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }));
+
+  // 서버 상태 즉시 재조회 (액션 직후 낙관적 갱신 대신 서버 정본 반영)
+  const refetch = () => apiCall('/', 'GET')
+    .then((d) => d && setSt((s) => ({ ...s, ...mapServerState(d, s) })))
+    .catch(() => {});
+  // 액션 API 헬퍼: 성공 시 재조회, 실패 시 토스트
+  const srv = (p, m, b) => apiCall(p, m, b).then(refetch).catch((e) =>
+    set({ toast: { kind: 'alert', error: '오류', detail: e.message || '요청 실패' } }));
+
+  // 서버 연동 모드: session_state 폴링 → 서버 상태로 렌더 (2.5초)
+  useEffect(() => {
+    if (!CONNECTED) return;
+    let alive = true;
+    const poll = () => apiCall('/', 'GET')
+      .then((d) => { if (alive && d) setSt((s) => ({ ...s, ...mapServerState(d, s) })); })
+      .catch(() => {});
+    poll();
+    const t = setInterval(poll, 2500);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
 
   // 시간 흐름 (휴식시간 표시 갱신)
   useEffect(() => {
@@ -75,7 +154,7 @@ function App() {
   };
 
   const actions = {
-    setMode: (mode) => set((s) => {
+    setMode: (mode) => CONNECTED ? srv('/mode/', 'POST', { discipline_mode: MODE_TO_SRV[mode] }) : set((s) => {
       // 혼복으로 바꿀 때 성비가 안 맞으면(적은 성별이 코트를 못 채움) 확인 모달
       if (mode === '혼복') {
         const present = s.participants.filter((p) => p.status === '참여중');
@@ -92,7 +171,7 @@ function App() {
     setAuto: (auto) => set({ auto }),
     setLayout: (layout) => set({ layout }),
     manualFill: (court) => set({ modal: { type: 'edit', court, match: null } }), // 수동: 빈 슬롯 편집 모달
-    makeGameFromQueue: (players) => set((s) => {
+    makeGameFromQueue: (players) => CONNECTED ? srv('/reservations/', 'POST', { participant_ids: players.map((p) => Number(p.id)) }) : set((s) => {
       // 대기열에서 고른 4명으로 경기 만들기 → 균형 분할 + 종목 추론
       const males = players.filter((p) => p.gender === 'M').length;
       const type = males === 4 ? '남복' : males === 0 ? '여복' : '혼복';
@@ -105,7 +184,7 @@ function App() {
       return { pending: [...s.pending, { id: 'g' + Date.now(), teamA, teamB, type }], toast: { kind: 'empty', courtName: '이후 예정', error: '예약됨', detail: '이후 예정에 추가했어요. 코트가 비면 우선 투입돼요.' } };
     }),
     cancelPending: (gid) => set((s) => ({ pending: s.pending.filter((g) => g.id !== gid) })),
-    setPreset: (preset) => set({ preset }),
+    setPreset: (preset) => CONNECTED ? srv('/preset/', 'POST', { preset: PRESET_TO_SRV[preset] }) : set({ preset }),
     switchScreen: (screen) => set({ screen }),
     setDevice: (device) => set({ device }),
     setTheme: (theme) => set({ theme }),
@@ -119,7 +198,12 @@ function App() {
       set({ nowTs: Date.now() });
     },
 
-    setStatus: (id, status) => set((s) => {
+    setStatus: (id, status) => {
+      if (CONNECTED) {
+        const att = status === '참여중' ? 'present' : status === '퇴장' ? 'left' : 'not_present';
+        return srv('/participants/' + id + '/attendance/', 'POST', { attendance: att });
+      }
+      return set((s) => {
       // 경기 중(실제 코트 배정·코치)인 사람은 바로 퇴장/미출석 불가 → 유령 방지. 먼저 대타 교체하거나 경기 종료 후 처리
       if (status === '퇴장' || status === '미출석') {
         const courtOf = s.courts.find((c) => (c.match && [...c.match.teamA, ...c.match.teamB].some((p) => p.id === id)) || (c.ace && c.coachId === id));
@@ -129,9 +213,10 @@ function App() {
         }
       }
       return { participants: s.participants.map((p) => (p.id === id ? { ...p, status } : p)) };
-    }),
+      });
+    },
 
-    endMatch: (court) => set((s) => {
+    endMatch: (court) => CONNECTED ? srv('/courts/' + court.no + '/end/', 'POST') : set((s) => {
       const now = Date.now();
       const m = s.courts.find((c) => c.no === court.no).match;
       if (!m) return {};
@@ -236,6 +321,10 @@ function App() {
 
     startMatch: (court, match, editFlag) => {
       if (editFlag) { set({ modal: { type: 'edit', court, match } }); return; }
+      if (CONNECTED) {
+        const ids = [...match.teamA, ...match.teamB].map((p) => Number(p.id));
+        return srv('/courts/' + court.no + '/fill/', 'POST', { participant_ids: ids, discipline: DISC_TO_SRV[match.type] });
+      }
       set((s) => applyMatch(s, court, match));
     },
 
@@ -244,7 +333,7 @@ function App() {
       set({ modal: { type: 'edit', court, match: court.match } });
     },
 
-    confirmEdit: (court, match) => set((s) => ({ ...applyMatch(s, court, match), modal: null })),
+    confirmEdit: (court, match) => CONNECTED ? (set({ modal: null }), srv('/courts/' + court.no + '/fill/', 'POST', { participant_ids: [...match.teamA, ...match.teamB].map((p) => Number(p.id)), discipline: DISC_TO_SRV[match.type] })) : set((s) => ({ ...applyMatch(s, court, match), modal: null })),
 
     // 예약 경기(pending) 편집 — 코트에 넣지 않고 예약 명단만 교체 (court 안 건드림)
     openEditPending: (g) => set({ modal: { type: 'edit', pending: g, court: { no: g.id, match: { type: g.type, teamA: g.teamA, teamB: g.teamB }, ace: false }, match: { type: g.type, teamA: g.teamA, teamB: g.teamB } } }),
@@ -268,7 +357,7 @@ function App() {
     closeModal: () => set({ modal: null }),
 
     // 세션 리셋: 'game'=경기·이력만 초기화(사람·출석 유지) / 'full'=게스트 삭제+출석 초기화(최초 화면)
-    reset: (mode) => set((s) => {
+    reset: (mode) => CONNECTED ? srv('/reset/', 'POST', { mode }) : set((s) => {
       const clearGames = (p) => ({
         ...p, court: null, team: null,
         games: { 혼복: 0, 남복: 0, 여복: 0 }, totalGames: 0,
@@ -314,7 +403,7 @@ function App() {
     rejectPairRequest: (reqId) => set((s) => ({ pairRequests: s.pairRequests.filter((x) => x.id !== reqId) })),
 
     // 코치 고정/해제 (코트별, 다중 코치 가능). id=null → courtNo 코치 해제.
-    togglePinned: (id, courtNo) => set((s) => {
+    togglePinned: (id, courtNo) => CONNECTED ? srv('/courts/' + courtNo + '/coach/', 'POST', id ? { participant_id: Number(id) } : {}) : set((s) => {
       let participants = s.participants.map((p) => ({ ...p }));
       const freeCourt = (no) => { participants = participants.map((p) => (p.court === no ? { ...p, court: null, team: null } : p)); };
       let courts = s.courts.map((c) => ({ ...c }));
@@ -331,7 +420,7 @@ function App() {
     }),
 
     // 명단에 없는 임시 참가자 추가 (세션 한정). 바로 참여중으로 편입.
-    addParticipant: (info) => set((s) => {
+    addParticipant: (info) => CONNECTED ? (set({ modal: null }), srv('/participants/', 'POST', { name: info.name, gender: info.gender === 'M' ? 'male' : 'female', level: LEVEL_TO_CODE[info.level] })) : set((s) => {
       const name = (info.name || '').trim();
       if (!name || !info.level || !info.gender) return {};
       const np = {
@@ -344,7 +433,7 @@ function App() {
     }),
 
     // 참가자 정보 편집 (이름/급수/성별). 출석 화면에서 호출.
-    editParticipant: (id, info) => set((s) => {
+    editParticipant: (id, info) => CONNECTED ? (set({ modal: null }), srv('/participants/' + id + '/', 'PATCH', { name: info.name, gender: info.gender === 'M' ? 'male' : (info.gender === 'F' ? 'female' : undefined), level: LEVEL_TO_CODE[info.level] })) : set((s) => {
       const name = (info.name || '').trim();
       if (!name || !info.level || !info.gender) return {};
       return {

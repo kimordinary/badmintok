@@ -59,7 +59,12 @@
 <div id="root"></div>
 
 <!-- 실제 참가자 주입 (DB 승인자 → 대진 풀) -->
-<script>window.__BM_PARTICIPANTS__ = {{ players_json|safe }};</script>
+<script>
+window.__BM_PARTICIPANTS__ = {{ players_json|safe }};
+window.__BM_SESSION_ID__ = {{ session_id }};
+window.__BM_CSRF__ = "{{ csrf_token }}";
+window.__BM_API_BASE__ = "/api/bands/match/{{ session_id }}";
+</script>
 
 <!-- React 18 + Babel standalone -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
