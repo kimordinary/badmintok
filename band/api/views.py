@@ -1277,12 +1277,12 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
         BandScheduleApplication, id=application_id, schedule=schedule, status='pending'
     )
 
-    # 정원 확인 — 정원제면 신청자 급수·성별 칸 기준, 아니면 총원
+    # 정원 확인 (4모드: 급수/성별/급수+성별/총원) — 초과 시 승인 대신 대기명단 자동 배치
     app_profile = getattr(application.user, 'profile', None)
+    _lv = getattr(app_profile, 'badminton_level', '') or ''
+    _g = getattr(app_profile, 'gender', '') or ''
     if schedule.use_level_quota:
         lq = schedule.level_quota or {}
-        _lv = getattr(app_profile, 'badminton_level', '') or ''
-        _g = getattr(app_profile, 'gender', '') or ''
         if schedule.quota_by_gender:
             cell_quota = int(lq.get(_lv, {}).get(_g, 0) or 0)
             cell_approved = schedule.applications.filter(
@@ -1291,26 +1291,37 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
             cell_quota = int(lq.get(_lv, {}).get('total', 0) or 0)
             cell_approved = schedule.applications.filter(
                 status='approved', user__profile__badminton_level=_lv).count()
-        if cell_approved >= cell_quota:
-            return Response({'error': '해당 급수 정원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        is_full = cell_approved >= cell_quota
     elif schedule.quota_by_gender:
         gq = schedule.gender_quota or {}
-        _g = getattr(app_profile, 'gender', '') or ''
-        if schedule.applications.filter(status='approved', user__profile__gender=_g).count() >= int(gq.get(_g, 0) or 0):
-            return Response({'error': '해당 성별 정원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-    elif schedule.max_participants and schedule.current_participants >= schedule.max_participants:
-        return Response({'error': '참가 인원이 마감되었습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        is_full = schedule.applications.filter(
+            status='approved', user__profile__gender=_g).count() >= int(gq.get(_g, 0) or 0)
+    else:
+        is_full = bool(schedule.max_participants) and schedule.current_participants >= schedule.max_participants
+
+    if is_full:
+        # 정원 초과 → 대기명단(맨 뒤)으로 자동 배치. 자리 회수는 기존 promote(수동)로.
+        application.status = 'waiting'
+        application.applied_at = timezone.now()
+        application.reviewed_at = timezone.now()
+        application.reviewed_by = request.user
+        application.save(update_fields=['status', 'applied_at', 'reviewed_at', 'reviewed_by'])
+        wids = list(schedule.applications.filter(status='waiting').order_by('applied_at')
+                    .values_list('user_id', flat=True))
+        pos = (wids.index(application.user_id) + 1) if application.user_id in wids else None
+        return Response({
+            'message': '정원이 차서 대기명단에 배치했어요.',
+            'result': 'waiting', 'waiting_position': pos,
+        }, status=status.HTTP_200_OK)
 
     application.status = 'approved'
     application.reviewed_at = timezone.now()
     application.reviewed_by = request.user
     application.save(update_fields=['status', 'reviewed_at', 'reviewed_by'])
-
-    # 참가 인원 증가
     schedule.current_participants += 1
     schedule.save(update_fields=['current_participants'])
 
-    return Response({'message': '신청이 승인되었습니다.'}, status=status.HTTP_200_OK)
+    return Response({'message': '신청이 승인되었습니다.', 'result': 'approved'}, status=status.HTTP_200_OK)
 
 
 @csrf_exempt

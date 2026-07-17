@@ -2612,20 +2612,46 @@ def schedule_application_approve(request, band_id, schedule_id, application_id):
         messages.error(request, "이미 처리된 신청입니다.")
         return redirect("band:detail", band_id=band_id)
     
-    # 인원 체크
-    if schedule.max_participants and schedule.current_participants >= schedule.max_participants:
-        messages.error(request, "참가 인원이 마감되었습니다.")
-        return redirect("band:detail", band_id=band_id)
-    
+    # 정원 확인 (4모드) — 초과 시 승인 대신 대기명단 자동 배치
+    profile = getattr(application.user, "profile", None)
+    lvl = getattr(profile, "badminton_level", "") or ""
+    gender = getattr(profile, "gender", "") or ""
+    if schedule.use_level_quota:
+        lq = schedule.level_quota or {}
+        if schedule.quota_by_gender:
+            cell_quota = int(lq.get(lvl, {}).get(gender, 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status="approved", user__profile__badminton_level=lvl, user__profile__gender=gender).count()
+        else:
+            cell_quota = int(lq.get(lvl, {}).get("total", 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status="approved", user__profile__badminton_level=lvl).count()
+        is_full = cell_approved >= cell_quota
+    elif schedule.quota_by_gender:
+        gq = schedule.gender_quota or {}
+        is_full = schedule.applications.filter(
+            status="approved", user__profile__gender=gender).count() >= int(gq.get(gender, 0) or 0)
+    else:
+        is_full = bool(schedule.max_participants) and schedule.current_participants >= schedule.max_participants
+
+    if is_full:
+        application.status = "waiting"
+        application.applied_at = timezone.now()
+        application.reviewed_at = timezone.now()
+        application.reviewed_by = request.user
+        application.save()
+        messages.success(request, "정원이 차서 대기명단에 배치했어요.")
+        return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
+
     # 승인 처리
     application.status = "approved"
     application.reviewed_at = timezone.now()
     application.reviewed_by = request.user
     application.save()
-    
+
     schedule.current_participants += 1
     schedule.save(update_fields=["current_participants"])
-    
+
     messages.success(request, "신청이 승인되었습니다.")
     return redirect("band:schedule_detail", band_id=band_id, schedule_id=schedule_id)
 
