@@ -266,6 +266,24 @@ function App() {
     }),
 
     closeModal: () => set({ modal: null }),
+
+    // 세션 리셋: 'game'=경기·이력만 초기화(사람·출석 유지) / 'full'=게스트 삭제+출석 초기화(최초 화면)
+    reset: (mode) => set((s) => {
+      const clearGames = (p) => ({
+        ...p, court: null, team: null,
+        games: { 혼복: 0, 남복: 0, 여복: 0 }, totalGames: 0,
+        lastFinished: null, partnerCount: {}, opponentCount: {},
+      });
+      const courts = s.courts.map((c) => ({ ...c, match: null, ace: false, coachId: undefined }));
+      let participants = s.participants.map(clearGames);
+      if (mode === 'full') {
+        participants = participants.filter((p) => !p.temp).map((p) => ({ ...p, status: '미출석' }));
+      }
+      return {
+        courts, participants, pairs: [], pairRequests: [], pending: [], pinnedMet: {}, modal: null,
+      };
+    }),
+
     openCheckin: () => set({ modal: { type: 'checkin' } }),
     openSettings: () => set({ modal: { type: 'settings' } }),
     openAddParticipant: () => set({ modal: { type: 'addParticipant' } }),
@@ -452,7 +470,7 @@ function App() {
         <CheckinModal participants={st.participants} onCheckin={(id) => actions.setStatus(id, '참여중')} onClose={actions.closeModal} />
       )}
       {st.modal && st.modal.type === 'settings' && (
-        <SettingsModal courts={st.courts} onSet={actions.setCourtCount} onToggleRemove={actions.toggleRemoveCourt} onRename={actions.renameCourt} onClose={actions.closeModal} />
+        <SettingsModal courts={st.courts} onSet={actions.setCourtCount} onToggleRemove={actions.toggleRemoveCourt} onRename={actions.renameCourt} onReset={actions.reset} onClose={actions.closeModal} />
       )}
       {st.modal && st.modal.type === 'addParticipant' && (
         <AddParticipantModal onAdd={actions.addParticipant} onClose={actions.closeModal} />

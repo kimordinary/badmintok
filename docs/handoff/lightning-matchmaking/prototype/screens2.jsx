@@ -890,7 +890,7 @@ function courtLabel(c) {
 }
 
 // ---------- 코트 수 설정 모달 ----------
-function SettingsModal({ courts, onSet, onToggleRemove, onRename, onClose }) {
+function SettingsModal({ courts, onSet, onToggleRemove, onRename, onReset, onClose }) {
   const active = courts.filter((c) => !c.pendingRemove).length;
   const sorted = [...courts].sort((a, b) => a.no - b.no);
   const [editing, setEditing] = useState(null); // 편집 중인 코트 no
@@ -968,7 +968,17 @@ function SettingsModal({ courts, onSet, onToggleRemove, onRename, onClose }) {
         <div style={{ fontSize: 11.5, color: 'var(--muted)', fontWeight: 600, lineHeight: 1.5, marginBottom: 16 }}>
           경기 중인 코트를 줄이면 진행 경기는 그대로 두고 <b style={{ color: 'var(--warn)' }}>종료 후 자동 제거</b>됩니다. 빈 코트는 즉시 사라집니다.
         </div>
-        <Btn variant="primary" size="lg" full onClick={onClose}>완료</Btn>
+        {/* 위험 구역 — 세션 리셋 (되돌릴 수 없음) */}
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line-2)' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--danger)', marginBottom: 10 }}>⚠ 위험 구역 — 되돌릴 수 없어요</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { if (window.confirm('경기 기록만 초기화합니다. 참가자·출석은 그대로예요. 계속할까요?')) onReset && onReset('game'); }}
+              style={{ flex: 1, padding: '11px', borderRadius: 11, background: 'var(--warn-tint)', color: 'var(--warn)', border: '1px solid var(--warn)', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>경기만 리셋</button>
+            <button onClick={() => { if (window.confirm('완전 리셋합니다. 현장 추가 인원 삭제 + 전원 출석 초기화(최초 화면)돼요. 계속할까요?')) onReset && onReset('full'); }}
+              style={{ flex: 1, padding: '11px', borderRadius: 11, background: 'var(--surface)', color: 'var(--danger)', border: '1px solid var(--danger)', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>완전 리셋 — 처음부터</button>
+          </div>
+        </div>
+        <Btn variant="primary" size="lg" full onClick={onClose} style={{ marginTop: 12 }}>완료</Btn>
       </div>
     </ModalShell>
   );
