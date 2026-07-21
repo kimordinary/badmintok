@@ -224,6 +224,8 @@ class ContestPreviewView(ListView):
                 "multiDay": multi_day,
                 "dday": dday,
                 "status": status,
+                # 목록 숨김 기준: 접수 마감(dday)이 아니라 대회 종료일 기준
+                "ended": 1 if end < today else 0,
             })
 
         items.sort(key=lambda x: x["date"])

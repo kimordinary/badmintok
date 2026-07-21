@@ -235,6 +235,7 @@
              data-qual="{% if item.grade == '승급' %}y{% else %}n{% endif %}"
              data-search="{{ item.name }} {{ item.region }} {{ item.venue }}"
              data-dday="{{ item.dday|default_if_none:'' }}"
+             data-ended="{{ item.ended }}"
              data-deadline="{{ item.deadline|default_if_none:'' }}">
             <div class="row-date">
               <div class="row-datenum"><time datetime="{{ item.date }}">{{ item.day }}</time>{% if item.multiDay %}<time class="row-dateend" datetime="{{ item.endDate }}">~{{ item.endDay }}</time>{% endif %}</div>
@@ -318,8 +319,7 @@
   // ── 필터 적용 ──
   function baseMatch(r){
     if(!state.showClosed){
-      var dd = r.getAttribute('data-dday');
-      if(dd!=='' && parseInt(dd,10)<0) return false;  // 접수 마감 대회 숨김
+      if(r.getAttribute('data-ended')==='1') return false;  // 종료된 대회만 숨김 (접수 마감 아님)
     }
     if(state.month!=='all' && r.getAttribute('data-month')!==state.month) return false;
     if(state.qual!=='all' && r.getAttribute('data-qual')!==state.qual) return false;
