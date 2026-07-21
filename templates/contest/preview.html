@@ -155,7 +155,7 @@
   .row-loc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .row-ico{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round;opacity:.6}
   .row-ico--hs{stroke-width:1.5}
-  .row.st-closed{opacity:.55}
+  .row.is-ended{opacity:.55}
   .row.hide{display:none}
   .month-group.hide{display:none}
 
@@ -296,6 +296,7 @@
   rows.forEach(function(r){
     var st = statusOf(r.getAttribute('data-dday'));
     r.classList.add('st-'+st.k);
+    if(r.getAttribute('data-ended')==='1') r.classList.add('is-ended');  // 종료 대회만 흐리게
   });
 
   // ── 상태 ──
