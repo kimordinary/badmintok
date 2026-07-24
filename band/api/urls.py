@@ -75,9 +75,11 @@ urlpatterns = [
     path('match/<int:session_id>/courts/<int:index>/fill/', match_views.fill_court, name='match_fill'),
     path('match/<int:session_id>/courts/<int:index>/end/', match_views.end_court, name='match_end_court'),
     path('match/<int:session_id>/courts/<int:index>/coach/', match_views.set_coach, name='match_set_coach'),
+    path('match/<int:session_id>/courts/<int:index>/coach-rest/', match_views.set_coach_rest, name='match_set_coach_rest'),
     # 코트 설정(추가/이름·제거) + 임시 인원 추가
     path('match/<int:session_id>/courts/', match_views.add_court, name='match_court_add'),
     path('match/<int:session_id>/courts/<int:index>/', match_views.court_detail, name='match_court_detail'),
+    path('match/<int:session_id>/matches/', match_views.match_history, name='match_history'),
     path('match/<int:session_id>/participants/', match_views.add_participant, name='match_participant_add'),
     path('match/<int:session_id>/participants/<int:pid>/', match_views.edit_participant, name='match_participant_edit'),
     path('match/<int:session_id>/participants/sync/', match_views.sync_participants, name='match_participant_sync'),
@@ -101,4 +103,5 @@ urlpatterns = [
     # 대진 — 예약 경기(이후 예정)
     path('match/<int:session_id>/reservations/', match_views.create_reservation, name='match_reservation_create'),
     path('match/<int:session_id>/reservations/<int:reservation_id>/', match_views.reservation_detail, name='match_reservation_detail'),
+    path('match/<int:session_id>/reservations/<int:reservation_id>/move/', match_views.move_reservation, name='match_reservation_move'),
 ]

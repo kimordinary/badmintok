@@ -4,12 +4,19 @@ from band.matchmaking.selection import queue_order
 
 
 def serialize_reservation(r):
+    players = list(r.players.all())
+    disc = r.discipline
+    if not disc:
+        # 종목 미지정 예약은 성별로 자동 판정(실제 투입 로직과 동일) → 표시도 일치
+        males = sum(1 for rp in players
+                    if rp.participant.live_level_gender()[1] == "male")
+        disc = "mens" if males == 4 else ("womens" if males == 0 else "mixed")
     return {
         "id": r.id,
-        "discipline": r.discipline or None,
+        "discipline": disc,
         "players": [
             {"participant_id": rp.participant_id, "name": rp.participant.display_real_name}
-            for rp in r.players.all()
+            for rp in players
         ],
     }
 
@@ -50,6 +57,7 @@ def serialize_participant(sp, stats=None):
         "games_mens": sp.games_mens,
         "games_womens": sp.games_womens,
         "total_games": sp.games_mixed + sp.games_mens + sp.games_womens,
+        "last_game_ended_at": sp.last_game_ended_at.isoformat() if sp.last_game_ended_at else None,
     }
     # 경기기록 시트용 파트너/상대 이력 {상대 participant_id: 횟수} (0회 제외)
     if stats is not None:
@@ -76,6 +84,39 @@ def serialize_match(match):
         "team1": teams[1],
         "team2": teams[2],
     }
+
+
+def serialize_match_history(match):
+    """게임 보드용 — 경기 + 코트·종료시각."""
+    d = serialize_match(match)
+    d["court_index"] = match.court.index
+    d["court_name"] = match.court.name or None
+    d["ended_at"] = match.ended_at.isoformat() if getattr(match, "ended_at", None) else None
+    return d
+
+
+def serialize_next_lineup(lineup, session):
+    """확정된 다음 1경기(자동 모드) — participant id 스냅샷에 이름·급수·성별을 붙여 노출."""
+    if not lineup:
+        return None
+    ids = list(lineup.get("team1", [])) + list(lineup.get("team2", []))
+    sps = {sp.id: sp for sp in session.participants.filter(
+        id__in=ids).select_related("user__profile")}
+
+    def player(pid):
+        sp = sps.get(pid)
+        if sp is None:
+            return None
+        base_level, gender = sp.live_level_gender()
+        return {"participant_id": sp.id, "name": sp.display_real_name,
+                "base_level": base_level, "gender": gender}
+
+    def team(t):
+        return [p for p in (player(pid) for pid in t) if p]
+
+    return {"discipline": lineup["discipline"],
+            "team1": team(lineup.get("team1", [])),
+            "team2": team(lineup.get("team2", []))}
 
 
 def serialize_session(session):
@@ -113,6 +154,7 @@ def serialize_session(session):
             "name": court.name or None,
             "match": serialize_match(current) if current else None,
             "coach": coach,
+            "coach_resting": court.coach_resting,
         })
     # 코치는 본인 코트 고정, 예약 멤버는 확보 → 일반 대기열에서 제외
     reserved_ids = reserved_participant_ids(session)
@@ -125,6 +167,11 @@ def serialize_session(session):
         status=PartnerRequest.Status.PENDING).select_related(
         "from_participant__user", "to_participant__user")
     reservations = session.reservations.prefetch_related("players__participant__user").all()
+    # 과거 동일 조합 경고용(수동 경기 생성) — 완료 경기의 정렬된 4명 조합
+    past_combos = [
+        sorted(mp.participant_id for mp in m.players.all())
+        for m in Match.objects.filter(session=session, status="done").prefetch_related("players")
+    ]
     return {
         "id": session.id,
         "status": session.status,
@@ -138,6 +185,8 @@ def serialize_session(session):
         "pairs": [serialize_pair(pr) for pr in pairs],
         "partner_requests": [serialize_partner_request(r) for r in pending],
         "reservations": [serialize_reservation(r) for r in reservations],
+        "next_lineup": serialize_next_lineup(session.next_lineup, session),
+        "past_combos": past_combos,
     }
 
 
@@ -169,12 +218,30 @@ def serialize_my_status(session, sp, user=None):
 
     empty_courts = max(0, session.courts.count() - len(playing_matches))
     playing = current is not None
-    # 다음 경기 후보: 대기열 상위 (빈 코트 × 4) 또는 최소 4명 안에 들면 곧 입장
-    up_next = (not playing) and queue_position is not None and \
-        queue_position <= max(4, empty_courts * 4)
+
+    # 다음 투입 예정 경기의 멤버면 '곧 경기에요' 확정. 투입 순서(_fill_court)와 동일: 확정 다음경기 우선 → 예약.
+    next_ids = set()
+    if session.auto and session.next_lineup:
+        nl = session.next_lineup
+        next_ids = set(nl.get("team1", []) + nl.get("team2", []))
+    if not next_ids:
+        for r in session.reservations.prefetch_related("players__participant").all():
+            rps = [rp.participant for rp in r.players.all()]
+            if len(rps) == 4 and all(
+                    p.attendance == SessionParticipant.Attendance.PRESENT
+                    and p.id not in on_court_ids for p in rps):
+                next_ids = {p.id for p in rps}
+                break
+    in_next = bool(sp) and sp.id in next_ids and not playing
+
+    # 다음 경기 후보: 확정/예약 멤버이거나, 대기열 상위(빈 코트 × 4) 안이면 곧 입장
+    up_next = in_next or ((not playing) and queue_position is not None
+                          and queue_position <= max(4, empty_courts * 4))
     # 대기 단계 신호 (앱 화면 표시용): 0=곧 입장, 1=다음다음, None=그 외/해당없음
     up_next_level = None
-    if not playing and queue_position is not None:
+    if in_next:
+        up_next_level = 0
+    elif not playing and queue_position is not None:
         _grp = max(4, empty_courts * 4)
         if queue_position <= _grp:
             up_next_level = 0

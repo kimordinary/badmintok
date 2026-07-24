@@ -30,6 +30,9 @@ class MatchSession(models.Model):
     court_count = models.IntegerField(default=4)
     # 자동 배치(경기 종료 시 다음 경기 자동 투입) on/off. False(수동)면 예약만 투입하고 코트는 비워둔다.
     auto = models.BooleanField(default=True)
+    # 자동 모드 '다음 1경기' 확정 스냅샷 {discipline, team1:[pid,pid], team2:[pid,pid]} | null.
+    # 빈 코트가 생기면 우선 투입되고 즉시 재확정된다(흔들림 방지 + 참가자 '곧 경기에요' 정확도).
+    next_lineup = models.JSONField(null=True, blank=True, default=None)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="match_sessions")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -113,6 +116,8 @@ class Court(models.Model):
     coach = models.ForeignKey(
         SessionParticipant, null=True, blank=True,
         on_delete=models.SET_NULL, related_name="coaching_courts")
+    # '이번 판 코치 쉼' 1회성 플래그 — 다음 채우기 때 코치 제외하고 일반 경기로, 소비 후 코치 복귀
+    coach_resting = models.BooleanField(default=False)
 
     class Meta:
         unique_together = [["session", "index"]]
@@ -198,11 +203,13 @@ class ReservedMatch(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
+    # 투입 우선순위(작을수록 먼저). 운영자가 ↑↓로 순서 변경. 동률은 created_at.
+    order = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = _("예약 경기")
         verbose_name_plural = _("예약 경기")
-        ordering = ["created_at"]
+        ordering = ["order", "created_at"]
 
 
 class ReservedMatchPlayer(models.Model):

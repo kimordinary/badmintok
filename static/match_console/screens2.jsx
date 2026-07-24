@@ -536,7 +536,7 @@ function ModalShell({ children, onClose, width = 460, center = false }) {
       display: 'flex', alignItems: sheet ? 'flex-end' : 'center', justifyContent: 'center', zIndex: 50, animation: 'fadeIn .18s ease',
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
-        width: sheet ? '100%' : width, maxWidth: sheet ? '100%' : '92%', maxHeight: sheet ? '90%' : '88%', overflowY: 'auto', background: 'var(--surface)',
+        width: sheet ? '100%' : width, maxWidth: sheet ? '100%' : '92%', maxHeight: sheet ? '90%' : '88%', overflowY: sheet ? 'hidden' : 'auto', display: sheet ? 'flex' : 'block', flexDirection: 'column', background: 'var(--surface)',
         borderRadius: sheet ? '26px 26px 0 0' : 22, boxShadow: 'var(--sh-3)',
         animation: sheet ? 'sheetUp .3s cubic-bezier(.16,1,.3,1) both' : 'popIn .24s ease both',
       }}>
@@ -641,7 +641,7 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
   const coachSet = new Set(coachIds || []);
   // 코치 후보: 대기 중(court==null)이거나 이미 코치인 자강·S. 일반 경기 중인 사람은 빼면 원래 코트에 팬텀으로 남는 것 방지
   const candidates = (participants || []).filter((p) => p.status === '참여중' && (p.level === '자강' || p.level === 'S') && (p.court == null || coachSet.has(p.id)));
-  const isAce = !!court.ace;
+  const [isAce] = useState(!!(court.ace || court.coachId)); // 열 때 코치 코트였는지 고정(해제해도 모달 성격 유지)
   const thisCoach = isAce && court.coachId ? (participants || []).find((p) => p.id === court.coachId) : null;
   const pin = (cid) => onTogglePin && onTogglePin(cid, court.no); // togglePinned가 모달 닫음
   const unpin = () => onTogglePin && onTogglePin(null, court.no);
@@ -669,9 +669,15 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
         <div style={{ padding: 24 }}>
           <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: '-.03em', color: 'var(--ink)' }}>{court.name || court.no + '번 코트'} · 👑 코치 고정</div>
           <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginTop: 4, marginBottom: 18 }}>코치 고정 코트예요. 코치를 바꾸거나 해제할 수 있어요.</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: '#eef0ff', border: '1px solid #d9ddff', marginBottom: 16 }}>
-            <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--hl)' }}>{thisCoach ? thisCoach.name : '코치'} {thisCoach ? <span style={{ fontWeight: 700 }}>({thisCoach.level})</span> : null} 고정 중</span>
-            <button onClick={unpin} style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: 9, background: 'var(--surface)', border: '1px solid var(--line-2)', color: 'var(--danger)', fontSize: 13, fontWeight: 800 }}>해제</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: thisCoach ? '#eef0ff' : 'var(--surface-3)', border: `1px solid ${thisCoach ? '#d9ddff' : 'var(--line-2)'}`, marginBottom: 16 }}>
+            {thisCoach ? (
+              <>
+                <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--hl)' }}>{thisCoach.name} <span style={{ fontWeight: 700 }}>({thisCoach.level})</span> 고정 중</span>
+                <button onClick={unpin} style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: 9, background: 'var(--surface)', border: '1px solid var(--line-2)', color: 'var(--danger)', fontSize: 13, fontWeight: 800 }}>해제</button>
+              </>
+            ) : (
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--muted)' }}>코치가 해제됐어요. 아래에서 다시 지정할 수 있어요.</span>
+            )}
           </div>
           <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', marginBottom: 8 }}>코치 변경</div>
           <CoachList />
@@ -791,6 +797,7 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
                   <button key={b.id} onClick={() => replace(b)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--line)', textAlign: 'left', minWidth: 0 }}>
                     <LevelChip level={b.level} size={26} />
                     <NameWithGender p={b} size={16.5} />
+                    {b.court != null && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--ink-2)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>게임 중</span>}
                     <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{b.totalGames}경기</span>
                   </button>
                 ))}
@@ -882,7 +889,70 @@ function HonWarnModal({ male, female, device, onResolve, onIgnore }) {
   );
 }
 
-Object.assign(window, { AttendanceScreen, CountsScreen, AlertModal, EditModal, ModalShell, STATUS_STYLE, CallToast, CheckinModal, SettingsModal, HonWarnModal, courtLabel });
+// 게임 보드 — 진행+완료 경기를 최신순 리스트 (경기 기록판)
+function GameBoard({ history, onBack }) {
+  const [q, setQ] = useState('');
+  const hist = history || [];
+  const done = hist.filter((m) => m.status === 'done').length;
+  const DISC = { mixed: '혼복', mens: '남복', womens: '여복' };
+  const query = q.trim();
+  const filtered = query
+    ? hist.filter((m) => [].concat(m.team1 || [], m.team2 || []).some((p) => (p.name || '').includes(query)))
+    : hist;
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', background: 'var(--surface-2)' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '22px 24px 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <button onClick={onBack} style={{ padding: '7px 13px', borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--line-2)', fontSize: 13, fontWeight: 800, color: 'var(--ink-2)', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>← 운영 화면</button>
+          <div style={{ fontSize: 21, fontWeight: 900, color: 'var(--ink)', letterSpacing: '-.03em' }}>경기 기록</div>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 검색" style={{ marginLeft: 'auto', width: 200, padding: '9px 13px', borderRadius: 10, border: '1px solid var(--line-2)', background: 'var(--surface)', fontSize: 14, fontWeight: 600, color: 'var(--ink)', outline: 'none', fontFamily: 'inherit' }} />
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{query ? filtered.length + '경기' : '오늘 ' + done + '경기'}</div>
+        </div>
+        {filtered.length === 0 ? (
+          <div style={{ padding: 60, textAlign: 'center', color: 'var(--muted)', fontWeight: 600, background: 'var(--surface)', borderRadius: 14, border: '1px solid var(--line)' }}>{query ? '‘' + query + '’ 경기를 찾을 수 없어요.' : '아직 진행된 경기가 없어요.'}</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {filtered.map((m) => {
+              const t = new Date(m.ended_at || m.started_at);
+              const hh = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+              const playing = m.status === 'playing';
+              const pv = (p) => ({ name: p.name, gender: (p.gender === 'female' || p.gender === 'F') ? 'F' : 'M', level: LEVEL_ORDER[7 - p.base_level] || 'D' });
+              const nameCol = (team, align) => (
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: 14, justifyContent: align === 'right' ? 'flex-end' : 'flex-start', flexWrap: 'wrap' }}>
+                  {(team || []).map((p, i) => {
+                    const v = pv(p);
+                    return (
+                      <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                        <LevelChip level={v.level} size={20} />
+                        <NameWithGender p={v} size={15} />
+                      </span>
+                    );
+                  })}
+                </div>
+              );
+              return (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 18px', background: playing ? 'var(--brand-weak, rgba(59,130,246,.06))' : 'var(--surface)', border: playing ? '1px solid var(--brand-line, rgba(59,130,246,.30))' : '1px solid var(--line)', borderRadius: 13, boxShadow: 'var(--sh-1)' }}>
+                  <div style={{ width: 62, flexShrink: 0, lineHeight: 1.35 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink-2)' }}>{hh}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, whiteSpace: 'nowrap', color: playing ? 'var(--brand)' : 'var(--muted)' }}>{playing ? '● 진행중' : (m.court_name || (m.court_index + '번'))}</div>
+                  </div>
+                  {nameCol(m.team1, 'right')}
+                  <div style={{ flexShrink: 0, fontSize: 11, fontWeight: 900, color: 'var(--muted)', letterSpacing: '.04em', padding: '4px 9px', background: 'var(--surface-3)', borderRadius: 7 }}>VS</div>
+                  {nameCol(m.team2, 'left')}
+                  <div style={{ width: 52, flexShrink: 0, display: 'flex', justifyContent: 'flex-end' }}>
+                    <DisciplineBadge type={DISC[m.discipline] || m.discipline} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { AttendanceScreen, CountsScreen, GameBoard, AlertModal, EditModal, ModalShell, STATUS_STYLE, CallToast, CheckinModal, SettingsModal, HonWarnModal, courtLabel });
 
 // 코트 표시 이름 (커스텀 또는 기본)
 function courtLabel(c) {
