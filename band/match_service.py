@@ -42,17 +42,43 @@ def create_session_snapshot(schedule, created_by, court_count=4, mode=None, pres
     return session
 
 
-def ensure_session(schedule, created_by, court_count=4):
-    """순수 get-or-create. 이미 있으면 그대로 반환(재생성·덮어쓰기 절대 안 함).
+def sync_approved_participants(session):
+    """세션 시작 후 새로 승인된 신청자를 세션에 추가(빠진 사람만). 반환: 추가 수.
+    이미 들어온 사람은 건드리지 않으므로 출석·경기·카운트에 영향 없음.
+    스냅샷 1회 한계 보정 — 세션을 먼저 열고 나중에 승인받는 모임에서 명단이 비는 문제 방지."""
+    existing = set(session.participants.exclude(user__isnull=True)
+                   .values_list("user_id", flat=True))
+    apps = BandScheduleApplication.objects.filter(
+        schedule=session.schedule, status="approved").select_related("user")
+    added = 0
+    with transaction.atomic():
+        for app in apps:
+            if app.user_id in existing:
+                continue
+            score, gender = _level_gender(app.user)
+            attendance = (SessionParticipant.Attendance.PRESENT if app.checked_in_at
+                          else SessionParticipant.Attendance.NOT_PRESENT)
+            SessionParticipant.objects.create(
+                session=session, user=app.user, base_level=score, gender=gender,
+                attendance=attendance)
+            added += 1
+    return added
 
-    세션이 있으면 손대지 않는다. 없을 때만 생성하며, 동시 진입(레이스)으로
-    다른 요청이 먼저 만든 경우엔 unique 제약 → 그 세션을 그대로 반환한다.
+
+def ensure_session(schedule, created_by, court_count=4):
+    """get-or-create + 승인자 동기화. 이미 있으면 재생성하지 않되, 빠진 승인자는 추가한다.
+
+    세션 자체는 덮어쓰지 않는다(출석·경기·설정 보존). 진입할 때마다 새로 승인된
+    신청자만 세션에 반영해 '나중에 승인된 사람 명단 누락'을 방지한다.
     """
     existing = getattr(schedule, "match_session", None)
     if existing is not None:
+        sync_approved_participants(existing)  # 콘솔 진입마다 빠진 승인자 동기화
         return existing
     try:
         return create_session_snapshot(schedule, created_by, court_count=court_count)
     except IntegrityError:
-        # 동시 진입: 먼저 만들어진 세션을 반환 (덮어쓰지 않음)
-        return MatchSession.objects.get(schedule=schedule)
+        # 동시 진입: 먼저 만들어진 세션을 반환 (덮어쓰지 않음) + 동기화
+        session = MatchSession.objects.get(schedule=schedule)
+        sync_approved_participants(session)
+        return session
