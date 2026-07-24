@@ -64,7 +64,7 @@ const LEVEL_TO_CODE = { 자강: 'master', S: 's', A: 'a', B: 'b', C: 'c', D: 'd'
 
 function mapServerMatch(m) {
   const pl = (x) => ({ id: String(x.participant_id), name: x.name, gender: _srvGender(x.gender), level: _srvLevel(x.base_level) });
-  return { type: _SRV_DISC[m.discipline] || '혼복', teamA: (m.team1 || []).map(pl), teamB: (m.team2 || []).map(pl), startedAt: m.started_at ? new Date(m.started_at).getTime() : null };
+  return { id: m.id, type: _SRV_DISC[m.discipline] || '혼복', teamA: (m.team1 || []).map(pl), teamB: (m.team2 || []).map(pl), startedAt: m.started_at ? new Date(m.started_at).getTime() : null };
 }
 
 // 서버 session_state → 데모 UI 상태(participants/courts/mode) 매핑
@@ -356,7 +356,16 @@ function App() {
       set({ modal: { type: 'edit', court, match: court.match } });
     },
 
-    confirmEdit: (court, match) => CONNECTED ? (set({ modal: null }), srv('/courts/' + court.no + '/fill/', 'POST', { participant_ids: [...match.teamA, ...match.teamB].map((p) => Number(p.id)), discipline: DISC_TO_SRV[match.type] })) : set((s) => ({ ...applyMatch(s, court, match), modal: null })),
+    confirmEdit: (court, match) => {
+      if (CONNECTED) {
+        set({ modal: null });
+        const ids = [...match.teamA, ...match.teamB].map((p) => Number(p.id));
+        const disc = DISC_TO_SRV[match.type];
+        if (court.match && court.match.id) return srv('/matches/' + court.match.id + '/', 'PATCH', { participant_ids: ids, discipline: disc });
+        return srv('/courts/' + court.no + '/fill/', 'POST', { participant_ids: ids, discipline: disc });
+      }
+      return set((s) => ({ ...applyMatch(s, court, match), modal: null }));
+    },
 
     // 예약 경기(pending) 편집 — 코트에 넣지 않고 예약 명단만 교체 (court 안 건드림)
     openEditPending: (g) => set({ modal: { type: 'edit', pending: g, court: { no: g.id, match: { type: g.type, teamA: g.teamA, teamB: g.teamB }, ace: false }, match: { type: g.type, teamA: g.teamA, teamB: g.teamB } } }),

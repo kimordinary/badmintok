@@ -408,12 +408,16 @@ def edit_match(request, session_id, match_id):
         return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
     match = get_object_or_404(Match, id=match_id, session=session, status="playing")
 
-    swap = request.data.get("swap")          # [out_participant_id, in_participant_id]
+    swap = request.data.get("swap")          # [out_participant_id, in_participant_id] (1명 교체)
+    new_ids = request.data.get("participant_ids")  # [id×4] 새 라인업 (여러 명 동시 교체)
     discipline = request.data.get("discipline")
 
     if swap is not None:
         if not isinstance(swap, (list, tuple)) or len(swap) != 2:
             return Response({"detail": "swap은 [out_id, in_id] 형식이어야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+    if new_ids is not None:
+        if not isinstance(new_ids, (list, tuple)) or len({*new_ids}) != 4:
+            return Response({"detail": "participant_ids는 서로 다른 4명이어야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
         if swap:
@@ -427,6 +431,25 @@ def edit_match(request, session_id, match_id):
                                       attendance="present")
             mp.participant = in_sp
             mp.save(update_fields=["participant"])
+        elif new_ids:
+            # 새 4명으로 교체 — 바뀐 사람만 실제 교체(나간 사람은 MatchPlayer에서 빠져 카운트 안 됨)
+            cur = {mp.participant_id: mp for mp in match.players.all()}
+            keep = {*new_ids} & set(cur)
+            outs = [pid for pid in cur if pid not in keep]
+            ins = [nid for nid in new_ids if nid not in cur]
+            on_court_other = _on_court_ids(session) - set(cur)
+            for nid in ins:
+                if nid in on_court_other:
+                    return Response({"detail": "교체 대상이 다른 코트에서 경기 중입니다."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                if not SessionParticipant.objects.filter(
+                        id=nid, session=session, attendance="present").exists():
+                    return Response({"detail": "교체 대상은 참여중이어야 합니다."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            for o, i in zip(outs, ins):
+                mp = cur[o]
+                mp.participant = SessionParticipant.objects.get(id=i, session=session)
+                mp.save(update_fields=["participant"])
         if discipline in _DISC_MAP:
             match.discipline = discipline
             match.save(update_fields=["discipline"])
