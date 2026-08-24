@@ -203,6 +203,26 @@ function Shuttle({ size = 22, color = 'var(--brand)' }) {
   );
 }
 
+// 상태바 아이콘 (재생·정지·상태점)
+function PlayIcon({ size = 15 }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={{ display: 'block', flexShrink: 0 }}><path d="M8 5v14l11-7z" /></svg>);
+}
+function StopIcon({ size = 13 }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={{ display: 'block', flexShrink: 0 }}><rect x="6" y="6" width="12" height="12" rx="2.5" /></svg>);
+}
+function StatusDot({ size = 11, color = 'currentColor' }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block', flexShrink: 0 }}><circle cx="12" cy="12" r="7" fill={color} /></svg>);
+}
+function GearIcon({ size = 18 }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0 }}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>);
+}
+function RefreshIcon({ size = 19 }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0 }}><path d="M21 12a9 9 0 1 1-2.64-6.36" /><path d="M21 3v6h-6" /></svg>);
+}
+function WarnTriIcon({ size = 19 }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0 }}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>);
+}
+
 // 칩 카운트 (혼복 N · 남복 N · 여복 N)
 function CountPills({ games, compact = false }) {
   const items = [
@@ -230,5 +250,6 @@ function CountPills({ games, compact = false }) {
 Object.assign(window, {
   LevelChip, GenderDot, DisciplineBadge, disciplineColor, Avatar, GenderMark, NameWithGender, PlayerCell,
   PlayerLine, Segmented, Btn, Shuttle, CountPills, LEVEL_STYLE,
+  PlayIcon, StopIcon, StatusDot, GearIcon, RefreshIcon, WarnTriIcon,
   ThemeContext, useTheme,
 });

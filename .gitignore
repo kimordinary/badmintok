@@ -189,6 +189,11 @@ firebase-*.json
 *.backup
 *.old
 *~
+20260112_backup.sql
+backup_data.json
+badmintok_backup.sql
+backup_schema.sql
+backup_table_structure.sql
 
 # Windows special files
 nul

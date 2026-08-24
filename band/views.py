@@ -101,10 +101,10 @@ def band_list(request):
             if schedule:
                 schedule_date = schedule.start_datetime.date()
                 days_diff = (schedule_date - today).days
-                if days_diff < 0:
+                if schedule.is_ended:
                     d_day_text = "종료"
                     d_day_is_past = True
-                elif days_diff == 0:
+                elif days_diff <= 0:
                     d_day_text = "D-0"
                     d_day_is_past = False
                 else:
@@ -160,10 +160,10 @@ def band_list(request):
                 # 디데이 정보 계산
                 schedule_date = schedule.start_datetime.date()
                 days_diff = (schedule_date - today).days
-                if days_diff < 0:
+                if schedule.is_ended:
                     d_day_text = "종료"
                     d_day_is_past = True
-                elif days_diff == 0:
+                elif days_diff <= 0:
                     d_day_text = "D-0"
                     d_day_is_past = False
                 else:
@@ -227,10 +227,10 @@ def band_list(request):
             if schedule and schedule.start_datetime:
                 schedule_date = schedule.start_datetime.date()
                 days_diff = (schedule_date - today).days
-                if days_diff < 0:
+                if schedule.is_ended:
                     band.d_day_text = "종료"
                     band.d_day_is_past = True
-                elif days_diff == 0:
+                elif days_diff <= 0:
                     band.d_day_text = "D-0"
                     band.d_day_is_past = False
                 else:
@@ -1061,10 +1061,10 @@ def band_detail(request, band_id):
     for schedule in unique_schedules:
         schedule_date = schedule.start_datetime.date()
         days_diff = (schedule_date - today).days
-        if days_diff < 0:
+        if schedule.is_ended:
             schedule.d_day_text = "종료"
             schedule.d_day_is_past = True
-        elif days_diff == 0:
+        elif days_diff <= 0:
             schedule.d_day_text = "D-0"
             schedule.d_day_is_past = False
         else:

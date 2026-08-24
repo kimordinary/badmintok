@@ -258,7 +258,7 @@
                                 {% include "band/_gender_chip.html" with gender=app.user.profile.gender %}
                             {% endif %}
                             {% if app.user.profile and app.user.profile.badminton_level %}
-                            <span style="font-size: 13px; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 12px;">{{ app.user.profile.get_badminton_level_display }}</span>
+                            <span style="font-size: 13px; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 12px;">{% if app.user.profile.age_group %}{{ app.user.profile.age_group|cut:"대" }} · {% endif %}{{ app.user.profile.get_badminton_level_display }}</span>
                             {% endif %}
                         </div>
                     </div>

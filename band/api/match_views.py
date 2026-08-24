@@ -1,3 +1,4 @@
+import logging
 from itertools import combinations
 
 from rest_framework import status
@@ -10,6 +11,8 @@ from django.db.models import Q, F, Max
 from django.utils import timezone
 
 from band.models import BandMember, BandSchedule, BandScheduleApplication
+
+logger = logging.getLogger(__name__)
 from band.match_models import (
     MatchSession, SessionParticipant, Court, Match, MatchPlayer, Pair, PartnerRequest,
     ReservedMatch, ReservedMatchPlayer)
@@ -106,7 +109,9 @@ def set_mode(request, session_id):
     if mode not in MatchSession.DisciplineMode.values:
         return Response({"detail": "잘못된 모드"}, status=status.HTTP_400_BAD_REQUEST)
     session.discipline_mode = mode
-    session.save(update_fields=["discipline_mode", "updated_at"])
+    session.next_lineup = None  # 종목 바뀌면 확정 다음경기 무효화 → 새 종목으로 재계산
+    session.save(update_fields=["discipline_mode", "next_lineup", "updated_at"])
+    ensure_next_lineup(session)
     return Response(serialize_session(session))
 
 
@@ -120,7 +125,9 @@ def set_preset(request, session_id):
     if preset not in MatchSession.Preset.values:
         return Response({"detail": "잘못된 성향"}, status=status.HTTP_400_BAD_REQUEST)
     session.preset = preset
-    session.save(update_fields=["preset", "updated_at"])
+    session.next_lineup = None  # 성향 바뀌면 확정 다음경기 무효화 → 재계산
+    session.save(update_fields=["preset", "next_lineup", "updated_at"])
+    ensure_next_lineup(session)
     return Response(serialize_session(session))
 
 
@@ -132,7 +139,9 @@ def set_auto(request, session_id):
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     session.auto = bool(request.data.get("auto", True))
-    session.save(update_fields=["auto", "updated_at"])
+    session.next_lineup = None  # 자동↔수동 전환 시 확정 무효화(수동에서 예약이 옛 확정에 가려지는 문제 방지)
+    session.save(update_fields=["auto", "next_lineup", "updated_at"])
+    ensure_next_lineup(session)
     return Response(serialize_session(session))
 
 
@@ -345,6 +354,11 @@ def ensure_next_lineup(session):
     - 수동이거나 빈 코트가 있으면 확정 없음(None): 빈 코트는 바로 투입되므로.
     - 이미 예고된 확정이 유효하면 그대로 유지(예고 신뢰).
     - 새로 만들 차례에 투입 가능한 예약이 대기 중이면 확정을 만들지 않음(예약 먼저 소진 → 예약 영구 밀림 방지)."""
+    if session.status != MatchSession.Status.ACTIVE:  # 준비/종료 상태에선 자동 투입 안 함
+        if session.next_lineup is not None:
+            session.next_lineup = None
+            session.save(update_fields=["next_lineup", "updated_at"])
+        return None
     empty = session.courts.count() - Match.objects.filter(
         session=session, status="playing").count()
     if not session.auto or empty > 0:
@@ -388,8 +402,9 @@ def _fill_court(session, court, forced_discipline=None, allow_auto=True):
                 attendance=SessionParticipant.Attendance.PRESENT).select_related("user").first()
             if coach_sp is not None:
                 met = build_met_count(session, coach_ids, stats)
-                three = pick_ace_three(pool, met)
-                plan = build_ace_match(build_player(coach_sp), three)
+                mode_enum = _MODE_MAP.get(session.discipline_mode, Mode.ALL)
+                three = pick_ace_three(pool, met, mode_enum)
+                plan = build_ace_match(build_player(coach_sp), three, mode_enum)
                 if plan is not None:
                     return _create_match(session, court, plan), None
                 return None, None  # 코치 코트에 채울 3명 부족
@@ -437,9 +452,20 @@ def fill_court(request, session_id, index):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     if session.status == MatchSession.Status.ENDED:
         return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    if session.status == MatchSession.Status.PREPARING:
+        return Response({"detail": "먼저 [운영 시작]을 눌러 대진을 시작하세요."}, status=status.HTTP_409_CONFLICT)
     court = get_object_or_404(Court, session=session, index=index)
-    if court.matches.filter(status="playing").exists():
-        return Response({"detail": "이미 진행 중인 경기가 있습니다."}, status=status.HTTP_409_CONFLICT)
+    playing = court.matches.filter(status="playing").prefetch_related("players").first()
+    if playing is not None:
+        # 화면-서버 동기화 어긋남으로 '이미 찬 코트'에 경기 시작/채우기가 호출된 상황.
+        # 오류 대신 현재 상태를 그대로 반환(멱등)해 운영자에게 오류가 안 뜨게 하고, 원인 추적용 진단 로그만 남긴다.
+        logger.warning(
+            "fill_court on busy court — session=%s court=%s auto=%s match=%s players=%s pids=%s",
+            session.id, index, session.auto, playing.id,
+            [mp.participant_id for mp in playing.players.all()],
+            request.data.get("participant_ids"),
+        )
+        return Response(serialize_session(session))
 
     forced = request.data.get("discipline")
     pids = request.data.get("participant_ids")
@@ -510,6 +536,8 @@ def end_court(request, session_id, index):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     if session.status == MatchSession.Status.ENDED:
         return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    if session.status == MatchSession.Status.PREPARING:
+        return Response({"detail": "먼저 [운영 시작]을 눌러 대진을 시작하세요."}, status=status.HTTP_409_CONFLICT)
     court = get_object_or_404(Court, session=session, index=index)
     match = court.matches.filter(status="playing").prefetch_related("players__participant").first()
     if match is None:
@@ -520,12 +548,15 @@ def end_court(request, session_id, index):
         match.status = "done"
         match.ended_at = now
         match.save(update_fields=["status", "ended_at"])
-        disc_field = {"mixed": "games_mixed", "mens": "games_mens", "womens": "games_womens"}[match.discipline]
-        for mp in match.players.all():
-            sp = mp.participant
-            setattr(sp, disc_field, getattr(sp, disc_field) + 1)
-            sp.last_game_ended_at = now
-            sp.save(update_fields=[disc_field, "last_game_ended_at"])
+        # 시작 2분 내 종료면 카운트·대기시간 갱신 안 함(오조작·연습·즉시종료 방지)
+        too_short = match.started_at is not None and (now - match.started_at).total_seconds() < 120
+        if not too_short:
+            disc_field = {"mixed": "games_mixed", "mens": "games_mens", "womens": "games_womens"}[match.discipline]
+            for mp in match.players.all():
+                sp = mp.participant
+                setattr(sp, disc_field, getattr(sp, disc_field) + 1)
+                sp.last_game_ended_at = now
+                sp.save(update_fields=[disc_field, "last_game_ended_at"])
         if session.auto:
             new_match, need = _fill_court(session, court, allow_auto=True)
             ensure_next_lineup(session)   # 빈 코트 채워진 뒤 다음 1경기 재확정
@@ -536,11 +567,8 @@ def end_court(request, session_id, index):
     if need is not None:
         return Response({"ended": match.id, "match": None, "needs_choice": True,
                          "reason": need.reason, "options": [d.value for d in need.options]})
-    return Response({
-        "ended": match.id,
-        "match": serialize_match(new_match) if new_match else None,
-        "needs_choice": False,
-    })
+    # 전체 상태를 바로 응답 → 콘솔이 재조회(refetch) 없이 새 경기까지 한 번에 반영(자동 종료 깜빡임 제거)
+    return Response(serialize_session(session))
 
 
 @api_view(["PATCH"])
@@ -551,6 +579,8 @@ def edit_match(request, session_id, match_id):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     if session.status == MatchSession.Status.ENDED:
         return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    if session.status == MatchSession.Status.PREPARING:
+        return Response({"detail": "먼저 [운영 시작]을 눌러 대진을 시작하세요."}, status=status.HTTP_409_CONFLICT)
     match = get_object_or_404(Match, id=match_id, session=session, status="playing")
 
     swap = request.data.get("swap")          # [out_participant_id, in_participant_id] (1명 교체)
@@ -960,6 +990,8 @@ def create_reservation(request, session_id):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     if session.status == MatchSession.Status.ENDED:
         return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    if session.status == MatchSession.Status.PREPARING:
+        return Response({"detail": "먼저 [운영 시작]을 눌러 대진을 시작하세요."}, status=status.HTTP_409_CONFLICT)
 
     ids = request.data.get("participant_ids") or []
     if not isinstance(ids, (list, tuple)) or len({*ids}) != 4:
@@ -987,12 +1019,7 @@ def create_reservation(request, session_id):
     disc = request.data.get("discipline")
     if disc and disc not in Match.Discipline.values:
         return Response({"detail": "잘못된 종목"}, status=status.HTTP_400_BAD_REQUEST)
-    # 현재 종목 모드 준수 (예: 남복/여복 모드에 혼성 예약 방지)
-    players = [build_player(sp) for sp in sps]
-    auto_disc = _reservation_discipline(players, disc if disc in Match.Discipline.values else None)
-    if not _disc_allowed_in_mode(auto_disc, session.discipline_mode):
-        return Response({"detail": _mode_mismatch_msg(session.discipline_mode)},
-                        status=status.HTTP_400_BAD_REQUEST)
+    # 운영자 수동 지정(대기열에서 직접 고른 4명)은 종목 모드 무시 — 남복/여복 모드여도 혼복 허용 (자동 추천만 모드 준수)
 
     next_order = (session.reservations.aggregate(Max("order"))["order__max"] or 0) + 1
     with transaction.atomic():
@@ -1047,12 +1074,7 @@ def reservation_detail(request, session_id, reservation_id):
     disc = request.data.get("discipline")
     if disc and disc not in Match.Discipline.values:
         return Response({"detail": "잘못된 종목"}, status=status.HTTP_400_BAD_REQUEST)
-    # 현재 종목 모드 준수 (예: 남복/여복 모드에 혼성 예약 방지)
-    players = [build_player(sp) for sp in sps]
-    auto_disc = _reservation_discipline(players, disc if disc in Match.Discipline.values else None)
-    if not _disc_allowed_in_mode(auto_disc, session.discipline_mode):
-        return Response({"detail": _mode_mismatch_msg(session.discipline_mode)},
-                        status=status.HTTP_400_BAD_REQUEST)
+    # 운영자 수동 지정(대기열에서 직접 고른 4명)은 종목 모드 무시 — 남복/여복 모드여도 혼복 허용 (자동 추천만 모드 준수)
 
     with transaction.atomic():
         r.discipline = disc or ""
@@ -1092,13 +1114,31 @@ def move_reservation(request, session_id, reservation_id):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def begin_session(request, session_id):
+    """[운영 시작] — 준비(preparing) → 진행중(active). 자동이면 첫 경기 투입."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status == MatchSession.Status.ENDED:
+        return Response({"detail": "종료된 세션입니다. 다시 하려면 리셋하세요."}, status=status.HTTP_409_CONFLICT)
+    if session.status != MatchSession.Status.ACTIVE:
+        session.status = MatchSession.Status.ACTIVE
+        session.save(update_fields=["status", "updated_at"])
+        ensure_next_lineup(session)
+        session.refresh_from_db()
+    return Response(serialize_session(session))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def end_session(request, session_id):
     session = get_object_or_404(MatchSession, id=session_id)
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     session.status = MatchSession.Status.ENDED
-    session.save(update_fields=["status", "updated_at"])
-    return Response({"id": session.id, "status": session.status})
+    session.next_lineup = None
+    session.save(update_fields=["status", "next_lineup", "updated_at"])
+    return Response(serialize_session(session))
 
 
 @api_view(["POST"])
@@ -1111,8 +1151,7 @@ def reset_session(request, session_id):
     session = get_object_or_404(MatchSession, id=session_id)
     if not _is_operator(request.user, session.schedule.band):
         return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
-    if session.status == MatchSession.Status.ENDED:
-        return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
+    # 종료된 세션도 리셋으로 되살릴 수 있게 허용 (리셋 = 준비 상태로 초기화)
     mode = request.data.get("mode", "game")
     if mode not in ("game", "full"):
         return Response({"detail": 'mode는 "game" 또는 "full" 이어야 합니다.'},
@@ -1124,7 +1163,10 @@ def reset_session(request, session_id):
         Pair.objects.filter(session=session).delete()
         PartnerRequest.objects.filter(session=session).delete()
         ReservedMatch.objects.filter(session=session).delete()  # ReservedMatchPlayer cascade
-        session.courts.update(coach=None)
+        session.courts.update(coach=None, coach_resting=False)
+        session.next_lineup = None                              # 확정 다음경기 초기화(stale 방지)
+        session.status = MatchSession.Status.PREPARING          # 리셋 = 준비 상태로 → [운영 시작] 다시
+        session.save(update_fields=["next_lineup", "status", "updated_at"])
         if mode == "full":
             session.participants.filter(user__isnull=True).delete()  # 현장 게스트 삭제
             # 원본 승인 명단과 재동기화 (최초 화면 + 최신 명단)

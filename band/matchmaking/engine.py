@@ -29,7 +29,7 @@ def _discipline_feasible(combo, discipline) -> bool:
 
 def recommend_next_game(pool: list[Player], mode: Mode, preset: Preset,
                         stats: PairStats, female_adjust: int = 1,
-                        window: int = 8) -> GamePlan | NeedOperatorChoice | None:
+                        window: int = 12) -> GamePlan | NeedOperatorChoice | None:
     if len(pool) < 4:
         return None
 
@@ -37,6 +37,14 @@ def recommend_next_game(pool: list[Player], mode: Mode, preset: Preset,
     order = queue_order(pool)
     candidates = order[:max(window, 4)]
     allowed = _disciplines_for_mode(mode)
+
+    # 남녀 번갈아 유도(강제 아님): 남복/여복 모드에서 '덜 뛴 성별' 종목에 우선순위 부여
+    gender_avg = {}
+    if mode == Mode.SINGLES_GENDER:
+        males_g = [p for p in pool if p.gender == MALE]
+        females_g = [p for p in pool if p.gender == FEMALE]
+        gender_avg[Discipline.MENS] = (sum(p.total_games for p in males_g) / len(males_g)) if males_g else 0
+        gender_avg[Discipline.WOMENS] = (sum(p.total_games for p in females_g) / len(females_g)) if females_g else 0
 
     best = None
     best_score = None
@@ -50,7 +58,9 @@ def recommend_next_game(pool: list[Player], mode: Mode, preset: Preset,
             base = game_cost(list(combo), split.team1, split.team2, disc,
                              weights, stats, female_adjust)
             fairness = weights.fairness * sum(p.total_games for p in combo)
-            score = base + fairness
+            # 그 종목 성별이 이미 많이 뛰었으면 페널티 → 덜 뛴 성별이 먼저 선택됨(번갈아)
+            balance = weights.fairness * gender_avg.get(disc, 0) * 2
+            score = base + fairness + balance
             if best_score is None or score < best_score:
                 best_score = score
                 best = split
@@ -111,7 +121,7 @@ def _best_pair_game(pa, pb, disc, opp_pool, weights, stats, female_adjust, windo
 
 def recommend_with_pairs(pool, pairs, mode: Mode, preset: Preset,
                          stats: PairStats, female_adjust: int = 1,
-                         window: int = 8) -> GamePlan | NeedOperatorChoice | None:
+                         window: int = 12) -> GamePlan | NeedOperatorChoice | None:
     """파트너 쌍을 우선 배정한 뒤 일반 추천. pairs: list[PairUnit]."""
     if not pairs:
         return recommend_next_game(pool, mode, preset, stats, female_adjust, window)
@@ -156,26 +166,50 @@ def recommend_with_pairs(pool, pairs, mode: Mode, preset: Preset,
 
 # ===== 코치(자강) 고정 코트 =====
 
-def pick_ace_three(pool, met_count):
-    """코치와 함께 들어갈 3명. '만난 코치 수' 적은 사람 우선(공동 우선), 동률은 큐 순서."""
+def pick_ace_three(pool, met_count, mode=None):
+    """코치와 함께 들어갈 3명. '만난 코치 수' 적은 사람 우선 + 급수 근접(밸런스·동일급수).
+    남복/여복 모드: 코치 무관 동성 3명(남3 or 여3). 남·여 모두 3명 미만이면 [] (모수 부족)."""
     order = queue_order(pool)  # 경기수·휴식 기준 정렬
-    ranked = sorted(order, key=lambda p: met_count.get(p.id, 0))  # stable=큐순서 유지
-    return ranked[:3]
+    if mode == Mode.SINGLES_GENDER:
+        males = [p for p in order if p.gender == MALE]
+        females = [p for p in order if p.gender == FEMALE]
+        groups = [g for g in (males, females) if len(g) >= 3]
+        if not groups:
+            return []  # 남·여 모두 3명 미만 → 코치 코트 못 채움(모수 부족)
+        # 커버리지 우선: 코치와 덜 만난(met 합 낮은) 성별을 이번 판 코치 코트로
+        order = min(groups, key=lambda g: sum(met_count.get(p.id, 0) for p in g[:3]))
+    if len(order) < 3:
+        return []
+    # 앵커=코치와 가장 덜 만난 사람 → 급수 근접 2명(preset 반영), 동률은 커버리지
+    anchor = min(order, key=lambda p: met_count.get(p.id, 0))
+    band = lambda p: (lambda d: 0 if d <= 1 else d)(abs(p.base_level - anchor.base_level))
+    rest = sorted([p for p in order if p.id != anchor.id],
+                  key=lambda p: (band(p), met_count.get(p.id, 0)))[:2]
+    if len(rest) < 2:
+        return []
+    return [anchor] + rest
 
 
-def build_ace_match(coach, three):
-    """코치 + 3명 → GamePlan. 종목은 4명 성별로, 코치는 약체와 한 팀(밸런스 보정)."""
+def build_ace_match(coach, three, mode=None):
+    """코치 + 3명 → GamePlan. 코치는 약체와 한 팀(밸런스 보정).
+    남복/여복 모드: 코치는 얹힘 → 종목은 나머지 3명 동성 기준(남3=남복·여3=여복).
+    그 외: 4명 성별로 종목 자동."""
     if coach is None or len(three) < 3:
         return None
-    four = [coach] + list(three)
-    males = sum(1 for p in four if p.gender == MALE)
-    females = sum(1 for p in four if p.gender == FEMALE)
-    if males == 4:
-        disc = Discipline.MENS
-    elif females == 4:
-        disc = Discipline.WOMENS
+    if mode == Mode.SINGLES_GENDER:
+        m3 = sum(1 for p in three if p.gender == MALE)
+        f3 = sum(1 for p in three if p.gender == FEMALE)
+        disc = Discipline.MENS if m3 == 3 else Discipline.WOMENS if f3 == 3 else Discipline.MIXED
     else:
-        disc = Discipline.MIXED
+        four = [coach] + list(three)
+        males = sum(1 for p in four if p.gender == MALE)
+        females = sum(1 for p in four if p.gender == FEMALE)
+        if males == 4:
+            disc = Discipline.MENS
+        elif females == 4:
+            disc = Discipline.WOMENS
+        else:
+            disc = Discipline.MIXED
 
     if disc == Discipline.MIXED:
         opp_gender = FEMALE if coach.gender == MALE else MALE

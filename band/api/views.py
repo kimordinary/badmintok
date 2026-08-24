@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django.db import transaction
 from django.db.models import Q, Prefetch, Count, Case, When, F, Value, IntegerField
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
@@ -1258,6 +1259,29 @@ def band_schedule_toggle_close(request, band_id, schedule_id):
     }, status=status.HTTP_200_OK)
 
 
+def _schedule_quota_full(schedule, application):
+    """C안 정원 판정 — 급수/성별/급수+성별/총원 모드별 초과 여부(True면 대기명단행). 단건·일괄 공용."""
+    app_profile = getattr(application.user, 'profile', None)
+    _lv = getattr(app_profile, 'badminton_level', '') or ''
+    _g = getattr(app_profile, 'gender', '') or ''
+    if schedule.use_level_quota:
+        lq = schedule.level_quota or {}
+        if schedule.quota_by_gender:
+            cell_quota = int(lq.get(_lv, {}).get(_g, 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=_lv, user__profile__gender=_g).count()
+        else:
+            cell_quota = int(lq.get(_lv, {}).get('total', 0) or 0)
+            cell_approved = schedule.applications.filter(
+                status='approved', user__profile__badminton_level=_lv).count()
+        return cell_approved >= cell_quota
+    if schedule.quota_by_gender:
+        gq = schedule.gender_quota or {}
+        return schedule.applications.filter(
+            status='approved', user__profile__gender=_g).count() >= int(gq.get(_g, 0) or 0)
+    return bool(schedule.max_participants) and schedule.current_participants >= schedule.max_participants
+
+
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1278,28 +1302,7 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
     )
 
     # 정원 확인 (4모드: 급수/성별/급수+성별/총원) — 초과 시 승인 대신 대기명단 자동 배치
-    app_profile = getattr(application.user, 'profile', None)
-    _lv = getattr(app_profile, 'badminton_level', '') or ''
-    _g = getattr(app_profile, 'gender', '') or ''
-    if schedule.use_level_quota:
-        lq = schedule.level_quota or {}
-        if schedule.quota_by_gender:
-            cell_quota = int(lq.get(_lv, {}).get(_g, 0) or 0)
-            cell_approved = schedule.applications.filter(
-                status='approved', user__profile__badminton_level=_lv, user__profile__gender=_g).count()
-        else:
-            cell_quota = int(lq.get(_lv, {}).get('total', 0) or 0)
-            cell_approved = schedule.applications.filter(
-                status='approved', user__profile__badminton_level=_lv).count()
-        is_full = cell_approved >= cell_quota
-    elif schedule.quota_by_gender:
-        gq = schedule.gender_quota or {}
-        is_full = schedule.applications.filter(
-            status='approved', user__profile__gender=_g).count() >= int(gq.get(_g, 0) or 0)
-    else:
-        is_full = bool(schedule.max_participants) and schedule.current_participants >= schedule.max_participants
-
-    if is_full:
+    if _schedule_quota_full(schedule, application):
         # 정원 초과 → 대기명단(맨 뒤)으로 자동 배치. 자리 회수는 기존 promote(수동)로.
         application.status = 'waiting'
         application.applied_at = timezone.now()
@@ -1322,6 +1325,65 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
     schedule.save(update_fields=['current_participants'])
 
     return Response({'message': '신청이 승인되었습니다.', 'result': 'approved'}, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_application_bulk_approve(request, band_id, schedule_id):
+    """참가 대기자 일괄 승인 — application_ids(pending)를 신청순으로 C안 규칙대로 승인/대기 배치."""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+
+    manager = BandMember.objects.filter(
+        band_id=band_id, user=request.user,
+        role__in=['owner', 'admin'], status='active').first()
+    if not manager and not is_site_admin(request.user):
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+    if schedule.is_ended:
+        return Response({'error': '종료된 일정입니다.'}, status=status.HTTP_409_CONFLICT)
+
+    ids = request.data.get('application_ids')
+    if not isinstance(ids, list) or not ids:
+        return Response({'error': 'application_ids(배열)가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # pending만, 신청 순(먼저 신청 우선). pending 아닌 id(승인/거부/취소)는 자동 스킵.
+    apps = list(BandScheduleApplication.objects.filter(
+        schedule=schedule, id__in=ids, status='pending'
+    ).select_related('user__profile').order_by('applied_at'))
+
+    approved = 0
+    waitlisted = 0
+    now = timezone.now()
+    with transaction.atomic():
+        for application in apps:
+            # 승인할 때마다 정원 카운트가 실시간 반영됨(다음 판정에 누적)
+            if _schedule_quota_full(schedule, application):
+                application.status = 'waiting'
+                application.applied_at = now
+                application.reviewed_at = now
+                application.reviewed_by = request.user
+                application.save(update_fields=['status', 'applied_at', 'reviewed_at', 'reviewed_by'])
+                waitlisted += 1
+            else:
+                application.status = 'approved'
+                application.reviewed_at = now
+                application.reviewed_by = request.user
+                application.save(update_fields=['status', 'reviewed_at', 'reviewed_by'])
+                schedule.current_participants += 1
+                approved += 1
+        if approved:
+            schedule.save(update_fields=['current_participants'])
+
+    if approved and waitlisted:
+        message = f'{approved}명 승인 (정원 초과 {waitlisted}명 대기명단)'
+    elif approved:
+        message = f'{approved}명 승인'
+    elif waitlisted:
+        message = f'정원이 차서 {waitlisted}명 대기명단에 배치했어요'
+    else:
+        message = '승인할 대기 신청이 없어요'
+    return Response({'approved': approved, 'waitlisted': waitlisted, 'message': message},
+                    status=status.HTTP_200_OK)
 
 
 @csrf_exempt
@@ -1471,7 +1533,8 @@ def band_schedule_notice_send(request, band_id, schedule_id):
         except (ValueError, TypeError):
             return Response({'error': 'recipient_user_id는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
         is_participant = BandScheduleApplication.objects.filter(
-            schedule=schedule, user_id=recipient_user_id, status__in=['approved', 'waiting']
+            schedule=schedule, user_id=recipient_user_id,
+            status__in=['approved', 'waiting', 'pending']  # 승인·대기명단·승인대기(입금전) 모두 발송 허용
         ).exists()
         if not is_participant:
             return Response({'error': '해당 사용자는 일정 참가자/대기자가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)

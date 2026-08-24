@@ -133,9 +133,10 @@ def serialize_session(session):
         present_ids = [p.id for p in participants
                        if p.attendance == "present" and p.id not in coach_ids]
         for cid in coach_ids:
-            met = sum(1 for pid in present_ids
-                      if stats.partner_count(pid, cid) + stats.opponent_count(pid, cid) > 0)
-            coverage[cid] = {"met": met, "total": len(present_ids)}
+            unmet = [pid for pid in present_ids
+                     if stats.partner_count(pid, cid) + stats.opponent_count(pid, cid) == 0]
+            coverage[cid] = {"met": len(present_ids) - len(unmet),
+                             "total": len(present_ids), "unmet_ids": unmet}
 
     courts = []
     on_court_ids = set()
@@ -252,6 +253,7 @@ def serialize_my_status(session, sp, user=None):
     if current is not None:
         cm = serialize_match(current)
         cm["court_index"] = current.court.index
+        cm["court_name"] = current.court.name or None
         cm["my_team"] = my_team
         cm["is_coach_court"] = current.court.coach_id is not None
         current_match = cm

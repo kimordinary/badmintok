@@ -174,6 +174,26 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user}의 프로필"
 
+    @property
+    def age_group(self):
+        """연령대 표시용(20대·30대). 생년월일(만나이) 우선 → 출생연도 → 연령대(카카오)."""
+        import re
+        from datetime import date
+        today = date.today()
+        if self.birthday:
+            age = today.year - self.birthday.year - ((today.month, today.day) < (self.birthday.month, self.birthday.day))
+            if 0 < age < 120:
+                return f"{age // 10 * 10}대"
+        if self.birth_year:
+            age = today.year - self.birth_year
+            if 0 < age < 120:
+                return f"{age // 10 * 10}대"
+        if self.age_range:
+            m = re.match(r"\s*(\d+)", self.age_range)
+            if m:
+                return f"{int(m.group(1)) // 10 * 10}대"
+        return None
+
 
 class UserBlock(models.Model):
     """사용자 차단 모델"""

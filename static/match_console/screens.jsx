@@ -62,7 +62,7 @@ function MiniCourtCompact({ type, teamA, teamB }) {
 }
 
 // ---------- 코트 카드 ----------
-function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onManualFill, onStartNext, hasPending, onCoachRest, coachResting, acePinned, coachName, coverage, compact = false }) {
+function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onEditLineup, onManualFill, onStartNext, hasPending, onCoachRest, coachResting, acePinned, coachName, coverage, compact = false }) {
   const theme = useTheme();
   const clean = theme === 'clean';
   const strip = false; // 코트 상단 종목색 스트립 제거 (색 보더 촌스러움)
@@ -145,20 +145,33 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onManualFi
         )}
         {acePinned && (
           <button onClick={() => onCoachRest(court)} style={{ marginBottom: 9, width: '100%', padding: '7px', borderRadius: 8, background: coachResting ? 'var(--warn-tint)' : 'var(--surface-3)', color: coachResting ? 'var(--warn)' : 'var(--ink-2)', fontSize: 12.5, fontWeight: 800, border: coachResting ? '1px solid var(--warn)' : '1px solid var(--line-2)', cursor: 'pointer' }}>
-            {coachResting ? '✓ 다음 판 코치 쉼 (탭하면 취소)' : '코치 이번 판 쉼'}
+            {coachResting ? '코치 휴식 (다음 경기)' : '코치 휴식'}
           </button>
         )}
         <div style={{ display: 'flex', gap: 9 }}>
         {playing ? (
-          <>
-            <Btn variant="primary" size="lg" full onClick={() => onEnd(court)} style={{ flex: 1 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                <svg width="15" height="15" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
-                경기 종료
-              </span>
-            </Btn>
-            <Btn variant="ghost" size="lg" onClick={() => onEdit(court)}>{acePinned ? '코치' : '편집'}</Btn>
-          </>
+          acePinned ? (
+            <>
+              <Btn variant="primary" size="lg" onClick={() => onEnd(court)} style={{ flex: 1 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
+                  종료
+                </span>
+              </Btn>
+              <Btn variant="ghost" size="lg" onClick={() => onEditLineup(court)}>편집</Btn>
+              <Btn variant="ghost" size="lg" onClick={() => onEdit(court)}>코치</Btn>
+            </>
+          ) : (
+            <>
+              <Btn variant="primary" size="lg" full onClick={() => onEnd(court)} style={{ flex: 1 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
+                  경기 종료
+                </span>
+              </Btn>
+              <Btn variant="ghost" size="lg" onClick={() => onEdit(court)}>편집</Btn>
+            </>
+          )
         ) : a && rec && rec.match ? (
           <>
             <Btn variant="primary" size="lg" full onClick={() => onStart(court, rec.match)} style={{ flex: 1 }}>
@@ -198,17 +211,13 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onManualFi
 }
 
 // ---------- 컨트롤 바 ----------
-function ControlBar({ mode, setMode, preset, setPreset, auto, setAuto, stats, onSwitch, onCheckin, onSettings, onHelp }) {
+function ControlBar({ mode, setMode, preset, setPreset, auto, setAuto, stats, onSwitch, onCheckin, onSettings, onOps, onHelp }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 18, padding: '14px 22px',
       background: 'var(--surface)', borderBottom: '1px solid var(--line)', boxShadow: 'var(--sh-1)', flexShrink: 0,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-        <img src="app-logo.png" alt="배드민톡" width={40} height={40} style={{ borderRadius: 11, display: 'block', flexShrink: 0 }} />
-      </div>
-
-      <div data-help="modes" style={{ display: 'flex', alignItems: 'center', gap: 18, marginLeft: 8 }}>
+      <div data-help="modes" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--muted)', letterSpacing: '-.01em', whiteSpace: 'nowrap' }}>종목</span>
           <Segmented options={MODES} value={mode} onChange={setMode} accent="var(--ink)" />
@@ -247,6 +256,7 @@ function ControlBar({ mode, setMode, preset, setPreset, auto, setAuto, stats, on
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.7" /><line x1="12" y1="4.5" x2="12" y2="19.5" stroke="currentColor" strokeWidth="1.7" /><line x1="3.5" y1="9.5" x2="20.5" y2="9.5" stroke="currentColor" strokeWidth="1.1" /><line x1="3.5" y1="14.5" x2="20.5" y2="14.5" stroke="currentColor" strokeWidth="1.1" /></svg>
           코트 {stats.courtCount}면
         </button>
+        <button onClick={onOps} title="설정" style={{ ...navBtnStyle, padding: '9px 11px', display: 'inline-flex', alignItems: 'center' }}><GearIcon size={16} /></button>
       </div>
     </div>
   );
@@ -647,6 +657,7 @@ function MainScreen({ state, actions }) {
   }, [pool, nowTs, pendingIds, onCourtIds, coachIds]);
   // 빈 코트별 추천 (코치 코트들 먼저 → 나머지 순차)
   const recs = useMemo(() => {
+    if (state.sessionStatus === 'preparing') return {}; // 준비 중엔 추천도 숨김 → 코트 완전히 비움
     const taken = new Set();
     const out = {};
     const poolView = pool.map((p) => ({ ...p }));
@@ -657,7 +668,7 @@ function MainScreen({ state, actions }) {
       if (!ct.ace || ct.match || ct.pendingRemove) continue;
       const ace = poolView.find((p) => p.id === ct.coachId);
       const three = ace ? pickAceThree(poolView.filter((p) => !coachIds.has(p.id) && !taken.has(p.id) && !pendingIds.has(p.id)), metCount, nowTs, mode, ace.gender) : null;
-      out[ct.no] = three ? { match: buildAceMatch(ace, three) } : { error: '대기 부족', detail: '코치와 칠 대기 인원이 부족합니다.' };
+      out[ct.no] = three ? { match: buildAceMatch(ace, three, mode) } : { error: '대기 부족', detail: '코치와 칠 대기 인원이 부족합니다.' };
       if (three) three.forEach((p) => taken.add(p.id));
     }
     for (const ct of courts) {
@@ -668,7 +679,7 @@ function MainScreen({ state, actions }) {
       if (r.match) [...r.match.teamA, ...r.match.teamB].forEach((p) => taken.add(p.id));
     }
     return out;
-  }, [pool, courts, mode, preset, nowTs, coachIds, state.pinnedMet, state.pairs, pendingIds]);
+  }, [pool, courts, mode, preset, nowTs, coachIds, state.pinnedMet, state.pairs, pendingIds, state.sessionStatus]);
 
   // 코치별 커버리지·이름 (코트번호 → {name, coverage})
   const coachInfo = useMemo(() => {
@@ -730,12 +741,35 @@ function MainScreen({ state, actions }) {
 
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
-      <ControlBar mode={mode} setMode={actions.setMode} preset={preset} setPreset={actions.setPreset} auto={state.auto} setAuto={actions.setAuto} stats={stats} onSwitch={actions.switchScreen} onCheckin={actions.openCheckin} onSettings={actions.openSettings} onHelp={() => setCoach(true)} />
+      {state.sessionStatus === 'preparing' && (
+        <div style={{ height: 46, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 20px', background: '#16a34a', color: '#fff', flexShrink: 0 }}>
+          <img src="badmintok-text-logo.png" alt="배드민톡" height={18} style={{ display: 'block', flexShrink: 0, filter: 'brightness(0) invert(1)' }} />
+          <StatusDot color="#fde047" />
+          <span style={{ fontSize: 14, fontWeight: 700 }}><b style={{ fontWeight: 900, marginRight: 8 }}>준비중</b>운동 시작 준비가 된다면 운영 시작 해주세요.</span>
+          <button onClick={actions.beginSession} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 14, fontWeight: 900, background: '#fff', color: '#16a34a', border: 'none', borderRadius: 9, cursor: 'pointer' }}><PlayIcon /> 운영 시작</button>
+        </div>
+      )}
+      {state.sessionStatus === 'active' && (
+        <div style={{ height: 46, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 9, padding: '0 20px', background: 'var(--surface)', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
+          <img src="badmintok-text-logo.png" alt="배드민톡" height={18} style={{ display: 'block', flexShrink: 0, marginRight: 4 }} />
+          <StatusDot size={10} color="#16a34a" />
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--muted)' }}><b style={{ fontWeight: 900, color: '#16a34a', marginRight: 8 }}>진행중</b>자동 대진이 운영되고 있어요! 1시간 이상 응답이 없는 경우 자동 종료 돼요</span>
+          <button onClick={() => { if (window.confirm('대진을 종료할까요?\n종료하면 재개할 수 없고, 기록은 보존됩니다.')) actions.endSession(); }} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 15px', fontSize: 13, fontWeight: 800, background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: 8, cursor: 'pointer' }}><StopIcon /> 운영 종료</button>
+        </div>
+      )}
+      {state.sessionStatus === 'ended' && (
+        <div style={{ height: 46, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 20px', background: '#64748b', color: '#fff', flexShrink: 0 }}>
+          <img src="badmintok-text-logo.png" alt="배드민톡" height={18} style={{ display: 'block', flexShrink: 0, filter: 'brightness(0) invert(1)' }} />
+          <StatusDot color="#cbd5e1" />
+          <span style={{ fontSize: 14, fontWeight: 700 }}><b style={{ fontWeight: 900, marginRight: 8 }}>종료</b>이번 운동은 종료됐어요. 다시 시작하기 위해서 <b style={{ fontWeight: 900 }}>설정(⚙) → 리셋</b>을 눌러주세요.</span>
+        </div>
+      )}
+      <ControlBar mode={mode} setMode={actions.setMode} preset={preset} setPreset={actions.setPreset} auto={state.auto} setAuto={actions.setAuto} stats={stats} onSwitch={actions.switchScreen} onCheckin={actions.openCheckin} onSettings={actions.openSettings} onOps={actions.openOps} onHelp={() => setCoach(true)} />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         <main data-help="court" style={{ flex: compact ? '0 0 440px' : 1, overflowY: 'auto', padding: compact ? 14 : 20, background: compact ? 'var(--surface-3)' : 'transparent' }}>
           <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fill, minmax(330px, 1fr))', gap: compact ? 10 : 16 }}>
             {courts.map((ct) => (
-              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} auto={state.auto} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} onManualFill={actions.manualFill} onStartNext={actions.fillCourtNext} hasPending={(state.pending || []).length > 0} onCoachRest={actions.setCoachRest} coachResting={ct.coachResting} acePinned={ct.ace} coachName={coachInfo[ct.no] && coachInfo[ct.no].name} coverage={coachInfo[ct.no] && coachInfo[ct.no].coverage} compact={compact} />
+              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} auto={state.auto} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} onEditLineup={actions.editCoachLineup} onManualFill={actions.manualFill} onStartNext={actions.fillCourtNext} hasPending={(state.pending || []).length > 0} onCoachRest={actions.setCoachRest} coachResting={ct.coachResting} acePinned={ct.ace} coachName={coachInfo[ct.no] && coachInfo[ct.no].name} coverage={coachInfo[ct.no] && coachInfo[ct.no].coverage} compact={compact} />
             ))}
           </div>
         </main>

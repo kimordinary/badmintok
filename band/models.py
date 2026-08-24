@@ -611,6 +611,20 @@ class BandSchedule(models.Model):
     def __str__(self):
         return f"{self.band.name} - {self.title}"
 
+    @property
+    def effective_end_datetime(self):
+        """종료 판정용 시각. end_datetime이 유효하면 사용, 없거나 start보다 이르면(데이터 오류) start로 폴백."""
+        if self.end_datetime and self.end_datetime >= self.start_datetime:
+            return self.end_datetime
+        return self.start_datetime
+
+    @property
+    def is_ended(self):
+        """번개 종료 여부. 수동 마감(is_closed)이거나 유효 종료시각이 지났으면 종료.
+        end<start 데이터 오류가 있어도 시작 전에는 종료로 판정하지 않는다."""
+        from django.utils import timezone
+        return self.is_closed or self.effective_end_datetime < timezone.now()
+
 
 class BandScheduleApplication(models.Model):
     """밴드 일정 신청 모델"""

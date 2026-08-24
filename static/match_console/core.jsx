@@ -153,6 +153,16 @@ function recommendMatch(pool, mode, presetName, nowTs, bias) {
     return (bias.K || 8) * ((bias.target[type] || 0) - cur); // 부족할수록 점수↓(선호)
   };
 
+  // 남녀 번갈아 유도(서버와 동일): 남복/여복 모드에서 '덜 뛴 성별' 종목에 우선순위
+  let avgM = 0, avgF = 0;
+  if (mode === '남복/여복') {
+    const ms = eligible.filter((p) => p.gender === 'M');
+    const fs = eligible.filter((p) => p.gender === 'F');
+    avgM = ms.length ? ms.reduce((s, p) => s + p.totalGames, 0) / ms.length : 0;
+    avgF = fs.length ? fs.reduce((s, p) => s + p.totalGames, 0) / fs.length : 0;
+  }
+  const genderPen = (type) => mode !== '남복/여복' ? 0 : (type === '남복' ? avgM : type === '여복' ? avgF : 0) * weights.w_fairness * 0.3;
+
   let best = null;
   for (const four of combinations(window, 4)) {
     const types = disciplinesFor(four, mode);
@@ -167,7 +177,7 @@ function recommendMatch(pool, mode, presetName, nowTs, bias) {
       const split = bestSplit(four, type, weights, ctx);
       // 대기열 앞 사람 우대: window 내 인덱스 합이 작을수록 보너스(공정성 강화)
       const idxPenalty = four.reduce((s, p) => s + window.indexOf(p), 0) * 0.8;
-      const score = split.cost + idxPenalty - biasFor(type) + spanPen;
+      const score = split.cost + idxPenalty - biasFor(type) + spanPen + genderPen(type);
       if (!best || score < best.score) best = { ...split, score };
     }
   }
@@ -263,11 +273,16 @@ function pickAceThree(pool, metCount, nowTs, mode, coachGender) {
   const near = (list, ref, n) => list.filter((p) => p.id !== ref.id).sort((a, b) => (band(a, ref) !== band(b, ref) ? band(a, ref) - band(b, ref) : met(a) - met(b))).slice(0, n);
 
   if (mode === '남복/여복') {
-    // 동성복 — 코치와 같은 성별 3명
-    const same = eligible.filter((p) => p.gender === coachGender);
-    const anchor = anchorOf(same);
+    // 코치 무관 동성 3명 — 남3 or 여3 중 코치와 덜 만난(커버리지 낮은) 성별
+    const males = eligible.filter((p) => p.gender === 'M');
+    const females = eligible.filter((p) => p.gender === 'F');
+    const groups = [males, females].filter((g) => g.length >= 3);
+    if (!groups.length) return null;
+    const cov = (g) => g.slice(0, 3).reduce((s, p) => s + met(p), 0);
+    const group = groups.length === 1 ? groups[0] : (cov(groups[0]) <= cov(groups[1]) ? groups[0] : groups[1]);
+    const anchor = anchorOf(group);
     if (!anchor) return null;
-    const rest = near(same, anchor, 2);
+    const rest = near(group, anchor, 2);
     if (rest.length < 2) return null;
     return [anchor, ...rest];
   }
@@ -292,9 +307,16 @@ function pickAceThree(pool, metCount, nowTs, mode, coachGender) {
   return [anchor, ...rest];
 }
 // 코치 + 3명 → 매치. 종목은 4명(코치 포함) 성비로 결정, 코치는 최약체와 한 팀(밸런스).
-function buildAceMatch(ace, three) {
-  const M = [ace, ...three].filter((p) => p.gender === 'M').length;
-  const type = (4 - M) === 0 ? '남복' : M === 0 ? '여복' : '혼복';
+function buildAceMatch(ace, three, mode) {
+  let type;
+  if (mode === '남복/여복') {
+    // 코치는 얹힘 → 종목은 나머지 3명 동성 기준(남3=남복·여3=여복)
+    const m3 = three.filter((p) => p.gender === 'M').length;
+    type = m3 === 3 ? '남복' : three.filter((p) => p.gender === 'F').length === 3 ? '여복' : '혼복';
+  } else {
+    const M = [ace, ...three].filter((p) => p.gender === 'M').length;
+    type = (4 - M) === 0 ? '남복' : M === 0 ? '여복' : '혼복';
+  }
   const s = [...three].sort((a, b) => LEVEL_SCORE[b.level] - LEVEL_SCORE[a.level]); // 강→약
   return { type, ace: true, teamA: [ace, s[2]], teamB: [s[0], s[1]], reason: '코치 고정', balanced: true };
 }

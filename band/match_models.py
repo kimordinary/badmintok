@@ -7,6 +7,7 @@ from band.models import BandSchedule
 
 class MatchSession(models.Model):
     class Status(models.TextChoices):
+        PREPARING = "preparing", _("준비중")
         ACTIVE = "active", _("진행중")
         ENDED = "ended", _("종료")
 
@@ -102,9 +103,14 @@ class SessionParticipant(models.Model):
         """매칭 pool 자격. 회원은 프로필(실명·성별·급수) 완성 시에만,
         게스트(현장 인원)는 계정·프로필이 없으므로 항상 자격 있음.
         입구 체크인 게이트와 동일 기준(User.match_profile_ready)으로 일관 유지.
+        단, 운영자가 세션에서 급수·성별을 덮어썼으면(overridden) 그 스냅샷으로 판정
+        — 프로필 성별이 미상이어도 운영자가 지정하면 매칭에 포함(성별 미상 참가자 대기 방지).
         """
         if not self.user_id:
             return True
+        if self.overridden:
+            _, gender = self.live_level_gender()
+            return gender in ("male", "female")
         return self.user.match_profile_ready
 
 

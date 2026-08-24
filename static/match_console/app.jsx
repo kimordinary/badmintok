@@ -24,6 +24,7 @@ function initState() {
     pairs: [], // 파트너 고정 쌍 [{ id, members:[pid,pid], strict }]
     pairRequests: [], // 참가자 파트너 신청(승인 대기) [{ id, from, to }]
     screen: injected ? 'attendance' : 'main',
+    sessionStatus: injected ? 'preparing' : 'active', // preparing→active→ended (데모는 항상 active)
     device: 'tablet',
     modal: null,
     theme: 'clean',
@@ -107,7 +108,7 @@ function mapServerState(d, prev) {
   });
   const pairs = (d.pairs || []).map((pr) => ({ id: pr.id, members: (pr.members || []).map((m) => String(m.participant_id)), strict: pr.strict }));
   const pairRequests = (d.partner_requests || []).map((r) => ({ id: r.id, from: String(r.from.participant_id), to: String(r.to.participant_id) }));
-  return { participants, courts, pending, pairs, pairRequests, auto: d.auto != null ? d.auto : prev.auto, mode: _SRV_MODE[d.discipline_mode] || prev.mode, preset: _SRV_PRESET[d.preset] || prev.preset, nextLineup: mapNextLineup(d.next_lineup), pastCombos: new Set((d.past_combos || []).map((c) => c.join('-'))) };
+  return { participants, courts, pending, pairs, pairRequests, sessionStatus: d.status || prev.sessionStatus, auto: d.auto != null ? d.auto : prev.auto, mode: _SRV_MODE[d.discipline_mode] || prev.mode, preset: _SRV_PRESET[d.preset] || prev.preset, nextLineup: mapNextLineup(d.next_lineup), pastCombos: new Set((d.past_combos || []).map((c) => c.join('-'))) };
 }
 
 function App() {
@@ -125,7 +126,7 @@ function App() {
     return apiCall(p, m, b).then((d) => {
       if (d && Array.isArray(d.participants)) setSt((s) => ({ ...s, ...mapServerState(d, s) }));
       else refetch();
-    }).catch((e) => set({ toast: { kind: 'alert', error: '오류', detail: e.message || '요청 실패' } }));
+    }).catch((e) => { refetch(); set({ toast: { kind: 'alert', error: '오류', detail: e.message || '요청 실패' } }); }); // 실패 시 서버 최신 상태로 자동 복구(지속 오류 방지)
   };
 
   // 서버 연동 모드: session_state 폴링 → 서버 상태로 렌더 (2.5초)
@@ -139,6 +140,20 @@ function App() {
     const t = setInterval(poll, 2500);
     return () => { alive = false; clearInterval(t); };
   }, []);
+
+  // 1시간 완전 무입력(터치·스크롤·마우스·키보드) → 대진 자동 종료
+  useEffect(() => {
+    if (!CONNECTED || st.sessionStatus !== 'active') return;
+    let timer;
+    const trigger = () => apiCall('/end/', 'POST')
+      .then((d) => { if (d) setSt((s) => ({ ...s, ...mapServerState(d, s) })); })
+      .catch(() => {});
+    const reset = () => { clearTimeout(timer); timer = setTimeout(trigger, 60 * 60 * 1000); };
+    const evts = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'wheel'];
+    evts.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => { clearTimeout(timer); evts.forEach((e) => window.removeEventListener(e, reset)); };
+  }, [st.sessionStatus]);
 
   // 게임 보드: 경기 기록 화면일 때 완료+진행 경기 폴링
   useEffect(() => {
@@ -241,6 +256,14 @@ function App() {
     }),
     setPreset: (preset) => CONNECTED ? srv('/preset/', 'POST', { preset: PRESET_TO_SRV[preset] }, { preset }) : set({ preset }),
     switchScreen: (screen) => set({ screen }),
+    beginSession: () => {
+      if (CONNECTED) { srv('/begin/', 'POST'); set({ sessionStatus: 'active', screen: 'main' }); }
+      else set({ sessionStatus: 'active', screen: 'main' });
+    },
+    endSession: () => {
+      if (CONNECTED) srv('/end/', 'POST');
+      else set({ sessionStatus: 'ended' });
+    },
     setDevice: (device) => set({ device }),
     setTheme: (theme) => set({ theme }),
 
@@ -271,7 +294,7 @@ function App() {
       });
     },
 
-    endMatch: (court) => CONNECTED ? srv('/courts/' + court.no + '/end/', 'POST', null, (s) => ({ courts: s.courts.map((c) => (c.no === court.no ? { ...c, match: null } : c)) })) : set((s) => {
+    endMatch: (court) => CONNECTED ? srv('/courts/' + court.no + '/end/', 'POST', null, st.auto ? undefined : (s) => ({ courts: s.courts.map((c) => (c.no === court.no ? { ...c, match: null } : c)) })) : set((s) => {
       const now = Date.now();
       const m = s.courts.find((c) => c.no === court.no).match;
       if (!m) return {};
@@ -399,6 +422,9 @@ function App() {
       set({ modal: { type: 'edit', court, match: court.match } });
     },
 
+    // 코치 코트 인원 편집: 코치는 고정, 나머지 3명 교체 (모달에 '코치와 아직 안 친 사람' 우선)
+    editCoachLineup: (court) => set({ modal: { type: 'edit', court, match: court.match, lineup: true } }),
+
     confirmEdit: (court, match) => {
       if (CONNECTED) {
         set({ modal: null });
@@ -450,6 +476,7 @@ function App() {
 
     openCheckin: () => set({ modal: { type: 'checkin' } }),
     openSettings: () => set({ modal: { type: 'settings' } }),
+    openOps: () => set({ modal: { type: 'ops' } }),
     openAddParticipant: () => set({ modal: { type: 'addParticipant' } }),
     openEditParticipant: (p) => set({ modal: { type: 'editParticipant', p } }),
     openRecord: (p) => set({ modal: { type: 'record', p } }),
@@ -642,13 +669,16 @@ function App() {
         <AlertModal court={st.modal.court} rec={st.modal.rec} onPick={(t) => actions.pickAlt(st.modal.court, t)} onClose={actions.closeModal} />
       )}
       {st.modal && st.modal.type === 'edit' && (
-        <EditModal court={(!st.modal.pending && st.courts.find((c) => c.no === st.modal.court.no)) || st.modal.court} match={st.modal.match} bench={bench} isPending={!!st.modal.pending} onConfirm={st.modal.pending ? (c, m) => actions.editPending(st.modal.pending.id, m) : actions.confirmEdit} onClose={actions.closeModal} participants={st.participants} coachIds={st.courts.filter((c) => c.ace).map((c) => c.coachId)} onTogglePin={st.modal.pending ? undefined : actions.togglePinned} />
+        <EditModal court={(!st.modal.pending && st.courts.find((c) => c.no === st.modal.court.no)) || st.modal.court} match={st.modal.match} bench={bench} isPending={!!st.modal.pending} onConfirm={st.modal.pending ? (c, m) => actions.editPending(st.modal.pending.id, m) : actions.confirmEdit} onClose={actions.closeModal} participants={st.participants} coachIds={st.courts.filter((c) => c.ace).map((c) => c.coachId)} onTogglePin={st.modal.pending ? undefined : actions.togglePinned} lineupMode={!!st.modal.lineup} />
       )}
       {st.modal && st.modal.type === 'checkin' && (
         <CheckinModal participants={st.participants} onCheckin={(id) => actions.setStatus(id, '참여중')} onClose={actions.closeModal} />
       )}
       {st.modal && st.modal.type === 'settings' && (
-        <SettingsModal courts={st.courts} onSet={actions.setCourtCount} onToggleRemove={actions.toggleRemoveCourt} onRename={actions.renameCourt} onReset={actions.reset} onClose={actions.closeModal} />
+        <SettingsModal courts={st.courts} onSet={actions.setCourtCount} onToggleRemove={actions.toggleRemoveCourt} onRename={actions.renameCourt} onClose={actions.closeModal} />
+      )}
+      {st.modal && st.modal.type === 'ops' && (
+        <SettingsSheet onReset={actions.reset} onClose={actions.closeModal} />
       )}
       {st.modal && st.modal.type === 'addParticipant' && (
         <AddParticipantModal onAdd={actions.addParticipant} onClose={actions.closeModal} />
@@ -657,7 +687,7 @@ function App() {
         <EditParticipantModal p={st.modal.p} onSave={actions.editParticipant} onClose={actions.closeModal} />
       )}
       {st.modal && st.modal.type === 'record' && (
-        <RecordSheet p={st.modal.p} participants={st.participants} onClose={actions.closeModal} />
+        <RecordSheet p={st.modal.p} participants={st.participants} coaches={st.courts.filter((c) => c.ace && c.coachId).map((c) => ({ id: c.coachId, name: (st.participants.find((x) => x.id === c.coachId) || {}).name || '코치' }))} onClose={actions.closeModal} />
       )}
       {st.toast && <CallToast toast={st.toast} onUndo={actions.undo} onDismiss={actions.dismissToast} onPick={(t) => actions.pickAlt({ no: st.toast.courtNo }, t)} />}
     </>

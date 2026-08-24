@@ -355,6 +355,9 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
     is_applied = serializers.SerializerMethodField()
     can_manage = serializers.SerializerMethodField()
     d_day = serializers.SerializerMethodField()
+    waiting_count = serializers.SerializerMethodField()
+    waitlist_capacity = serializers.SerializerMethodField()
+    is_waitlist_full = serializers.SerializerMethodField()
 
     class Meta:
         model = BandSchedule
@@ -365,6 +368,7 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
             'requires_approval', 'application_deadline',
             'cost', 'bank_account', 'is_closed', 'created_by',
             'images', 'is_full', 'is_applied', 'can_manage', 'd_day',
+            'waiting_count', 'waitlist_capacity', 'is_waitlist_full',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
@@ -373,6 +377,19 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
         if obj.max_participants:
             return obj.current_participants >= obj.max_participants
         return False
+
+    def get_waiting_count(self, obj):
+        # prefetch된 applications를 활용 (추가 쿼리 없이 카운트)
+        return sum(1 for a in obj.applications.all() if a.status == 'waiting')
+
+    def get_waitlist_capacity(self, obj):
+        return BandScheduleApplication.WAITLIST_CAPACITY
+
+    def get_is_waitlist_full(self, obj):
+        # 정원(참가)과 대기 정원이 모두 찼는지
+        if not self.get_is_full(obj):
+            return False
+        return self.get_waiting_count(obj) >= BandScheduleApplication.WAITLIST_CAPACITY
 
     def get_is_applied(self, obj):
         request = self.context.get('request')
@@ -397,11 +414,12 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
     def get_d_day(self, obj):
         from django.utils import timezone
         now = timezone.now()
-        if obj.is_closed or obj.start_datetime < now:
+        # 종료 판정은 유효 종료시각 기준 (end<start 데이터 오류 시 start로 폴백 → 시작 전 종료 방지)
+        if obj.is_ended:
             return '종료'
         delta = (obj.start_datetime.date() - now.date()).days
-        if delta == 0:
-            return 'D-Day'
+        if delta <= 0:
+            return 'D-Day'  # 오늘 시작 또는 시작했지만 아직 안 끝난(진행중) 번개
         return f'D-{delta}'
 
 
@@ -420,6 +438,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     d_day = serializers.SerializerMethodField()
     waiting_count = serializers.SerializerMethodField()
     waitlist_capacity = serializers.SerializerMethodField()
+    is_waitlist_full = serializers.SerializerMethodField()
     my_waiting_position = serializers.SerializerMethodField()
     quota_status = serializers.SerializerMethodField()
     gender_status = serializers.SerializerMethodField()
@@ -435,7 +454,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'use_level_quota', 'quota_by_gender', 'level_quota', 'gender_quota',
             'images', 'is_full', 'is_applied', 'user_application',
             'can_manage', 'is_site_admin', 'applications', 'd_day',
-            'waiting_count', 'waitlist_capacity', 'my_waiting_position',
+            'waiting_count', 'waitlist_capacity', 'is_waitlist_full', 'my_waiting_position',
             'quota_status', 'gender_status',
             'created_at', 'updated_at'
         ]
@@ -497,6 +516,12 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
 
     def get_waitlist_capacity(self, obj):
         return BandScheduleApplication.WAITLIST_CAPACITY
+
+    def get_is_waitlist_full(self, obj):
+        # 정원(참가, 급수/성별 정원 반영)과 대기 정원이 모두 찼는지
+        if not self.get_is_full(obj):
+            return False
+        return self.get_waiting_count(obj) >= BandScheduleApplication.WAITLIST_CAPACITY
 
     def get_my_waiting_position(self, obj):
         request = self.context.get('request')
@@ -602,11 +627,12 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
     def get_d_day(self, obj):
         from django.utils import timezone
         now = timezone.now()
-        if obj.is_closed or obj.start_datetime < now:
+        # 종료 판정은 유효 종료시각 기준 (end<start 데이터 오류 시 start로 폴백 → 시작 전 종료 방지)
+        if obj.is_ended:
             return '종료'
         delta = (obj.start_datetime.date() - now.date()).days
-        if delta == 0:
-            return 'D-Day'
+        if delta <= 0:
+            return 'D-Day'  # 오늘 시작 또는 시작했지만 아직 안 끝난(진행중) 번개
         return f'D-{delta}'
 
 

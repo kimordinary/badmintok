@@ -57,6 +57,7 @@ urlpatterns = [
     path('<int:band_id>/schedules/<int:schedule_id>/cancel/', views.band_schedule_cancel, name='band_schedule_cancel'),
     path('<int:band_id>/schedules/<int:schedule_id>/toggle-close/', views.band_schedule_toggle_close, name='band_schedule_toggle_close'),
     path('<int:band_id>/schedules/<int:schedule_id>/notices/', views.band_schedule_notice_send, name='band_schedule_notice_send'),
+    path('<int:band_id>/schedules/<int:schedule_id>/applications/bulk-approve/', views.band_schedule_application_bulk_approve, name='band_schedule_application_bulk_approve'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/', views.band_schedule_application_detail, name='band_schedule_application_detail'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/approve/', views.band_schedule_application_approve, name='band_schedule_application_approve'),
     path('<int:band_id>/schedules/<int:schedule_id>/applications/<int:application_id>/reject/', views.band_schedule_application_reject, name='band_schedule_application_reject'),
@@ -84,6 +85,7 @@ urlpatterns = [
     path('match/<int:session_id>/participants/<int:pid>/', match_views.edit_participant, name='match_participant_edit'),
     path('match/<int:session_id>/participants/sync/', match_views.sync_participants, name='match_participant_sync'),
     path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
+    path('match/<int:session_id>/begin/', match_views.begin_session, name='match_begin_session'),
     path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),
     path('match/<int:session_id>/reset/', match_views.reset_session, name='match_reset'),
 

@@ -121,7 +121,7 @@ function EditParticipantModal({ p, onSave, onClose }) {
 }
 
 // 개인 경기기록 시트 — 총 경기·종목별·파트너/상대 이력
-function RecordSheet({ p, participants, onClose }) {
+function RecordSheet({ p, participants, coaches, onClose }) {
   const nameOf = (id) => (participants.find((x) => x.id === id) || {}).name || '?';
   const partners = Object.entries(p.partnerCount || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
   const opps = Object.entries(p.opponentCount || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
@@ -150,6 +150,21 @@ function RecordSheet({ p, participants, onClose }) {
             </div>
           ))}
         </div>
+        {coaches && coaches.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', marginBottom: 9 }}>👑 코치와 경기</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {coaches.map((c) => {
+                const n = ((p.partnerCount || {})[c.id] || 0) + ((p.opponentCount || {})[c.id] || 0);
+                return (
+                  <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 999, background: n > 0 ? '#eef0ff' : 'var(--surface-3)', border: `1px solid ${n > 0 ? 'var(--hl)' : 'var(--line-2)'}`, fontSize: 12.5, fontWeight: 800, color: n > 0 ? 'var(--hl)' : 'var(--muted)' }}>
+                    {c.name} {n > 0 ? <span style={{ fontWeight: 900 }}>{n}회</span> : '아직'}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', marginBottom: 9 }}>함께 뛴 파트너 <span style={{ color: 'var(--muted)', fontWeight: 700 }}>{partners.length}명</span></div>
           {partners.length ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{partners.map(([id, n]) => <Tag key={id} id={id} n={n} />)}</div> : <div style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 600 }}>아직 없어요</div>}
@@ -226,6 +241,14 @@ function AttendanceScreen({ state, actions }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
+      {state.sessionStatus === 'preparing' && (
+        <div style={{ height: 46, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 22px', background: '#16a34a', color: '#fff', flexShrink: 0 }}>
+          <img src="badmintok-text-logo.png" alt="배드민톡" height={18} style={{ display: 'block', flexShrink: 0, filter: 'brightness(0) invert(1)' }} />
+          <StatusDot color="#fde047" />
+          <span style={{ fontSize: 14, fontWeight: 700 }}><b style={{ fontWeight: 900, marginRight: 8 }}>준비중</b>운동 시작 준비가 된다면 운영 시작 해주세요.</span>
+          <button onClick={actions.beginSession} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 22px', fontSize: 14, fontWeight: 900, background: '#fff', color: '#16a34a', border: 'none', borderRadius: 9, cursor: 'pointer' }}><PlayIcon /> 운영 시작</button>
+        </div>
+      )}
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 22px', background: 'var(--surface)', borderBottom: '1px solid var(--line)', boxShadow: 'var(--sh-1)', flexShrink: 0 }}>
         <button onClick={() => actions.switchScreen('main')} style={{ ...navBtnStyle, padding: '9px 14px' }}>← 운영 화면</button>
@@ -628,16 +651,23 @@ function AlertModal({ court, rec, onPick, onClose }) {
 }
 
 // ---------- 경기 편집 모달 (사람 swap) ----------
-function EditModal({ court, match, bench, onConfirm, onClose, participants, coachIds, onTogglePin, isPending = false }) {
+function EditModal({ court, match, bench, onConfirm, onClose, participants, coachIds, onTogglePin, isPending = false, lineupMode = false }) {
   const init = match ? [...match.teamA, ...match.teamB] : [];
   const [slots, setSlots] = useState(init);
-  const [type, setType] = useState(match ? match.type : '혼복');
+  // 종목은 4명 성별로 자동 판정(남4=남복·여4=여복·섞이면 혼복) — 수동 토글 제거, 팀 배치는 슬롯 순서 그대로
+  const type = (() => {
+    const g = slots.filter(Boolean);
+    if (g.length < 4) return match ? match.type : '혼복';
+    const m = g.filter((s) => s.gender === 'M').length;
+    return m === 4 ? '남복' : m === 0 ? '여복' : '혼복';
+  })();
   const [picking, setPicking] = useState(null); // 교체할 슬롯 index
   const [showCoach, setShowCoach] = useState(false);
   const [q, setQ] = useState(''); // 교체 후보 이름 검색
   const [genderF, setGenderF] = useState('all'); // 'all' | 'M' | 'F'
   const [sortM, setSortM] = useState('smart'); // smart(비슷한 급수·같은 성별) | level(급수순) | wait(대기순)
   const [justReplaced, setJustReplaced] = useState(null); // 방금 교체된 슬롯 idx (잠깐 하이라이트)
+  const [needHint, setNeedHint] = useState(false); // 자리 안 고르고 후보 탭했는데 4자리 다 참
   const coachSet = new Set(coachIds || []);
   // 코치 후보: 대기 중(court==null)이거나 이미 코치인 자강·S. 일반 경기 중인 사람은 빼면 원래 코트에 팬텀으로 남는 것 방지
   const candidates = (participants || []).filter((p) => p.status === '참여중' && (p.level === '자강' || p.level === 'S') && (p.court == null || coachSet.has(p.id)));
@@ -662,8 +692,8 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
     <div style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 600 }}>고정할 자강·S 급수 참여 인원이 없습니다.</div>
   );
 
-  // ===== 코치 코트: 코치 관리 전용 =====
-  if (isAce) {
+  // ===== 코치 코트: 코치 관리 전용 (lineupMode면 아래 인원 편집으로) =====
+  if (isAce && !lineupMode) {
     return (
       <ModalShell onClose={onClose} width={460}>
         <div style={{ padding: 24 }}>
@@ -690,11 +720,16 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
   }
 
   const replace = (q) => {
-    const idx = picking;
+    let idx = picking;
+    if (idx == null) {
+      idx = [0, 1, 2, 3].find((i) => !slots[i]);  // 자리 미선택: 빈 자리 우선 투입
+      if (idx === undefined) { setNeedHint(true); return; }  // 4자리 다 참 → 바꿀 자리 탭 유도
+    }
     const next = [...slots];
     next[idx] = q;
     setSlots(next);
     setPicking(null);
+    setNeedHint(false);
     setJustReplaced(idx);
     setTimeout(() => setJustReplaced((cur) => (cur === idx ? null : cur)), 900);
   };
@@ -703,6 +738,10 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
 
   // 교체 후보 계산 — 검색·성별 필터 + 정렬(스마트=탭한 선수와 비슷한 급수·같은 성별 우선)
   const LS = (typeof window !== 'undefined' && window.LEVEL_SCORE) || {};
+  // 코치 코트 인원편집: 코치 슬롯 고정 + '코치와 아직 안 친 사람'(unmet) 우선
+  const coachId = lineupMode && court.coachId != null ? String(court.coachId) : null;
+  const unmetSet = new Set(lineupMode && court.coachCoverage && court.coachCoverage.unmet_ids
+    ? court.coachCoverage.unmet_ids.map(String) : []);
   const target = picking != null ? slots[picking] : null;
   const qq = q.trim().toLowerCase();
   let cands = bench.filter((b) => !slots.some((s) => s && s.id === b.id));
@@ -712,6 +751,8 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
     const sc = (x) => (x.gender === target.gender ? 0 : 100) + Math.abs((LS[x.level] || 0) - (LS[target.level] || 0));
     return sc(a) - sc(b);
   });
+  // 코치와 아직 안 친 사람을 맨 앞으로(stable) — 코치가 골고루 치도록
+  if (lineupMode) cands = [...cands].sort((a, b) => (unmetSet.has(b.id) ? 1 : 0) - (unmetSet.has(a.id) ? 1 : 0));
   const chip = (opts, val, setter) => (
     <div style={{ display: 'inline-flex', background: 'var(--surface-3)', borderRadius: 8, padding: 2, gap: 2 }}>
       {opts.map((o) => (
@@ -727,12 +768,12 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
         {/* ① 고정 상단: 제목·종목·슬롯 */}
         <div style={{ padding: '20px 24px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: '-.03em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>{isPending ? '예약 경기 편집' : court.no + '번 코트 경기 편집'}</div>
+            <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: '-.03em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>{isPending ? '예약 경기 편집' : lineupMode ? court.no + '번 코트 · 👑 코치와 칠 3명' : court.no + '번 코트 경기 편집'}</div>
             <DisciplineBadge type={type} size="lg" />
           </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginBottom: 14 }}>바꿀 선수를 탭하면 아래에서 대타를 고를 수 있어요.</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginBottom: 14 }}>{lineupMode ? '코치는 고정돼요. 나머지 3명을 바꿔 「코치와 아직 안 친 사람」을 넣어보세요.' : '바꿀 선수를 탭하면 아래에서 대타를 고를 수 있어요.'}</div>
 
-          {onTogglePin && (
+          {onTogglePin && !lineupMode && (
             <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 12, background: showCoach ? '#eef0ff' : 'var(--surface-2)', border: `1px solid ${showCoach ? '#d9ddff' : 'var(--line)'}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 800, color: showCoach ? 'var(--hl)' : 'var(--ink)' }}>👑 코치 고정</span>
@@ -745,11 +786,6 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            {['혼복', '남복', '여복'].map((t) => (
-              <button key={t} onClick={() => setType(t)} style={{ flex: 1, padding: '9px 0', borderRadius: 10, fontSize: 14, fontWeight: 800, border: type === t ? `2px solid var(--${disciplineColor(t)})` : '1px solid var(--line-2)', background: type === t ? `var(--${disciplineColor(t)}-tint)` : 'var(--surface)', color: type === t ? `var(--${disciplineColor(t)}-ink)` : 'var(--ink-2)' }}>{t}</button>
-            ))}
-          </div>
 
           <div style={{ display: 'flex', gap: 12 }}>
             {[{ team: teamA, label: '팀 A', base: 0 }, { team: teamB, label: '팀 B', base: 2 }].map((side) => (
@@ -758,10 +794,11 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
                 {side.team.map((p, j) => {
                   const idx = side.base + j;
                   const hot = picking === idx || justReplaced === idx;
+                  const isCoachSlot = coachId && p && p.id === coachId;
                   return (
-                    <button key={idx} onClick={() => setPicking(idx)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: 8, borderRadius: 10, marginBottom: j === 0 ? 6 : 0, background: hot ? 'var(--brand-tint)' : 'var(--surface)', border: hot ? '2px solid var(--brand)' : '1px solid var(--line)', textAlign: 'left', transition: 'background .3s ease, border-color .3s ease' }}>
+                    <button key={idx} onClick={() => !isCoachSlot && setPicking(idx)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: 8, borderRadius: 10, marginBottom: j === 0 ? 6 : 0, background: isCoachSlot ? '#eef0ff' : hot ? 'var(--brand-tint)' : 'var(--surface)', border: isCoachSlot ? '1px solid #d9ddff' : hot ? '2px solid var(--brand)' : '1px solid var(--line)', textAlign: 'left', cursor: isCoachSlot ? 'default' : 'pointer', transition: 'background .3s ease, border-color .3s ease' }}>
                       {p ? <><LevelChip level={p.level} size={22} /><NameWithGender p={p} size={15} /></> : <span style={{ color: 'var(--muted)', fontSize: 14 }}>빈 자리</span>}
-                      <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: justReplaced === idx ? 'var(--brand-ink)' : 'var(--brand-ink)', whiteSpace: 'nowrap' }}>{picking === idx ? '선택 ↓' : justReplaced === idx ? '교체됨 ✓' : (p ? '교체' : '선택')}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: isCoachSlot ? 'var(--hl)' : 'var(--brand-ink)', whiteSpace: 'nowrap' }}>{isCoachSlot ? '👑 코치' : picking === idx ? '선택 ↓' : justReplaced === idx ? '교체됨 ✓' : (p ? '교체' : '선택')}</span>
                     </button>
                   );
                 })}
@@ -772,10 +809,14 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
 
         {/* ② 스크롤: 필터 + 교체 후보 리스트 */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '12px 24px 0' }}>
-          {picking != null && (
+          {picking != null ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 10, background: 'var(--brand-tint)', border: '1px solid var(--brand)' }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-ink)' }}>{target ? <><b>{target.name}</b> 자리 교체 중 — 아래에서 대타 선택</> : '빈 자리 채우기 — 아래에서 선택'}</span>
               <button onClick={() => setPicking(null)} style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: 10, background: 'var(--brand)', color: '#fff', fontSize: 11, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 10, background: needHint ? 'var(--warn-tint)' : 'var(--surface-2)', border: `1px solid ${needHint ? 'var(--warn)' : 'var(--line)'}` }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: needHint ? 'var(--warn)' : 'var(--muted)' }}>{needHint ? '4자리가 모두 찼어요 — 위에서 바꿀 선수를 탭하세요.' : '아래에서 탭하면 빈 자리에 바로 들어가요. 특정 자리를 바꾸려면 위 선수를 먼저 탭하세요.'}</span>
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
@@ -787,9 +828,7 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
             {chip([{ v: 'all', l: '전체' }, { v: 'M', l: '남' }, { v: 'F', l: '여' }], genderF, setGenderF)}
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 8 }}>
-            {picking == null ? (
-              <div style={{ padding: '40px 12px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5, fontWeight: 600, lineHeight: 1.6 }}>위에서 <b style={{ color: 'var(--ink-2)' }}>바꿀 선수</b>를 탭하면<br />여기에 대타 후보가 떠요</div>
-            ) : cands.length === 0 ? (
+            {cands.length === 0 ? (
               <div style={{ padding: '40px 12px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5, fontWeight: 600 }}>조건에 맞는 대기 인원이 없어요</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -797,6 +836,7 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
                   <button key={b.id} onClick={() => replace(b)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--line)', textAlign: 'left', minWidth: 0 }}>
                     <LevelChip level={b.level} size={26} />
                     <NameWithGender p={b} size={16.5} />
+                    {lineupMode && unmetSet.has(b.id) && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--hl)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>코치와 안 침</span>}
                     {b.court != null && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--ink-2)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>게임 중</span>}
                     <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{b.totalGames}경기</span>
                   </button>
@@ -952,7 +992,7 @@ function GameBoard({ history, onBack }) {
   );
 }
 
-Object.assign(window, { AttendanceScreen, CountsScreen, GameBoard, AlertModal, EditModal, ModalShell, STATUS_STYLE, CallToast, CheckinModal, SettingsModal, HonWarnModal, courtLabel });
+Object.assign(window, { AttendanceScreen, CountsScreen, GameBoard, AlertModal, EditModal, ModalShell, STATUS_STYLE, CallToast, CheckinModal, SettingsModal, SettingsSheet, HonWarnModal, courtLabel });
 
 // 코트 표시 이름 (커스텀 또는 기본)
 function courtLabel(c) {
@@ -960,7 +1000,34 @@ function courtLabel(c) {
 }
 
 // ---------- 코트 수 설정 모달 ----------
-function SettingsModal({ courts, onSet, onToggleRemove, onRename, onReset, onClose }) {
+function SettingsSheet({ onReset, onClose }) {
+  const Col = ({ icon, title, desc, ink, bg, onClick }) => (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <button onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '15px 10px', borderRadius: 12, background: bg, border: 'none', color: ink, fontSize: 14, fontWeight: 800, letterSpacing: '-.02em', cursor: 'pointer', fontFamily: 'inherit' }}>
+        {icon}<span>{title}</span>
+      </button>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textAlign: 'center', marginTop: 8, lineHeight: 1.45 }}>{desc}</div>
+    </div>
+  );
+  return (
+    <ModalShell onClose={onClose} width={460}>
+      <div style={{ padding: 24 }}>
+        <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: '-.03em', color: 'var(--ink)' }}>설정</div>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', marginTop: 16, marginBottom: 11 }}>세션 초기화</div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Col icon={<RefreshIcon size={17} />} title="경기만 리셋" desc="경기·기록만 초기화 (참가자·출석 유지)"
+            ink="var(--warn)" bg="var(--warn-tint)"
+            onClick={() => { if (window.confirm('경기·기록만 초기화하고 준비 상태로 돌아갑니다.\n참가자·출석은 그대로예요. 계속할까요?')) onReset && onReset('game'); }} />
+          <Col icon={<WarnTriIcon size={17} />} title="처음부터" desc="인원·출석까지 초기화 (체크인 화면부터)"
+            ink="var(--danger)" bg="#fdecec"
+            onClick={() => { if (window.confirm('완전 리셋합니다.\n현장 추가 인원 삭제 + 전원 출석 초기화(체크인 화면부터)돼요. 계속할까요?')) onReset && onReset('full'); }} />
+        </div>
+        <Btn variant="ghost" size="lg" full onClick={onClose} style={{ marginTop: 22 }}>닫기</Btn>
+      </div>
+    </ModalShell>
+  );
+}
+function SettingsModal({ courts, onSet, onToggleRemove, onRename, onClose }) {
   const active = courts.filter((c) => !c.pendingRemove).length;
   const sorted = [...courts].sort((a, b) => a.no - b.no);
   const [editing, setEditing] = useState(null); // 편집 중인 코트 no
@@ -1038,17 +1105,7 @@ function SettingsModal({ courts, onSet, onToggleRemove, onRename, onReset, onClo
         <div style={{ fontSize: 11.5, color: 'var(--muted)', fontWeight: 600, lineHeight: 1.5, marginBottom: 16 }}>
           경기 중인 코트를 줄이면 진행 경기는 그대로 두고 <b style={{ color: 'var(--warn)' }}>종료 후 자동 제거</b>됩니다. 빈 코트는 즉시 사라집니다.
         </div>
-        {/* 위험 구역 — 세션 리셋 (되돌릴 수 없음) */}
-        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line-2)' }}>
-          <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--danger)', marginBottom: 10 }}>⚠ 위험 구역 — 되돌릴 수 없어요</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { if (window.confirm('경기 기록만 초기화합니다. 참가자·출석은 그대로예요. 계속할까요?')) onReset && onReset('game'); }}
-              style={{ flex: 1, padding: '11px', borderRadius: 11, background: 'var(--warn-tint)', color: 'var(--warn)', border: '1px solid var(--warn)', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>경기만 리셋</button>
-            <button onClick={() => { if (window.confirm('완전 리셋합니다. 현장 추가 인원 삭제 + 전원 출석 초기화(최초 화면)돼요. 계속할까요?')) onReset && onReset('full'); }}
-              style={{ flex: 1, padding: '11px', borderRadius: 11, background: 'var(--surface)', color: 'var(--danger)', border: '1px solid var(--danger)', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>완전 리셋 — 처음부터</button>
-          </div>
-        </div>
-        <Btn variant="primary" size="lg" full onClick={onClose} style={{ marginTop: 12 }}>완료</Btn>
+        <Btn variant="primary" size="lg" full onClick={onClose} style={{ marginTop: 18 }}>완료</Btn>
       </div>
     </ModalShell>
   );

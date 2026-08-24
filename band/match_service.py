@@ -26,7 +26,8 @@ def create_session_snapshot(schedule, created_by, court_count=4, mode=None, pres
     with transaction.atomic():
         session = MatchSession.objects.create(
             schedule=schedule, court_count=court_count,
-            discipline_mode=mode, preset=preset, created_by=created_by)
+            discipline_mode=mode, preset=preset, created_by=created_by,
+            status=MatchSession.Status.PREPARING)  # 진입 시 '준비' 상태 → [운영 시작] 눌러야 진행
         for i in range(1, court_count + 1):
             Court.objects.create(session=session, index=i)
         apps = BandScheduleApplication.objects.filter(
