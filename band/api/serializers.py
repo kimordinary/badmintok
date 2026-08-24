@@ -15,10 +15,11 @@ class UserSerializer(serializers.ModelSerializer):
     grade = serializers.SerializerMethodField()
     gender = serializers.SerializerMethodField()
     gender_display = serializers.SerializerMethodField()
+    age_group = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'activity_name', 'profile_image_url', 'grade', 'gender', 'gender_display']
+        fields = ['id', 'name', 'activity_name', 'profile_image_url', 'grade', 'gender', 'gender_display', 'age_group']
         read_only_fields = fields
 
     def get_name(self, obj):
@@ -48,6 +49,10 @@ class UserSerializer(serializers.ModelSerializer):
         if profile and profile.gender and profile.gender != 'unknown':
             return profile.get_gender_display()
         return None
+
+    def get_age_group(self, obj):
+        profile = getattr(obj, 'profile', None)
+        return profile.age_group if profile else None
 
 
 class BandListSerializer(serializers.ModelSerializer):
