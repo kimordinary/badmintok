@@ -582,6 +582,12 @@ class BandSchedule(models.Model):
     level_quota = models.JSONField(_("급수별 정원"), default=dict, blank=True)
     # 성별 전용 모드용: {"male": 10, "female": 10} — 키 없는 성별은 모집 안 함
     gender_quota = models.JSONField(_("성별 정원"), default=dict, blank=True)
+    # 급수 범위 신청 자격 (급수별 정원 use_level_quota 와 상호배타 — 정원이 아니라 '신청 가능 급수' 제한)
+    # 급수 코드: master(7) s(6) a(5) b(4) c(3) d(2) beginner(1). 예: min='b'→B조 이상, max='c'→C조 이하
+    level_min = models.CharField(_("최소 급수"), max_length=20, blank=True, null=True,
+                                 help_text="이 급수 이상만 신청 가능(급수 코드). 예: 'b'")
+    level_max = models.CharField(_("최대 급수"), max_length=20, blank=True, null=True,
+                                 help_text="이 급수 이하만 신청 가능(급수 코드). 예: 'c'")
     requires_approval = models.BooleanField(_("승인 필요"), default=False)
     application_deadline = models.DateTimeField(_("신청 마감일"), null=True, blank=True)
     cost = models.IntegerField(_("참가비"), default=0, null=True, blank=True, help_text="참가비 (원). 0 또는 비워두면 무료.")
@@ -624,6 +630,28 @@ class BandSchedule(models.Model):
         end<start 데이터 오류가 있어도 시작 전에는 종료로 판정하지 않는다."""
         from django.utils import timezone
         return self.is_closed or self.effective_end_datetime < timezone.now()
+
+    def level_eligible(self, level_code):
+        """신청자 급수 코드가 [level_min, level_max] 급수 범위 안인지. 반환 (ok: bool, msg: str|None).
+        범위 미설정이면 항상 통과. 밖이면 동적 안내 메시지 반환."""
+        if not self.level_min and not self.level_max:
+            return True, None
+        from band.matchmaking.scoring import level_to_score
+        score = level_to_score(level_code)
+        lo = level_to_score(self.level_min) if self.level_min else None
+        hi = level_to_score(self.level_max) if self.level_max else None
+        if (lo is not None and score < lo) or (hi is not None and score > hi):
+            labels = {'master': '자강', 's': 'S', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'beginner': '초심'}
+            lmin = labels.get((self.level_min or '').lower(), self.level_min)
+            lmax = labels.get((self.level_max or '').lower(), self.level_max)
+            if self.level_min and self.level_max:
+                msg = f"{lmin}~{lmax}만 신청할 수 있어요"
+            elif self.level_min:
+                msg = f"{lmin} 이상만 신청할 수 있어요"
+            else:
+                msg = f"{lmax} 이하만 신청할 수 있어요"
+            return False, msg
+        return True, None
 
 
 class BandScheduleApplication(models.Model):

@@ -374,6 +374,7 @@ class BandScheduleListSerializer(serializers.ModelSerializer):
             'cost', 'bank_account', 'is_closed', 'created_by',
             'images', 'is_full', 'is_applied', 'can_manage', 'd_day',
             'waiting_count', 'waitlist_capacity', 'is_waitlist_full',
+            'level_min', 'level_max',
             'created_at', 'updated_at'
         ]
         read_only_fields = fields
@@ -457,6 +458,7 @@ class BandScheduleDetailSerializer(serializers.ModelSerializer):
             'requires_approval', 'application_deadline',
             'cost', 'bank_account', 'is_closed', 'created_by',
             'use_level_quota', 'quota_by_gender', 'level_quota', 'gender_quota',
+            'level_min', 'level_max',
             'images', 'is_full', 'is_applied', 'user_application',
             'can_manage', 'is_site_admin', 'applications', 'd_day',
             'waiting_count', 'waitlist_capacity', 'is_waitlist_full', 'my_waiting_position',
@@ -744,7 +746,8 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
             'title', 'description', 'start_datetime', 'end_datetime',
             'region', 'location', 'max_participants', 'requires_approval',
             'application_deadline', 'cost', 'bank_account',
-            'use_level_quota', 'quota_by_gender', 'level_quota', 'gender_quota'
+            'use_level_quota', 'quota_by_gender', 'level_quota', 'gender_quota',
+            'level_min', 'level_max'
         ]
 
     def validate(self, attrs):
@@ -765,6 +768,11 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
         gq = _cur('gender_quota', {})
         if qbg and not ulq and not gq:
             raise serializers.ValidationError({'gender_quota': '성별 정원을 입력하세요.'})
+        # 급수별 정원(use_level_quota)과 급수 범위 제한(level_min/max)은 상호배타
+        lmin = _cur('level_min', None)
+        lmax = _cur('level_max', None)
+        if ulq and (lmin or lmax):
+            raise serializers.ValidationError({'level_min': '급수별 정원과 급수 범위 제한은 함께 쓸 수 없어요.'})
         return attrs
 
 

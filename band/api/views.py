@@ -1139,6 +1139,10 @@ def band_schedule_apply(request, band_id, schedule_id):
     profile = getattr(request.user, 'profile', None)
     lvl = getattr(profile, 'badminton_level', '') or ''
     gender = getattr(profile, 'gender', '') or ''
+    # 급수 범위 신청 자격 (level_min/max) — 범위 밖이면 신청 거부
+    _lvl_ok, _lvl_msg = schedule.level_eligible(lvl)
+    if not _lvl_ok:
+        return Response({'error': _lvl_msg}, status=status.HTTP_400_BAD_REQUEST)
     if schedule.use_level_quota:
         lq = schedule.level_quota or {}
         if lvl not in lq:
