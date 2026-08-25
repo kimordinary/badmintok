@@ -768,6 +768,10 @@ class BandScheduleCreateSerializer(serializers.ModelSerializer):
         gq = _cur('gender_quota', {})
         if qbg and not ulq and not gq:
             raise serializers.ValidationError({'gender_quota': '성별 정원을 입력하세요.'})
+        # 빈 문자열('')은 null로 정규화 — multipart는 null 전송 불가라 ''가 오는데, ''가 DB에 남지 않게(범위 해제 깔끔)
+        for _f in ('level_min', 'level_max'):
+            if _f in attrs and not (attrs.get(_f) or '').strip():
+                attrs[_f] = None
         # 급수별 정원(use_level_quota)과 급수 범위 제한(level_min/max)은 상호배타
         lmin = _cur('level_min', None)
         lmax = _cur('level_max', None)
