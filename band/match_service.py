@@ -66,6 +66,42 @@ def sync_approved_participants(session):
     return added
 
 
+def sync_session_with_approvals(session):
+    """세션 참가자 풀 ↔ 스케줄 승인 상태 **양방향** 동기화. 반환: (added, restored, removed).
+    - 승인인데 세션에 없음 → 추가
+    - 승인인데 세션에서 left(강등 후 재승인) → 출석 상태 복구 (급수·성별 override 값은 유지)
+    - 세션에 있으나 더 이상 승인 아닌 **회원** → attendance=left (큐·추천에서 제외). 진행 중 경기는 Match 그대로 보존.
+    - 게스트(user=None, 현장 인원)는 대상 아님.
+    신청 상태 변경(approve/demote/kick/reject/취소 등) 시 호출 → 명단 누락·잔존 방지.
+    """
+    approved = {app.user_id: app for app in BandScheduleApplication.objects.filter(
+        schedule=session.schedule, status="approved").select_related("user")}
+    approved_uids = set(approved)
+    added = restored = removed = 0
+    with transaction.atomic():
+        # 1) 승인 취소된 회원 → 큐/추천에서 제외(left). 경기 중이면 진행 경기는 보존(자연 종료 후 빠짐).
+        for sp in session.participants.exclude(user__isnull=True):
+            if sp.user_id not in approved_uids and sp.attendance != SessionParticipant.Attendance.LEFT:
+                sp.attendance = SessionParticipant.Attendance.LEFT
+                sp.save(update_fields=["attendance"])
+                removed += 1
+        # 2) 승인자 → 없으면 추가, left(강등 후 재승인)면 출석만 복구(override 유지)
+        for uid, app in approved.items():
+            att = (SessionParticipant.Attendance.PRESENT if app.checked_in_at
+                   else SessionParticipant.Attendance.NOT_PRESENT)
+            sp = session.participants.filter(user_id=uid).first()
+            if sp is None:
+                score, gender = _level_gender(app.user)
+                SessionParticipant.objects.create(
+                    session=session, user=app.user, base_level=score, gender=gender, attendance=att)
+                added += 1
+            elif sp.attendance == SessionParticipant.Attendance.LEFT:
+                sp.attendance = att
+                sp.save(update_fields=["attendance"])
+                restored += 1
+    return added, restored, removed
+
+
 def ensure_session(schedule, created_by, court_count=4):
     """get-or-create + 승인자 동기화. 이미 있으면 재생성하지 않되, 빠진 승인자는 추가한다.
 

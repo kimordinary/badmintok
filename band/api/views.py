@@ -1231,6 +1231,7 @@ def band_schedule_cancel(request, band_id, schedule_id):
         schedule.save(update_fields=['current_participants'])
 
     msg = '대기가 취소되었습니다.' if was_waiting else '참가 신청이 취소되었습니다.'
+    _sync_active_match_session(schedule)       # 본인 신청취소 시 활성 세션에서 제외
     return Response({'message': msg}, status=status.HTTP_200_OK)
 
 
@@ -1282,6 +1283,20 @@ def _schedule_quota_full(schedule, application):
     return bool(schedule.max_participants) and schedule.current_participants >= schedule.max_participants
 
 
+def _sync_active_match_session(schedule):
+    """스케줄에 active 자동대진 세션이 있으면 승인 상태와 양방향 동기화.
+    신청 상태 변경(approve/promote/bulk-approve/demote/kick/reject/취소) 후 호출.
+    동기화 실패가 신청 처리를 막지 않도록 예외는 삼킨다."""
+    session = getattr(schedule, 'match_session', None)
+    if session is None or session.status != 'active':
+        return
+    from band.match_service import sync_session_with_approvals
+    try:
+        sync_session_with_approvals(session)
+    except Exception:
+        pass
+
+
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1312,6 +1327,7 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
         wids = list(schedule.applications.filter(status='waiting').order_by('applied_at')
                     .values_list('user_id', flat=True))
         pos = (wids.index(application.user_id) + 1) if application.user_id in wids else None
+        _sync_active_match_session(schedule)   # 대기 강등 시 활성 세션에서 제외
         return Response({
             'message': '정원이 차서 대기명단에 배치했어요.',
             'result': 'waiting', 'waiting_position': pos,
@@ -1324,6 +1340,7 @@ def band_schedule_application_approve(request, band_id, schedule_id, application
     schedule.current_participants += 1
     schedule.save(update_fields=['current_participants'])
 
+    _sync_active_match_session(schedule)       # 승인 시 활성 세션에 추가
     return Response({'message': '신청이 승인되었습니다.', 'result': 'approved'}, status=status.HTTP_200_OK)
 
 
@@ -1382,6 +1399,7 @@ def band_schedule_application_bulk_approve(request, band_id, schedule_id):
         message = f'정원이 차서 {waitlisted}명 대기명단에 배치했어요'
     else:
         message = '승인할 대기 신청이 없어요'
+    _sync_active_match_session(schedule)       # 일괄 승인/대기 반영을 활성 세션에 동기화
     return Response({'approved': approved, 'waitlisted': waitlisted, 'message': message},
                     status=status.HTTP_200_OK)
 
@@ -1435,6 +1453,7 @@ def band_schedule_application_promote(request, band_id, schedule_id, application
     schedule.current_participants = schedule.applications.filter(status='approved').count()
     schedule.save(update_fields=['current_participants'])
 
+    _sync_active_match_session(schedule)       # 승격 시 활성 세션에 추가
     return Response({'message': '대기자를 참가자로 올렸습니다.'}, status=status.HTTP_200_OK)
 
 
@@ -1461,6 +1480,7 @@ def band_schedule_application_kick(request, band_id, schedule_id, application_id
     schedule.current_participants = schedule.applications.filter(status='approved').count()
     schedule.save(update_fields=['current_participants'])
 
+    _sync_active_match_session(schedule)       # 참가 취소(kick) 시 활성 세션에서 제외
     return Response({'message': '참가를 취소했습니다. 대기자를 승격할 수 있어요.'}, status=status.HTTP_200_OK)
 
 
@@ -1492,6 +1512,7 @@ def band_schedule_application_demote(request, band_id, schedule_id, application_
     schedule.current_participants = schedule.applications.filter(status='approved').count()
     schedule.save(update_fields=['current_participants'])
 
+    _sync_active_match_session(schedule)       # 대기 강등(demote) 시 활성 세션에서 제외
     return Response({'message': '대기명단으로 이동했어요. (대기 맨 뒤 순번)'}, status=status.HTTP_200_OK)
 
 
@@ -1622,6 +1643,7 @@ def band_schedule_application_reject(request, band_id, schedule_id, application_
     application.rejection_reason = rejection_reason
     application.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'rejection_reason'])
 
+    _sync_active_match_session(schedule)       # 거절 시 활성 세션 정합(빠진 승인자 보정 포함)
     return Response({'message': '신청이 거절되었습니다.'}, status=status.HTTP_200_OK)
 
 
