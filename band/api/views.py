@@ -1084,12 +1084,15 @@ def band_schedule_create(request, band_id):
     """일정 생성 API"""
     band = get_object_or_404(Band, id=band_id)
 
-    # owner/admin 또는 사이트 관리자 권한 확인
+    # owner/admin 또는 사이트 관리자 권한 확인 (센터·모임 공통: 관리자만 생성)
     member = BandMember.objects.filter(
         band=band, user=request.user, role__in=['owner', 'admin'], status='active'
     ).first()
     if not member and not is_site_admin(request.user):
-        return Response({'error': '방장 또는 관리자만 일정을 생성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        msg = ('센터 관리자만 번개를 만들 수 있어요'
+               if band.band_type == Band.BandType.CENTER
+               else '방장 또는 관리자만 일정을 생성할 수 있습니다.')
+        return Response({'error': msg}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = BandScheduleCreateSerializer(data=request.data)
     if not serializer.is_valid():
