@@ -1631,10 +1631,12 @@ def band_schedule_application_reject(request, band_id, schedule_id, application_
     if not manager and not is_site_admin(request.user):
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
+    # pending(승인 대기) + waiting(대기명단) 모두 거부 가능
     application = get_object_or_404(
-        BandScheduleApplication, id=application_id, schedule=schedule, status='pending'
+        BandScheduleApplication, id=application_id, schedule=schedule, status__in=['pending', 'waiting']
     )
 
+    was_waiting = application.status == 'waiting'
     rejection_reason = request.data.get('rejection_reason', '')
 
     application.status = 'rejected'
@@ -1642,9 +1644,11 @@ def band_schedule_application_reject(request, band_id, schedule_id, application_
     application.reviewed_by = request.user
     application.rejection_reason = rejection_reason
     application.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'rejection_reason'])
+    # waiting을 거부하면 대기 순번에서 빠지고 뒤 순번이 자동으로 당겨짐(대기 목록은 applied_at 순 정렬)
 
-    _sync_active_match_session(schedule)       # 거절 시 활성 세션 정합(빠진 승인자 보정 포함)
-    return Response({'message': '신청이 거절되었습니다.'}, status=status.HTTP_200_OK)
+    _sync_active_match_session(schedule)       # 거절 시 활성 세션에서도 제외/정합
+    msg = '대기 신청이 거부되었습니다.' if was_waiting else '신청이 거절되었습니다.'
+    return Response({'message': msg}, status=status.HTTP_200_OK)
 
 
 # ========== 댓글 좋아요 ==========
