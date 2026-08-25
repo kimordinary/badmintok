@@ -21,6 +21,7 @@ class Notification(models.Model):
         MATCH_NEXT_GAME = "match_next_game", _("다음 경기")
         PARTNER_REQUEST = "partner_request", _("파트너 신청")
         PARTNER_APPROVED = "partner_approved", _("파트너 확정")
+        PAYMENT_NOTICE = "payment_notice", _("송금 확인 요청")
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

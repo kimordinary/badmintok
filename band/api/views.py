@@ -1598,6 +1598,60 @@ def band_schedule_notice_send(request, band_id, schedule_id):
     )
 
 
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def band_schedule_contact_host(request, band_id, schedule_id):
+    """참가자 → 모임장 '송금 확인' 쪽지. 해당 일정 신청자(pending/waiting/approved)만 발송 가능.
+    모임장(owner/admin) 전원에게 payment_notice 알림 1건씩 생성 → 기존 '받은 쪽지'에 노출."""
+    schedule = get_object_or_404(BandSchedule, id=schedule_id, band_id=band_id)
+    band = schedule.band
+
+    # 신청자 확인 (pending/waiting/approved만) — 신청 안 했으면 403
+    app = schedule.applications.filter(
+        user=request.user, status__in=['pending', 'waiting', 'approved']).first()
+    if not app:
+        return Response({'success': False, 'message': '이 일정에 신청한 사람만 보낼 수 있어요.'},
+                        status=status.HTTP_403_FORBIDDEN)
+
+    message = (request.data.get('message') or '').strip()
+    if not message:
+        message = f'송금 확인해주세요 ({request.user.real_name})'
+    message = message[:500]
+
+    from notifications.models import Notification
+    from datetime import timedelta
+    # 스팸 방지: 같은 참가자·같은 일정에 5분 내 중복 발송 제한
+    recent = Notification.objects.filter(
+        type=Notification.Type.PAYMENT_NOTICE, actor=request.user,
+        related_band_schedule=schedule,
+        created_at__gte=timezone.now() - timedelta(minutes=5)).exists()
+    if recent:
+        return Response({'success': False, 'message': '방금 보냈어요. 잠시 후 다시 시도해주세요.'},
+                        status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+    # 모임장(owner/admin) 전원
+    host_ids = list(BandMember.objects.filter(
+        band=band, role__in=['owner', 'admin'], status='active').values_list('user_id', flat=True))
+    if not host_ids:
+        return Response({'success': False, 'message': '모임장을 찾을 수 없어요.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    title = f'[{band.name}] {schedule.title} · 송금 확인 요청'
+    for uid in host_ids:
+        Notification.objects.create(
+            user_id=uid,
+            type=Notification.Type.PAYMENT_NOTICE,
+            title=title,
+            message=message,
+            related_band_schedule=schedule,   # 모임장이 해당 일정으로 이동해 승인
+            related_band=band,
+            actor=request.user,               # 신청자
+        )
+    return Response({'success': True, 'message': '모임장에게 송금 확인 쪽지를 보냈어요.'},
+                    status=status.HTTP_201_CREATED)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def band_schedule_application_detail(request, band_id, schedule_id, application_id):
