@@ -81,13 +81,14 @@ def mypage(request):
     # 통합 게시물/댓글 카운트
     total_posts_comments_count = band_posts_count + band_comments_count + community_posts_count + comments_count
 
-    # 받은 쪽지(일정 알림) 카운트
+    # 받은 쪽지(일정 알림 + 송금 확인) 카운트
     from notifications.models import Notification
+    _RECEIVED_TYPES = [Notification.Type.SCHEDULE_NOTICE, Notification.Type.PAYMENT_NOTICE]
     received_notices_count = Notification.objects.filter(
-        user=user, type=Notification.Type.SCHEDULE_NOTICE
+        user=user, type__in=_RECEIVED_TYPES
     ).count()
     unread_notices_count = Notification.objects.filter(
-        user=user, type=Notification.Type.SCHEDULE_NOTICE, is_read=False
+        user=user, type__in=_RECEIVED_TYPES, is_read=False
     ).count()
     # 보낸 쪽지(내가 발송한 일정 알림) 그룹 수 — 동시 발송분은 하나로 집계
     from django.db.models.functions import TruncSecond
@@ -272,8 +273,9 @@ def mypage_schedule_notices(request):
     per_page = 20
     page = request.GET.get('page', 1)
 
+    _RECEIVED_TYPES = [Notification.Type.SCHEDULE_NOTICE, Notification.Type.PAYMENT_NOTICE]
     notices = Notification.objects.filter(
-        user=user, type=Notification.Type.SCHEDULE_NOTICE,
+        user=user, type__in=_RECEIVED_TYPES,
     ).select_related(
         "actor", "related_band", "related_band_schedule",
     ).order_by("-created_at")
@@ -283,7 +285,7 @@ def mypage_schedule_notices(request):
 
     # 페이지 노출 시점에 읽음 처리
     Notification.objects.filter(
-        user=user, type=Notification.Type.SCHEDULE_NOTICE, is_read=False,
+        user=user, type__in=_RECEIVED_TYPES, is_read=False,
     ).update(is_read=True)
 
     return render(request, "accounts/mypage_schedule_notices.html", {
