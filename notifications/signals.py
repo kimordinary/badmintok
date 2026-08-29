@@ -31,12 +31,21 @@ def send_fcm_on_notification(sender, instance, created, **kwargs):
         "related_notice_id": instance.related_notice_id,
         "related_inquiry_id": instance.related_inquiry_id,
     }
-    send_to_user(
-        instance.user_id,
-        title=instance.title,
-        body=instance.message or "",
-        data=data,
-    )
+    # FCM 발송을 백그라운드 스레드로 — 응답(경기 fill/end 등)이 FCM API 왕복 대기로 느려지지 않게.
+    # (자동대진은 경기마다 여러 명에게 푸시 → 동기 발송 시 프로덕션에서 초 단위 지연 유발)
+    import threading
+
+    def _bg_send():
+        try:
+            send_to_user(
+                instance.user_id,
+                title=instance.title,
+                body=instance.message or "",
+                data=data,
+            )
+        except Exception:
+            pass
+    threading.Thread(target=_bg_send, daemon=True).start()
 
 
 # ─── 밴드 댓글/답글 ───

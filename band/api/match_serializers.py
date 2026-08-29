@@ -121,7 +121,8 @@ def serialize_next_lineup(lineup, session):
 
 def serialize_session(session):
     participants = list(session.participants.select_related("user__profile"))
-    court_rows = list(session.courts.select_related("coach__user").all())
+    court_rows = list(session.courts.select_related("coach__user")
+                      .prefetch_related("matches__players__participant__user"))
     coach_ids = {c.coach_id for c in court_rows if c.coach_id}
 
     # 파트너/상대 이력 (참가자 partner_count/opponent_count + 코치 커버리지 공용)
@@ -141,8 +142,8 @@ def serialize_session(session):
     courts = []
     on_court_ids = set()
     for court in court_rows:
-        current = court.matches.filter(status="playing").prefetch_related(
-            "players__participant__user").first()
+        # prefetch된 matches에서 파이썬 필터(코트별 추가 쿼리 방지)
+        current = next((m for m in court.matches.all() if m.status == "playing"), None)
         if current:
             on_court_ids.update(mp.participant_id for mp in current.players.all())
         coach = None
