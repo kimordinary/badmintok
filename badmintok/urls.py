@@ -84,6 +84,7 @@ urlpatterns = [
     path("app", views.app_redirect, name="app_redirect"),
     # SEO 관련
     path("robots.txt", views.robots_txt, name="robots_txt"),
+    path("llms.txt", views.llms_txt, name="llms_txt"),
     # sitemap index 구조: sitemap.xml 은 인덱스, 섹션별로 sitemap-<section>.xml 로 노출
     path("sitemap.xml", sitemap_index, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.index"),
     path("sitemap-<section>.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),

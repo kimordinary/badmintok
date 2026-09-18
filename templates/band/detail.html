@@ -16,6 +16,33 @@
 {% endblock %}
 
 {% block extra_head %}
+{% if band.is_public %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SportsClub",
+  "name": "{{ band.name|escapejs }}",
+  "sport": "Badminton",
+  "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'band:detail' band.id %}",{% if band.description %}
+  "description": "{{ band.description|striptags|escapejs }}",{% endif %}{% if band.profile_image %}
+  "image": "{{ request.scheme }}://{{ request.get_host }}{{ band.profile_image.url }}",{% elif band.cover_image %}
+  "image": "{{ request.scheme }}://{{ request.get_host }}{{ band.cover_image.url }}",{% endif %}{% if band.region and band.region != 'all' %}
+  "areaServed": "{{ band.get_region_display|escapejs }}",{% endif %}
+  "parentOrganization": {"@id": "{{ request.scheme }}://{{ request.get_host }}/#organization"}
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "홈", "item": "{{ request.scheme }}://{{ request.get_host }}/"},
+    {"@type": "ListItem", "position": 2, "name": "웹민턴", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'band:list' %}"},
+    {"@type": "ListItem", "position": 3, "name": "{{ band.name|escapejs }}", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'band:detail' band.id %}"}
+  ]
+}
+</script>
+{% endif %}
 <style>
     .band-detail-container {
         position: relative;

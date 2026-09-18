@@ -6,8 +6,38 @@
 
 {% block og_title_meta %}<meta property="og:title" content="온라인 배드민턴장 - 배드민톡">{% endblock %}
 {% block extra_head %}
-<meta name="description" content="배드민톡(badmintok)은 전국 배드민턴 대회 정보, 동호인 커뮤니티 모임/번개 모집, 배드민턴 뉴스와 리뷰를 제공하는 좋합 배드민턴 플랫폼 입니다.">
+<meta name="description" content="배드민톡(badmintok)은 전국 배드민턴 대회 정보, 동호인 커뮤니티 모임/번개 모집, 배드민턴 뉴스와 리뷰를 제공하는 종합 배드민턴 플랫폼입니다.">
 <meta property="og:description" content="배드민톡은 모든 동호인이 함께 즐기는 배드민턴 커뮤니티입니다. 전국 배드민턴 대회 정보부터 실시간 뉴스, 동호인 소통 모임/번개 모집까지 한곳에서 확인하세요! 특히 라켓, 신발, 셔틀콕 등 생생한 배드민턴 용품 리뷰를 통해 스마트한 장비 선택을 도와드립니다. 대한민국 배드민턴의 모든 것, 지금 배드민톡에서 시작해보세요.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://badmintok.com/#organization",
+      "name": "배드민톡",
+      "alternateName": "Badmintok",
+      "url": "https://badmintok.com/",
+      "logo": "https://badmintok.com/static/images/badmintok-text-logo.png",
+      "description": "배드민톡은 전국 배드민턴 대회 정보, 동호인 커뮤니티 모임/번개 모집, 배드민턴 뉴스와 리뷰를 제공하는 종합 배드민턴 플랫폼입니다.",
+      "sameAs": [
+        "https://www.instagram.com/badmintok_korea/",
+        "https://cafe.naver.com/badmintokcafe",
+        "https://www.youtube.com/@badmintok_korea"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://badmintok.com/#website",
+      "name": "배드민톡",
+      "alternateName": "Badmintok",
+      "url": "https://badmintok.com/",
+      "inLanguage": "ko",
+      "publisher": { "@id": "https://badmintok.com/#organization" }
+    }
+  ]
+}
+</script>
 {% endblock %}
 
 {# 홈에서는 하단 앱 다운로드 CTA 숨김 (배너에 이미 노출) #}
@@ -21,10 +51,10 @@
             <img class="banner-image" src="{% static 'images/landing/badmintok homepage.png' %}" alt="배드민톡 메인 배너">
         </div>
         <div class="banner-text-wrapper">
-            <div class="banner-title">
+            <h1 class="banner-title">
                 <div>온라인 배드민턴장</div>
                 <div><span class="text-highlight">배드민톡</span></div>
-            </div>
+            </h1>
             <div class="banner-description-wrapper">
                 <div class="banner-description">
                     <p>배드민톡(badmintok)은, 전국 배드민턴 대회 일정과 생생한 리뷰, 최신 뉴스부터 소통과 모임까지 한눈에 확인하는 동호인 필수 올인원 플랫폼입니다.</p>
@@ -83,7 +113,7 @@
 
 <!-- 두 번째 섹션 - 서비스 소개 -->
 <section class="services-section">
-    <h1 class="services-title">BADMINTOK</h1>
+    <h2 class="services-title">BADMINTOK</h2>
 
     <div class="services-container">
         <!-- 큰 카드 - 크로스워드 -->
@@ -93,7 +123,7 @@
             </div>
             <div class="card-content-large">
                 <div class="card-text-large">
-                    <h1 class="card-title-large">전국 배드민턴 대회</h1>
+                    <h3 class="card-title-large">전국 배드민턴 대회</h3>
                     <p class="card-description-large">전국에 있는 모든 배드민턴 대회를 한눈에 확인해보세요!<br>지역·날짜별로 흩어진 대회 정보를 한데 모아<br>누구나 쉽고 빠르게 검색할 수 있는 최적의 환경을 제공합니다.</p>
                 </div>
                 <div class="card-button-wrapper">
@@ -117,7 +147,7 @@
                     <img src="{% static 'images/landing/badmintok main.png' %}" class="card-image" alt="배드민톡">
                 </div>
                 <div class="card-text-small">
-                    <h1 class="card-title-small">배드민톡</h1>
+                    <h3 class="card-title-small">배드민톡</h3>
                     <p class="card-description-small">배드민턴 리뷰 뉴스 소식을 전해요.</p>
                 </div>
                 <a href="{% url 'badmintok' %}" class="play-button play-button-blue">
@@ -136,7 +166,7 @@
                     <img src="{% static 'images/landing/community.png' %}" class="card-image" alt="동호인톡">
                 </div>
                 <div class="card-text-small">
-                    <h1 class="card-title-small">동호인톡</h1>
+                    <h3 class="card-title-small">동호인톡</h3>
                     <p class="card-description-small">배드민턴 동호인끼리 다양한 소통해요.</p>
                 </div>
                 <a href="{% url 'community:list' %}" class="play-button play-button-teal">
@@ -155,7 +185,7 @@
                     <img src="{% static 'images/landing/webminton (band).png' %}" class="card-image" alt="웹민턴">
                 </div>
                 <div class="card-text-small">
-                    <h1 class="card-title-small">웹민턴</h1>
+                    <h3 class="card-title-small">웹민턴</h3>
                     <p class="card-description-small">모임, 동호회, 번개 참가하고 신청해요.</p>
                 </div>
                 <a href="{% url 'band:list' %}" class="play-button play-button-orange">
@@ -173,7 +203,7 @@
 
 <!-- 최신글 섹션 -->
 <section class="latest-posts-section">
-    <h1 class="latest-posts-title">What's New</h1>
+    <h2 class="latest-posts-title">What's New</h2>
 
     <div class="latest-posts-container">
         {% if latest_posts %}
@@ -261,7 +291,7 @@
 
 <!-- 카테고리별 게임 섹션 -->
 <section class="category-section">
-    <h1 class="category-title">Channel</h1>
+    <h2 class="category-title">Channel</h2>
 
     <div class="category-grid">
         <!-- 대회 정보 -->
@@ -271,7 +301,7 @@
                     <img src="{% static 'images/landing/instagram logo.png' %}" class="category-icon" alt="인스타그램">
                 </div>
                 <div class="category-title-absolute">
-                    <h1 class="category-title-text">인스타그램</h1>
+                    <h3 class="category-title-text">인스타그램</h3>
                 </div>
                 <a href="https://www.instagram.com/badmintok_korea/" target="_blank" rel="noopener noreferrer" class="category-play-button category-play-button-pink">
                     <span class="category-button-content">
@@ -291,7 +321,7 @@
                     <img src="{% static 'images/landing/cafe logo.png' %}" class="category-icon" alt="네이버 카페">
                 </div>
                 <div class="category-title-absolute">
-                    <h1 class="category-title-text">네이버 카페</h1>
+                    <h3 class="category-title-text">네이버 카페</h3>
                 </div>
                 <a href="https://cafe.naver.com/badmintokcafe" target="_blank" rel="noopener noreferrer" class="category-play-button category-play-button-blue">
                     <span class="category-button-content">
@@ -311,7 +341,7 @@
                     <img src="{% static 'images/landing/youtube logo.png' %}" class="category-icon" alt="유튜브">
                 </div>
                 <div class="category-title-absolute">
-                    <h1 class="category-title-text">유튜브</h1>
+                    <h3 class="category-title-text">유튜브</h3>
                 </div>
                 <a href="https://www.youtube.com/@badmintok_korea" target="_blank" rel="noopener noreferrer" class="category-play-button category-play-button-teal">
                     <span class="category-button-content">

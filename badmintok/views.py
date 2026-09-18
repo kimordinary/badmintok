@@ -712,6 +712,36 @@ Disallow: /api/
     return response
 
 
+def llms_txt(request):
+    """llms.txt 서빙 — AI(생성·검색 엔진)에게 주는 사이트 안내서."""
+    from django.conf import settings
+
+    domain = request.get_host()
+    if not domain.startswith('http'):
+        protocol = 'https' if not settings.DEBUG else 'http'
+        domain = f"{protocol}://{domain}"
+
+    llms_content = f"""# 배드민톡 (Badmintok)
+
+> 전국 배드민턴 대회 일정, 동호인 모임/번개, 배드민턴 뉴스·용품 리뷰를 한곳에 모은 대한민국 종합 배드민턴 플랫폼. 특히 전국 배드민턴 대회 정보를 지역·날짜별로 집계하는 1차 출처.
+
+## 핵심 페이지
+- [전국 배드민턴 대회 일정]({domain}/badminton-tournament/): 전국 배드민턴 대회 일정·요강·급수·장소를 지역/날짜별로 집계
+- [웹민턴 — 모임·번개·동호회]({domain}/band/): 배드민턴 동호회 모집과 번개(일회성 모임) 참가 신청
+- [동호인톡 — 커뮤니티]({domain}/community/): 배드민턴 동호인이 소통하는 커뮤니티
+- [배드민턴 매거진]({domain}/magazine/): 배드민턴 뉴스와 용품(라켓·신발·셔틀콕) 리뷰
+
+## 데이터 정책
+- 출처: 대회 주최사와 협조해 제공받은 대회 요강, 시·도 배드민턴협회 등이 공개한 공식 자료
+- 처리: 원문과 대조해 확인 후 등록, 일정·장소·접수 마감 변경 시 갱신
+- 정정 요청: {domain}/support/
+- 인용 시 표기: badmintok.com
+- 공식 채널: Instagram @badmintok_korea, 네이버 카페 cafe.naver.com/badmintokcafe, YouTube @badmintok_korea
+"""
+    response = HttpResponse(llms_content, content_type='text/plain; charset=utf-8')
+    return response
+
+
 def track_outbound_click(request):
     """외부 링크 클릭 추적 API"""
     from django.http import JsonResponse

@@ -31,6 +31,7 @@ class VisitorTrackingMiddleware:
             '/api/',                # API 호출은 페이지뷰 아님
             '/favicon.ico',
             '/robots.txt',
+            '/llms.txt',
             '/sitemap.xml',
             '/sw.js',
             '/manifest.json',

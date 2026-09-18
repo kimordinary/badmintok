@@ -55,6 +55,39 @@
 }
 </script>
 {% endif %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "전국 배드민턴 대회 일정은 어디서 확인하나요?",
+      "acceptedAnswer": {"@type": "Answer", "text": "배드민톡 대회 페이지에서 전국 배드민턴 대회 일정을 지역별·월별로 확인할 수 있습니다. 각 대회의 접수 마감일, 대회장, 승급·비승급 여부, 참가 급수를 함께 제공합니다."}
+    },
+    {
+      "@type": "Question",
+      "name": "배드민턴 대회 참가 급수는 어떻게 확인하나요?",
+      "acceptedAnswer": {"@type": "Answer", "text": "참가 급수는 대회마다 다릅니다. 배드민톡은 각 대회 상세 페이지에 해당 대회의 급수 기준을 주최 측 요강 그대로 표기합니다. 예를 들어 A·B·C·D·초심·왕초심으로 구분하는 대회가 있습니다."}
+    },
+    {
+      "@type": "Question",
+      "name": "승급 대회와 비승급 대회는 어떻게 구분하나요?",
+      "acceptedAnswer": {"@type": "Answer", "text": "배드민톡은 각 대회의 승급 여부를 목록과 상세 페이지에 '승급' 또는 '비승급' 배지로 표시합니다. 승급 여부는 대회 주최 측 요강을 따릅니다."}
+    },
+    {
+      "@type": "Question",
+      "name": "대회 접수 마감일은 어떻게 확인하나요?",
+      "acceptedAnswer": {"@type": "Answer", "text": "접수 마감일은 대회마다 다릅니다. 배드민톡은 각 대회 상세 페이지에 접수 마감일을 표기하며, 이미 종료된 대회는 지난 대회 페이지에서 확인할 수 있습니다."}
+    },
+    {
+      "@type": "Question",
+      "name": "배드민톡의 대회 정보는 어디서 오나요?",
+      "acceptedAnswer": {"@type": "Answer", "text": "배드민톡은 대회 주최사와 직접 협조해 제공받은 대회 요강과, 시·도 배드민턴협회 등이 공개한 공식 자료를 수집해 정리합니다. 수집한 정보는 원문과 대조해 확인한 뒤 등록하며, 일정·장소·접수 마감이 변경되면 갱신합니다. 잘못된 정보는 고객 지원 페이지로 알려주시면 확인 후 정정합니다."}
+    }
+  ]
+}
+</script>
 <style>
   .tour{
     --bg:#F3F6F4;--surface:#FFFFFF;--surface2:#EAF1EC;--ink:#122019;--muted:#5C6F65;--line:#DCE4DE;
@@ -117,6 +150,17 @@
   @media(min-width:900px){.tour-filterbar{padding-bottom:14px;margin-bottom:8px;border-bottom:1px solid var(--line)}}
   .tour-listhead{display:flex;align-items:center;gap:10px}
   .tour-listtitle{margin:0;font-size:18px;font-weight:800;flex:1}
+
+  .tour-faq{max-width:1180px;margin:0 auto;padding:4px 18px 56px}
+  .tour-faq-title{margin:0 0 12px;font-size:18px;font-weight:800;color:var(--ink)}
+  .tour-faq-list{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .tour-faq-item+.tour-faq-item{border-top:1px solid var(--line)}
+  .tour-faq-q{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;font-size:15px;font-weight:700;color:var(--ink)}
+  .tour-faq-q::-webkit-details-marker{display:none}
+  .tour-faq-q::after{content:"";flex:none;width:7px;height:7px;margin-top:-4px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .18s ease}
+  .tour-faq-item[open] .tour-faq-q::after{margin-top:2px;transform:rotate(-135deg)}
+  .tour-faq-a{padding:0 18px 16px;font-size:14px;line-height:1.7;color:var(--muted)}
+  .tour-faq-a p{margin:0}
   .tour-total{font-size:12px;font-weight:700;color:var(--muted)}
   .tour-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0}
   .tour-chips:empty{display:none}
@@ -259,6 +303,32 @@
       </div>
     </div>
   </div>
+
+  <section class="tour-faq" aria-labelledby="tourFaqTitle">
+    <h2 id="tourFaqTitle" class="tour-faq-title">자주 묻는 질문</h2>
+    <div class="tour-faq-list">
+      <details class="tour-faq-item">
+        <summary class="tour-faq-q">전국 배드민턴 대회 일정은 어디서 확인하나요?</summary>
+        <div class="tour-faq-a"><p>배드민톡 대회 페이지에서 전국 배드민턴 대회 일정을 지역별·월별로 확인할 수 있습니다. 각 대회의 접수 마감일, 대회장, 승급·비승급 여부, 참가 급수를 함께 제공합니다.</p></div>
+      </details>
+      <details class="tour-faq-item">
+        <summary class="tour-faq-q">배드민턴 대회 참가 급수는 어떻게 확인하나요?</summary>
+        <div class="tour-faq-a"><p>참가 급수는 대회마다 다릅니다. 배드민톡은 각 대회 상세 페이지에 해당 대회의 급수 기준을 주최 측 요강 그대로 표기합니다. 예를 들어 A·B·C·D·초심·왕초심으로 구분하는 대회가 있습니다.</p></div>
+      </details>
+      <details class="tour-faq-item">
+        <summary class="tour-faq-q">승급 대회와 비승급 대회는 어떻게 구분하나요?</summary>
+        <div class="tour-faq-a"><p>배드민톡은 각 대회의 승급 여부를 목록과 상세 페이지에 '승급' 또는 '비승급' 배지로 표시합니다. 승급 여부는 대회 주최 측 요강을 따릅니다.</p></div>
+      </details>
+      <details class="tour-faq-item">
+        <summary class="tour-faq-q">대회 접수 마감일은 어떻게 확인하나요?</summary>
+        <div class="tour-faq-a"><p>접수 마감일은 대회마다 다릅니다. 배드민톡은 각 대회 상세 페이지에 접수 마감일을 표기하며, 이미 종료된 대회는 지난 대회 페이지에서 확인할 수 있습니다.</p></div>
+      </details>
+      <details class="tour-faq-item">
+        <summary class="tour-faq-q">배드민톡의 대회 정보는 어디서 오나요?</summary>
+        <div class="tour-faq-a"><p>배드민톡은 대회 주최사와 직접 협조해 제공받은 대회 요강과, 시·도 배드민턴협회 등이 공개한 공식 자료를 수집해 정리합니다. 수집한 정보는 원문과 대조해 확인한 뒤 등록하며, 일정·장소·접수 마감이 변경되면 갱신합니다. 잘못된 정보는 <a href="{% url 'support' %}">고객 지원</a> 페이지로 알려주시면 확인 후 정정합니다.</p></div>
+      </details>
+    </div>
+  </section>
 </main>
 
 {{ items|json_script:"tourData" }}
