@@ -31,6 +31,10 @@ class MatchSession(models.Model):
     court_count = models.IntegerField(default=4)
     # 자동 배치(경기 종료 시 다음 경기 자동 투입) on/off. False(수동)면 예약만 투입하고 코트는 비워둔다.
     auto = models.BooleanField(default=True)
+    # 일시 중단(사진·공지 등 잠깐 멈춤). 진행 중 경기는 그대로 두고 '다음 경기 투입'만 막는다.
+    # 상태(status)를 늘리지 않고 플래그로 둔 이유: status=='active' 검사가 API 곳곳에 있어
+    # 상태를 추가하면 하나라도 놓칠 때 중단 중인데 경기가 들어가는 사고가 난다.
+    paused = models.BooleanField(default=False)
     # 자동 모드 '다음 1경기' 확정 스냅샷 {discipline, team1:[pid,pid], team2:[pid,pid]} | null.
     # 빈 코트가 생기면 우선 투입되고 즉시 재확정된다(흔들림 방지 + 참가자 '곧 경기에요' 정확도).
     next_lineup = models.JSONField(null=True, blank=True, default=None)
@@ -141,7 +145,12 @@ class Match(models.Model):
         WOMENS = "womens", _("여복")
 
     session = models.ForeignKey(MatchSession, on_delete=models.CASCADE, related_name="matches")
-    court = models.ForeignKey(Court, on_delete=models.CASCADE, related_name="matches")
+    # 코트를 줄이면(제거) 그 코트의 경기 기록까지 사라지던 문제 → 경기는 남기고 코트 참조만 끊는다.
+    # 기록 표시용으로 코트 번호·이름을 경기 생성 시점에 스냅샷으로 함께 보관한다.
+    court = models.ForeignKey(Court, on_delete=models.SET_NULL, null=True,
+                              blank=True, related_name="matches")
+    court_index = models.PositiveSmallIntegerField(null=True, blank=True)
+    court_name = models.CharField(max_length=50, blank=True)
     discipline = models.CharField(max_length=10, choices=Discipline.choices)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PLAYING)
     started_at = models.DateTimeField(auto_now_add=True)

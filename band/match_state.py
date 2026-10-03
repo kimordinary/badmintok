@@ -27,6 +27,14 @@ def build_pool(session, on_court_participant_ids=None) -> list[Player]:
     return [build_player(sp) for sp in qs if sp.is_match_eligible()]
 
 
+def build_coach_met(session, coach_id, stats) -> dict:
+    """참가자별 '이 코치와 같이/맞서 친 횟수'. 0이면 아직 이 코치와 안 침."""
+    return {sp.id: (stats.partner_count(sp.id, coach_id) + stats.opponent_count(sp.id, coach_id))
+            for sp in session.participants.filter(
+                attendance=SessionParticipant.Attendance.PRESENT)
+            if sp.id != coach_id}
+
+
 def build_met_count(session, coach_ids, stats) -> dict:
     """현재 출석 참가자별 '만난 코치 수' (같이/상대로 한 번이라도 친 코치 수)."""
     met = {}

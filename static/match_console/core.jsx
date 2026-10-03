@@ -79,6 +79,8 @@ function bestSplit(four, type, weights, ctx) {
   for (const [tA, tB] of splits) {
     const teamA = [four[tA[0]], four[tA[1]]];
     const teamB = [four[tB[0]], four[tB[1]]];
+    // 혼복은 각 팀 남1여1 — 2남2여를 남남/여여로 가르면 혼복이 아니다 (서버 _valid_for_discipline과 동일)
+    if (type === '혼복' && teamA[0].gender === teamA[1].gender && teamB[0].gender === teamB[1].gender) continue;
     const sumA = effScore(teamA[0], type) + effScore(teamA[1], type);
     const sumB = effScore(teamB[0], type) + effScore(teamB[1], type);
     const balance = Math.pow(sumA - sumB, 2);
@@ -113,17 +115,17 @@ function disciplinesFor(four, mode) {
   const f = four.length - m;
   const out = [];
   if (mode === '혼복') {
-    // 남>=1 && 여>=1 이면 혼복 가능 (한쪽 부족시 동성페어 허용)
-    if (m >= 1 && f >= 1) out.push('혼복');
+    // 혼복은 남2여2만. 3:1은 한 팀이 동성이 되어 혼복이 아니다 (서버 _discipline_feasible과 동일 규칙)
+    if (m === 2 && f === 2) out.push('혼복');
   } else if (mode === '남복/여복') {
     if (m === 4) out.push('남복');
     else if (f === 4) out.push('여복');
     // 섞여있으면 이 4명 조합은 부적합 (combos에서 동성 4명 세트를 따로 찾음)
   } else {
-    // 모두
+    // 모두 — 남는 성별은 남복/여복으로 빠지므로 혼복은 2:2만 쓴다
     if (m === 4) out.push('남복');
     else if (f === 4) out.push('여복');
-    else if (m >= 1 && f >= 1) out.push('혼복');
+    else if (m === 2 && f === 2) out.push('혼복');
   }
   return out;
 }

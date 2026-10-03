@@ -62,7 +62,17 @@ function MiniCourtCompact({ type, teamA, teamB }) {
 }
 
 // ---------- 코트 카드 ----------
-function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onEditLineup, onManualFill, onStartNext, hasPending, onCoachRest, coachResting, acePinned, coachName, coverage, compact = false }) {
+// 버튼 안 아이콘 자리에 들어가는 스피너 — 버튼 크기·글자가 흔들리지 않게 아이콘과 같은 크기로
+function BtnSpin({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ animation: 'spin .7s linear infinite' }}>
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeOpacity=".3" strokeWidth="3" />
+      <path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onEditLineup, onManualFill, onStartNext, hasPending, onCoachRest, coachResting, acePinned, coachName, coverage, busyEnd = false, busyFill = false, lockEnd = false, paused = false, compact = false }) {
   const theme = useTheme();
   const clean = theme === 'clean';
   const strip = false; // 코트 상단 종목색 스트립 제거 (색 보더 촌스러움)
@@ -152,9 +162,9 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onEditLine
         {playing ? (
           acePinned ? (
             <>
-              <Btn variant="primary" size="lg" onClick={() => onEnd(court)} style={{ flex: 1 }}>
+              <Btn variant="primary" size="lg" onClick={() => onEnd(court)} disabled={busyEnd || lockEnd} style={{ flex: 1 }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
+                  {busyEnd ? <BtnSpin size={14} /> : <svg width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>}
                   종료
                 </span>
               </Btn>
@@ -163,9 +173,9 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onEditLine
             </>
           ) : (
             <>
-              <Btn variant="primary" size="lg" full onClick={() => onEnd(court)} style={{ flex: 1 }}>
+              <Btn variant="primary" size="lg" full onClick={() => onEnd(court)} disabled={busyEnd || lockEnd} style={{ flex: 1 }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
+                  {busyEnd ? <BtnSpin size={15} /> : <svg width="15" height="15" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>}
                   경기 종료
                 </span>
               </Btn>
@@ -174,8 +184,8 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onEditLine
           )
         ) : a && rec && rec.match ? (
           <>
-            <Btn variant="primary" size="lg" full onClick={() => onStart(court, rec.match)} style={{ flex: 1 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>▶ 경기 시작</span>
+            <Btn variant="primary" size="lg" full onClick={() => onStart(court, rec.match)} disabled={busyFill || paused} style={{ flex: 1 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>{busyFill ? <BtnSpin size={15} /> : '▶'} 경기 시작</span>
             </Btn>
             <Btn variant="ghost" size="lg" onClick={() => acePinned ? onEdit(court) : onStart(court, rec.match, true)}>{acePinned ? '코치' : '편집'}</Btn>
           </>
@@ -183,14 +193,14 @@ function CourtCard({ court, rec, nowTs, auto, onEnd, onStart, onEdit, onEditLine
           <>
             {hasPending ? (
               <>
-                <Btn variant="primary" size="lg" full onClick={() => onStartNext(court)} style={{ flex: 1 }}>
+                <Btn variant="primary" size="lg" full onClick={() => onStartNext(court)} disabled={paused} style={{ flex: 1 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>▶ 경기 시작</span>
                 </Btn>
                 <Btn variant="ghost" size="lg" onClick={() => onManualFill(court)}>직접</Btn>
               </>
             ) : (
               <>
-                <Btn variant="primary" size="lg" full onClick={() => onManualFill(court)} style={{ flex: 1 }}>
+                <Btn variant="primary" size="lg" full onClick={() => onManualFill(court)} disabled={paused} style={{ flex: 1 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>＋ 직접 채우기</span>
                 </Btn>
                 {rec && rec.match && <Btn variant="ghost" size="lg" onClick={() => onStart(court, rec.match)}>추천 채우기</Btn>}
@@ -667,8 +677,15 @@ function MainScreen({ state, actions }) {
     for (const ct of courts) {
       if (!ct.ace || ct.match || ct.pendingRemove) continue;
       const ace = poolView.find((p) => p.id === ct.coachId);
-      const three = ace ? pickAceThree(poolView.filter((p) => !coachIds.has(p.id) && !taken.has(p.id) && !pendingIds.has(p.id)), metCount, nowTs, mode, ace.gender) : null;
-      out[ct.no] = three ? { match: buildAceMatch(ace, three, mode) } : { error: '대기 부족', detail: '코치와 칠 대기 인원이 부족합니다.' };
+      const aceAvail = poolView.filter((p) => !coachIds.has(p.id) && !taken.has(p.id) && !pendingIds.has(p.id));
+      let three = ace ? pickAceThree(aceAvail, metCount, nowTs, mode, ace.gender) : null;
+      let aceMode = mode;
+      // 혼복만 모드에서 2남2여를 못 만들면 코트를 비우지 않고 동성(남복/여복)으로 — 서버 _fill_court와 동일
+      if (!three && ace && mode === '혼복') {
+        three = pickAceThree(aceAvail, metCount, nowTs, '남복/여복', ace.gender);
+        aceMode = '남복/여복';
+      }
+      out[ct.no] = three ? { match: buildAceMatch(ace, three, aceMode) } : { error: '대기 부족', detail: '코치와 칠 대기 인원이 부족합니다.' };
       if (three) three.forEach((p) => taken.add(p.id));
     }
     for (const ct of courts) {
@@ -750,11 +767,23 @@ function MainScreen({ state, actions }) {
         </div>
       )}
       {state.sessionStatus === 'active' && (
-        <div style={{ height: 46, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 9, padding: '0 20px', background: 'var(--surface)', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
+        /* 일시 중단이면 같은 높이(46)로 색·문구만 바꾼다 — 상태바 높이 고정 유지 */
+        <div style={{ height: 46, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 9, padding: '0 20px', background: state.paused ? '#fff7ed' : 'var(--surface)', borderBottom: `1px solid ${state.paused ? '#fed7aa' : 'var(--line)'}`, flexShrink: 0 }}>
           <img src="badmintok-text-logo.png" alt="배드민톡" height={18} style={{ display: 'block', flexShrink: 0, marginRight: 4 }} />
-          <StatusDot size={10} color="#16a34a" />
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--muted)' }}><b style={{ fontWeight: 900, color: '#16a34a', marginRight: 8 }}>진행중</b>자동 대진이 운영되고 있어요! 1시간 이상 응답이 없는 경우 자동 종료 돼요</span>
-          <button onClick={() => { if (window.confirm('대진을 종료할까요?\n종료하면 재개할 수 없고, 기록은 보존됩니다.')) actions.endSession(); }} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 15px', fontSize: 13, fontWeight: 800, background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: 8, cursor: 'pointer' }}><StopIcon /> 운영 종료</button>
+          <StatusDot size={10} color={state.paused ? '#ea580c' : '#16a34a'} />
+          {state.paused ? (
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: '#9a3412' }}><b style={{ fontWeight: 900, color: '#ea580c', marginRight: 8 }}>일시 중단</b>경기가 끝나도 다음 경기가 들어가지 않아요. 준비되면 [재개]를 눌러주세요</span>
+          ) : (
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--muted)' }}><b style={{ fontWeight: 900, color: '#16a34a', marginRight: 8 }}>진행중</b>자동 대진이 운영되고 있어요! 1시간 이상 응답이 없는 경우 자동 종료 돼요</span>
+          )}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {state.paused ? (
+              <button onClick={() => actions.setPaused(false)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', fontSize: 13, fontWeight: 900, background: '#ea580c', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}><PlayIcon /> 재개</button>
+            ) : (
+              <button onClick={() => actions.setPaused(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 15px', fontSize: 13, fontWeight: 800, background: 'transparent', color: 'var(--ink-2)', border: '1px solid var(--line-2)', borderRadius: 8, cursor: 'pointer' }}><PauseIcon /> 일시 중단</button>
+            )}
+            <button onClick={() => { if (window.confirm('대진을 종료할까요?\n종료하면 재개할 수 없고, 기록은 보존됩니다.')) actions.endSession(); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 15px', fontSize: 13, fontWeight: 800, background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: 8, cursor: 'pointer' }}><StopIcon /> 운영 종료</button>
+          </div>
         </div>
       )}
       {state.sessionStatus === 'ended' && (
@@ -769,7 +798,7 @@ function MainScreen({ state, actions }) {
         <main data-help="court" style={{ flex: compact ? '0 0 440px' : 1, overflowY: 'auto', padding: compact ? 14 : 20, background: compact ? 'var(--surface-3)' : 'transparent' }}>
           <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fill, minmax(330px, 1fr))', gap: compact ? 10 : 16 }}>
             {courts.map((ct) => (
-              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} auto={state.auto} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} onEditLineup={actions.editCoachLineup} onManualFill={actions.manualFill} onStartNext={actions.fillCourtNext} hasPending={(state.pending || []).length > 0} onCoachRest={actions.setCoachRest} coachResting={ct.coachResting} acePinned={ct.ace} coachName={coachInfo[ct.no] && coachInfo[ct.no].name} coverage={coachInfo[ct.no] && coachInfo[ct.no].coverage} compact={compact} />
+              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} auto={state.auto} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} onEditLineup={actions.editCoachLineup} onManualFill={actions.manualFill} onStartNext={actions.fillCourtNext} hasPending={(state.pending || []).length > 0} onCoachRest={actions.setCoachRest} coachResting={ct.coachResting} acePinned={ct.ace} coachName={coachInfo[ct.no] && coachInfo[ct.no].name} coverage={coachInfo[ct.no] && coachInfo[ct.no].coverage} busyEnd={!!(state.busy || {})['POST /courts/' + ct.no + '/end/']} busyFill={!!(state.busy || {})['POST /courts/' + ct.no + '/fill/']} lockEnd={!!(state.cooldown || {})[ct.no]} paused={!!state.paused} compact={compact} />
             ))}
           </div>
         </main>

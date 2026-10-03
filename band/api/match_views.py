@@ -18,7 +18,7 @@ from band.match_models import (
     ReservedMatch, ReservedMatchPlayer)
 from band.matchmaking.scoring import level_to_score
 from band.match_state import (
-    build_pool, build_pairstats, build_pairs, build_player, build_met_count,
+    build_pool, build_pairstats, build_pairs, build_player, build_met_count, build_coach_met,
     reserved_participant_ids)
 from band.matchmaking.engine import (
     recommend_next_game, recommend_with_pairs, _discipline_feasible,
@@ -168,6 +168,9 @@ _MODE_MAP = {
 _PRESET_MAP = {"balanced": Preset.BALANCED, "competitive": Preset.COMPETITIVE}
 _DISC_MAP = {"mixed": Discipline.MIXED, "mens": Discipline.MENS, "womens": Discipline.WOMENS}
 
+# 경기 시작 직후 종료 금지 구간(초) — 더블클릭으로 코트가 연속 두 번 넘어가는 것 방지. 콘솔 버튼 쿨다운과 동일 값
+END_COOLDOWN_SEC = 1.5
+
 
 def _on_court_ids(session):
     ids = set()
@@ -200,7 +203,8 @@ def _notify_next_game(match):
 
 def _create_match(session, court, plan: GamePlan):
     match = Match.objects.create(
-        session=session, court=court, discipline=plan.discipline.value)
+        session=session, court=court, discipline=plan.discipline.value,
+        court_index=court.index, court_name=court.name or "")   # 코트 제거돼도 기록 유지
     for pid in plan.team1:
         MatchPlayer.objects.create(match=match, participant_id=pid, team=1)
     for pid in plan.team2:
@@ -403,8 +407,15 @@ def _fill_court(session, court, forced_discipline=None, allow_auto=True):
             if coach_sp is not None:
                 met = build_met_count(session, coach_ids, stats)
                 mode_enum = _MODE_MAP.get(session.discipline_mode, Mode.ALL)
-                three = pick_ace_three(pool, met, mode_enum)
-                plan = build_ace_match(build_player(coach_sp), three, mode_enum)
+                coach_player = build_player(coach_sp)
+                with_coach = build_coach_met(session, court.coach_id, stats)
+                three = pick_ace_three(pool, met, mode_enum, coach_player, with_coach)
+                plan = build_ace_match(coach_player, three, mode_enum) if three else None
+                if plan is None and mode_enum == Mode.MIXED_ONLY:
+                    # 혼복 2남2여를 못 만들면 코트를 비우지 않고 동성(남복/여복)으로 채운다.
+                    # 이 상황은 모드 전환 시 성비 경고로 대부분 걸러지지만, 운영 중 인원 변동에 대비한 안전망.
+                    three = pick_ace_three(pool, met, Mode.SINGLES_GENDER, coach_player, with_coach)
+                    plan = build_ace_match(coach_player, three, Mode.SINGLES_GENDER) if three else None
                 if plan is not None:
                     return _create_match(session, court, plan), None
                 return None, None  # 코치 코트에 채울 3명 부족
@@ -454,8 +465,28 @@ def fill_court(request, session_id, index):
         return Response({"detail": "종료된 세션입니다."}, status=status.HTTP_409_CONFLICT)
     if session.status == MatchSession.Status.PREPARING:
         return Response({"detail": "먼저 [운영 시작]을 눌러 대진을 시작하세요."}, status=status.HTTP_409_CONFLICT)
+    if session.paused:
+        return Response({"detail": "일시 중단 중이에요. [재개]를 누르면 경기를 넣을 수 있어요.",
+                         "code": "paused"}, status=status.HTTP_409_CONFLICT)
     court = get_object_or_404(Court, session=session, index=index)
-    playing = court.matches.filter(status="playing").prefetch_related("players").first()
+    forced = request.data.get("discipline")
+    pids = request.data.get("participant_ids")
+    forced_disc = _DISC_MAP.get(forced) if forced else None
+
+    # 더블클릭·동시요청 방어 — 코트 행을 잠그고 '이미 찬 코트' 판정과 투입을 한 트랜잭션에서 처리한다.
+    # 잠금 밖에서 판정하면 두 요청이 모두 '빈 코트'로 보고 같은 코트에 playing 경기를 2개 만든다.
+    with transaction.atomic():
+        Court.objects.select_for_update().get(pk=court.pk)
+        playing = court.matches.filter(status="playing").prefetch_related("players").first()
+        if playing is None:
+            if pids:
+                match, err = _manual_fill(session, court, pids, forced)
+                need = None
+            else:
+                # 수동 모드 '경기 시작'은 1순위 예약만 투입(자동추천 안 함). 자동은 확정/예약/추천 전부.
+                match, need = _fill_court(session, court, forced_disc, allow_auto=session.auto)
+                err = None
+
     if playing is not None:
         # 화면-서버 동기화 어긋남으로 '이미 찬 코트'에 경기 시작/채우기가 호출된 상황.
         # 오류 대신 현재 상태를 그대로 반환(멱등)해 운영자에게 오류가 안 뜨게 하고, 원인 추적용 진단 로그만 남긴다.
@@ -467,21 +498,13 @@ def fill_court(request, session_id, index):
         )
         return Response(serialize_session(session))
 
-    forced = request.data.get("discipline")
-    pids = request.data.get("participant_ids")
-    # 직접 채우기: participant_ids 지정 시 그 4명으로 즉시 투입(자동추천 무시)
+    # 직접 채우기(participant_ids 지정)는 그 4명으로 즉시 투입 → 자동추천 경로와 응답 형식이 다르다
     if pids:
-        with transaction.atomic():
-            match, err = _manual_fill(session, court, pids, forced)
         if err is not None:
             return Response({"match": None, "needs_choice": False, "detail": err},
                             status=status.HTTP_400_BAD_REQUEST)
         return Response({"match": serialize_match(match), "needs_choice": False})
 
-    forced_disc = _DISC_MAP.get(forced) if forced else None
-    # 수동 모드 '경기 시작'은 1순위 예약만 투입(자동추천 안 함). 자동은 확정/예약/추천 전부.
-    with transaction.atomic():
-        match, need = _fill_court(session, court, forced_disc, allow_auto=session.auto)
     if need is not None:
         return Response({"match": None, "needs_choice": True,
                          "reason": need.reason,
@@ -539,12 +562,29 @@ def end_court(request, session_id, index):
     if session.status == MatchSession.Status.PREPARING:
         return Response({"detail": "먼저 [운영 시작]을 눌러 대진을 시작하세요."}, status=status.HTTP_409_CONFLICT)
     court = get_object_or_404(Court, session=session, index=index)
-    match = court.matches.filter(status="playing").prefetch_related("players__participant").first()
-    if match is None:
-        return Response({"detail": "진행 중인 경기가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
     now = timezone.now()
     with transaction.atomic():
+        # 더블클릭·동시요청 방어 — 코트 행을 잠근 뒤 진행 중 경기를 조회한다. 잠금 없이 밖에서 읽으면
+        # 두 요청이 같은 경기를 playing으로 보고 게임수를 이중 카운트하고, _fill_court가 두 번 돌아
+        # 같은 코트에 playing 경기가 2개 생긴다(콘솔은 하나만 표시 → 나머지 4명이 유령으로 묶임).
+        Court.objects.select_for_update().get(pk=court.pk)
+        match = court.matches.filter(status="playing").prefetch_related("players__participant").first()
+        if match is None:
+            return Response({"detail": "이미 종료된 경기예요.", "code": "stale_match"},
+                            status=status.HTTP_409_CONFLICT)
+        # 더블클릭·오래된 화면 방어 — 콘솔이 보고 있던 경기와 다르면 거부한다. 서버가 빨라서 1번째 클릭으로
+        # 이미 다음 경기가 투입된 뒤 2번째 클릭이 도착하면, 잠금만으로는 '새로 들어간 경기'가 종료돼 버린다.
+        expected_id = request.data.get("match_id")
+        if expected_id is not None and str(expected_id) != str(match.id):
+            return Response({"detail": "이미 종료된 경기예요.", "code": "stale_match"},
+                            status=status.HTTP_409_CONFLICT)
+        # 쿨다운 — 서버가 빠르면(45ms) 1번째 클릭으로 다음 경기가 이미 투입되고 화면도 갱신돼서,
+        # 0.2초 뒤 2번째 클릭은 '새 경기를 종료하라'는 정당한 요청이 된다(토큰·잠금으로 못 막음).
+        # 방금 시작한 경기는 종료를 거부해 코트가 연속으로 두 번 넘어가는 것을 막는다.
+        if match.started_at is not None and (now - match.started_at).total_seconds() < END_COOLDOWN_SEC:
+            return Response({"detail": "방금 시작한 경기예요. 잠시 후 종료할 수 있어요.",
+                             "code": "just_started"}, status=status.HTTP_409_CONFLICT)
         match.status = "done"
         match.ended_at = now
         match.save(update_fields=["status", "ended_at"])
@@ -557,9 +597,12 @@ def end_court(request, session_id, index):
                 setattr(sp, disc_field, getattr(sp, disc_field) + 1)
                 sp.last_game_ended_at = now
                 sp.save(update_fields=[disc_field, "last_game_ended_at"])
-        if session.auto:
+        if session.auto and not session.paused:
             new_match, need = _fill_court(session, court, allow_auto=True)
             ensure_next_lineup(session)   # 빈 코트 채워진 뒤 다음 1경기 재확정
+        elif session.paused:
+            # 일시 중단 — 치던 경기는 끝내되 다음 경기는 넣지 않는다. 재개하면 그때 투입.
+            new_match, need = None, None
         else:
             # 수동: 종료 후 빈 코트 유지 → 운영자가 '경기 시작'을 눌러야 1순위 예약 투입
             new_match, need = None, None
@@ -1109,6 +1152,33 @@ def move_reservation(request, session_id, reservation_id):
                 if x.order != i:
                     x.order = i
                     x.save(update_fields=["order"])
+    return Response(serialize_session(session))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def pause_session(request, session_id):
+    """[일시 중단] / [재개] — body: paused(bool). 사진·공지 등 잠깐 멈출 때.
+    진행 중 경기는 그대로 두고 '다음 경기 투입'만 막는다. 재개하면 빈 코트를 바로 채운다."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    if not _is_operator(request.user, session.schedule.band):
+        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    if session.status != MatchSession.Status.ACTIVE:
+        return Response({"detail": "진행 중인 대진에서만 일시 중단할 수 있어요."},
+                        status=status.HTTP_409_CONFLICT)
+    paused = bool(request.data.get("paused", True))
+    if session.paused != paused:
+        session.paused = paused
+        session.save(update_fields=["paused", "updated_at"])
+        if not paused and session.auto:
+            # 재개 — 중단 동안 비어 있던 코트를 즉시 채운다
+            for court in session.courts.all():
+                if not court.matches.filter(status="playing").exists():
+                    with transaction.atomic():
+                        Court.objects.select_for_update().get(pk=court.pk)
+                        if not court.matches.filter(status="playing").exists():
+                            _fill_court(session, court, allow_auto=True)
+            ensure_next_lineup(session)
     return Response(serialize_session(session))
 
 

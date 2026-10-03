@@ -751,8 +751,23 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
     const sc = (x) => (x.gender === target.gender ? 0 : 100) + Math.abs((LS[x.level] || 0) - (LS[target.level] || 0));
     return sc(a) - sc(b);
   });
-  // 코치와 아직 안 친 사람을 맨 앞으로(stable) — 코치가 골고루 치도록
-  if (lineupMode) cands = [...cands].sort((a, b) => (unmetSet.has(b.id) ? 1 : 0) - (unmetSet.has(a.id) ? 1 : 0));
+  // 코치 인원 편집: 경기 중인 사람도 목록에 보여준다(선택은 불가).
+  // 대기열엔 쉬는 사람만 떠서 '코치와 안 친 사람'이 몇 명 남았는지 확인할 수 없던 문제 해결.
+  const busyIds = new Set();
+  if (lineupMode) {
+    const inSlot = new Set(slots.filter(Boolean).map((x) => x.id));
+    const busy = (participants || []).filter((p) => p.status === '참여중' && p.court != null
+      && !inSlot.has(p.id) && p.id !== coachId && !coachSet.has(p.id)
+      && (qq === '' || p.name.toLowerCase().includes(qq))
+      && (genderF === 'all' || p.gender === genderF));
+    busy.forEach((p) => busyIds.add(p.id));
+    cands = cands.concat(busy);
+  }
+  // 코치와 아직 안 친 사람을 맨 앞으로(stable) — 코치가 골고루 치도록.
+  // 경기 중인 사람은 지금 넣을 수 없으니 각 그룹 안에서 뒤로 보낸다.
+  if (lineupMode) cands = [...cands].sort((a, b) =>
+    ((unmetSet.has(b.id) ? 1 : 0) - (unmetSet.has(a.id) ? 1 : 0))
+    || ((busyIds.has(a.id) ? 1 : 0) - (busyIds.has(b.id) ? 1 : 0)));
   const chip = (opts, val, setter) => (
     <div style={{ display: 'inline-flex', background: 'var(--surface-3)', borderRadius: 8, padding: 2, gap: 2 }}>
       {opts.map((o) => (
@@ -771,7 +786,17 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
             <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: '-.03em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>{isPending ? '예약 경기 편집' : lineupMode ? court.no + '번 코트 · 👑 코치와 칠 3명' : court.no + '번 코트 경기 편집'}</div>
             <DisciplineBadge type={type} size="lg" />
           </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginBottom: 14 }}>{lineupMode ? '코치는 고정돼요. 나머지 3명을 바꿔 「코치와 아직 안 친 사람」을 넣어보세요.' : '바꿀 선수를 탭하면 아래에서 대타를 고를 수 있어요.'}</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginBottom: 14 }}>{lineupMode
+            ? (() => {
+                // 안 친 사람이 몇 명 남았는지 + 그중 몇 명이 지금 경기 중인지 한 줄로
+                const unmetAll = cands.filter((c) => unmetSet.has(c.id));
+                const unmetBusy = unmetAll.filter((c) => busyIds.has(c.id)).length;
+                return unmetAll.length === 0
+                  ? '코치가 모두와 한 번씩 쳤어요. 원하는 3명을 고르면 돼요.'
+                  : `코치와 아직 안 친 사람 ${unmetAll.length}명` +
+                    (unmetBusy ? ` (그중 ${unmetBusy}명은 경기 중 — 끝나면 넣을 수 있어요)` : '') + '. 코치는 고정돼요.';
+              })()
+            : '바꿀 선수를 탭하면 아래에서 대타를 고를 수 있어요.'}</div>
 
           {onTogglePin && !lineupMode && (
             <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 12, background: showCoach ? '#eef0ff' : 'var(--surface-2)', border: `1px solid ${showCoach ? '#d9ddff' : 'var(--line)'}` }}>
@@ -832,15 +857,18 @@ function EditModal({ court, match, bench, onConfirm, onClose, participants, coac
               <div style={{ padding: '40px 12px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5, fontWeight: 600 }}>조건에 맞는 대기 인원이 없어요</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {cands.map((b) => (
-                  <button key={b.id} onClick={() => replace(b)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--line)', textAlign: 'left', minWidth: 0 }}>
+                {cands.map((b) => {
+                  const locked = busyIds.has(b.id);   // 경기 중 — 보이기만 하고 선택 불가
+                  return (
+                  <button key={b.id} onClick={() => !locked && replace(b)} disabled={locked} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--line)', textAlign: 'left', minWidth: 0, opacity: locked ? 0.5 : 1, cursor: locked ? 'not-allowed' : 'pointer' }}>
                     <LevelChip level={b.level} size={26} />
                     <NameWithGender p={b} size={16.5} />
                     {lineupMode && unmetSet.has(b.id) && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--hl)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>코치와 안 침</span>}
-                    {b.court != null && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--ink-2)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>게임 중</span>}
+                    {b.court != null && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--ink-2)', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>{b.court}번 코트 경기중</span>}
                     <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{b.totalGames}경기</span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -900,18 +928,26 @@ function ChoiceButton({ title, sub, accent, onClick }) {
   );
 }
 
-function HonWarnModal({ male, female, device, onResolve, onIgnore }) {
+function HonWarnModal({ male, female, device, onResolve, onIgnore, courts, canMixed, base, block }) {
   const stack = device === 'mobile';
+  const minor = Math.min(male, female);
+  const minorLabel = male <= female ? '남자' : '여자';
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'rgba(15,18,26,.42)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', animation: 'fadeIn .2s ease' }}>
       <div style={{ width: 420, maxWidth: '100%', background: 'var(--surface)', borderRadius: 22, boxShadow: 'var(--sh-3)', padding: 26, animation: 'popIn .26s cubic-bezier(.16,1,.3,1) both' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999, background: 'var(--surface-3)', color: 'var(--ink-2)', fontSize: 12.5, fontWeight: 800, letterSpacing: '-.02em' }}>현재 · 혼복만 모드</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999, background: block ? 'var(--danger-tint)' : 'var(--surface-3)', color: block ? 'var(--danger)' : 'var(--ink-2)', fontSize: 12.5, fontWeight: 800, letterSpacing: '-.02em' }}>{block ? '혼복 불가' : '혼복만 모드'}</span>
         </div>
         <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, letterSpacing: '-.035em', color: 'var(--ink)', lineHeight: 1.34, textWrap: 'balance', wordBreak: 'keep-all' }}>
-          지금 성비<span style={{ whiteSpace: 'nowrap' }}>(남 {male} · 여 {female})</span>로는 혼복만 운영하기는 어려워요
+          {block
+            ? <>지금 성비<span style={{ whiteSpace: 'nowrap' }}>(남 {male} · 여 {female})</span>로는 혼복을 할 수 없어요</>
+            : <>지금 성비<span style={{ whiteSpace: 'nowrap' }}>(남 {male} · 여 {female})</span>로는 코트 {base}면 중 {canMixed}면만 돌아가요</>}
         </h2>
-        <p style={{ margin: '0 0 18px', fontSize: 15, fontWeight: 500, color: 'var(--ink-2)', lineHeight: 1.55, letterSpacing: '-.01em', wordBreak: 'keep-all' }}>모두나 남복/여복으로 바꾸면 다 같이 칠 수 있어요</p>
+        <p style={{ margin: '0 0 18px', fontSize: 15, fontWeight: 500, color: 'var(--ink-2)', lineHeight: 1.55, letterSpacing: '-.01em', wordBreak: 'keep-all' }}>
+          {block
+            ? `혼복은 한 코트에 남2·여2가 필요한데 ${minorLabel}가 ${minor}명이에요. 모두나 남복·여복으로 바꾸면 다 같이 칠 수 있어요.`
+            : `${minorLabel} ${minor}분은 거의 쉬지 못하고, 나머지 분들은 대기가 길어져요. 모두로 바꾸면 코트가 다 차고 경기 수도 고르게 돌아가요.`}
+        </p>
         <RatioBar male={male} female={female} />
         <div style={{ display: 'flex', flexDirection: stack ? 'column' : 'row', gap: 10 }}>
           <ChoiceButton title="모두로 바꾸기" sub="혼복·남복·여복 다 가능"
@@ -921,8 +957,11 @@ function HonWarnModal({ male, female, device, onResolve, onIgnore }) {
             accent={{ bg: 'var(--ink)', fg: '#fff', shadow: '0 2px 0 #000', shadowHover: '0 4px 14px rgba(17,22,31,.28), 0 2px 0 #000' }}
             onClick={() => onResolve('남복/여복')} />
         </div>
+        {/* 차단(혼복 0경기)일 땐 강행 버튼을 두지 않는다 — 눌러도 경기가 안 만들어진다 */}
         <div style={{ textAlign: 'center', marginTop: 14 }}>
-          <button onClick={onIgnore} className="ignore-link" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--muted)', letterSpacing: '-.01em', padding: '6px 10px', borderRadius: 8 }}>그대로 혼복만 진행</button>
+          <button onClick={onIgnore} className="ignore-link" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--muted)', letterSpacing: '-.01em', padding: '6px 10px', borderRadius: 8 }}>
+            {block ? '닫기' : '그대로 혼복만 진행'}
+          </button>
         </div>
       </div>
     </div>
@@ -1115,50 +1154,96 @@ function stepBtn(disabled) {
 }
 
 // ---------- 호출 / 되돌리기 토스트 ----------
+// 종류별 색·글리프. 그라데이션에 알파를 붙여야 해서 CSS 변수가 아닌 실제 hex를 쓴다
+const TOAST_TONE = {
+  done: { c: '#12a565', g: '✓' },
+  call: { c: '#12a565', g: '✓' },
+  alert: { c: '#e0871b', g: '!' },
+  empty: { c: '#e0871b', g: '!' },
+  info: { c: '#64748b', g: 'i' },
+  coach: { c: '#64748b', g: 'i' },
+};
 function CallToast({ toast, onUndo, onDismiss, onPick }) {
   const isCall = toast.kind === 'call';
   const isAlert = toast.kind === 'alert';
-  const accent = isCall ? 'var(--brand)' : isAlert ? 'var(--warn)' : 'var(--ink-2)';
+  const tone = TOAST_TONE[toast.kind] || TOAST_TONE.info;
+  // 아래로 밀어서 닫기(터치·마우스 공용). 등장 애니메이션이 transform을 점유하므로 애니메이션은 바깥 래퍼에 둔다
+  const [dragY, setDragY] = useState(0);
+  const drag = useRef(null);
+  const onDown = (e) => {
+    if (e.target.closest('button')) return;   // 되돌리기 등 버튼 위에서는 드래그 시작 안 함
+    drag.current = { startY: e.clientY, dy: 0 };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  };
+  const onMove = (e) => {
+    if (!drag.current) return;
+    const dy = Math.max(0, e.clientY - drag.current.startY);   // 아래로만 따라옴
+    drag.current.dy = dy;   // 판정은 ref로 — state는 비동기라 놓는 순간 옛값일 수 있다
+    setDragY(dy);
+  };
+  const onUp = () => {
+    if (!drag.current) return;
+    const dy = drag.current.dy;
+    drag.current = null;
+    if (dy > 70) onDismiss(); else setDragY(0);
+  };
+  // 코트 지정 없는 토스트(안내·오류)는 '번 코트' 접두사를 붙이지 않는다
+  const courtLbl = toast.courtName || (toast.courtNo != null ? toast.courtNo + '번 코트' : null);
+  const title = isCall ? `${courtLbl} 호출` : [courtLbl, toast.error].filter(Boolean).join(' · ');
   return (
     <div style={{ position: 'absolute', left: 0, right: 0, bottom: 18, display: 'flex', justifyContent: 'center', zIndex: 40, pointerEvents: 'none' }}>
-      <div style={{
-        pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 16,
-        background: 'var(--ink)', color: '#fff', borderRadius: 16, padding: '14px 16px 14px 20px',
-        boxShadow: 'var(--sh-3)', maxWidth: '90%', animation: 'slideUp .26s cubic-bezier(.16,1,.3,1) both',
+      <div style={{ maxWidth: '92%', animation: 'slideUp .26s cubic-bezier(.16,1,.3,1) both' }}>
+      <div
+        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+        style={{
+        pointerEvents: 'auto', position: 'relative', overflow: 'hidden',
+        display: 'flex', alignItems: 'center', gap: 17,
+        background: '#22262e', color: '#fff', borderRadius: 20, padding: '18px 18px 18px 20px',
+        boxShadow: '0 14px 36px rgba(0,0,0,.42)',
+        touchAction: 'none', cursor: dragY ? 'grabbing' : 'grab', userSelect: 'none',
+        transform: dragY ? `translateY(${dragY}px)` : 'none',
+        opacity: dragY ? Math.max(0, 1 - dragY / 170) : 1,
+        transition: dragY ? 'none' : 'transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s',
       }}>
-        <div style={{ width: 42, height: 42, borderRadius: 12, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-          {isCall ? '📣' : isAlert ? '⚠️' : '🏸'}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 800, color: 'rgba(255,255,255,.6)', letterSpacing: '-.01em', marginBottom: 3 }}>
-            {isCall ? `${toast.courtName || toast.courtNo + '번 코트'} 호출` : `${toast.courtName || toast.courtNo + '번 코트'} · ${toast.error}`}
-          </div>
+        {/* 왼쪽에서 번지는 상태색 — 카드를 물들이되 글자 대비는 해치지 않는 세기 */}
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(100deg, ${tone.c}30 0%, ${tone.c}00 45%)`, pointerEvents: 'none' }} />
+        <div style={{
+          position: 'relative', width: 42, height: 42, borderRadius: 999, background: tone.c, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 21, fontWeight: 900, lineHeight: 1, color: '#13161c',
+        }}>{tone.g}</div>
+        <div style={{ position: 'relative', minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: 0, lineHeight: 1.35 }}>{title}</div>
           {isCall ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 7, background: `var(--${disciplineColor(toast.type)})`, color: '#fff', fontSize: 12, fontWeight: 800 }}>{toast.type}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap', marginTop: 9, rowGap: 7 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 8, background: `var(--${disciplineColor(toast.type)})`, color: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: 0 }}>{toast.type}</span>
               {toast.players.map((p, i) => (
-                <span key={p.id} style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.03em', whiteSpace: 'nowrap' }}>
+                <span key={p.id} style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.005em', whiteSpace: 'nowrap' }}>
                   {p.name}<span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.5)', marginLeft: 3 }}>{p.level}</span>{i === 1 ? <span style={{ color: 'rgba(255,255,255,.4)', margin: '0 2px' }}> · </span> : ''}
                 </span>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-.02em' }}>{toast.detail || '다음 경기를 만들 수 없습니다.'}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,.62)', letterSpacing: 0, lineHeight: 1.6, marginTop: 7 }}>
+              {toast.detail || '다음 경기를 만들 수 없습니다.'}
+            </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 8, marginLeft: 4, flexShrink: 0 }}>
-          {isAlert && toast.rec && toast.rec.suggestion && (
-            <button onClick={() => onPick(toast.rec.suggestion)} style={toastBtn('var(--warn)')}>{toast.rec.suggestion}로 채우기</button>
-          )}
-          <button onClick={onUndo} style={toastBtn('rgba(255,255,255,.16)')}>되돌리기</button>
-          <button onClick={onDismiss} style={{ ...toastBtn('transparent'), color: 'rgba(255,255,255,.55)', padding: '9px 10px' }}>✕</button>
-        </div>
+        {(toast.undo || (isAlert && toast.rec && toast.rec.suggestion)) && (
+          <div style={{ position: 'relative', display: 'flex', gap: 8, marginLeft: 8, flexShrink: 0 }}>
+            {isAlert && toast.rec && toast.rec.suggestion && (
+              <button onClick={() => onPick(toast.rec.suggestion)} style={toastBtn('var(--warn)')}>{toast.rec.suggestion}로 채우기</button>
+            )}
+            {toast.undo && <button onClick={onUndo} style={toastBtn('rgba(255,255,255,.16)')}>되돌리기</button>}
+          </div>
+        )}
+      </div>
       </div>
     </div>
   );
 }
 function toastBtn(bg) {
-  return { background: bg, color: '#fff', borderRadius: 10, padding: '9px 14px', fontSize: 13.5, fontWeight: 800, letterSpacing: '-.02em', whiteSpace: 'nowrap' };
+  return { background: bg, color: '#fff', border: 'none', borderRadius: 11, padding: '10px 15px', fontSize: 13.5, fontWeight: 800, letterSpacing: 0, whiteSpace: 'nowrap', cursor: 'pointer' };
 }
 
 // ---------- 늦참 즉석 체크인 모달 ----------

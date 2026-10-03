@@ -29,6 +29,7 @@ function initState() {
     modal: null,
     theme: 'clean',
     toast: null,
+    paused: false,
     nowTs: now,
   };
 }
@@ -52,6 +53,9 @@ async function apiCall(path, method, body) {
   }
   return res.status === 204 ? null : res.json();
 }
+
+// 경기종료 후 버튼 잠금 시간(ms) — 서버 END_COOLDOWN_SEC와 같은 값
+const END_COOLDOWN_MS = 1500;
 
 const _srvGender = (g) => (g === 'male' ? 'M' : g === 'female' ? 'F' : '');
 const _srvLevel = (bl) => LEVEL_ORDER[7 - bl] || 'D';   // base_level 7=자강 .. 1=초심
@@ -108,7 +112,7 @@ function mapServerState(d, prev) {
   });
   const pairs = (d.pairs || []).map((pr) => ({ id: pr.id, members: (pr.members || []).map((m) => String(m.participant_id)), strict: pr.strict }));
   const pairRequests = (d.partner_requests || []).map((r) => ({ id: r.id, from: String(r.from.participant_id), to: String(r.to.participant_id) }));
-  return { participants, courts, pending, pairs, pairRequests, sessionStatus: d.status || prev.sessionStatus, auto: d.auto != null ? d.auto : prev.auto, mode: _SRV_MODE[d.discipline_mode] || prev.mode, preset: _SRV_PRESET[d.preset] || prev.preset, nextLineup: mapNextLineup(d.next_lineup), pastCombos: new Set((d.past_combos || []).map((c) => c.join('-'))) };
+  return { participants, courts, pending, pairs, pairRequests, sessionStatus: d.status || prev.sessionStatus, paused: !!d.paused, auto: d.auto != null ? d.auto : prev.auto, mode: _SRV_MODE[d.discipline_mode] || prev.mode, preset: _SRV_PRESET[d.preset] || prev.preset, nextLineup: mapNextLineup(d.next_lineup), pastCombos: new Set((d.past_combos || []).map((c) => c.join('-'))) };
 }
 
 function App() {
@@ -120,13 +124,34 @@ function App() {
   const refetch = () => apiCall('/', 'GET')
     .then((d) => d && setSt((s) => ({ ...s, ...mapServerState(d, s) })))
     .catch(() => {});
+  // 진행 중 요청(메서드+경로) — 같은 버튼 연속 클릭 차단. 키가 코트별로 달라 다른 코트는 영향 없음
+  const inflight = useRef(new Set());
   // 액션 API 헬퍼: 응답이 session_state면 그걸로 즉시 반영(왕복 1회), 부분응답이면 재조회
   const srv = (p, m, b, opt) => {
+    const key = m + ' ' + p;
+    if (inflight.current.has(key)) return Promise.resolve('skipped'); // 더블클릭 — 요청을 아예 보내지 않는다
+    inflight.current.add(key);
+    // 스피너는 150ms 지나도 응답이 없을 때만 표시 → 빠른 응답에서 깜빡임으로 보이지 않게
+    const spin = setTimeout(() => set((s) => ({ busy: { ...(s.busy || {}), [key]: true } })), 150);
+    const release = () => {
+      clearTimeout(spin);
+      inflight.current.delete(key);
+      set((s) => { const bz = { ...(s.busy || {}) }; delete bz[key]; return { busy: bz }; });
+    };
     if (opt) set(opt); // 낙관적 업데이트: 서버 응답 전 화면 즉시 반영(응답이 오면 서버 정본으로 교정)
     return apiCall(p, m, b).then((d) => {
       if (d && Array.isArray(d.participants)) setSt((s) => ({ ...s, ...mapServerState(d, s) }));
       else refetch();
-    }).catch((e) => { refetch(); set({ toast: { kind: 'alert', error: '오류', detail: e.message || '요청 실패' } }); }); // 실패 시 서버 최신 상태로 자동 복구(지속 오류 방지)
+    }).catch((e) => {
+      refetch(); // 실패 시 서버 최신 상태로 자동 복구(지속 오류 방지)
+      // 이미 끝난 경기·방금 시작한 경기를 또 누른 상황은 운영자 실수가 아니므로 '오류'가 아니라 안내로 보여준다
+      const soft = e.data && (e.data.code === 'stale_match' || e.data.code === 'just_started');
+      set({
+        toast: soft
+          ? { kind: 'info', error: '안내', detail: e.data.detail }
+          : { kind: 'alert', error: '오류', detail: e.message || '요청 실패' },
+      });
+    }).then(release, release);
   };
 
   // 서버 연동 모드: session_state 폴링 → 서버 상태로 렌더 (2.5초)
@@ -142,8 +167,9 @@ function App() {
   }, []);
 
   // 1시간 완전 무입력(터치·스크롤·마우스·키보드) → 대진 자동 종료
+  // 일시 중단 중에는 멈춘다 — 사진·공지로 잠깐 쉬는 사이에 세션이 끝나면 안 된다
   useEffect(() => {
-    if (!CONNECTED || st.sessionStatus !== 'active') return;
+    if (!CONNECTED || st.sessionStatus !== 'active' || st.paused) return;
     let timer;
     const trigger = () => apiCall('/end/', 'POST')
       .then((d) => { if (d) setSt((s) => ({ ...s, ...mapServerState(d, s) })); })
@@ -153,7 +179,7 @@ function App() {
     evts.forEach((e) => window.addEventListener(e, reset, { passive: true }));
     reset();
     return () => { clearTimeout(timer); evts.forEach((e) => window.removeEventListener(e, reset)); };
-  }, [st.sessionStatus]);
+  }, [st.sessionStatus, st.paused]);
 
   // 게임 보드: 경기 기록 화면일 때 완료+진행 경기 폴링
   useEffect(() => {
@@ -171,10 +197,12 @@ function App() {
     return () => clearInterval(t);
   }, []);
 
-  // 토스트 자동 해제
+  // 토스트 자동 해제 — 종류별 지속 시간. 되돌리기가 있으면 판단할 시간이 더 필요하다
   useEffect(() => {
     if (!st.toast) return;
-    const t = setTimeout(() => setSt((s) => (s.toast ? { ...s, toast: null } : s)), 7000);
+    const k = st.toast.kind;
+    const ms = st.toast.undo ? 7000 : k === 'info' ? 2500 : k === 'done' ? 3000 : k === 'call' ? 6000 : 5000;
+    const t = setTimeout(() => setSt((s) => (s.toast ? { ...s, toast: null } : s)), ms);
     return () => clearTimeout(t);
   }, [st.toast]);
 
@@ -205,20 +233,38 @@ function App() {
   };
 
   const actions = {
-    setMode: (mode) => CONNECTED ? srv('/mode/', 'POST', { discipline_mode: MODE_TO_SRV[mode] }, { mode }) : set((s) => {
-      // 혼복으로 바꿀 때 성비가 안 맞으면(적은 성별이 코트를 못 채움) 확인 모달
-      if (mode === '혼복') {
+    // 혼복으로 바꿀 때 성비가 안 맞으면(적은 성별이 코트를 못 채움) 확인 모달.
+    // 혼복은 2남2여만 성립하므로 성비가 깨지면 코트가 빈다 → 모드 전환을 먼저 권한다
+    setMode: (mode) => {
+      // 혼복은 한 코트당 남2·여2가 필요 → 적은 성별이 병목. 인원 부족과 성비 쏠림을 구분해 판정한다.
+      //   canMixed = 혼복으로 채울 수 있는 코트,  base = 인원·코트수로 원래 돌릴 수 있는 코트
+      //   canMixed === 0 → 혼복 경기가 0개 → 모드 전환 차단
+      //   canMixed < base → 성비 때문에 코트가 빔 → 경고(강행 가능)
+      const honCheck = (s) => {
+        if (mode !== '혼복') return null;
         const present = s.participants.filter((p) => p.status === '참여중');
+        if (present.length < 4) return null;   // 인원 자체가 부족 — 혼복 탓이 아님
         const M = present.filter((p) => p.gender === 'M').length;
         const F = present.length - M;
-        const courtCount = s.courts.filter((c) => !c.pendingRemove).length;
-        if (present.length >= 4 && M !== F && Math.floor(Math.min(M, F) / 2) < courtCount + 2) {
-          return { mode, modal: { type: 'honWarn', m: M, f: F } };
-        }
-      }
-      return { mode };
-    }),
-    honWarnPick: (mode) => set({ mode, modal: null }), // 모달에서 종목 전환 + 닫기
+        const courts = s.courts.filter((c) => !c.pendingRemove).length;
+        const canMixed = Math.floor(Math.min(M, F) / 2);
+        const base = Math.min(Math.floor(present.length / 4), courts);
+        if (canMixed >= base) return null;
+        return { type: 'honWarn', m: M, f: F, courts, canMixed, base, block: canMixed === 0 };
+      };
+      const w = honCheck(st);
+      if (w && w.block) return set({ modal: w });   // 차단 — 모드를 바꾸지 않는다
+      if (CONNECTED) return srv('/mode/', 'POST', { discipline_mode: MODE_TO_SRV[mode] }, w ? { mode, modal: w } : { mode });
+      return set(w ? { mode, modal: w } : { mode });
+    },
+    // 일시 중단 / 재개 — 진행 중 경기는 두고 다음 경기 투입만 멈춘다(사진·공지 등)
+    setPaused: (paused) => CONNECTED
+      ? srv('/pause/', 'POST', { paused: !!paused }, { paused: !!paused })
+      : set({ paused: !!paused }),
+    honWarnPick: (mode) => { // 모달에서 종목 전환 + 닫기
+      set({ modal: null });
+      return CONNECTED ? srv('/mode/', 'POST', { discipline_mode: MODE_TO_SRV[mode] }, { mode }) : set({ mode });
+    },
     setAuto: (auto) => CONNECTED ? srv('/auto/', 'POST', { auto: !!auto }, { auto: !!auto }) : set({ auto }),
     setLayout: (layout) => set({ layout }),
     manualFill: (court) => set({ modal: { type: 'edit', court, match: null } }), // 수동: 빈 슬롯 편집 모달
@@ -294,7 +340,29 @@ function App() {
       });
     },
 
-    endMatch: (court) => CONNECTED ? srv('/courts/' + court.no + '/end/', 'POST', null, st.auto ? undefined : (s) => ({ courts: s.courts.map((c) => (c.no === court.no ? { ...c, match: null } : c)) })) : set((s) => {
+    // match_id = 화면이 보고 있던 경기. 서버가 빨라 이미 다음 경기가 들어간 뒤 두 번째 클릭이 와도 그 경기는 안 건드림
+    endMatch: (court) => CONNECTED ? (() => {
+      const prevId = court.match && court.match.id;
+      return srv('/courts/' + court.no + '/end/', 'POST', { match_id: prevId },
+        st.auto ? undefined : (s) => ({ courts: s.courts.map((c) => (c.no === court.no ? { ...c, match: null } : c)) })
+      ).then((r) => {
+        if (r === 'skipped') return;
+        // 종료 직후 ~1.5초 버튼 잠금(쿨다운) — 사람이 0.2초 간격으로 두 번 눌러 코트가 두 번 넘어가는 것 방지
+        set((s) => ({ cooldown: { ...(s.cooldown || {}), [court.no]: true } }));
+        setTimeout(() => set((s) => { const c = { ...(s.cooldown || {}) }; delete c[court.no]; return { cooldown: c }; }), END_COOLDOWN_MS);
+        // 결과 토스트 — 멤버 이름은 코트 카드가 이미 크게 보여주므로 넣지 않는다.
+        // 제목(=내가 한 행동)은 고정, 아래 한 줄만 실제 결과에 따라 바뀐다
+        setSt((s) => {
+          const c = (s.courts || []).find((x) => x.no === court.no);
+          const filled = !!(c && c.match && c.match.id !== prevId);
+          const detail = filled ? '다음 경기가 시작됐어요' : s.auto ? '대기 인원이 부족해요' : '코트가 비었어요';
+          return { ...s, toast: {
+            kind: filled || !s.auto ? 'done' : 'alert',   // 자동인데 못 채운 경우만 주의(주황)
+            courtNo: court.no, courtName: c && c.name, error: '경기 종료', detail,
+          } };
+        });
+      });
+    })() : set((s) => {
       const now = Date.now();
       const m = s.courts.find((c) => c.no === court.no).match;
       if (!m) return {};
@@ -443,7 +511,10 @@ function App() {
       modal: null,
     })),
 
-    pickAlt: (court, type) => set((s) => {
+    // 모임장이 대안 종목을 고름 → 서버에 그 종목으로 채우기를 요청(기존엔 로컬만 바꿔 폴링 때 되돌아갔음)
+    pickAlt: (court, type) => CONNECTED
+      ? (set({ modal: null }), srv('/courts/' + court.no + '/fill/', 'POST', { discipline: DISC_TO_SRV[type] }))
+      : set((s) => {
       const gender = type === '남복' ? 'M' : 'F';
       const pend = pendingIdsOf(s);
       const eligible = sortQueue(s.participants.filter((p) => p.status === '참여중' && p.court == null && p.gender === gender && !pend.has(p.id)), s.nowTs);
@@ -663,7 +734,7 @@ function App() {
   const overlays = (
     <>
       {st.modal && st.modal.type === 'honWarn' && (
-        <HonWarnModal male={st.modal.m} female={st.modal.f} device={st.device} onResolve={actions.honWarnPick} onIgnore={actions.closeModal} />
+        <HonWarnModal male={st.modal.m} female={st.modal.f} courts={st.modal.courts} canMixed={st.modal.canMixed} base={st.modal.base} block={st.modal.block} device={st.device} onResolve={actions.honWarnPick} onIgnore={actions.closeModal} />
       )}
       {st.modal && st.modal.type === 'alert' && (
         <AlertModal court={st.modal.court} rec={st.modal.rec} onPick={(t) => actions.pickAlt(st.modal.court, t)} onClose={actions.closeModal} />

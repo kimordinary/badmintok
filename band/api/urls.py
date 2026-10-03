@@ -87,6 +87,7 @@ urlpatterns = [
     path('match/<int:session_id>/participants/sync/', match_views.sync_participants, name='match_participant_sync'),
     path('match/<int:session_id>/matches/<int:match_id>/', match_views.edit_match, name='match_edit'),
     path('match/<int:session_id>/begin/', match_views.begin_session, name='match_begin_session'),
+    path('match/<int:session_id>/pause/', match_views.pause_session, name='match_pause_session'),
     path('match/<int:session_id>/end/', match_views.end_session, name='match_end_session'),
     path('match/<int:session_id>/reset/', match_views.reset_session, name='match_reset'),
 

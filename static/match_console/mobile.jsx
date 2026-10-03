@@ -41,7 +41,7 @@ function MobileApp({ state, actions }) {
         {tab === 'court' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {courts.map((ct) => (
-              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} />
+              <CourtCard key={ct.no} court={ct} rec={recs[ct.no]} nowTs={nowTs} onEnd={actions.endMatch} onStart={actions.startMatch} onEdit={actions.openEdit} busyEnd={!!(state.busy || {})['POST /courts/' + ct.no + '/end/']} busyFill={!!(state.busy || {})['POST /courts/' + ct.no + '/fill/']} lockEnd={!!(state.cooldown || {})[ct.no]} paused={!!state.paused} />
             ))}
           </div>
         )}

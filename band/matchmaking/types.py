@@ -26,11 +26,14 @@ class Weights:
     partner: float
     opponent: float
     fairness: float
+    # 4명의 급수 폭(최고-최저) 페널티 가중치. 0이면 폭을 보지 않는다('밸런스').
+    # '동일 급수'는 두 팀 합이 같아도 자강+초심 같은 조합이 끼지 않도록 폭 자체를 억제한다.
+    span: float = 0
 
 
 PRESETS = {
-    Preset.BALANCED: Weights(balance=3, partner=2, opponent=1, fairness=1),
-    Preset.COMPETITIVE: Weights(balance=5, partner=1, opponent=0.5, fairness=1),
+    Preset.BALANCED: Weights(balance=3, partner=2, opponent=1, fairness=1, span=0),
+    Preset.COMPETITIVE: Weights(balance=5, partner=1, opponent=0.5, fairness=1, span=20),
 }
 
 MALE = "male"

@@ -89,8 +89,9 @@ def serialize_match(match):
 def serialize_match_history(match):
     """게임 보드용 — 경기 + 코트·종료시각."""
     d = serialize_match(match)
-    d["court_index"] = match.court.index
-    d["court_name"] = match.court.name or None
+    # 코트가 남아 있으면 현재 값(이름 변경 즉시 반영), 제거됐으면 경기에 남긴 스냅샷 사용
+    d["court_index"] = match.court.index if match.court_id else match.court_index
+    d["court_name"] = (match.court.name or None) if match.court_id else (match.court_name or None)
     d["ended_at"] = match.ended_at.isoformat() if getattr(match, "ended_at", None) else None
     return d
 
@@ -177,6 +178,7 @@ def serialize_session(session):
     return {
         "id": session.id,
         "status": session.status,
+        "paused": session.paused,
         "discipline_mode": session.discipline_mode,
         "preset": session.preset,
         "court_count": session.court_count,
@@ -253,10 +255,12 @@ def serialize_my_status(session, sp, user=None):
     current_match = None
     if current is not None:
         cm = serialize_match(current)
-        cm["court_index"] = current.court.index
-        cm["court_name"] = current.court.name or None
+        # 진행 중 경기의 코트는 제거될 수 없지만(뷰에서 차단) court가 null 허용이 되어 방어
+        cm["court_index"] = current.court.index if current.court_id else current.court_index
+        cm["court_name"] = ((current.court.name or None) if current.court_id
+                            else (current.court_name or None))
         cm["my_team"] = my_team
-        cm["is_coach_court"] = current.court.coach_id is not None
+        cm["is_coach_court"] = bool(current.court_id and current.court.coach_id is not None)
         current_match = cm
 
     games = None
@@ -288,6 +292,8 @@ def serialize_my_status(session, sp, user=None):
     return {
         "session_id": session.id,
         "session_status": session.status,
+        "paused": session.paused,      # 앱: 참가자 화면에 '잠시 쉬어가는 중' 안내용
+
         "participant_id": sp.id if sp else None,
         "name": sp.display_real_name if sp else None,
         "gender": sp_gender,
