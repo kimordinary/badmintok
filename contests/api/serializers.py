@@ -69,7 +69,7 @@ class ContestImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContestImage
-        fields = ['id', 'image_url', 'order']
+        fields = ['id', 'image_url', 'image_type', 'order']
         read_only_fields = fields
 
     def get_image_url(self, obj):
@@ -113,7 +113,7 @@ class ContestListSerializer(serializers.ModelSerializer):
 
     def get_first_image(self, obj):
         request = self.context.get('request')
-        first_image = obj.images.first()
+        first_image = obj.get_primary_image()
         if first_image and first_image.image:
             if request:
                 return request.build_absolute_uri(first_image.image.url)
@@ -128,6 +128,8 @@ class ContestDetailSerializer(serializers.ModelSerializer):
     sponsor = serializers.CharField(source='sponsor.name', read_only=True, allow_null=True)
     schedules = ContestScheduleSerializer(many=True, read_only=True)
     images = serializers.SerializerMethodField()
+    poster_image = serializers.SerializerMethodField()
+    guide_images = serializers.SerializerMethodField()
     period_display = serializers.CharField(source='get_period_display', read_only=True)
     registration_period_display = serializers.CharField(source='get_registration_period_display', read_only=True)
     d_day = serializers.IntegerField(source='get_d_day', read_only=True)
@@ -157,7 +159,7 @@ class ContestDetailSerializer(serializers.ModelSerializer):
             'participant_info', 'participant_target', 'participant_events', 'participant_ages', 'participant_grades',
             'd_day', 'd_day_display',
             'view_count', 'like_count', 'is_liked',
-            'schedules', 'images', 'same_week_contests',
+            'schedules', 'images', 'poster_image', 'guide_images', 'same_week_contests',
             'is_test',
             'created_at', 'updated_at'
         ]
@@ -192,6 +194,25 @@ class ContestDetailSerializer(serializers.ModelSerializer):
                 else:
                     urls.append(img.image.url)
         return urls
+
+    def _image_url(self, image):
+        if not image or not image.image or not hasattr(image.image, 'url'):
+            return None
+        request = self.context.get('request')
+        return request.build_absolute_uri(image.image.url) if request else image.image.url
+
+    def get_poster_image(self, obj):
+        return self._image_url(obj.get_primary_image())
+
+    def get_guide_images(self, obj):
+        return [
+            url
+            for url in (
+                self._image_url(image)
+                for image in obj.images.filter(image_type=ContestImage.ImageType.GUIDE).order_by('order', 'id')
+            )
+            if url
+        ]
 
     def get_participant_info(self, obj):
         return {
@@ -284,7 +305,7 @@ class ContestImageWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContestImage
-        fields = ['id', 'image', 'image_url', 'order']
+        fields = ['id', 'image', 'image_url', 'image_type', 'order']
         extra_kwargs = {'image': {'write_only': True}}
 
     def get_image_url(self, obj):

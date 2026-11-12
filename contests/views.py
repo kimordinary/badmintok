@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView
 
-from .models import Contest, ContestCategory, Sponsor
+from .models import Contest, ContestCategory, ContestImage, Sponsor
 from badmintok.models import BadmintokBanner
 
 logger = logging.getLogger(__name__)
@@ -367,8 +367,13 @@ class ContestDetailView(DetailView):
         context["events_summary"] = ", ".join(all_events)
         context["all_events"] = all_events
 
-        # 대회 이미지들 가져오기 (순서대로)
-        context["contest_images"] = contest.images.all().order_by('order', 'id')
+        # 대표 포스터와 요강을 분리한다. 요강은 썸네일·OG 후보가 될 수 없다.
+        poster_image = contest.get_primary_image()
+        context["poster_image"] = poster_image
+        context["guide_images"] = contest.images.filter(
+            image_type=ContestImage.ImageType.GUIDE,
+        ).order_by('order', 'id')
+        context["contest_images"] = [poster_image] if poster_image else []
 
         # === SEO: title / description / body / canonical / OG image / JSON-LD ===
         import json as _json
@@ -382,8 +387,8 @@ class ContestDetailView(DetailView):
             _reverse("contests:detail", args=[contest.slug])
         )
 
-        # og:image — 첫 이미지가 있으면 사용 (사이즈 판단은 1단계 결과 따라 향후 추가)
-        first_img = contest.images.order_by("order", "id").first()
+        # og:image에는 대표 포스터만 사용한다.
+        first_img = poster_image
         if first_img and first_img.image:
             context["og_image_url"] = self.request.build_absolute_uri(first_img.image.url)
         else:

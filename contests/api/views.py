@@ -369,6 +369,8 @@ def contest_image_replace(request, slug):
     data = request.data.copy()
     if not data.get('order'):
         data['order'] = 0
+    # 교체 엔드포인트는 대표 포스터 전용이다. 요강 이미지는 일반 업로드 API만 쓴다.
+    data['image_type'] = ContestImage.ImageType.POSTER
     serializer = ContestImageWriteSerializer(data=data, context={'request': request})
     serializer.is_valid(raise_exception=True)
     new_image = serializer.save(contest=contest)
@@ -378,7 +380,13 @@ def contest_image_replace(request, slug):
         'ok': True,
         'replaced': True,
         'deleted_existing': deleted_existing,
-        'image': {'id': new_image.id, 'url': url, 'order': new_image.order},
+        'image': {
+            'id': new_image.id,
+            'url': url,
+            'image_type': new_image.image_type,
+            'order': new_image.order,
+        },
+        'poster_image': url,
         'first_image': url,
     }, status=status.HTTP_200_OK)
 

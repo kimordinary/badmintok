@@ -112,7 +112,7 @@ class ContestImageInline(TabularInline):
     """대회 이미지 인라인"""
     model = ContestImage
     extra = 1
-    fields = ("image", "order")
+    fields = ("image", "image_type", "order")
     ordering = ("order", "id")
 
 

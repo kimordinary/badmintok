@@ -328,6 +328,14 @@ class Contest(models.Model):
 
         return " ".join(sentences)
 
+    def get_primary_image(self):
+        """대표 포스터만 반환한다. 요강 이미지는 썸네일·OG에 쓰지 않는다."""
+        if not self.pk:
+            return None
+        return self.images.filter(
+            image_type=ContestImage.ImageType.POSTER,
+        ).order_by("order", "id").first()
+
     def get_jsonld(self, request=None):
         """schema.org SportsEvent JSON-LD dict.
 
@@ -365,10 +373,7 @@ class Contest(models.Model):
             data["description"] = desc
 
         # 이미지 (있을 때만)
-        first_img = (
-            self.images.order_by('order', 'id').first()
-            if self.pk else None
-        )
+        first_img = self.get_primary_image()
         if first_img and first_img.image:
             img_url = abs_url(first_img.image.url)
             if img_url:
@@ -571,6 +576,10 @@ class ContestPrize(models.Model):
 
 class ContestImage(models.Model):
     """대회 이미지 (여러 장 업로드 가능)"""
+    class ImageType(models.TextChoices):
+        POSTER = "poster", "대표 포스터"
+        GUIDE = "guide", "대회 요강"
+
     contest = models.ForeignKey(
         Contest,
         on_delete=models.CASCADE,
@@ -578,6 +587,13 @@ class ContestImage(models.Model):
         verbose_name="대회",
     )
     image = WebPImageField("이미지", upload_to=contest_image_upload_to)
+    image_type = models.CharField(
+        "이미지 역할",
+        max_length=10,
+        choices=ImageType.choices,
+        default=ImageType.POSTER,
+        db_index=True,
+    )
     order = models.PositiveIntegerField("순서", default=0, help_text="이미지 표시 순서 (작은 숫자가 먼저 표시됨)")
     created_at = models.DateTimeField("등록일", auto_now_add=True)
 

@@ -46,37 +46,13 @@
 
         <div class="contest-detail__content">
             <div class="contest-detail__image">
-                {% if contest_images %}
-                    <!-- 이미지 슬라이더 -->
+                {% if poster_image %}
                     <div class="contest-image-slider">
                         <div class="slider-container">
-                            {% for image in contest_images %}
-                                <div class="slider-item {% if forloop.first %}active{% endif %}">
-                                    <img src="{{ image.image.url }}" alt="{{ contest.title }} - 이미지 {{ forloop.counter }}"{% if not forloop.first %} loading="lazy"{% else %} fetchpriority="high"{% endif %} />
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        {% if contest_images|length > 1 %}
-                            <!-- 이전/다음 버튼 -->
-                            <button type="button" class="slider-btn slider-btn-prev" onclick="changeSlide(-1)">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M15 18l-6-6 6-6"/>
-                                </svg>
-                            </button>
-                            <button type="button" class="slider-btn slider-btn-next" onclick="changeSlide(1)">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 18l6-6-6-6"/>
-                                </svg>
-                            </button>
-
-                            <!-- 인디케이터 -->
-                            <div class="slider-indicators">
-                                {% for image in contest_images %}
-                                    <button type="button" class="slider-indicator {% if forloop.first %}active{% endif %}" onclick="goToSlide({{ forloop.counter0 }})"></button>
-                                {% endfor %}
+                            <div class="slider-item active">
+                                <img src="{{ poster_image.image.url }}" alt="{{ contest.title }} 대표 포스터" fetchpriority="high" />
                             </div>
-                        {% endif %}
+                        </div>
                     </div>
                 {% else %}
                     <div class="contest-thumb-placeholder" style="width:100%; height:260px;">이미지 없음</div>
@@ -348,6 +324,15 @@
             </article>
         {% endif %}
 
+        {% if guide_images %}
+            <section class="contest-detail__guide-images" aria-labelledby="contest-guide-images-title">
+                <h2 id="contest-guide-images-title">대회 요강</h2>
+                {% for image in guide_images %}
+                    <img src="{{ image.image.url }}" alt="{{ contest.title }} 요강 {{ forloop.counter }}" loading="lazy" />
+                {% endfor %}
+            </section>
+        {% endif %}
+
         {% if contest_month and week_number %}
             <article class="contest-detail__same-week">
                 <h2>🏆 {{ contest_month }}월 {{ week_number }}주차 다른 대회도 있어요</h2>
@@ -356,7 +341,7 @@
                         {% for other_contest in same_week_contests %}
                             <a href="{% url 'contests:detail' other_contest.slug %}" class="contest-post-item">
                                 <div class="contest-post-image">
-                                    {% with first_image=other_contest.images.first %}
+                                    {% with first_image=other_contest.get_primary_image %}
                                         {% if first_image %}
                                             <img src="{{ first_image.image.url }}" alt="{{ other_contest.title }}" class="contest-post-thumbnail" loading="lazy">
                                         {% else %}
