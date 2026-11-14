@@ -289,6 +289,27 @@ def serialize_my_status(session, sp, user=None):
             "level": (pf.badminton_level if pf else "") or "",
         }
 
+    # 파트너 신청 후보: 나·게스트(계정 없음)·퇴장자·이미 쌍인 사람 제외
+    partner_candidates = []
+    if sp:
+        paired_ids = set()
+        for p1_id, p2_id in session.pairs.values_list("p1_id", "p2_id"):
+            paired_ids.update((p1_id, p2_id))
+        rows = (session.participants
+                .exclude(id=sp.id)
+                .exclude(user__isnull=True)
+                .exclude(id__in=paired_ids)
+                .exclude(attendance=SessionParticipant.Attendance.LEFT)
+                .select_related("user__profile"))
+        for c in rows:
+            c_level, c_gender = c.live_level_gender()
+            partner_candidates.append({
+                "participant_id": c.id,
+                "name": c.display_real_name,
+                "base_level": c_level,
+                "gender": c_gender,
+            })
+
     return {
         "session_id": session.id,
         "session_status": session.status,
@@ -308,4 +329,5 @@ def serialize_my_status(session, sp, user=None):
         "up_next_level": up_next_level,
         "profile": profile,
         "excluded_from_pool": excluded_from_pool,
+        "partner_candidates": partner_candidates,
     }

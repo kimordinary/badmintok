@@ -372,19 +372,85 @@ class PartnerApiTest(FlowTest):
         self.assertEqual(d.status_code, 204)
         self.assertEqual(len(self.client.get(f"/api/bands/match/{sid}/").json()["pairs"]), 0)
 
+    def test_my_status_lists_partner_candidates(self):
+        sid, users, parts = self._present_session_users([
+            ("a@x.com", "b", "female"), ("b@x.com", "b", "female"),
+            ("c@x.com", "b", "female"), ("d@x.com", "b", "female")])
+        a, b, c, d = (users[k] for k in ("a@x.com", "b@x.com", "c@x.com", "d@x.com"))
+        # b-c 쌍, d 퇴장 → a의 후보에서 제외
+        self.client.post(f"/api/bands/match/{sid}/pairs/",
+                         {"p1_id": parts[b.id], "p2_id": parts[c.id]}, format="json")
+        self.client.post(f"/api/bands/match/{sid}/participants/{parts[d.id]}/attendance/",
+                         {"attendance": "left"}, format="json")
+        self.client.force_authenticate(a)
+        me = self.client.get(f"/api/bands/match/{sid}/me/").json()
+        self.assertEqual(me["partner_candidates"], [])
+        # 쌍 해제 후엔 b, c가 후보로
+        self.client.force_authenticate(self.owner)
+        pair_id = self.client.get(f"/api/bands/match/{sid}/").json()["pairs"][0]["id"]
+        self.client.delete(f"/api/bands/match/{sid}/pairs/{pair_id}/")
+        self.client.force_authenticate(a)
+        me = self.client.get(f"/api/bands/match/{sid}/me/").json()
+        self.assertEqual({x["participant_id"] for x in me["partner_candidates"]},
+                         {parts[b.id], parts[c.id]})
+        self.assertIn("base_level", me["partner_candidates"][0])
+
+    def test_requester_can_cancel_but_others_cannot(self):
+        sid, users, parts = self._present_session_users([
+            ("a@x.com", "b", "female"), ("b@x.com", "b", "female")])
+        a, b = users["a@x.com"], users["b@x.com"]
+        self.client.force_authenticate(a)
+        req_id = self.client.post(f"/api/bands/match/{sid}/partner-requests/create/",
+                                  {"to_participant_id": parts[b.id]}, format="json").json()["id"]
+        self.client.force_authenticate(b)
+        r = self.client.post(f"/api/bands/match/{sid}/partner-requests/{req_id}/cancel/")
+        self.assertEqual(r.status_code, 403)
+        self.client.force_authenticate(a)
+        r = self.client.post(f"/api/bands/match/{sid}/partner-requests/{req_id}/cancel/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["status"], "canceled")
+        r = self.client.post(f"/api/bands/match/{sid}/partner-requests/{req_id}/cancel/")
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(self.client.get(f"/api/bands/match/{sid}/partner-requests/").json()["requests"], [])
+
+    def test_pair_member_can_release_but_outsider_cannot(self):
+        sid, users, parts = self._present_session_users([
+            ("a@x.com", "b", "female"), ("b@x.com", "b", "female"),
+            ("c@x.com", "b", "female")])
+        a, b, c = users["a@x.com"], users["b@x.com"], users["c@x.com"]
+        pair_id = self.client.post(f"/api/bands/match/{sid}/pairs/",
+                                   {"p1_id": parts[a.id], "p2_id": parts[b.id]},
+                                   format="json").json()["id"]
+        self.client.force_authenticate(c)
+        self.assertEqual(self.client.delete(f"/api/bands/match/{sid}/pairs/{pair_id}/").status_code, 403)
+        self.client.force_authenticate(b)
+        self.assertEqual(self.client.delete(f"/api/bands/match/{sid}/pairs/{pair_id}/").status_code, 204)
+
+    def test_request_blocked_when_already_paired(self):
+        sid, users, parts = self._present_session_users([
+            ("a@x.com", "b", "female"), ("b@x.com", "b", "female"),
+            ("c@x.com", "b", "female")])
+        a, b, c = users["a@x.com"], users["b@x.com"], users["c@x.com"]
+        self.client.post(f"/api/bands/match/{sid}/pairs/",
+                         {"p1_id": parts[a.id], "p2_id": parts[b.id]}, format="json")
+        self.client.force_authenticate(c)
+        r = self.client.post(f"/api/bands/match/{sid}/partner-requests/create/",
+                             {"to_participant_id": parts[a.id]}, format="json")
+        self.assertEqual(r.status_code, 409)
+
     def test_approve_conflicts_when_already_paired(self):
         sid, users, parts = self._present_session_users([
             ("a@x.com", "b", "female"), ("b@x.com", "b", "female"),
             ("c@x.com", "b", "female")])
         a, b, c = users["a@x.com"], users["b@x.com"], users["c@x.com"]
-        # a-b 쌍 직접 생성
-        self.client.post(f"/api/bands/match/{sid}/pairs/",
-                         {"p1_id": parts[a.id], "p2_id": parts[b.id]}, format="json")
-        # a가 c에게 신청 → 승인 시 a가 이미 쌍이라 409
+        # a가 c에게 신청
         self.client.force_authenticate(a)
         req_id = self.client.post(f"/api/bands/match/{sid}/partner-requests/create/",
                                   {"to_participant_id": parts[c.id]}, format="json").json()["id"]
+        # 그사이 모임장이 a-b 쌍 직접 생성 → 승인 시 a가 이미 쌍이라 409
         self.client.force_authenticate(self.owner)
+        self.client.post(f"/api/bands/match/{sid}/pairs/",
+                         {"p1_id": parts[a.id], "p2_id": parts[b.id]}, format="json")
         ap = self.client.post(
             f"/api/bands/match/{sid}/partner-requests/{req_id}/approve/", {}, format="json")
         self.assertEqual(ap.status_code, 409)
@@ -525,8 +591,8 @@ class MatchNotificationTest(FlowTest):
         self.client.post(f"/api/bands/match/{sid}/partner-requests/create/",
                          {"to_participant_id": parts[b.id]}, format="json")
         notif = Notification.objects.filter(type=Notification.Type.PARTNER_REQUEST)
-        self.assertEqual(notif.count(), 1)
-        self.assertEqual(notif.first().user_id, b.id)  # 받는 사람 b에게
+        # 받는 사람 b + 모임장(승인 요청), 신청자 a는 제외
+        self.assertEqual(set(notif.values_list("user_id", flat=True)), {b.id, self.owner.id})
 
     def test_partner_approved_notifies_both(self):
         sid, users, parts = self._present([

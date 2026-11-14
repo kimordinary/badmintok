@@ -101,6 +101,7 @@ urlpatterns = [
     path('match/<int:session_id>/partner-requests/create/', match_views.request_partner, name='match_partner_request_create'),
     path('match/<int:session_id>/partner-requests/<int:req_id>/approve/', match_views.approve_partner_request, name='match_partner_approve'),
     path('match/<int:session_id>/partner-requests/<int:req_id>/reject/', match_views.reject_partner_request, name='match_partner_reject'),
+    path('match/<int:session_id>/partner-requests/<int:req_id>/cancel/', match_views.cancel_partner_request, name='match_partner_cancel'),
     path('match/<int:session_id>/pairs/', match_views.pairs, name='match_pairs'),
     path('match/<int:session_id>/pairs/<int:pair_id>/', match_views.delete_pair, name='match_pair_delete'),
 

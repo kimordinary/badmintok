@@ -781,6 +781,12 @@ def request_partner(request, session_id):
     if to_sp.id == me.id:
         return Response({"detail": "자기 자신과는 파트너가 될 수 없어요."},
                         status=status.HTTP_400_BAD_REQUEST)
+    if to_sp.user_id is None:
+        return Response({"detail": "현장 인원과의 파트너는 모임장에게 요청해주세요."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if _active_pair_for(session, me.id, to_sp.id):
+        return Response({"detail": "이미 다른 파트너와 묶여 있어요."},
+                        status=status.HTTP_409_CONFLICT)
     if PartnerRequest.objects.filter(
             session=session, status=PartnerRequest.Status.PENDING,
             from_participant=me, to_participant=to_sp).exists():
@@ -847,6 +853,24 @@ def reject_partner_request(request, session_id, req_id):
     return Response({"id": req.id, "status": req.status})
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def cancel_partner_request(request, session_id, req_id):
+    """신청자 본인이 승인 전 파트너 신청 취소."""
+    session = get_object_or_404(MatchSession, id=session_id)
+    req = get_object_or_404(PartnerRequest, id=req_id, session=session)
+    me = _my_participant(session, request.user)
+    if me is None or req.from_participant_id != me.id:
+        return Response({"detail": "본인이 보낸 신청만 취소할 수 있어요."},
+                        status=status.HTTP_403_FORBIDDEN)
+    if req.status != PartnerRequest.Status.PENDING:
+        return Response({"detail": "이미 처리된 신청입니다."}, status=status.HTTP_409_CONFLICT)
+    req.status = PartnerRequest.Status.CANCELED
+    req.resolved_at = timezone.now()
+    req.save(update_fields=["status", "resolved_at"])
+    return Response({"id": req.id, "status": req.status})
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def pairs(request, session_id):
@@ -873,10 +897,14 @@ def pairs(request, session_id):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_pair(request, session_id, pair_id):
+    """쌍 해제. 모임장 또는 쌍의 당사자 본인. 진행 중·확정된 경기는 그대로, 다음 대진부터 반영."""
     session = get_object_or_404(MatchSession, id=session_id)
-    if not _is_operator(request.user, session.schedule.band):
-        return Response({"detail": "운영 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
     pair = get_object_or_404(Pair, id=pair_id, session=session)
+    if not _is_operator(request.user, session.schedule.band):
+        me = _my_participant(session, request.user)
+        if me is None or me.id not in (pair.p1_id, pair.p2_id):
+            return Response({"detail": "본인 파트너만 해제할 수 있어요."},
+                            status=status.HTTP_403_FORBIDDEN)
     pair.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 

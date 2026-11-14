@@ -404,6 +404,20 @@ def notify_on_partner_request(sender, instance, created, **kwargs):
             related_band=band,
             actor=from_user,
         )
+        # 모임장·운영진에게 승인 요청 알림 (당사자 제외)
+        operator_ids = set(BandMember.objects.filter(
+            band=band, status="active", role__in=["owner", "admin"],
+        ).values_list("user_id", flat=True)) - {from_user.id, to_user.id}
+        for uid in operator_ids:
+            Notification.objects.create(
+                user_id=uid,
+                type=Notification.Type.PARTNER_REQUEST,
+                title=f"파트너 승인 요청: {req.from_participant.display_real_name}·{req.to_participant.display_real_name}",
+                message=f"[{band.name}] {schedule.title} · 대진 화면에서 승인해주세요",
+                related_band_schedule=schedule,
+                related_band=band,
+                actor=from_user,
+            )
         return
 
     if req.status == PartnerRequest.Status.APPROVED:

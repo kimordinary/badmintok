@@ -188,6 +188,7 @@ class PartnerRequest(models.Model):
         PENDING = "pending", _("대기")
         APPROVED = "approved", _("승인")
         REJECTED = "rejected", _("거절")
+        CANCELED = "canceled", _("취소")
 
     session = models.ForeignKey(
         MatchSession, on_delete=models.CASCADE, related_name="partner_requests")
